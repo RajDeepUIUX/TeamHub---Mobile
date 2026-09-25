@@ -1,0 +1,8 @@
+{
+  "name": "Team Hub (HRMS) - Mobile",
+  "description": "Production mobile product design system and UX prototype workbench for the Team Hub enterprise mobile application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
