@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Info,
   FileText,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 interface AttendanceCardProps {
@@ -36,8 +38,29 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
   const isWeeklyOff = record.status === 'weekly_off';
   const isFullDay = record.status === 'full_day';
 
+  // Edit request lifecycle: pending → approved / rejected by the manager
+  const isEditApproved = record.editStatus === 'approved';
+  const isEditRejected = record.editStatus === 'rejected';
+  const isEditPending = Boolean(record.editRequested) && !isEditApproved && !isEditRejected;
+
   // Status badge styling matching screenshots
   const renderStatusBadge = () => {
+    if (isEditApproved) {
+      return (
+        <span className="bg-[#E8F8F0] text-[#059669] text-[11px] font-semibold pl-1.5 pr-2.5 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3" />
+          Full Day (Approved)
+        </span>
+      );
+    }
+    if (isEditRejected) {
+      return (
+        <span className="bg-[#FEF2F2] text-[#DC2626] text-[11px] font-semibold pl-1.5 pr-2.5 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1">
+          <XCircle className="w-3 h-3" />
+          Rejected
+        </span>
+      );
+    }
     switch (record.status) {
       case 'half_day':
         return (
@@ -93,7 +116,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             <h3 className="font-bold text-[15px] text-[#1E293B] group-hover:text-[#2F68FE] transition-colors leading-tight">
               {record.dateFormatted}
             </h3>
-            {record.editRequested && (
+            {isEditPending && (
               <span className="bg-[#EFF6FF] border border-[#BFDBFE] text-[#2F68FE] text-[10px] font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5 text-[#2F68FE]" />
                 <span>Edit Submitted</span>
@@ -345,12 +368,48 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             </button>
           )}
 
-          {/* Pending Approval Notice Banner (If edit submitted per Screenshot 6) */}
-          {record.editRequested && (
+          {/* Edit request status banner */}
+          {isEditPending && (
             <div className="bg-[#FEF8E7] text-[#D97706] rounded-xl p-3 text-xs font-medium flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#D97706] shrink-0" />
               <span>Edit request is pending approval.</span>
             </div>
+          )}
+          {isEditApproved && (
+            <div className="bg-[#ECFDF5] border border-[#D1FAE5] text-[#047857] rounded-xl p-3 text-xs font-medium flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-px" />
+              <span>
+                Edit request approved by <strong className="font-bold">{record.editReviewedBy ?? 'your manager'}</strong>
+                {record.editReviewedAt ? ` on ${record.editReviewedAt}` : ''}. This day is now counted as a full day.
+              </span>
+            </div>
+          )}
+          {isEditRejected && (
+            <div className="bg-[#FEF2F2] border border-[#FEE2E2] text-[#B91C1C] rounded-xl p-3 text-xs font-medium space-y-1.5">
+              <div className="flex items-start gap-2">
+                <XCircle className="w-4 h-4 shrink-0 mt-px" />
+                <span>
+                  Edit request rejected by <strong className="font-bold">{record.editReviewedBy ?? 'your manager'}</strong>
+                  {record.editReviewedAt ? ` on ${record.editReviewedAt}` : ''}.
+                </span>
+              </div>
+              {record.managerRemark && (
+                <p className="ml-6 text-[11px] text-[#991B1B]/90 font-normal leading-relaxed">
+                  <span className="font-semibold">Manager's remark:</span> “{record.managerRemark}”
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* After a rejection the day can still be covered by a leave */}
+          {isEditRejected && (
+            <button
+              type="button"
+              onClick={() => onApplyLeave(record)}
+              className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-semibold shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
+            >
+              Apply Leave
+            </button>
           )}
 
           {/* Action Buttons: Request Edit & Apply Leave (Only for Half Day / Absent without edit request) */}

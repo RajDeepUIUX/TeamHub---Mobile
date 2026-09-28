@@ -28,6 +28,11 @@ export interface AttendanceRecord {
   editReason?: string;
   editNote?: string;
   editRequestedAt?: string;
+  /** Manager decision on the edit request; undefined while no request exists */
+  editStatus?: 'pending' | 'approved' | 'rejected';
+  editReviewedBy?: string;
+  editReviewedAt?: string;
+  managerRemark?: string;
   leaveApplied?: boolean;
   leaveType?: string;
   punches: PunchRecord[];

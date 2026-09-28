@@ -14,6 +14,8 @@ interface FilterSheetProps {
   currentStatus: string;
   currentFrom: Date;
   currentTo: Date;
+  /** Range restored by "Clear All" (the selected month's cycle) */
+  defaultRange?: { from: Date; to: Date };
   onApply: (status: string, workMode: string, from: Date, to: Date) => void;
 }
 
@@ -23,6 +25,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
   currentStatus,
   currentFrom,
   currentTo,
+  defaultRange = DEFAULT_ATTENDANCE_RANGE,
   onApply,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState(currentStatus || 'All');
@@ -66,7 +69,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
   const handleClear = () => {
     setSelectedStatus('All');
     setSelectedWorkMode('Office');
-    onApply('All', 'Office', DEFAULT_ATTENDANCE_RANGE.from, DEFAULT_ATTENDANCE_RANGE.to);
+    onApply('All', 'Office', defaultRange.from, defaultRange.to);
     onClose();
   };
 

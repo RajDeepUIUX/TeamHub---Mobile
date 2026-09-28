@@ -17,12 +17,12 @@ import {
 } from 'lucide-react';
 import { MobileDeviceFrame, DeviceModel } from './design-system/components/MobileDeviceFrame';
 import { AttendanceRecord, AttendanceKPIs as AttendanceKPIsType } from './types/attendance';
-import { INITIAL_ATTENDANCE_RECORDS, INITIAL_KPIS } from './data/attendanceData';
+import { ATTENDANCE_MONTHS, ALL_ATTENDANCE_RECORDS } from './data/attendanceMonths';
 import { AttendanceKPIs } from './components/attendance/AttendanceKPIs';
 import { AttendanceCard } from './components/attendance/AttendanceCard';
 import { PunchLogsSheet } from './components/attendance/PunchLogsSheet';
 import { RequestEditSheet } from './components/attendance/RequestEditSheet';
-import { FilterSheet, DEFAULT_ATTENDANCE_RANGE } from './components/attendance/FilterSheet';
+import { FilterSheet } from './components/attendance/FilterSheet';
 import { toDateKey } from './design-system/components/RangeCalendar';
 import { KPISummarySheet } from './components/attendance/KPISummarySheet';
 import { ApplyLeaveView } from './components/attendance/ApplyLeaveView';
@@ -103,11 +103,13 @@ export default function App() {
   }, []);
 
   // Month cycle
-  const [currentMonth, setCurrentMonth] = useState('September 2026');
+  // Attendance month cycle (26th of previous month → 25th); latest cycle selected by default
+  const [monthIndex, setMonthIndex] = useState(ATTENDANCE_MONTHS.length - 1);
+  const currentMonth = ATTENDANCE_MONTHS[monthIndex];
 
   // Attendance Data
-  const [records, setRecords] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE_RECORDS);
-  const [kpis, setKpis] = useState<AttendanceKPIsType>(INITIAL_KPIS);
+  const [records, setRecords] = useState<AttendanceRecord[]>(ALL_ATTENDANCE_RECORDS);
+  const kpis: AttendanceKPIsType = currentMonth.kpis;
 
   // Active Sheets & Dedicated Views
   const [selectedPunchRecord, setSelectedPunchRecord] = useState<AttendanceRecord | null>(null);
@@ -121,7 +123,16 @@ export default function App() {
   // Filter criteria
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('All');
   const [activeWorkMode, setActiveWorkMode] = useState<string>('Office');
-  const [attendanceRange, setAttendanceRange] = useState(DEFAULT_ATTENDANCE_RANGE);
+  const [attendanceRange, setAttendanceRange] = useState(currentMonth.range);
+
+  const changeMonth = (index: number) => {
+    const month = ATTENDANCE_MONTHS[index];
+    if (!month) return;
+    setMonthIndex(index);
+    setAttendanceRange(month.range);
+    setActiveFilterStatus('All');
+    setExpandedCardIds(new Set());
+  };
 
   // Expand/Collapse state: Default is all collapsed (empty set)
   const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
@@ -214,15 +225,17 @@ export default function App() {
   };
 
   // Filter records
-  const filteredRecords = records.filter((rec) => {
-    if (rec.date < toDateKey(attendanceRange.from) || rec.date > toDateKey(attendanceRange.to)) return false;
-    if (activeFilterStatus === 'All') return true;
-    if (activeFilterStatus === 'Full Day' && rec.status === 'full_day') return true;
-    if (activeFilterStatus === 'Half Day' && rec.status === 'half_day') return true;
-    if (activeFilterStatus === 'Absent' && rec.status === 'absent') return true;
-    if (activeFilterStatus === 'WO' && rec.status === 'weekly_off') return true;
-    return false;
-  });
+  const filteredRecords = records
+    .filter((rec) => {
+      if (rec.date < toDateKey(attendanceRange.from) || rec.date > toDateKey(attendanceRange.to)) return false;
+      if (activeFilterStatus === 'All') return true;
+      if (activeFilterStatus === 'Full Day' && rec.status === 'full_day') return true;
+      if (activeFilterStatus === 'Half Day' && rec.status === 'half_day') return true;
+      if (activeFilterStatus === 'Absent' && rec.status === 'absent') return true;
+      if (activeFilterStatus === 'WO' && rec.status === 'weekly_off') return true;
+      return false;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased">
@@ -304,7 +317,8 @@ export default function App() {
           {/* Reset Demo Data Button */}
           <button
             onClick={() => {
-              setRecords(INITIAL_ATTENDANCE_RECORDS);
+              setRecords(ALL_ATTENDANCE_RECORDS);
+              changeMonth(ATTENDANCE_MONTHS.length - 1);
               setActiveFilterStatus('All');
               showToast('Demo data reset to initial screenshot state.');
             }}
@@ -567,27 +581,23 @@ export default function App() {
                   <div className="flex items-center justify-between px-1">
                     <button
                       type="button"
-                      onClick={() => {
-                        setCurrentMonth('August 2026');
-                        setExpandedCardIds(new Set());
-                      }}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+                      onClick={() => changeMonth(monthIndex - 1)}
+                      disabled={monthIndex === 0}
+                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                       aria-label="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
 
                     <h2 className="text-sm font-bold text-[#1E293B]">
-                      {currentMonth}
+                      {currentMonth.label}
                     </h2>
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setCurrentMonth('September 2026');
-                        setExpandedCardIds(new Set());
-                      }}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
+                      onClick={() => changeMonth(monthIndex + 1)}
+                      disabled={monthIndex === ATTENDANCE_MONTHS.length - 1}
+                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                       aria-label="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -687,7 +697,7 @@ export default function App() {
                           type="button"
                           onClick={() => {
                             setActiveFilterStatus('All');
-                            setAttendanceRange(DEFAULT_ATTENDANCE_RANGE);
+                            setAttendanceRange(currentMonth.range);
                           }}
                           className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline"
                         >
@@ -723,6 +733,7 @@ export default function App() {
               currentStatus={activeFilterStatus}
               currentFrom={attendanceRange.from}
               currentTo={attendanceRange.to}
+              defaultRange={currentMonth.range}
               onApply={(status, workMode, from, to) => {
                 setActiveFilterStatus(status);
                 setActiveWorkMode(workMode);
@@ -736,7 +747,7 @@ export default function App() {
               isOpen={isKPISummaryOpen}
               onClose={() => setIsKPISummaryOpen(false)}
               kpis={kpis}
-              monthTitle={currentMonth}
+              monthTitle={currentMonth.label}
             />
 
             {/* Bottom Sheet: Edit WFO Days from Details view */}
