@@ -6,6 +6,8 @@ export interface DropdownOption<T extends string | number> {
   value: T;
   label: string;
   description?: string;
+  /** Shown greyed out and cannot be selected */
+  disabled?: boolean;
 }
 
 interface DropdownProps<T extends string | number> {
@@ -16,6 +18,8 @@ interface DropdownProps<T extends string | number> {
   icon?: React.ReactNode;
   size?: 'md' | 'lg';
   ariaLabel?: string;
+  /** Let the menu grow wider than a narrow trigger (px); it stays inside the screen */
+  menuMinWidth?: number;
 }
 
 interface MenuPosition {
@@ -45,6 +49,7 @@ export function Dropdown<T extends string | number>({
   icon,
   size = 'lg',
   ariaLabel,
+  menuMinWidth = 0,
 }: DropdownProps<T>) {
   const items = options.map(normalize);
   const selected = items.find((o) => o.value === value);
@@ -65,8 +70,13 @@ export function Dropdown<T extends string | number>({
     // The device frame can be CSS-scaled; convert screen px back to layout px.
     const scale = portalRect.width / portal.offsetWidth || 1;
 
-    const left = (rect.left - portalRect.left) / scale;
-    const width = rect.width / scale;
+    const portalWidth = portal.offsetWidth;
+    const width = Math.min(Math.max(rect.width / scale, menuMinWidth), portalWidth - 2 * VIEWPORT_MARGIN);
+    // Keep a widened menu inside the screen
+    const left = Math.min(
+      Math.max(VIEWPORT_MARGIN, (rect.left - portalRect.left) / scale),
+      portalWidth - width - VIEWPORT_MARGIN
+    );
     const spaceBelow = (portalRect.bottom - rect.bottom) / scale - GAP - VIEWPORT_MARGIN;
     const spaceAbove = (rect.top - portalRect.top) / scale - GAP - VIEWPORT_MARGIN - 40;
 
@@ -85,7 +95,7 @@ export function Dropdown<T extends string | number>({
         maxHeight: Math.min(MAX_MENU_HEIGHT, spaceAbove),
       });
     }
-  }, [portal]);
+  }, [portal, menuMinWidth]);
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -117,6 +127,7 @@ export function Dropdown<T extends string | number>({
   };
 
   const choose = (opt: DropdownOption<T>) => {
+    if (opt.disabled) return;
     onChange(opt.value);
     close();
   };
@@ -134,10 +145,18 @@ export function Dropdown<T extends string | number>({
       close();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(items.length - 1, i + 1));
+      setActiveIndex((i) => {
+        let next = i + 1;
+        while (next < items.length && items[next].disabled) next++;
+        return next < items.length ? next : i;
+      });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIndex((i) => Math.max(0, i - 1));
+      setActiveIndex((i) => {
+        let next = i - 1;
+        while (next >= 0 && items[next].disabled) next--;
+        return next >= 0 ? next : i;
+      });
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       if (items[activeIndex]) choose(items[activeIndex]);
@@ -176,11 +195,15 @@ export function Dropdown<T extends string | number>({
                     type="button"
                     role="option"
                     aria-selected={isSelected}
+                    aria-disabled={opt.disabled || undefined}
+                    disabled={opt.disabled}
                     data-index={idx}
                     onClick={() => choose(opt)}
-                    onMouseEnter={() => setActiveIndex(idx)}
-                    className={`w-full min-h-10 px-3 py-2 rounded-xl flex items-center justify-between gap-3 text-left text-xs transition-colors cursor-pointer ${
-                      isSelected
+                    onMouseEnter={() => !opt.disabled && setActiveIndex(idx)}
+                    className={`w-full min-h-10 px-3 py-2 rounded-xl flex items-center justify-between gap-3 text-left text-xs transition-colors ${
+                      opt.disabled
+                        ? 'text-slate-300 font-medium cursor-not-allowed'
+                        : isSelected
                         ? 'bg-blue-50 text-[#2F68FE] font-bold'
                         : isActive
                           ? 'bg-slate-50 text-[#1E293B] font-medium'

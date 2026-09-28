@@ -31,6 +31,7 @@ import { WFORecord } from './types/wfo';
 import { WFODaysView } from './components/wfo/WFODaysView';
 import { WFODetailsView } from './components/wfo/WFODetailsView';
 import { AddWFOSheet } from './components/wfo/AddWFOSheet';
+import { INITIAL_WFO_RECORDS } from './data/wfoData';
 import { BottomSheetProvider } from './context/BottomSheetContext';
 import { LeavesView } from './components/leaves/LeavesView';
 import { ApplyLeaveView as LeavesApplyView } from './components/leaves/ApplyLeaveView';
@@ -755,6 +756,7 @@ export default function App() {
               isOpen={Boolean(editingWFORecordFromDetails)}
               onClose={() => setEditingWFORecordFromDetails(null)}
               recordToEdit={editingWFORecordFromDetails}
+              existingRecords={INITIAL_WFO_RECORDS}
               onSubmit={(month, year, days) => {
                 if (selectedWFORecord) {
                   setSelectedWFORecord({

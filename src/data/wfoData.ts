@@ -55,3 +55,14 @@ export const MONTH_NAMES = [
 ];
 
 export const YEAR_OPTIONS = [2026, 2025, 2024];
+
+/** Allowance paid to staff for each approved Work-From-Office day (INR) */
+export const WFO_DAILY_ALLOWANCE = 90;
+
+export const formatINR = (amount: number) =>
+  `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
+export const wfoAllowanceFor = (days: number) => days * WFO_DAILY_ALLOWANCE;
+
+/** Only staff at this branch receive the WFO allowance */
+export const WFO_ALLOWANCE_BRANCH = 'Ahmedabad – Gota Branch';
