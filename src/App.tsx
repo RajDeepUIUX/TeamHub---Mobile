@@ -37,10 +37,14 @@ import { LeaveSubmittedModal } from './components/leaves/LeaveSubmittedModal';
 import { LeaveDetailsView } from './components/leaves/LeaveDetailsView';
 import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS } from './data/leavesData';
 import { LeaveRequest, LeaveBalance } from './types/leaves';
+import { UserRole, USER_ROLES } from './types/user';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
   const [device, setDevice] = useState<DeviceModel>('pixel8');
+
+  // Logged-in user role (Staff by default); Manager review screens come later
+  const [userRole, setUserRole] = useState<UserRole>('Staff');
   const [scale, setScale] = useState<number>(100);
   const [showThumbZones, setShowThumbZones] = useState(false);
   const [showHitboxes, setShowHitboxes] = useState(false);
@@ -211,6 +215,27 @@ export default function App() {
 
         {/* Device Controls */}
         <div className="flex items-center gap-2">
+          {/* User Role Selector */}
+          <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+            {USER_ROLES.map((role) => (
+              <button
+                key={role}
+                onClick={() => {
+                  if (role === userRole) return;
+                  setUserRole(role);
+                  showToast(`Logged in as ${role}`);
+                }}
+                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                  userRole === role
+                    ? 'bg-[#2F68FE] text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+
           {/* Device Model Selector */}
           <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
             <button
