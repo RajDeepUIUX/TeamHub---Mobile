@@ -9,6 +9,7 @@ import {
   Filter,
   CheckCircle2,
   RotateCcw,
+  LogOut,
   Smartphone,
   Eye,
   Hand,
@@ -38,6 +39,14 @@ import { LeaveDetailsView } from './components/leaves/LeaveDetailsView';
 import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS } from './data/leavesData';
 import { LeaveRequest, LeaveBalance } from './types/leaves';
 import { UserRole, USER_ROLES } from './types/user';
+import { HomeDashboard } from './components/home/HomeDashboard';
+import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
+import { ComingSoonView } from './components/home/ComingSoonView';
+import { AppBottomNav, AppTab } from './components/home/AppBottomNav';
+import { WishSheet } from './components/home/WishSheet';
+import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
+import { HOLIDAYS_DATA } from './data/holidayData';
+import { AuthFlow } from './components/auth/AuthFlow';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
@@ -45,6 +54,26 @@ export default function App() {
 
   // Logged-in user role (Staff by default); Manager review screens come later
   const [userRole, setUserRole] = useState<UserRole>('Staff');
+
+  // Auth: splash -> login (or forgot-password flow) -> app
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Main app navigation (bottom nav). Home dashboard is the first screen after login.
+  const [appTab, setAppTab] = useState<AppTab>('home');
+  const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
+  const [wishTarget, setWishTarget] = useState<{ person: TeamCelebration; kind: 'birthday' | 'anniversary' } | null>(null);
+
+  const todayKey = toDateKey(new Date());
+  const upcomingHolidays = HOLIDAYS_DATA.filter((h) => h.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date));
+  const holidaysNext30Days = upcomingHolidays.filter(
+    (h) => new Date(`${h.date}T00:00:00`).getTime() - Date.now() <= 30 * 86400000
+  ).length;
+
+  const handleAppTabChange = (tab: AppTab) => {
+    setCelebrationsTab(null);
+    if (tab === 'attendance') setActiveModuleTab('Attendance');
+    setAppTab(tab);
+  };
   const [scale, setScale] = useState<number>(100);
   const [showThumbZones, setShowThumbZones] = useState(false);
   const [showHitboxes, setShowHitboxes] = useState(false);
@@ -260,6 +289,18 @@ export default function App() {
             </button>
           </div>
 
+          {/* Log out: replays splash + login flow */}
+          {isLoggedIn && (
+            <button
+              onClick={() => setIsLoggedIn(false)}
+              className="h-7 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 text-xs font-medium transition-colors"
+              title="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Log out
+            </button>
+          )}
+
           {/* Reset Demo Data Button */}
           <button
             onClick={() => {
@@ -320,7 +361,52 @@ export default function App() {
               showTouchHitboxOverlay={showHitboxes}
             >
               {/* Dedicated Apply for Leave View for Leaves Tab (Images 4, 5, 6, 7) */}
-              {editingLeave ? (
+              {!isLoggedIn ? (
+                <AuthFlow
+                  onAuthenticated={() => {
+                    setIsLoggedIn(true);
+                    setAppTab('home');
+                    setCelebrationsTab(null);
+                    showToast(`Signed in as ${userRole}`);
+                  }}
+                />
+              ) : celebrationsTab ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <CelebrationsView
+                    key={celebrationsTab}
+                    initialTab={celebrationsTab}
+                    birthdays={BIRTHDAYS}
+                    anniversaries={ANNIVERSARIES}
+                    upcomingHolidays={upcomingHolidays}
+                    holidaysNext30Days={holidaysNext30Days}
+                    onBack={() => setCelebrationsTab(null)}
+                    onWish={(person, kind) => setWishTarget({ person, kind })}
+                  />
+                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab === 'home' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <HomeDashboard
+                    userName="Rajdeep"
+                    todaysBirthdays={BIRTHDAYS.filter((b) => b.inDays === 0)}
+                    upcomingHolidayCount={holidaysNext30Days}
+                    onOpenAttendance={() => handleAppTabChange('attendance')}
+                    onOpenCelebrations={(tab) => setCelebrationsTab(tab)}
+                    onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
+                    onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
+                    onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
+                  />
+                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab !== 'attendance' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <ComingSoonView
+                    title={appTab === 'learning' ? 'Learning' : appTab === 'requests' ? 'Requests' : 'More'}
+                    onGoHome={() => handleAppTabChange('home')}
+                  />
+                  <AppBottomNav activeTab={appTab} onTabChange={handleAppTabChange} />
+                </div>
+              ) : editingLeave ? (
                 <LeavesApplyView
                   key={editingLeave.id}
                   initialRequest={editingLeave}
@@ -420,11 +506,7 @@ export default function App() {
                     <div className="flex items-center h-13 px-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (activeModuleTab !== 'Attendance') {
-                            setActiveModuleTab('Attendance');
-                          }
-                        }}
+                        onClick={() => handleAppTabChange('home')}
                         className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Back"
                       >
@@ -674,6 +756,17 @@ export default function App() {
                   });
                 }
                 showToast('WFO request updated successfully.');
+              }}
+            />
+
+            {/* Send birthday / anniversary wishes */}
+            <WishSheet
+              person={wishTarget?.person ?? null}
+              kind={wishTarget?.kind ?? 'birthday'}
+              onClose={() => setWishTarget(null)}
+              onSend={(person) => {
+                setWishTarget(null);
+                showToast(`Wish sent to ${person.name} 🎉`);
               }}
             />
 
