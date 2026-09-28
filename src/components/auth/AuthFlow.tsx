@@ -363,7 +363,7 @@ const VerifyScreen: React.FC<{
 
 /* ------------------------------ Reset password ------------------------------ */
 
-const strengthOf = (pw: string) => {
+export const strengthOf = (pw: string) => {
   if (!pw) return 0;
   let score = 0;
   if (pw.length >= 8) score++;
@@ -372,7 +372,7 @@ const strengthOf = (pw: string) => {
   return pw.length < 8 ? Math.min(score, 1) : Math.max(score, 1);
 };
 
-const STRENGTH_META = [
+export const STRENGTH_META = [
   { label: 'Use at least 8 characters.', bar: 'bg-slate-200', text: 'text-slate-500' },
   { label: 'Weak — add upper & lower case letters.', bar: 'bg-rose-400', text: 'text-rose-500' },
   { label: 'Medium — add a number and a symbol.', bar: 'bg-amber-400', text: 'text-amber-600' },

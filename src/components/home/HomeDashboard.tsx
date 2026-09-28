@@ -21,6 +21,7 @@ import {
 import { RECENT_ATTENDANCE, CELEBRATION_TOTALS, TeamCelebration } from '../../data/dashboardData';
 import { BrandLogoHorizontal } from '../auth/BrandLogo';
 import { OverviewTasks } from './OverviewTasks';
+import { ProfileAvatar } from '../profile/ProfileAvatar';
 
 interface HomeDashboardProps {
   userName: string;
@@ -31,6 +32,9 @@ interface HomeDashboardProps {
   onViewLog: () => void;
   onWish: (person: TeamCelebration) => void;
   onComingSoon: (feature: string) => void;
+  onOpenProfile: () => void;
+  fullName: string;
+  profilePhoto: string | null;
 }
 
 const greetingFor = (date: Date) => {
@@ -106,6 +110,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onViewLog,
   onWish,
   onComingSoon,
+  onOpenProfile,
+  fullName,
+  profilePhoto,
 }) => {
   const now = new Date();
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -134,9 +141,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <Bell className="w-5 h-5" />
             <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-200 to-rose-300 text-[#7C2D12] text-xs font-bold flex items-center justify-center ring-2 ring-white shadow-xs">
-            {userName.slice(0, 1)}
-          </div>
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="w-8 h-8 rounded-full ring-2 ring-white shadow-xs hover:ring-[#C7D2FE] transition cursor-pointer"
+            aria-label="My profile"
+          >
+            <ProfileAvatar name={fullName} photoUrl={profilePhoto} className="w-8 h-8 rounded-full" textClassName="text-[11px]" />
+          </button>
         </div>
       </header>
 

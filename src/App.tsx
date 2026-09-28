@@ -48,6 +48,7 @@ import { WishSheet } from './components/home/WishSheet';
 import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
 import { HOLIDAYS_DATA } from './data/holidayData';
 import { AuthFlow } from './components/auth/AuthFlow';
+import { ProfileView } from './components/profile/ProfileView';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
@@ -62,6 +63,9 @@ export default function App() {
   // Main app navigation (bottom nav). Home dashboard is the first screen after login.
   const [appTab, setAppTab] = useState<AppTab>('home');
   const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  // Profile photo (data URL); null shows first + last name initials
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [wishTarget, setWishTarget] = useState<{ person: TeamCelebration; kind: 'birthday' | 'anniversary' } | null>(null);
 
   const todayKey = toDateKey(new Date());
@@ -72,6 +76,7 @@ export default function App() {
 
   const handleAppTabChange = (tab: AppTab) => {
     setCelebrationsTab(null);
+    setIsProfileOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     setAppTab(tab);
   };
@@ -306,7 +311,10 @@ export default function App() {
           {/* Log out: replays splash + login flow */}
           {isLoggedIn && (
             <button
-              onClick={() => setIsLoggedIn(false)}
+              onClick={() => {
+                setIsProfileOpen(false);
+                setIsLoggedIn(false);
+              }}
               className="h-7 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 text-xs font-medium transition-colors"
               title="Log out"
             >
@@ -385,6 +393,26 @@ export default function App() {
                     showToast(`Signed in as ${userRole}`);
                   }}
                 />
+              ) : isProfileOpen ? (
+                <ProfileView
+                  name="Rajdeep Dey"
+                  email="rajdeep.dey@my-cpe.com"
+                  role="Lead Designer"
+                  branch="Ahmedabad - Gota Branch"
+                  employeeId="A03780"
+                  onBack={() => setIsProfileOpen(false)}
+                  onLogout={() => {
+                    setIsProfileOpen(false);
+                    setIsLoggedIn(false);
+                  }}
+                  onOpenItem={(label) => showToast(`${label} is coming soon.`)}
+                  onPasswordChanged={() => showToast('Password updated successfully.')}
+                  photoUrl={profilePhoto}
+                  onPhotoChange={(url) => {
+                    setProfilePhoto(url);
+                    showToast(url ? 'Profile photo updated.' : 'Profile photo removed.');
+                  }}
+                />
               ) : celebrationsTab ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <CelebrationsView
@@ -410,6 +438,9 @@ export default function App() {
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
+                    onOpenProfile={() => setIsProfileOpen(true)}
+                    fullName="Rajdeep Dey"
+                    profilePhoto={profilePhoto}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>
