@@ -136,8 +136,9 @@ export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, initialL
         </div>
       )}
 
+      {/* scroll-px keeps the 16px inset when a card snaps into place */}
       {layout === 'scroll' && (
-        <div className="-mx-4 px-4 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+        <div className="-mx-4 px-4 scroll-px-4 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
           {ITEMS.map(({ value, label, icon: Icon, tile }) => (
             <button
               key={label}

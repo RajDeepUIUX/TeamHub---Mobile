@@ -143,12 +143,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {/* Scrollable Dashboard */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
         {/* Greeting */}
-        <div>
-          <p className="text-sm text-slate-600 font-medium">{greetingFor(now)},</p>
-          <h1 className="text-2xl font-extrabold text-[#1E293B] leading-tight">{userName}.</h1>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            {dateLabel} • {timeLabel}
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-slate-600 font-medium">{greetingFor(now)},</p>
+            <h1 className="text-2xl font-extrabold text-[#1E293B] leading-tight truncate">{userName}.</h1>
+          </div>
+          <div className="shrink-0 text-right">
+            <span className="block text-xs font-semibold text-slate-600">{dateLabel}</span>
+            <span className="block text-[11px] text-slate-400 tabular-nums">{timeLabel}</span>
+          </div>
         </div>
 
         {/* Birthday nudge */}
