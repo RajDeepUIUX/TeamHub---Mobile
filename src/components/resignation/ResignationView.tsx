@@ -16,6 +16,7 @@ import { ResignationRecord, ApprovalStatus, ReviewDecision } from '../../types/r
 import { formatResignationDate, NOTICE_PERIOD_DAYS } from '../../data/resignationData';
 import { WithdrawResignationSheet } from './WithdrawResignationSheet';
 import { TeamResignationsList } from './TeamResignationsList';
+import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
 
 interface ResignationViewProps {
   firstName: string;
@@ -343,35 +344,16 @@ export const ResignationView: React.FC<ResignationViewProps> = ({
           <h1 className="text-base font-bold ml-2">Resignation</h1>
         </div>
         {team && (
-          <div className="grid grid-cols-2 border-t border-[#F1F5F9]" role="tablist">
-            {(
-              [
+          <div className="px-4 pb-3">
+            <SegmentedTabs
+              ariaLabel="Resignation view"
+              value={tab}
+              onChange={setTab}
+              options={[
                 { id: 'mine', label: 'My Resignation' },
-                { id: 'team', label: "My Team's Resignations" },
-              ] as const
-            ).map(({ id, label }) => {
-              const isActive = tab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setTab(id)}
-                  className={`relative py-3 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                    isActive ? 'text-[#2F68FE] font-bold' : 'text-slate-400 font-medium'
-                  }`}
-                >
-                  {label}
-                  {id === 'team' && pendingTeamCount > 0 && (
-                    <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-violet-500 text-white text-[10px] font-bold flex items-center justify-center">
-                      {pendingTeamCount}
-                    </span>
-                  )}
-                  {isActive && <span className="absolute bottom-0 left-4 right-4 h-0.75 rounded-t-full bg-[#2F68FE]" />}
-                </button>
-              );
-            })}
+                { id: 'team', label: "Team's Resignations", badge: pendingTeamCount },
+              ]}
+            />
           </div>
         )}
       </header>

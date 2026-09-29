@@ -56,7 +56,7 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
     setIsSubmitting(true);
     setTimeout(() => {
       // Clean string
-      onSubmit(activeRecord.id, '09h 00m', '08h 15m', reason, note.trim() || undefined);
+      onSubmit(activeRecord.id, '09h 00m', '08h 15m', reason, requiresNote ? note.trim() || undefined : undefined);
       setIsSubmitting(false);
       onClose();
     }, 400);

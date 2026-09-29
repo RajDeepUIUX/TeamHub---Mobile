@@ -12,6 +12,9 @@ export interface LeaveDayItem {
 
 export interface LeaveRequest {
   id: string;
+  /** Who applied (shown in the manager's team view) */
+  staffName?: string;
+  staffCode?: string;
   type: LeaveType;
   dateRange: string;
   startDate: string;
@@ -25,6 +28,9 @@ export interface LeaveRequest {
   status: LeaveStatus;
   dayItems?: LeaveDayItem[];
   attachmentName?: string;
+  /** Reporting manager's note on approval / reason on rejection */
+  managerComment?: string;
+  reviewedAt?: string; // e.g. "Sep 29, 2026"
 }
 
 export interface LeaveBalance {

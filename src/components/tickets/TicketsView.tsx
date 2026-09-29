@@ -22,6 +22,7 @@ import {
   htmlToText,
 } from '../../data/ticketsData';
 import { TicketKPICard, TicketSummarySheet } from './TicketSummary';
+import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
 import {
   FilterIconButton,
   FilterSelection,
@@ -346,35 +347,16 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
           <h1 className="text-base font-bold ml-2">Tickets</h1>
         </div>
         {isManager && (
-          <div className="grid grid-cols-2 border-t border-[#F1F5F9]" role="tablist">
-            {(
-              [
+          <div className="px-4 pb-3">
+            <SegmentedTabs
+              ariaLabel="Tickets view"
+              value={tab}
+              onChange={switchTab}
+              options={[
                 { id: 'mine', label: 'My Tickets' },
-                { id: 'team', label: "Team's Tickets" },
-              ] as const
-            ).map(({ id, label }) => {
-              const isActive = tab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => switchTab(id)}
-                  className={`relative py-3 text-xs flex items-center justify-center gap-1.5 cursor-pointer ${
-                    isActive ? 'text-[#2F68FE] font-bold' : 'text-slate-400 font-medium'
-                  }`}
-                >
-                  {label}
-                  {id === 'team' && openTeamCount > 0 && (
-                    <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center">
-                      {openTeamCount}
-                    </span>
-                  )}
-                  {isActive && <span className="absolute bottom-0 left-4 right-4 h-0.75 rounded-t-full bg-[#2F68FE]" />}
-                </button>
-              );
-            })}
+                { id: 'team', label: "Team's Tickets", badge: openTeamCount },
+              ]}
+            />
           </div>
         )}
       </header>

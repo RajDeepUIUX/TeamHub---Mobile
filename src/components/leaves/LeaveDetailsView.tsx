@@ -172,6 +172,35 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           </div>
         )}
 
+        {/* Manager decision (synced from the manager's Team's Leaves view) */}
+        {request.status !== 'Pending' && (
+          <div
+            className={`rounded-2xl p-4 border text-xs leading-relaxed space-y-1.5 ${
+              request.status === 'Approved'
+                ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+            }`}
+          >
+            <p className="flex items-start gap-2 font-semibold">
+              {request.status === 'Approved' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-px" />
+              ) : (
+                <XCircle className="w-4 h-4 shrink-0 mt-px" />
+              )}
+              <span>
+                {request.status} by {request.managerName}
+                {request.reviewedAt ? ` on ${request.reviewedAt}` : ''}
+              </span>
+            </p>
+            {request.managerComment && (
+              <p className="ml-6 font-normal">
+                <span className="font-semibold">{request.status === 'Approved' ? 'Note' : 'Reason'}: </span>“
+                {request.managerComment}”
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Info Banner */}
         <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />

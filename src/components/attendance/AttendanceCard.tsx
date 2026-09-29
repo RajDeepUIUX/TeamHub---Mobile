@@ -1,5 +1,6 @@
 import React from 'react';
 import { AttendanceRecord } from '../../types/attendance';
+import { reasonAllowsNote } from '../../data/teamAttendanceData';
 import {
   MapPin,
   Briefcase,
@@ -339,7 +340,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
                 <div className="font-bold text-[#1E293B] text-xs mt-0.5">
                   {record.editReason || 'Punching Error'}
                 </div>
-                {record.editNote && (
+                {record.editNote && reasonAllowsNote(record.editReason) && (
                   <div className="mt-2 bg-white/90 border border-[#DBEAFE] rounded-lg p-2.5 text-xs">
                     <span className="text-[11px] font-semibold text-slate-500 block mb-0.5">
                       Note:

@@ -32,7 +32,6 @@ export const TEAM_ATTENDANCE_REQUESTS_SEED: AttendanceRecord[] = [
     editRequested: true,
     editStatus: 'pending',
     editReason: 'Punching Error',
-    editNote: 'Card reader was down at the exit; I left at 7:10 PM.',
     editRequestedAt: 'Sep 25, 2026',
     punches: [
       { id: 'tp-ak-1', time: '10:05 AM', type: 'IN', location: 'Gota Main Entrance' },
@@ -87,7 +86,6 @@ export const TEAM_ATTENDANCE_REQUESTS_SEED: AttendanceRecord[] = [
     editRequested: true,
     editStatus: 'pending',
     editReason: 'Work From Home',
-    editNote: 'Worked from home due to a plumbing emergency; informed the team on Slack.',
     editRequestedAt: 'Sep 23, 2026',
     punches: [],
   },
@@ -149,3 +147,7 @@ export const TEAM_ATTENDANCE_REQUESTS_SEED: AttendanceRecord[] = [
     ],
   },
 ];
+
+/** Only these edit reasons collect a note (mirrors the Request Edit form) */
+export const REASONS_WITH_NOTE = ['Hybrid', 'Others'];
+export const reasonAllowsNote = (reason?: string) => Boolean(reason && REASONS_WITH_NOTE.includes(reason));

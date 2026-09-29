@@ -37,7 +37,9 @@ import { LeavesView } from './components/leaves/LeavesView';
 import { ApplyLeaveView as LeavesApplyView } from './components/leaves/ApplyLeaveView';
 import { LeaveSubmittedModal } from './components/leaves/LeaveSubmittedModal';
 import { LeaveDetailsView } from './components/leaves/LeaveDetailsView';
-import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS } from './data/leavesData';
+import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS, TEAM_LEAVE_REQUESTS_SEED } from './data/leavesData';
+import { TeamLeavesView } from './components/leaves/TeamLeavesView';
+import type { LeaveDecision } from './components/leaves/LeaveReviewSheet';
 import { LeaveRequest, LeaveBalance } from './types/leaves';
 import { UserRole, USER_ROLES } from './types/user';
 import { HomeDashboard } from './components/home/HomeDashboard';
@@ -60,6 +62,7 @@ import { Ticket } from './types/tickets';
 import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
 import type { NewTicketData } from './components/tickets/CreateTicketView';
 import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
+import { SegmentedTabs } from './design-system/components/SegmentedTabs';
 import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
 import { TEAM_ATTENDANCE_REQUESTS_SEED, ATTENDANCE_REVIEWER, ATTENDANCE_STAFF_CODE } from './data/teamAttendanceData';
 
@@ -253,6 +256,23 @@ export default function App() {
   // Leaves Module State
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance>(INITIAL_LEAVE_BALANCE);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(INITIAL_LEAVE_REQUESTS);
+  // Manager's own leaves ("My Leaves") and the rest of the team's requests ("Team's Leaves")
+  const [managerLeaveBalance, setManagerLeaveBalance] = useState<LeaveBalance>(INITIAL_LEAVE_BALANCE);
+  const [managerLeaveRequests, setManagerLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [teamLeaveRequests, setTeamLeaveRequests] = useState<LeaveRequest[]>(TEAM_LEAVE_REQUESTS_SEED);
+  const [leavesTab, setLeavesTab] = useState<'mine' | 'team'>('team');
+  const myLeaveRequests = isManager ? managerLeaveRequests : leaveRequests;
+  const setMyLeaveRequests = isManager ? setManagerLeaveRequests : setLeaveRequests;
+  const myLeaveBalance = isManager ? managerLeaveBalance : leaveBalance;
+  const setMyLeaveBalance = isManager ? setManagerLeaveBalance : setLeaveBalance;
+  // Staff member's requests + the rest of the team's: pending first, then most recent
+  const teamLeaveList = [...leaveRequests, ...teamLeaveRequests].sort((a, b) =>
+    a.status === 'Pending' && b.status !== 'Pending'
+      ? -1
+      : b.status === 'Pending' && a.status !== 'Pending'
+        ? 1
+        : b.startDate.localeCompare(a.startDate)
+  );
   const [isApplyingLeaveOpen, setIsApplyingLeaveOpen] = useState(false);
   const [submittedLeave, setSubmittedLeave] = useState<{
     request: LeaveRequest;
@@ -345,11 +365,29 @@ export default function App() {
   };
 
   const handleCancelLeave = (id: string) => {
-    setLeaveRequests((prev) =>
+    setMyLeaveRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const } : r))
     );
     setSelectedLeave((prev) => (prev?.id === id ? null : prev));
     showToast('Leave request cancelled.');
+  };
+
+  const reviewLeaves = (ids: string[], decision: LeaveDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: LeaveRequest[]) =>
+      list.map((r) =>
+        idSet.has(r.id) ? { ...r, status: decision, managerComment: comment || undefined, reviewedAt } : r
+      );
+    // Rejected PTO goes back to the staff member's balance
+    const refunded = leaveRequests
+      .filter((r) => idSet.has(r.id) && decision === 'Rejected' && r.type === 'PTO')
+      .reduce((n, r) => n + r.daysCount, 0);
+    if (refunded) setLeaveBalance((b) => ({ ...b, ptoAvailable: Math.min(b.ptoTotal, b.ptoAvailable + refunded) }));
+    setLeaveRequests(apply);
+    setTeamLeaveRequests(apply);
+    const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    showToast(ids.length === 1 ? `Leave request ${verb}.` : `${ids.length} leave requests ${verb}.`);
   };
 
   // Submit Request Edit
@@ -691,8 +729,8 @@ export default function App() {
                   key={editingLeave.id}
                   initialRequest={editingLeave}
                   onBack={() => setEditingLeave(null)}
-                  availableBalance={leaveBalance.ptoAvailable + editingLeave.daysCount}
-                  totalBalance={leaveBalance.ptoTotal}
+                  availableBalance={myLeaveBalance.ptoAvailable + editingLeave.daysCount}
+                  totalBalance={myLeaveBalance.ptoTotal}
                   onSubmit={(data) => {
                     const updated: LeaveRequest = {
                       ...editingLeave,
@@ -703,8 +741,8 @@ export default function App() {
                       dayItems: data.dayItems,
                       attachmentName: data.attachmentName,
                     };
-                    setLeaveRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-                    setLeaveBalance((prev) => ({
+                    setMyLeaveRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+                    setMyLeaveBalance((prev) => ({
                       ...prev,
                       ptoAvailable: Math.max(0, prev.ptoAvailable + editingLeave.daysCount - data.daysCount),
                     }));
@@ -716,8 +754,8 @@ export default function App() {
               ) : isApplyingLeaveOpen ? (
                 <LeavesApplyView
                   onBack={() => setIsApplyingLeaveOpen(false)}
-                  availableBalance={leaveBalance.ptoAvailable}
-                  totalBalance={leaveBalance.ptoTotal}
+                  availableBalance={myLeaveBalance.ptoAvailable}
+                  totalBalance={myLeaveBalance.ptoTotal}
                   onSubmit={(data) => {
                     const now = new Date();
                     const appliedDate = now.toLocaleDateString('en-US', {
@@ -731,6 +769,8 @@ export default function App() {
                     });
                     const newReq: LeaveRequest = {
                       id: `leave-${Date.now()}`,
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
                       type: 'PTO',
                       dateRange: `${data.startDate} – ${data.endDate}`,
                       startDate: '2026-10-20',
@@ -738,15 +778,15 @@ export default function App() {
                       daysCount: data.daysCount,
                       reason: data.reason,
                       description: data.description,
-                      managerName: 'Sarah Miller',
+                      managerName: isManager ? 'Priya Nair' : ATTENDANCE_REVIEWER,
                       managerRole: 'Reporting Manager',
                       appliedOn: appliedDate,
                       status: 'Pending',
                       dayItems: data.dayItems,
                       attachmentName: data.attachmentName,
                     };
-                    setLeaveRequests([newReq, ...leaveRequests]);
-                    setLeaveBalance((prev) => ({
+                    setMyLeaveRequests((prev) => [newReq, ...prev]);
+                    setMyLeaveBalance((prev) => ({
                       ...prev,
                       ptoAvailable: Math.max(0, prev.ptoAvailable - data.daysCount),
                     }));
@@ -828,54 +868,61 @@ export default function App() {
                   {activeModuleTab === 'Holidays' ? (
                     <PublicHolidaysView />
                   ) : activeModuleTab === 'Leaves' ? (
-                    <LeavesView
-                      balance={leaveBalance}
-                      requests={leaveRequests}
-                      onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
-                      onCancelRequest={handleCancelLeave}
-                      onViewDetails={(req) => setSelectedLeave(req)}
-                      onEditRequest={(req) => setEditingLeave(req)}
-                    />
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      {isManager && (
+                        <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                          <SegmentedTabs
+                            ariaLabel="Leaves view"
+                            value={leavesTab}
+                            onChange={setLeavesTab}
+                            options={[
+                              { id: 'mine', label: 'My Leaves' },
+                              {
+                                id: 'team',
+                                label: "Team's Leaves",
+                                badge: teamLeaveList.filter((r) => r.status === 'Pending').length,
+                              },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      {isManager && leavesTab === 'team' ? (
+                        <TeamLeavesView requests={teamLeaveList} onReview={reviewLeaves} />
+                      ) : (
+                        <LeavesView
+                          balance={myLeaveBalance}
+                          requests={myLeaveRequests}
+                          onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
+                          onCancelRequest={handleCancelLeave}
+                          onViewDetails={(req) => setSelectedLeave(req)}
+                          onEditRequest={(req) => setEditingLeave(req)}
+                        />
+                      )}
+                    </div>
                   ) : activeModuleTab === 'WFO Days' ? (
                   <WFODaysView
                     onViewDetails={(rec) => setSelectedWFORecord(rec)}
                   />
                 ) : (
                   <div className="flex-1 min-h-0 flex flex-col">
-                  {/* Manager: My Attendance / Team's Attendance */}
+                  {/* Manager: My Attendance / Team's Attendance (segmented, so it reads as a view switch) */}
                   {isManager && (
-                    <div className="shrink-0 grid grid-cols-2 bg-white border-b border-[#EBF0F7]" role="tablist">
-                      {(
-                        [
+                    <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                      <SegmentedTabs
+                        ariaLabel="Attendance view"
+                        value={attendanceTab}
+                        onChange={setAttendanceTab}
+                        options={[
                           { id: 'mine', label: 'My Attendance' },
-                          { id: 'team', label: "Team's Attendance" },
-                        ] as const
-                      ).map(({ id, label }) => {
-                        const isActive = attendanceTab === id;
-                        const pendingCount = teamAttendanceList.filter(
-                          (r) => r.editStatus !== 'approved' && r.editStatus !== 'rejected'
-                        ).length;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            role="tab"
-                            aria-selected={isActive}
-                            onClick={() => setAttendanceTab(id)}
-                            className={`relative py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer ${
-                              isActive ? 'text-[#2F68FE] font-bold' : 'text-slate-400 font-medium'
-                            }`}
-                          >
-                            {label}
-                            {id === 'team' && pendingCount > 0 && (
-                              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-violet-500 text-white text-[10px] font-bold flex items-center justify-center">
-                                {pendingCount}
-                              </span>
-                            )}
-                            {isActive && <span className="absolute bottom-0 left-4 right-4 h-0.75 rounded-t-full bg-[#2F68FE]" />}
-                          </button>
-                        );
-                      })}
+                          {
+                            id: 'team',
+                            label: "Team's Attendance",
+                            badge: teamAttendanceList.filter(
+                              (r) => r.editStatus !== 'approved' && r.editStatus !== 'rejected'
+                            ).length,
+                          },
+                        ]}
+                      />
                     </div>
                   )}
                   {isManager && attendanceTab === 'team' ? (
