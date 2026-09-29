@@ -11,6 +11,8 @@ import {
   Users,
   Inbox,
   CalendarDays,
+  CheckCheck,
+  ListChecks,
 } from 'lucide-react';
 import { AttendanceRecord } from '../../types/attendance';
 import { BottomSheet } from '../common/BottomSheet';
@@ -22,6 +24,7 @@ import {
   matchesFilters,
 } from '../common/TeamFilterSheet';
 import { AttendanceReviewSheet, AttendanceDecision } from './AttendanceReviewSheet';
+import { BulkReviewSheet } from './BulkReviewSheet';
 import { ATTENDANCE_EDIT_REASONS } from '../../data/teamAttendanceData';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
@@ -47,6 +50,7 @@ const DAY_STATUS_CHIP: Record<string, string> = {
 interface TeamAttendanceViewProps {
   requests: AttendanceRecord[];
   onReview: (id: string, decision: AttendanceDecision, comment: string) => void;
+  onBulkReview: (ids: string[], decision: AttendanceDecision, comment: string) => void;
   onViewLogs: (record: AttendanceRecord) => void;
 }
 
@@ -167,7 +171,23 @@ const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => voi
 
 /* --------------------------------- Screen --------------------------------- */
 
-export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests, onReview, onViewLogs }) => {
+export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests, onReview, onBulkReview, onViewLogs }) => {
+  // Bulk selection mode: only pending requests can be picked
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDecision, setBulkDecision] = useState<AttendanceDecision | null>(null);
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [filters, setFilters] = useState<FilterSelection>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
@@ -177,6 +197,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
     matchesFilters(filters, { member: r.staffName, status: stateOf(r), reason: r.editReason ?? '' })
   );
   const filterCount = activeFilterCount(filters);
+  const selectablePending = visible.filter((r) => stateOf(r) === 'Pending');
+  const selectedRecords = requests.filter((r) => selectedIds.has(r.id));
+  const allPendingSelected =
+    selectablePending.length > 0 && selectablePending.every((r) => selectedIds.has(r.id));
   const countState = (s: RequestState) => requests.filter((r) => stateOf(r) === s).length;
 
   const filterSections = [
@@ -186,6 +210,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
   ];
 
   return (
+    <div className="flex-1 min-h-0 flex flex-col">
     <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-8 space-y-3.5 no-scrollbar">
       {/* KPI card (same pattern as the Attendance summary) */}
       <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
@@ -224,21 +249,77 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
           <span className="font-bold text-sm text-[#1E293B]">Edit Requests</span>
           <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
         </div>
-        <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
+        <div className="flex items-center gap-2">
+          {selectMode ? (
+            <button
+              type="button"
+              onClick={exitSelectMode}
+              className="h-9 px-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 active:bg-slate-200 cursor-pointer"
+            >
+              Cancel
+            </button>
+          ) : (
+            selectablePending.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectMode(true)}
+                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center gap-1.5 shadow-2xs active:bg-slate-50 cursor-pointer"
+              >
+                <ListChecks className="w-4 h-4" />
+                Select
+              </button>
+            )
+          )}
+          <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
+        </div>
       </div>
+
+      {/* Bulk hint */}
+      {selectMode && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] text-[#1E40AF]">
+          <span>Tap pending requests to select them</span>
+          <button
+            type="button"
+            onClick={() =>
+              setSelectedIds(allPendingSelected ? new Set() : new Set(selectablePending.map((r) => r.id)))
+            }
+            className="font-bold text-[#2F68FE] shrink-0 cursor-pointer"
+          >
+            {allPendingSelected ? 'Deselect all' : `Select all pending (${selectablePending.length})`}
+          </button>
+        </div>
+      )}
 
       {visible.map((r) => {
         const state = stateOf(r);
         const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
+        const selectable = selectMode && state === 'Pending';
+        const isSelected = selectedIds.has(r.id);
         return (
           <article
             key={r.id}
-            className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden ${
-              state === 'Pending' ? 'border-violet-200' : 'border-[#EBF0F7]'
-            }`}
+            onClick={selectable ? () => toggleSelected(r.id) : undefined}
+            aria-selected={selectable ? isSelected : undefined}
+            className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden transition-all ${
+              isSelected
+                ? 'border-[#2F68FE] ring-2 ring-[#2F68FE]/20'
+                : state === 'Pending'
+                  ? 'border-violet-200'
+                  : 'border-[#EBF0F7]'
+            } ${selectMode && !selectable ? 'opacity-45' : ''} ${selectable ? 'cursor-pointer' : ''}`}
           >
             {/* Staff + request state */}
             <div className="p-3.5 pb-3 flex items-start gap-3">
+              {selectable && (
+                <span
+                  className={`mt-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    isSelected ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
+                  }`}
+                  aria-hidden="true"
+                >
+                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                </span>
+              )}
               <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
                 {initialsOf(r.staffName)}
               </span>
@@ -313,14 +394,17 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
             <div className="mt-3 px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => onViewLogs(r)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewLogs(r);
+                }}
                 disabled={r.punches.length === 0}
                 className="h-9 px-3 rounded-xl text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-300 flex items-center gap-1.5 active:bg-blue-50 cursor-pointer disabled:cursor-default"
               >
                 <List className="w-4 h-4" />
                 {r.punches.length ? `View Logs (${r.punches.length})` : 'No logs'}
               </button>
-              {state === 'Pending' && (
+              {state === 'Pending' && !selectMode && (
                 <div className="ml-auto flex items-center gap-2">
                   <button
                     type="button"
@@ -365,6 +449,59 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         </div>
       )}
 
+    </div>
+
+      {/* Bulk action bar */}
+      {selectMode && (
+        <div className="shrink-0 px-4 pt-3 pb-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="flex items-center justify-between mb-2.5 px-0.5">
+            <span className="text-xs font-bold text-[#1E293B]">
+              {selectedIds.size} selected
+              <span className="font-medium text-slate-400"> of {selectablePending.length} pending</span>
+            </span>
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="text-[11px] font-semibold text-slate-500 cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-[1fr_2fr] gap-2.5">
+            <button
+              type="button"
+              disabled={selectedIds.size === 0}
+              onClick={() => setBulkDecision('rejected')}
+              className="h-12 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-40 active:bg-rose-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <X className="w-4 h-4" />
+              Reject
+            </button>
+            <button
+              type="button"
+              disabled={selectedIds.size === 0}
+              onClick={() => setBulkDecision('approved')}
+              className="h-12 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 active:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <CheckCheck className="w-4 h-4" />
+              {selectedIds.size ? `Approve ${selectedIds.size} ${selectedIds.size === 1 ? 'request' : 'requests'}` : 'Approve'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <BulkReviewSheet
+        records={selectedRecords}
+        decision={bulkDecision}
+        onClose={() => setBulkDecision(null)}
+        onConfirm={(ids, decision, comment) => {
+          setBulkDecision(null);
+          exitSelectMode();
+          onBulkReview(ids, decision, comment);
+        }}
+      />
       <TeamFilterSheet
         isOpen={isFilterOpen}
         title="Filter Team's Attendance"

@@ -200,11 +200,12 @@ export default function App() {
   };
 
   // Manager decision on an attendance edit request → reflected on the staff member's card
-  const reviewAttendance = (id: string, decision: AttendanceDecision, comment: string) => {
+  const reviewAttendanceMany = (ids: string[], decision: AttendanceDecision, comment: string) => {
     const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
     const apply = (list: AttendanceRecord[]) =>
       list.map((r) =>
-        r.id === id
+        idSet.has(r.id)
           ? {
               ...r,
               editStatus: decision,
@@ -219,8 +220,11 @@ export default function App() {
       );
     setRecords(apply);
     setTeamAttendanceRequests(apply);
-    showToast(`Edit request ${decision === 'approved' ? 'approved' : 'rejected'}.`);
+    const verb = decision === 'approved' ? 'approved' : 'rejected';
+    showToast(ids.length === 1 ? `Edit request ${verb}.` : `${ids.length} edit requests ${verb}.`);
   };
+  const reviewAttendance = (id: string, decision: AttendanceDecision, comment: string) =>
+    reviewAttendanceMany([id], decision, comment);
   // Profile photo (data URL); null shows first + last name initials
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [wishTarget, setWishTarget] = useState<{ person: TeamCelebration; kind: 'birthday' | 'anniversary' } | null>(null);
@@ -878,6 +882,7 @@ export default function App() {
                     <TeamAttendanceView
                       requests={teamAttendanceList}
                       onReview={reviewAttendance}
+                      onBulkReview={reviewAttendanceMany}
                       onViewLogs={(rec) => setSelectedPunchRecord(rec)}
                     />
                   ) : (
