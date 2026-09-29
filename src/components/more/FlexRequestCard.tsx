@@ -80,8 +80,8 @@ export const FlexRequestCard: React.FC<FlexRequestCardProps> = ({
               {initialsOf(r.staffName)}
             </span>
             <div className="flex-1 min-w-0">
-              <span className="block text-[13px] font-bold text-[#1E293B] truncate">{r.staffName}</span>
-              <span className="block text-[10.5px] text-slate-400">Submitted {shortDate(r.submittedAt)}</span>
+              <span className="block text-[14px] font-extrabold text-[#1E293B] leading-tight truncate">{r.staffName}</span>
+              <span className="block text-[10.5px] text-slate-400 mt-0.5">Submitted {shortDate(r.submittedAt)}</span>
             </div>
             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${FLEX_STATUS_CHIP[r.status]}`}>{r.status}</span>
           </div>
@@ -89,17 +89,19 @@ export const FlexRequestCard: React.FC<FlexRequestCardProps> = ({
 
         {/* What + when */}
         <div className="flex items-start gap-3">
-          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${flexMeta(r.type).tint}`}>
-            <Icon className="w-5 h-5" />
+          <span
+            className={`${showStaff ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} flex items-center justify-center shrink-0 ${flexMeta(r.type).tint}`}
+          >
+            <Icon className={showStaff ? 'w-4 h-4' : 'w-5 h-5'} />
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="text-[13px] font-bold text-[#1E293B]">{r.type}</h4>
+              <h4 className={showStaff ? 'text-xs font-semibold text-slate-700' : 'text-[13px] font-bold text-[#1E293B]'}>{r.type}</h4>
               {r.duration && (
                 <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">{r.duration}</span>
               )}
             </div>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+            <p className={`mt-0.5 flex items-center gap-1 ${showStaff ? 'text-[10.5px] text-slate-400' : 'text-[11px] text-slate-500'}`}>
               {r.type === 'Work From Office' ? (
                 <Clock className="w-3 h-3 text-slate-400 shrink-0" />
               ) : (
