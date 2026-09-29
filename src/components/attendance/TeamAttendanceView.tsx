@@ -247,10 +247,14 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
                   <h3 className="text-sm font-bold text-[#1E293B] truncate">{r.staffName}</h3>
                   {r.staffCode && <span className="text-[10px] font-semibold text-slate-400 shrink-0">{r.staffCode}</span>}
                 </div>
-                <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-                  <CalendarDays className="w-3 h-3 text-slate-400" />
-                  {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
-                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${DAY_STATUS_CHIP[r.status] ?? DAY_STATUS_CHIP.holiday}`}>
+                <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap min-w-0">
+                  <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="shrink-0">
+                    {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate ${DAY_STATUS_CHIP[r.status] ?? DAY_STATUS_CHIP.holiday}`}
+                  >
                     {r.statusLabel}
                   </span>
                 </p>
