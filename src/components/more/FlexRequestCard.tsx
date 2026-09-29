@@ -9,6 +9,7 @@ export const FLEX_STATUS_CHIP: Record<FlexRequest['status'], string> = {
   Pending: 'bg-[#FEF8E7] text-[#D97706]',
   Approved: 'bg-[#E8F8F0] text-[#10B981]',
   Rejected: 'bg-[#FEF2F2] text-[#EF4444]',
+  'IT Review Done': 'bg-[#EEF2FF] text-[#4F46E5]',
 };
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -155,9 +156,18 @@ export const FlexRequestCard: React.FC<FlexRequestCardProps> = ({
             }`}
           >
             <span className="font-semibold">
-              {r.status} by {commentPerspective === 'manager' ? 'you' : r.reviewedBy ?? 'your manager'}
+              {r.status === 'IT Review Done' ? 'Approved' : r.status} by{' '}
+              {commentPerspective === 'manager' ? 'you' : r.reviewedBy ?? 'your manager'}
               {r.reviewedAt ? ` on ${r.reviewedAt}` : ''}
             </span>
+            {r.status === 'IT Review Done' && (
+              <>
+                <br />
+                <span className="font-semibold text-[#4F46E5]">
+                  IT review done{r.itReviewedAt ? ` on ${r.itReviewedAt}` : ''}
+                </span>
+              </>
+            )}
             {r.managerComment && (
               <>
                 <br />

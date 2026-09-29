@@ -4,7 +4,8 @@ export type FlexType = 'Work From Home' | 'Work From Office' | 'Hybrid' | 'Early
 
 export type FlexDuration = 'Permanent' | 'Temporary';
 
-export type FlexStatus = 'Pending' | 'Approved' | 'Rejected';
+/** Pending → Approved / Rejected (manager) → IT Review Done (IT, only after approval) */
+export type FlexStatus = 'Pending' | 'Approved' | 'Rejected' | 'IT Review Done';
 
 export type AddressType = 'Current' | 'Permanent';
 
@@ -75,6 +76,9 @@ export interface FlexRequest {
   managerComment?: string;
   reviewedBy?: string;
   reviewedAt?: string; // e.g. "Sep 29, 2026"
+  /** Set when IT completes its review of an approved request */
+  itReviewedBy?: string;
+  itReviewedAt?: string; // e.g. "Sep 30, 2026"
   /** Staff ↔ manager conversation on this request */
   comments?: ThreadComment[];
 }

@@ -73,6 +73,7 @@ const TeamFlexSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; req
             <Tile label="Total Requests" value={requests.length} color="text-[#1E293B]" />
             <Tile label="Pending" value={count((r) => r.status === 'Pending')} color="text-[#D97706]" />
             <Tile label="Approved" value={count((r) => r.status === 'Approved')} color="text-[#10B981]" />
+            <Tile label="IT Review Done" value={count((r) => r.status === 'IT Review Done')} color="text-[#4F46E5]" />
             <Tile label="Rejected" value={count((r) => r.status === 'Rejected')} color="text-[#F43F5E]" />
           </div>
         </Section>
@@ -158,7 +159,7 @@ export const TeamWorkTimingView: React.FC<TeamWorkTimingViewProps> = ({
 
   const filterSections = [
     { id: 'member', label: 'Team Member', options: Array.from(new Set(requests.map((r) => r.staffName))).sort() },
-    { id: 'status', label: 'Status', options: ['Pending', 'Approved', 'Rejected'] },
+    { id: 'status', label: 'Status', options: ['Pending', 'Approved', 'IT Review Done', 'Rejected'] },
     { id: 'type', label: 'Flexibility Type', options: FLEX_TYPES.map((t) => t.type) },
   ];
 
@@ -170,7 +171,11 @@ export const TeamWorkTimingView: React.FC<TeamWorkTimingViewProps> = ({
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { label: 'Pending', value: countState('Pending'), pill: 'bg-[#FEF8E7] text-[#D97706]' },
-              { label: 'Approved', value: countState('Approved'), pill: 'bg-[#E8F8F0] text-[#10B981]' },
+              {
+                label: 'Approved',
+                value: countState('Approved') + countState('IT Review Done'),
+                pill: 'bg-[#E8F8F0] text-[#10B981]',
+              },
               { label: 'Rejected', value: countState('Rejected'), pill: 'bg-[#FDECEC] text-[#F43F5E]' },
             ].map(({ label, value, pill }) => (
               <div key={label} className="flex flex-col items-center">

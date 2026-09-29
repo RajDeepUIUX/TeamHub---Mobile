@@ -133,12 +133,39 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
           subtitle: isManager ? 'Your decision is needed' : 'Your manager will review it soon',
           tone: 'bg-white border-2 border-amber-300 text-amber-500',
         }
-      : {
-          icon: r.status === 'Approved' ? <Check className="w-3 h-3 stroke-[3]" /> : <X className="w-3 h-3 stroke-[3]" />,
-          title: `${r.status} by ${isManager ? 'you' : r.reviewedBy ?? 'your manager'}`,
-          subtitle: r.reviewedAt ?? '',
-          tone: r.status === 'Approved' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white',
-        },
+      : r.status === 'Rejected'
+        ? {
+            icon: <X className="w-3 h-3 stroke-[3]" />,
+            title: `Rejected by ${isManager ? 'you' : r.reviewedBy ?? 'your manager'}`,
+            subtitle: r.reviewedAt ?? '',
+            tone: 'bg-rose-500 text-white',
+          }
+        : {
+            icon: <Check className="w-3 h-3 stroke-[3]" />,
+            title: `Approved by ${isManager ? 'you' : r.reviewedBy ?? 'your manager'}`,
+            subtitle: r.reviewedAt ?? '',
+            tone: 'bg-emerald-500 text-white',
+          },
+    // IT review follows a manager approval
+    ...(r.status === 'Approved'
+      ? [
+          {
+            icon: <CircleDot className="w-3 h-3" />,
+            title: 'Awaiting IT review',
+            subtitle: 'IT will review and complete the setup',
+            tone: 'bg-white border-2 border-indigo-300 text-indigo-500',
+          },
+        ]
+      : r.status === 'IT Review Done'
+        ? [
+            {
+              icon: <ShieldCheck className="w-3 h-3" />,
+              title: 'IT review done',
+              subtitle: [r.itReviewedBy, r.itReviewedAt].filter(Boolean).join(' · '),
+              tone: 'bg-indigo-500 text-white',
+            },
+          ]
+        : []),
   ];
 
   return (
