@@ -51,6 +51,12 @@ import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData'
 import { HOLIDAYS_DATA } from './data/holidayData';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { ProfileView } from './components/profile/ProfileView';
+import { MoreView } from './components/more/MoreView';
+import { WorkTimingView } from './components/more/WorkTimingView';
+import { RequestFlexibilityView } from './components/more/RequestFlexibilityView';
+import { FlexRequest } from './types/workTiming';
+import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
+import type { FlexDecision } from './components/more/FlexReviewSheet';
 import { ResignationView } from './components/resignation/ResignationView';
 import { ApplyResignationView } from './components/resignation/ApplyResignationView';
 import { ResignationRecord, ReviewDecision } from './types/resignation';
@@ -80,6 +86,16 @@ export default function App() {
   const [appTab, setAppTab] = useState<AppTab>('home');
   const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
+  const [moreModule, setMoreModule] = useState<string | null>(null);
+  // Work Timing: flexibility requests (empty initially) and the request flow
+  const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
+  // Manager: the rest of the team's requests, and their own ("My Work Timing")
+  const [teamFlexRequests, setTeamFlexRequests] = useState<FlexRequest[]>(TEAM_FLEX_REQUESTS_SEED);
+  const [managerFlexRequests, setManagerFlexRequests] = useState<FlexRequest[]>([]);
+  const [isRequestingFlex, setIsRequestingFlex] = useState(false);
+  // Pending request being edited (null = creating a new one)
+  const [editingFlex, setEditingFlex] = useState<FlexRequest | null>(null);
   // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
   const [profileModule, setProfileModule] = useState<string | null>(null);
   // Resignation module: no logs initially; newest first
@@ -242,6 +258,7 @@ export default function App() {
     setCelebrationsTab(null);
     setIsProfileOpen(false);
     setProfileModule(null);
+    setMoreModule(null);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     setAppTab(tab);
   };
@@ -388,6 +405,65 @@ export default function App() {
     setTeamLeaveRequests(apply);
     const verb = decision === 'Approved' ? 'approved' : 'rejected';
     showToast(ids.length === 1 ? `Leave request ${verb}.` : `${ids.length} leave requests ${verb}.`);
+  };
+
+  const myFlexRequests = isManager ? managerFlexRequests : flexRequests;
+  const setMyFlexRequests = isManager ? setManagerFlexRequests : setFlexRequests;
+  // Staff member's requests + the rest of the team's: pending first, then newest
+  const teamFlexList = [...flexRequests, ...teamFlexRequests].sort((a, b) =>
+    a.status === 'Pending' && b.status !== 'Pending'
+      ? -1
+      : b.status === 'Pending' && a.status !== 'Pending'
+        ? 1
+        : b.submittedAt.localeCompare(a.submittedAt)
+  );
+
+  const threadNote = (author: string, role: 'Staff' | 'Manager' | 'System', text: string) => ({
+    id: `fc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    author,
+    role,
+    text,
+    createdAt: new Date().toISOString(),
+  });
+
+  // Applies a change to whichever list holds the request (staff, team or manager's own)
+  const updateFlex = (id: string, change: (r: FlexRequest) => FlexRequest) => {
+    const apply = (list: FlexRequest[]) => list.map((r) => (r.id === id ? change(r) : r));
+    setFlexRequests(apply);
+    setTeamFlexRequests(apply);
+    setManagerFlexRequests(apply);
+  };
+
+  const commentOnFlex = (id: string, text: string) =>
+    updateFlex(id, (r) => ({
+      ...r,
+      comments: [...(r.comments ?? []), threadNote(resignationUser.staffName, isManager ? 'Manager' : 'Staff', text)],
+    }));
+
+  // Manager decision on flexibility requests → reflected on the staff member's list
+  const reviewFlex = (ids: string[], decision: FlexDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: FlexRequest[]) =>
+      list.map((r) =>
+        idSet.has(r.id)
+          ? {
+              ...r,
+              status: decision,
+              managerComment: comment || undefined,
+              reviewedBy: ATTENDANCE_REVIEWER,
+              reviewedAt,
+              comments: [
+                ...(r.comments ?? []),
+                threadNote('System', 'System', `${decision} by ${ATTENDANCE_REVIEWER}${comment ? `: “${comment}”` : ''}`),
+              ],
+            }
+          : r
+      );
+    setFlexRequests(apply);
+    setTeamFlexRequests(apply);
+    const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    showToast(ids.length === 1 ? `Request ${verb}.` : `${ids.length} requests ${verb}.`);
   };
 
   // Submit Request Edit
@@ -715,6 +791,81 @@ export default function App() {
                     profilePhoto={profilePhoto}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab === 'more' && moreModule === 'work-timing' && (isRequestingFlex || editingFlex) ? (
+                <RequestFlexibilityView
+                  key={editingFlex?.id ?? 'new'}
+                  signerName={resignationUser.staffName}
+                  initialRequest={editingFlex}
+                  onExit={() => {
+                    setIsRequestingFlex(false);
+                    setEditingFlex(null);
+                  }}
+                  onSubmit={(req) => {
+                    if (editingFlex) {
+                      // Replace the whole request; it stays pending until the manager decides
+                      const updated: FlexRequest = {
+                        ...req,
+                        id: editingFlex.id,
+                        staffName: editingFlex.staffName,
+                        staffCode: editingFlex.staffCode,
+                        status: 'Pending',
+                        submittedAt: editingFlex.submittedAt,
+                        updatedAt: new Date().toISOString(),
+                        comments: [
+                          ...(editingFlex.comments ?? []),
+                          threadNote('System', 'System', `Request updated by ${editingFlex.staffName}`),
+                        ],
+                      };
+                      setMyFlexRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+                      setEditingFlex(null);
+                      showToast('Request updated. Your manager will see the latest version.');
+                    } else {
+                      setMyFlexRequests((prev) => [
+                        {
+                          ...req,
+                          id: `flex-${Date.now()}`,
+                          staffName: resignationUser.staffName,
+                          staffCode: resignationUser.staffCode,
+                          status: 'Pending',
+                          submittedAt: new Date().toISOString(),
+                        },
+                        ...prev,
+                      ]);
+                      setIsRequestingFlex(false);
+                      showToast('Flexibility request sent to your reporting manager.');
+                    }
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'work-timing' ? (
+                <WorkTimingView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={myFlexRequests}
+                  onBack={() => setMoreModule(null)}
+                  onRequestFlexibility={() => {
+                    setEditingFlex(null);
+                    setIsRequestingFlex(true);
+                  }}
+                  onEdit={(req) => setEditingFlex(req)}
+                  currentUser={resignationUser.staffName}
+                  onComment={commentOnFlex}
+                  team={isManager ? { requests: teamFlexList, onReview: reviewFlex } : undefined}
+                />
+              ) : appTab === 'more' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <MoreView
+                    onOpenModule={(m) => {
+                      if (m.id === 'work-timing') {
+                        setIsRequestingFlex(false);
+                        setEditingFlex(null);
+                        setMoreModule(m.id);
+                      } else {
+                        showToast(`${m.label} is coming soon.`);
+                      }
+                    }}
+                  />
+                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab !== 'attendance' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
