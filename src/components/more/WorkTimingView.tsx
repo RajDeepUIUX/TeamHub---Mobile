@@ -19,6 +19,7 @@ interface WorkTimingViewProps {
   /** Signed-in user (their comments appear on the right) */
   currentUser: string;
   onComment: (id: string, text: string) => void;
+  onDownloadAgreement: (request: FlexRequest) => void;
   /** Present for managers: enables the "Team's Work Timing" tab */
   team?: {
     requests: FlexRequest[];
@@ -74,6 +75,7 @@ export const WorkTimingView: React.FC<WorkTimingViewProps> = ({
   onEdit,
   currentUser,
   onComment,
+  onDownloadAgreement,
   team,
 }) => {
   const [tab, setTab] = useState<'mine' | 'team'>(team ? 'team' : 'mine');
@@ -93,6 +95,7 @@ export const WorkTimingView: React.FC<WorkTimingViewProps> = ({
         currentUser={currentUser}
         onBack={() => setDetail(null)}
         onComment={onComment}
+        onDownloadAgreement={onDownloadAgreement}
         onReview={detail.viewer === 'manager' ? team?.onReview : undefined}
         onEdit={
           detail.viewer === 'staff'

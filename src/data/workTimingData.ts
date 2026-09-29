@@ -274,3 +274,18 @@ export const TEAM_FLEX_REQUESTS_SEED: FlexRequest[] = [
     ],
   },
 ];
+
+/* ------------------------ Flexibility agreement terms ----------------------- */
+
+/** Terms shown in the signed Work Flexibility agreement ("View Document") */
+export const FLEX_AGREEMENT_TERMS = [
+  'I will remain available and reachable on official communication channels during my agreed working hours.',
+  'All company assets issued to me remain company property and will be returned in good condition when requested.',
+  'I will keep company data confidential and use only secure, approved networks and devices for work.',
+  'Attendance, timesheets and leave policies continue to apply as per my Appointment Letter.',
+  'The company may review, modify or withdraw this arrangement based on business needs, with prior notice.',
+  'Any change in my circumstances affecting this arrangement will be informed to my reporting manager promptly.',
+];
+
+/** Statuses where the signed agreement is final and can be viewed */
+export const isFlexApproved = (status: FlexRequest['status']) => status === 'Approved' || status === 'IT Review Done';

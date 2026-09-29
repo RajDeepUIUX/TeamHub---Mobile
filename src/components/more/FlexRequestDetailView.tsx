@@ -20,13 +20,16 @@ import {
   Send,
   RefreshCw,
   CircleDot,
+  ExternalLink,
+  Lock,
 } from 'lucide-react';
 import { FlexRequest } from '../../types/workTiming';
-import { WEEKDAYS, flexMeta, formatFlexDate, formatSpan } from '../../data/workTimingData';
+import { WEEKDAYS, flexMeta, formatFlexDate, formatSpan, isFlexApproved } from '../../data/workTimingData';
 import { FLEX_ICONS } from './RequestFlexibilityView';
 import { FLEX_STATUS_CHIP } from './FlexRequestCard';
 import { FlexReviewSheet, FlexDecision } from './FlexReviewSheet';
 import { CommentThreadSheet } from '../common/CommentThreadSheet';
+import { FlexAgreementSheet } from './FlexAgreementSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
 interface FlexRequestDetailViewProps {
@@ -38,6 +41,8 @@ interface FlexRequestDetailViewProps {
   onComment: (id: string, text: string) => void;
   onReview?: (ids: string[], decision: FlexDecision, comment: string) => void;
   onEdit?: (request: FlexRequest) => void;
+  /** Download the signed agreement (shown once approved) */
+  onDownloadAgreement?: (request: FlexRequest) => void;
 }
 
 const dateTime = (iso: string) =>
@@ -106,8 +111,11 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
   onComment,
   onReview,
   onEdit,
+  onDownloadAgreement,
 }) => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isAgreementOpen, setIsAgreementOpen] = useState(false);
+  const agreementReady = isFlexApproved(r.status);
   const [decision, setDecision] = useState<FlexDecision | null>(null);
 
   const Icon = FLEX_ICONS[r.type];
@@ -384,16 +392,38 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
 
         {r.wfh?.acknowledgedBy && (
           <Section icon={<ShieldCheck className="w-4 h-4" />} title="Acknowledgement">
-            <div className="flex items-end justify-between px-1 pb-2 border-b border-dashed border-slate-200">
-              <span className="text-2xl text-[#1E1B4B] leading-none" style={{ fontFamily: "'Caveat', cursive" }}>
-                {r.wfh.acknowledgedBy}
-              </span>
-              {r.wfh.acknowledgedOn && <span className="text-[11px] text-slate-400">{formatFlexDate(r.wfh.acknowledgedOn)}</span>}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Signed By</span>
+                <span className="block text-xl leading-tight text-[#1E1B4B]" style={{ fontFamily: "'Caveat', cursive" }}>
+                  {r.wfh.acknowledgedBy}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Date</span>
+                <span className="block text-xs font-bold text-[#1E293B] mt-1">
+                  {r.wfh.acknowledgedOn ? formatFlexDate(r.wfh.acknowledgedOn) : '—'}
+                </span>
+              </div>
             </div>
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
-              Terms and Conditions accepted
-            </p>
+            <div className="pt-2.5 border-t border-slate-100">
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Terms Accepted</span>
+              {agreementReady ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAgreementOpen(true)}
+                  className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-[#2F68FE] cursor-pointer"
+                >
+                  View Document
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                  {r.status === 'Rejected' ? 'Not issued — request was rejected' : 'Signed document available once approved'}
+                </span>
+              )}
+            </div>
           </Section>
         )}
 
@@ -508,6 +538,11 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
         currentUser={currentUser}
         onClose={() => setIsCommentsOpen(false)}
         onSend={(text) => onComment(r.id, text)}
+      />
+      <FlexAgreementSheet
+        request={isAgreementOpen ? r : null}
+        onClose={() => setIsAgreementOpen(false)}
+        onDownload={(req) => onDownloadAgreement?.(req)}
       />
       {onReview && (
         <FlexReviewSheet

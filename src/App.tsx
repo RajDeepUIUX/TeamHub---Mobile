@@ -850,6 +850,9 @@ export default function App() {
                   onEdit={(req) => setEditingFlex(req)}
                   currentUser={resignationUser.staffName}
                   onComment={commentOnFlex}
+                  onDownloadAgreement={(req) =>
+                    showToast(`Agreement for ${req.type} downloaded as WFA-${req.id.replace(/\D/g, '').slice(-6).padStart(6, '0')}.pdf`)
+                  }
                   team={isManager ? { requests: teamFlexList, onReview: reviewFlex } : undefined}
                 />
               ) : appTab === 'more' ? (
