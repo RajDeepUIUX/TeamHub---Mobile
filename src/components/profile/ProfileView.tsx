@@ -231,7 +231,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="px-4 -mt-12 pb-6 space-y-3.5 relative">
           {/* Profile card */}
           <section className="bg-white rounded-3xl p-4 shadow-[0_12px_32px_-16px_rgba(79,70,229,0.35)] border border-white">
-            <div className="flex items-start gap-3.5">
+            <div className="flex items-center gap-3.5">
               {/* Avatar: tap to upload / change the profile photo */}
               <button
                 type="button"
@@ -258,7 +258,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="hidden"
                 onChange={handlePhotoSelected}
               />
-              <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h2 className="text-lg font-extrabold text-[#1E293B] leading-tight truncate">{name}</h2>
                   <BadgeCheck className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
@@ -268,14 +268,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <span className="truncate">{email}</span>
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => onOpenItem('Edit Profile')}
-                className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-                aria-label="Edit profile"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
             </div>
 
             {photoError && <p className="mt-2 text-[11px] font-medium text-rose-500">{photoError}</p>}

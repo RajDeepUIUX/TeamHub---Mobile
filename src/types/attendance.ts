@@ -14,6 +14,8 @@ export interface AttendanceRecord {
   dateFormatted: string; // e.g. "Sep 22, 2026"
   dayOfWeek: string; // e.g. "Tuesday"
   staffName: string;
+  /** Employee code (used for avatars in the manager's team view) */
+  staffCode?: string;
   workplace: string; // e.g. "Ahmedabad : Gota Office"
   workMode: 'Office' | 'Hybrid' | 'Remote';
   startTime: string; // e.g. "13:30"

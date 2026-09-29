@@ -49,6 +49,19 @@ import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData'
 import { HOLIDAYS_DATA } from './data/holidayData';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { ProfileView } from './components/profile/ProfileView';
+import { ResignationView } from './components/resignation/ResignationView';
+import { ApplyResignationView } from './components/resignation/ApplyResignationView';
+import { ResignationRecord, ReviewDecision } from './types/resignation';
+import { REPORTING_MANAGER, CURRENT_STAFF, TEAM_RESIGNATIONS_SEED, toISODate } from './data/resignationData';
+import type { ResignationFormData } from './components/resignation/ApplyResignationView';
+import { TicketsView } from './components/tickets/TicketsView';
+import { CreateTicketView } from './components/tickets/CreateTicketView';
+import { Ticket } from './types/tickets';
+import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
+import type { NewTicketData } from './components/tickets/CreateTicketView';
+import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
+import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
+import { TEAM_ATTENDANCE_REQUESTS_SEED, ATTENDANCE_REVIEWER, ATTENDANCE_STAFF_CODE } from './data/teamAttendanceData';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
@@ -64,6 +77,150 @@ export default function App() {
   const [appTab, setAppTab] = useState<AppTab>('home');
   const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
+  const [profileModule, setProfileModule] = useState<string | null>(null);
+  // Resignation module: no logs initially; newest first
+  const [resignations, setResignations] = useState<ResignationRecord[]>([]);
+  // Other team members' resignations (seen by the reporting manager)
+  const [teamResignations, setTeamResignations] = useState<ResignationRecord[]>(TEAM_RESIGNATIONS_SEED);
+  // The manager's own resignations ("My Resignation" tab in Manager role)
+  const [managerResignations, setManagerResignations] = useState<ResignationRecord[]>([]);
+  const [isApplyingResignation, setIsApplyingResignation] = useState(false);
+  // Tickets module: staff member's tickets, the rest of the team's, and the manager's own
+  const [staffTickets, setStaffTickets] = useState<Ticket[]>(STAFF_TICKETS_SEED);
+  const [teamTickets, setTeamTickets] = useState<Ticket[]>(TEAM_TICKETS_SEED);
+  const [managerTickets, setManagerTickets] = useState<Ticket[]>([]);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+
+  const isManager = userRole === 'Manager';
+  // Identity used for the resignation module: staff = Shanker, manager = his reporting manager
+  const resignationUser = isManager
+    ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
+    : CURRENT_STAFF;
+  const myResignations = isManager ? managerResignations : resignations;
+  const setMyResignations = isManager ? setManagerResignations : setResignations;
+
+  const submitResignation = (data: ResignationFormData) => {
+    setMyResignations((prev) => [
+      {
+        id: `resig-${Date.now()}`,
+        ...resignationUser,
+        ...data,
+        status: 'Notice',
+        // A manager's own resignation goes to their manager
+        reportingManager: isManager ? 'Priya Nair' : REPORTING_MANAGER,
+        managerApproval: 'Pending',
+        ctmApproval: 'Pending',
+      },
+      ...prev,
+    ]);
+    setIsApplyingResignation(false);
+    showToast('Resignation submitted to your reporting manager.');
+  };
+
+  // Manager decision → updates the shared record, so the staff side reflects it instantly
+  const reviewResignation = (id: string, decision: ReviewDecision, comment: string) => {
+    const apply = (list: ResignationRecord[]) =>
+      list.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              managerApproval: decision,
+              managerComment: comment || undefined,
+              managerReviewedAt: toISODate(new Date()),
+              status: decision === 'Rejected' ? ('Rejected' as const) : r.status,
+            }
+          : r
+      );
+    setResignations(apply);
+    setTeamResignations(apply);
+    showToast(`Resignation ${decision === 'Approved' ? 'approved' : 'rejected'}.`);
+  };
+
+  const byNewest = (list: Ticket[]) => [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const myTickets = byNewest(isManager ? managerTickets : staffTickets);
+  const teamTicketList = byNewest([...staffTickets, ...teamTickets]);
+
+  // Applies a change to whichever list holds the ticket, so staff and manager views stay in sync
+  const updateTicket = (id: string, change: (t: Ticket) => Ticket) => {
+    const apply = (list: Ticket[]) => list.map((t) => (t.id === id ? change(t) : t));
+    setStaffTickets(apply);
+    setTeamTickets(apply);
+    setManagerTickets(apply);
+  };
+
+  const createTicket = (data: NewTicketData) => {
+    const all = [...staffTickets, ...teamTickets, ...managerTickets];
+    const nextId = String(Math.max(93400, ...all.map((t) => Number(t.id) || 0)) + 1);
+    const ticket: Ticket = {
+      id: nextId,
+      staffName: resignationUser.staffName,
+      staffCode: resignationUser.staffCode,
+      ...data,
+      status: 'Open',
+      createdAt: new Date().toISOString(),
+      comments: [],
+    };
+    (isManager ? setManagerTickets : setStaffTickets)((prev) => [ticket, ...prev]);
+    setIsCreatingTicket(false);
+    showToast(`Ticket #${nextId} created. The team will get back to you soon.`);
+  };
+
+  const commentOnTicket = (id: string, text: string) =>
+    updateTicket(id, (t) => ({
+      ...t,
+      comments: [
+        ...t.comments,
+        {
+          id: `c-${Date.now()}`,
+          author: resignationUser.staffName,
+          role: isManager ? 'Manager' : 'Staff',
+          text,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+
+  const reopenTicket = (id: string, reason: string) => {
+    updateTicket(id, (t) => ({
+      ...t,
+      status: 'Open',
+      comments: [
+        ...t.comments,
+        {
+          id: `c-${Date.now()}`,
+          author: 'System',
+          role: 'System',
+          text: `Reopened by ${resignationUser.staffName}: “${reason}”`,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+    showToast(`Ticket #${id} reopened.`);
+  };
+
+  // Manager decision on an attendance edit request → reflected on the staff member's card
+  const reviewAttendance = (id: string, decision: AttendanceDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const apply = (list: AttendanceRecord[]) =>
+      list.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              editStatus: decision,
+              editReviewedBy: ATTENDANCE_REVIEWER,
+              editReviewedAt: reviewedAt,
+              managerRemark: comment || undefined,
+              ...(decision === 'approved'
+                ? { status: 'full_day' as const, statusLabel: 'Full Day (Approved)' }
+                : { statusLabel: 'Rejected' }),
+            }
+          : r
+      );
+    setRecords(apply);
+    setTeamAttendanceRequests(apply);
+    showToast(`Edit request ${decision === 'approved' ? 'approved' : 'rejected'}.`);
+  };
   // Profile photo (data URL); null shows first + last name initials
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [wishTarget, setWishTarget] = useState<{ person: TeamCelebration; kind: 'birthday' | 'anniversary' } | null>(null);
@@ -77,6 +234,7 @@ export default function App() {
   const handleAppTabChange = (tab: AppTab) => {
     setCelebrationsTab(null);
     setIsProfileOpen(false);
+    setProfileModule(null);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     setAppTab(tab);
   };
@@ -115,6 +273,15 @@ export default function App() {
 
   // Attendance Data
   const [records, setRecords] = useState<AttendanceRecord[]>(ALL_ATTENDANCE_RECORDS);
+  // Manager's "Team's Attendance": other team members' edit requests (the staff member's own come from `records`)
+  const [teamAttendanceRequests, setTeamAttendanceRequests] = useState<AttendanceRecord[]>(TEAM_ATTENDANCE_REQUESTS_SEED);
+  const [attendanceTab, setAttendanceTab] = useState<'mine' | 'team'>('team');
+
+  // Staff member's own edit requests + the rest of the team's, newest first
+  const teamAttendanceList = [
+    ...records.filter((r) => r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
+    ...teamAttendanceRequests,
+  ].sort((a, b) => b.date.localeCompare(a.date));
   const kpis: AttendanceKPIsType = currentMonth.kpis;
 
   // Active Sheets & Dedicated Views
@@ -197,9 +364,11 @@ export default function App() {
             reqOfficeHrs: officeTime,
             reqWorkHrs: workingTime,
             editRequested: true,
+            editStatus: 'pending' as const,
             editReason: reason,
             editNote: note,
-            editRequestedAt: 'Just now',
+            editRequestedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            staffCode: ATTENDANCE_STAFF_CODE,
           };
         }
         return rec;
@@ -393,19 +562,77 @@ export default function App() {
                     showToast(`Signed in as ${userRole}`);
                   }}
                 />
+              ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
+                <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
+              ) : isProfileOpen && profileModule === 'Tickets' ? (
+                <TicketsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  currentUser={resignationUser.staffName}
+                  tickets={myTickets}
+                  teamTickets={isManager ? teamTicketList : undefined}
+                  onBack={() => setProfileModule(null)}
+                  onCreate={() => setIsCreatingTicket(true)}
+                  onComment={commentOnTicket}
+                  onReopen={reopenTicket}
+                />
+              ) : isProfileOpen && profileModule === 'Resignation' && isApplyingResignation ? (
+                <ApplyResignationView
+                  employeeName={resignationUser.staffName}
+                  onBack={() => setIsApplyingResignation(false)}
+                  onSubmit={submitResignation}
+                />
+              ) : isProfileOpen && profileModule === 'Resignation' ? (
+                <ResignationView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  records={myResignations}
+                  onBack={() => setProfileModule(null)}
+                  onApply={() => setIsApplyingResignation(true)}
+                  team={
+                    isManager
+                      ? {
+                          // Staff member's own submissions + the rest of the team, newest first
+                          records: [...resignations, ...teamResignations].sort((a, b) =>
+                            b.resignationDate.localeCompare(a.resignationDate)
+                          ),
+                          onReview: reviewResignation,
+                        }
+                      : undefined
+                  }
+                  onWithdraw={(id, reason) => {
+                    setMyResignations((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? { ...r, status: 'Withdrawn', withdrawReason: reason, withdrawnAt: toISODate(new Date()) }
+                          : r
+                      )
+                    );
+                    showToast('Resignation withdrawn.');
+                  }}
+                />
               ) : isProfileOpen ? (
                 <ProfileView
-                  name="Rajdeep Dey"
-                  email="rajdeep.dey@my-cpe.com"
+                  name="Shanker Dey"
+                  email="shanker.dey@my-cpe.com"
                   role="Lead Designer"
                   branch="Ahmedabad - Gota Branch"
                   employeeId="A03780"
                   onBack={() => setIsProfileOpen(false)}
                   onLogout={() => {
                     setIsProfileOpen(false);
+                    setProfileModule(null);
                     setIsLoggedIn(false);
                   }}
-                  onOpenItem={(label) => showToast(`${label} is coming soon.`)}
+                  onOpenItem={(label) => {
+                    if (label === 'Resignation' || label === 'Tickets') {
+                      setIsApplyingResignation(false);
+                      setIsCreatingTicket(false);
+                      setProfileModule(label);
+                    } else {
+                      showToast(`${label} is coming soon.`);
+                    }
+                  }}
                   onPasswordChanged={() => showToast('Password updated successfully.')}
                   photoUrl={profilePhoto}
                   onPhotoChange={(url) => {
@@ -430,7 +657,7 @@ export default function App() {
               ) : appTab === 'home' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <HomeDashboard
-                    userName="Rajdeep"
+                    userName="Shanker"
                     todaysBirthdays={BIRTHDAYS.filter((b) => b.inDays === 0)}
                     upcomingHolidayCount={holidaysNext30Days}
                     onOpenAttendance={() => handleAppTabChange('attendance')}
@@ -438,8 +665,11 @@ export default function App() {
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
-                    onOpenProfile={() => setIsProfileOpen(true)}
-                    fullName="Rajdeep Dey"
+                    onOpenProfile={() => {
+                      setProfileModule(null);
+                      setIsProfileOpen(true);
+                    }}
+                    fullName="Shanker Dey"
                     profilePhoto={profilePhoto}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
@@ -607,6 +837,50 @@ export default function App() {
                     onViewDetails={(rec) => setSelectedWFORecord(rec)}
                   />
                 ) : (
+                  <div className="flex-1 min-h-0 flex flex-col">
+                  {/* Manager: My Attendance / Team's Attendance */}
+                  {isManager && (
+                    <div className="shrink-0 grid grid-cols-2 bg-white border-b border-[#EBF0F7]" role="tablist">
+                      {(
+                        [
+                          { id: 'mine', label: 'My Attendance' },
+                          { id: 'team', label: "Team's Attendance" },
+                        ] as const
+                      ).map(({ id, label }) => {
+                        const isActive = attendanceTab === id;
+                        const pendingCount = teamAttendanceList.filter(
+                          (r) => r.editStatus !== 'approved' && r.editStatus !== 'rejected'
+                        ).length;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            role="tab"
+                            aria-selected={isActive}
+                            onClick={() => setAttendanceTab(id)}
+                            className={`relative py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer ${
+                              isActive ? 'text-[#2F68FE] font-bold' : 'text-slate-400 font-medium'
+                            }`}
+                          >
+                            {label}
+                            {id === 'team' && pendingCount > 0 && (
+                              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-violet-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                {pendingCount}
+                              </span>
+                            )}
+                            {isActive && <span className="absolute bottom-0 left-4 right-4 h-0.75 rounded-t-full bg-[#2F68FE]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {isManager && attendanceTab === 'team' ? (
+                    <TeamAttendanceView
+                      requests={teamAttendanceList}
+                      onReview={reviewAttendance}
+                      onViewLogs={(rec) => setSelectedPunchRecord(rec)}
+                    />
+                  ) : (
                   /* 2. Scrollable Attendance Content */
                   <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-20 space-y-3.5 no-scrollbar">
                   {/* Month Navigation Strip */}
@@ -739,6 +1013,8 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                  )}
+                  </div>
                 )}
               </div>
             )}
