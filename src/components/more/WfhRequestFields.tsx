@@ -10,13 +10,13 @@ import {
   Minus,
   Plus,
   Check,
-  Cpu,
+  PcCase,
   Laptop,
   Monitor,
-  Mouse,
+  MousePointer2,
   Keyboard,
   Headphones,
-  Webcam,
+  Video,
 } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { AddressType, DeliveryAddress } from '../../types/workTiming';
@@ -72,14 +72,15 @@ export const validateWfhForm = (f: WfhFormState, variant: WfhFieldsVariant = 'fu
   return e;
 };
 
+// Simple outline icons for the asset list
 const ASSET_ICONS: Record<string, React.ElementType> = {
-  CPU: Cpu,
+  CPU: PcCase,
   Laptop,
   Monitor,
-  Mouse,
+  Mouse: MousePointer2,
   Keyboard,
   Headphones,
-  Webcam,
+  Webcam: Video,
 };
 
 /** Card with an icon + uppercase title, matching the web form's sections */
@@ -262,36 +263,39 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
           )
         }
       >
-        <div className="grid grid-cols-2 gap-2">
+        {/* Single-column list so every asset name shows in full */}
+        <div className="rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">
           {WFH_ASSETS.map((asset) => {
             const qty = f.assets[asset] ?? 0;
             const Icon = ASSET_ICONS[asset] ?? Package;
             return (
               <div
                 key={asset}
-                className={`flex items-center gap-2 p-2 rounded-xl border transition-colors ${
-                  qty ? 'border-[#2F68FE]/40 bg-blue-50/40' : 'border-slate-100 bg-slate-50/60'
-                }`}
+                className={`flex items-center gap-3 py-2 pl-3.5 pr-2.5 transition-colors ${qty ? 'bg-blue-50/50' : 'bg-white'}`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${qty ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-                <span className="flex-1 min-w-0 text-[11.5px] font-semibold text-[#1E293B] truncate">{asset}</span>
-                <span className="flex items-center gap-1 shrink-0">
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 transition-colors ${qty ? 'text-[#2F68FE]' : 'text-slate-400'}`}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                />
+                <span className={`flex-1 text-xs ${qty ? 'font-bold text-[#1E293B]' : 'font-semibold text-slate-700'}`}>{asset}</span>
+                <span className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => changeQty(asset, -1)}
                     disabled={qty === 0}
                     aria-label={`Fewer ${asset}`}
-                    className="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-500 flex items-center justify-center disabled:opacity-40 cursor-pointer"
+                    className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-500 flex items-center justify-center disabled:opacity-40 cursor-pointer"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="w-4 text-center text-xs font-bold tabular-nums">{qty}</span>
+                  <span className="w-5 text-center text-xs font-bold tabular-nums">{qty}</span>
                   <button
                     type="button"
                     onClick={() => changeQty(asset, 1)}
                     disabled={qty === MAX_ASSET_QTY}
                     aria-label={`More ${asset}`}
-                    className="w-6 h-6 rounded-md bg-white border border-slate-200 text-[#2F68FE] flex items-center justify-center disabled:opacity-40 cursor-pointer"
+                    className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-[#2F68FE] flex items-center justify-center disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
