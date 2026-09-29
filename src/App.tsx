@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -433,6 +433,50 @@ export default function App() {
     setTeamFlexRequests(apply);
     setManagerFlexRequests(apply);
   };
+
+  // Prototype stand-in for the IT team: ~3.5s after a request is approved, IT marks its review done
+  const IT_REVIEW_DELAY_MS = 3500;
+  const itReviewTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => {
+    const approved = [...flexRequests, ...teamFlexRequests, ...managerFlexRequests].filter((r) => r.status === 'Approved');
+    approved.forEach((req) => {
+      if (itReviewTimers.current.has(req.id)) return;
+      const timer = setTimeout(() => {
+        itReviewTimers.current.delete(req.id);
+        const itReviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        updateFlex(req.id, (r) =>
+          r.status !== 'Approved'
+            ? r
+            : {
+                ...r,
+                status: 'IT Review Done',
+                itReviewedBy: 'IT Support',
+                itReviewedAt,
+                comments: [
+                  ...(r.comments ?? []),
+                  threadNote(
+                    'System',
+                    'System',
+                    r.wfh && Object.keys(r.wfh.assets).length ? 'IT review done — assets will be dispatched to the delivery address' : 'IT review done'
+                  ),
+                ],
+              }
+        );
+        showToast(`IT review done for ${req.staffName.split(' ')[0]}'s ${req.type} request.`);
+      }, IT_REVIEW_DELAY_MS);
+      itReviewTimers.current.set(req.id, timer);
+    });
+    // updateFlex / threadNote / showToast are stable enough for this demo timer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flexRequests, teamFlexRequests, managerFlexRequests]);
+  useEffect(() => {
+    const timers = itReviewTimers.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      // Forget them too, so a remount (e.g. React StrictMode in dev) schedules them again
+      timers.clear();
+    };
+  }, []);
 
   const commentOnFlex = (id: string, text: string) =>
     updateFlex(id, (r) => ({
