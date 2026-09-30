@@ -49,6 +49,8 @@ import { AppBottomNav, AppTab } from './components/home/AppBottomNav';
 import { AppHeader } from './components/home/AppHeader';
 import { MyProfileView } from './components/profile/MyProfileView';
 import { StaffReviewView } from './components/profile/StaffReviewView';
+import { AnnualReviewView } from './components/profile/AnnualReviewView';
+import { REVIEW_CYCLES_SEED, ReviewCycle } from './data/annualReviewData';
 import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
 import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
@@ -135,6 +137,9 @@ export default function App() {
   const [profileModule, setProfileModule] = useState<string | null>(null);
   // Staff Review can be opened from the Dashboard's Action Queue; Back returns there
   const [staffReviewFromHome, setStaffReviewFromHome] = useState(false);
+  // Staff Review › Start Evaluation (Team Member Annual Review)
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [reviewCycles, setReviewCycles] = useState<ReviewCycle[]>(REVIEW_CYCLES_SEED);
   // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
   const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
@@ -938,13 +943,30 @@ export default function App() {
                     showToast('Profile updated.');
                   }}
                 />
+              ) : isProfileOpen && profileModule === 'Staff Review' && isEvaluating ? (
+                <AnnualReviewView
+                  cycles={reviewCycles}
+                  onBack={() => setIsEvaluating(false)}
+                  onSaveDraft={(id, form) => {
+                    setReviewCycles((prev) => prev.map((c) => (c.id === id ? { ...c, form } : c)));
+                    showToast('Draft saved. You can finish it later.');
+                  }}
+                  onSubmit={(id, form) => {
+                    setReviewCycles((prev) =>
+                      prev.map((c) => (c.id === id ? { ...c, form, status: 'Submitted', submittedOn: toISODate(new Date()) } : c))
+                    );
+                    setIsEvaluating(false);
+                    showToast('Annual review submitted.');
+                  }}
+                />
               ) : isProfileOpen && profileModule === 'Staff Review' ? (
                 <StaffReviewView
                   onBack={() => {
                     setProfileModule(null);
                     if (staffReviewFromHome) setIsProfileOpen(false);
                   }}
-                  onStartEvaluation={() => showToast('The evaluation form is coming soon.')}
+                  onStartEvaluation={() => setIsEvaluating(true)}
+                  evaluationSubmitted={!reviewCycles.some((c) => c.status === 'Open')}
                 />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
@@ -1014,6 +1036,7 @@ export default function App() {
                       setProfileModule('My Profile');
                     } else if (label === 'Staff Review') {
                       setStaffReviewFromHome(false);
+                      setIsEvaluating(false);
                       setProfileModule('Staff Review');
                     } else if (label === 'Resignation' || label === 'Tickets') {
                       setIsApplyingResignation(false);
@@ -1057,6 +1080,7 @@ export default function App() {
                     onComingSoon={(feature) => {
                       if (feature === 'Staff Review') {
                         setStaffReviewFromHome(true);
+                        setIsEvaluating(false);
                         setProfileModule('Staff Review');
                         setIsProfileOpen(true);
                       } else {

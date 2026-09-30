@@ -34,6 +34,8 @@ import {
 interface StaffReviewViewProps {
   onBack: () => void;
   onStartEvaluation: () => void;
+  /** The current cycle's evaluation has been submitted (CTA switches to viewing it) */
+  evaluationSubmitted?: boolean;
 }
 
 const SECTION_ICONS: Record<string, { icon: React.ElementType; tint: string }> = {
@@ -371,7 +373,7 @@ const InstructionsSheet: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   </BottomSheet>
 );
 
-export const StaffReviewView: React.FC<StaffReviewViewProps> = ({ onBack, onStartEvaluation }) => {
+export const StaffReviewView: React.FC<StaffReviewViewProps> = ({ onBack, onStartEvaluation, evaluationSubmitted }) => {
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([REVIEW_SECTIONS[0].id]));
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
@@ -418,7 +420,11 @@ export const StaffReviewView: React.FC<StaffReviewViewProps> = ({ onBack, onStar
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Performance Report</span>
               <h2 className="text-[15px] font-extrabold text-[#1E293B] leading-snug mt-0.5">{REVIEW_PERIOD.label}</h2>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[10.5px] font-bold shrink-0">Form 180d open</span>
+            {evaluationSubmitted ? (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10.5px] font-bold shrink-0">Submitted</span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[10.5px] font-bold shrink-0">Form 180d open</span>
+            )}
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {[
@@ -490,7 +496,7 @@ export const StaffReviewView: React.FC<StaffReviewViewProps> = ({ onBack, onStar
           className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
         >
           <ClipboardCheck className="w-4 h-4" />
-          Start Evaluation
+          {evaluationSubmitted ? 'View Submitted Evaluation' : 'Start Evaluation'}
         </button>
       </div>
 
