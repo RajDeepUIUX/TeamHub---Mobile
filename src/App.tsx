@@ -32,7 +32,8 @@ import { WFORecord } from './types/wfo';
 import { WFODaysView } from './components/wfo/WFODaysView';
 import { WFODetailsView } from './components/wfo/WFODetailsView';
 import { AddWFOSheet } from './components/wfo/AddWFOSheet';
-import { INITIAL_WFO_RECORDS } from './data/wfoData';
+import { INITIAL_WFO_RECORDS, TEAM_WFO_RECORDS_SEED, WFO_MANAGER, WFO_TEAM, formatINR as formatWFOINR, wfoAllowanceFor } from './data/wfoData';
+import { TeamWFOView, WFODecision } from './components/wfo/TeamWFOView';
 import { BottomSheetProvider } from './context/BottomSheetContext';
 import { LeavesView } from './components/leaves/LeavesView';
 import { ApplyLeaveView as LeavesApplyView } from './components/leaves/ApplyLeaveView';
@@ -57,7 +58,17 @@ import { AdvanceGuidelineSheet } from './components/support/AdvanceGuidelineShee
 import { CabDecision, CabRequestView } from './components/support/CabRequestView';
 import { CabRequestFormView } from './components/support/CabRequestFormView';
 import { CAB_MANAGER, CAB_REQUESTS_SEED, CAB_TEAM, CabDraft, CabRequest, cabTitle } from './data/cabRequestData';
-import { ADVANCE_REQUESTS_SEED, AdvanceRequest, AdvanceRequestType, isEvLoan } from './data/advanceSalaryData';
+import {
+  ADVANCE_MANAGER,
+  ADVANCE_REQUESTS_SEED,
+  ADVANCE_TEAM,
+  AdvanceRequest,
+  AdvanceRequestType,
+  TEAM_ADVANCE_REQUESTS_SEED,
+  formatINR as formatAdvanceINR,
+  isEvLoan,
+} from './data/advanceSalaryData';
+import type { AdvanceDecision } from './components/support/TeamAdvanceList';
 import { REVIEW_CYCLES_SEED, ReviewCycle } from './data/annualReviewData';
 import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
@@ -158,8 +169,8 @@ export default function App() {
   // Staff Review › Start Evaluation (Team Member Annual Review)
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [reviewCycles, setReviewCycles] = useState<ReviewCycle[]>(REVIEW_CYCLES_SEED);
-  // Support › Adv. Salary & EV Loan
-  const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>(ADVANCE_REQUESTS_SEED);
+  // Support › Adv. Salary & EV Loan: one shared list so manager decisions reflect on the staff side
+  const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>([...ADVANCE_REQUESTS_SEED, ...TEAM_ADVANCE_REQUESTS_SEED]);
   /** 'new' = raising a request, an id = editing it, null = list */
   const [advanceFormFor, setAdvanceFormFor] = useState<string | null>(null);
   const [advanceSubmittedType, setAdvanceSubmittedType] = useState<AdvanceRequestType | null>(null);
@@ -173,6 +184,8 @@ export default function App() {
         {
           ...draft,
           id: `adv-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
           // EV loans go straight to the CTM (Employee > CTM > HR > Finance)
           status: isEvLoan(draft.type) ? 'CTM Review Pending' : 'Manager Review Pending',
           submittedOn: toISODate(new Date()),
@@ -182,8 +195,54 @@ export default function App() {
         ...prev,
       ]);
       setAdvanceSubmittedType(draft.type);
+      if (!isManager && !isEvLoan(draft.type)) {
+        pushNotification('Manager', {
+          category: 'Adv. Salary',
+          title: `Advance salary request from ${resignationUser.staffName}`,
+          body: `${formatAdvanceINR(draft.amount)} over ${draft.months} months. Review it in Team's Requests.`,
+          link: 'advance-salary',
+          actionRequired: true,
+        });
+      }
     }
     setAdvanceFormFor(null);
+  };
+  // Reporting manager's decision: approved requests move on to the CTM
+  const reviewAdvance = (id: string, decision: AdvanceDecision, comment: string) => {
+    const req = advanceRequests.find((r) => r.id === id);
+    const now = new Date().toISOString();
+    setAdvanceRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: decision === 'Approved' ? 'Manager Approved' : 'Manager Rejected',
+              comments: [
+                ...r.comments,
+                ...(comment ? [{ id: `c-${Date.now()}`, author: ADVANCE_MANAGER, role: 'Manager' as const, text: comment, createdAt: now }] : []),
+                {
+                  id: `c-${Date.now()}-s`,
+                  author: 'System',
+                  role: 'System' as const,
+                  text: `${decision === 'Approved' ? 'Approved' : 'Rejected'} by ${ADVANCE_MANAGER}.${
+                    decision === 'Approved' ? ' Sent to the CTM for review.' : ''
+                  }`,
+                  createdAt: now,
+                },
+              ],
+            }
+          : r
+      )
+    );
+    showToast(decision === 'Approved' ? 'Request approved and sent to the CTM.' : 'Request rejected.');
+    if (req?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'Adv. Salary',
+        title: `Your advance salary request was ${decision.toLowerCase()}`,
+        body: `${formatAdvanceINR(req.amount)} over ${req.months} months${comment ? ` — "${comment}"` : ''}`,
+        link: 'advance-salary',
+      });
+    }
   };
   // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
   const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
@@ -216,6 +275,7 @@ export default function App() {
     ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
     : CURRENT_STAFF;
   const myResignations = isManager ? managerResignations : resignations;
+  const myAdvanceRequests = advanceRequests.filter((r) => r.staffName === resignationUser.staffName);
 
   const requestAssetReturn = (ids: string[]) => {
     const today = toISODate(new Date());
@@ -486,6 +546,18 @@ export default function App() {
         setCabFormFor(null);
         setProfileModule('Cab Request');
         break;
+      case 'wfo':
+        setSelectedWFORecord(null);
+        setActiveModuleTab('WFO Days');
+        setAppTab('attendance');
+        break;
+      case 'advance-salary':
+        setAppTab('home');
+        setProfileModuleFromApp(false);
+        setIsProfileOpen(true);
+        setAdvanceFormFor(null);
+        setProfileModule('Adv. Salary & EV Loan');
+        break;
       case 'tickets':
       case 'resignation':
       case 'assets':
@@ -579,6 +651,56 @@ export default function App() {
   const [applyingLeaveRecord, setApplyingLeaveRecord] = useState<AttendanceRecord | null>(null);
   const [selectedWFORecord, setSelectedWFORecord] = useState<WFORecord | null>(null);
   const [editingWFORecordFromDetails, setEditingWFORecordFromDetails] = useState<WFORecord | null>(null);
+  // WFO Days: one shared list so the manager's decisions reflect on the staff side
+  const [wfoRecords, setWfoRecords] = useState<WFORecord[]>([...INITIAL_WFO_RECORDS, ...TEAM_WFO_RECORDS_SEED]);
+  const [wfoTab, setWfoTab] = useState<'mine' | 'team'>('team');
+  const myWFORecords = wfoRecords.filter((r) => r.staffName === resignationUser.staffName);
+  const teamWFOList = wfoRecords.filter((r) => WFO_TEAM.includes(r.staffName));
+  const submitWFO = (month: string, year: number, days: number, idToEdit?: string) => {
+    // Guard: never create a second request for a month that already has one
+    const duplicate = myWFORecords.some((r) => r.month === month && r.year === year && r.id !== idToEdit && r.status !== 'Rejected');
+    if (duplicate) return;
+    const fields = { month, year, days, monthYear: `${month} ${year}`, status: 'Pending' as const, review: undefined };
+    if (idToEdit) {
+      setWfoRecords((prev) => prev.map((r) => (r.id === idToEdit ? { ...r, ...fields } : r)));
+      setSelectedWFORecord((sel) => (sel?.id === idToEdit ? { ...sel, ...fields } : sel));
+    } else {
+      setWfoRecords((prev) => [
+        {
+          ...fields,
+          id: `wfo-${year}-${month.toLowerCase().slice(0, 3)}-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
+          submittedAt: 'Just now',
+        },
+        ...prev,
+      ]);
+    }
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'WFO Days',
+        title: `WFO days ${idToEdit ? 'updated' : 'submitted'} by ${resignationUser.staffName}`,
+        body: `${month} ${year} · ${days} days (${formatWFOINR(wfoAllowanceFor(days))}). Review it in Team's WFO Days.`,
+        link: 'wfo',
+        actionRequired: true,
+      });
+    }
+  };
+  const reviewWFO = (id: string, decision: WFODecision, comment: string) => {
+    const rec = wfoRecords.find((r) => r.id === id);
+    setWfoRecords((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: decision, review: { by: WFO_MANAGER, comment, on: toISODate(new Date()) } } : r))
+    );
+    showToast(decision === 'Approved' ? 'WFO days approved.' : 'WFO days rejected.');
+    if (rec?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'WFO Days',
+        title: `Your WFO days for ${rec.monthYear} were ${decision.toLowerCase()}`,
+        body: comment ? `${WFO_MANAGER}: “${comment}”` : `${rec.days} days · reviewed by ${WFO_MANAGER}.`,
+        link: 'wfo',
+      });
+    }
+  };
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [isKPISummaryOpen, setIsKPISummaryOpen] = useState(false);
 
@@ -1172,7 +1294,7 @@ export default function App() {
               ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' && advanceFormFor ? (
                 <AdvanceRequestView
                   key={advanceFormFor}
-                  requests={advanceRequests}
+                  requests={myAdvanceRequests}
                   initial={advanceRequests.find((r) => r.id === advanceFormFor)}
                   onBack={() => setAdvanceFormFor(null)}
                   onOpenGuidelines={() => setAdvanceGuideOpen(true)}
@@ -1180,9 +1302,10 @@ export default function App() {
                 />
               ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' ? (
                 <AdvanceSalaryView
-                  firstName="John"
-                  currentUser="John Smith"
-                  requests={advanceRequests}
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  currentUser={resignationUser.staffName}
+                  requests={myAdvanceRequests}
                   onBack={closeProfileModule}
                   onOpenGuidelines={() => setAdvanceGuideOpen(true)}
                   onRaise={() => setAdvanceFormFor('new')}
@@ -1200,7 +1323,7 @@ export default function App() {
                                   id: `c-${Date.now()}`,
                                   author: 'System',
                                   role: 'System',
-                                  text: 'Request withdrawn by John Smith.',
+                                  text: `Request withdrawn by ${resignationUser.staffName}.`,
                                   createdAt: new Date().toISOString(),
                                 },
                               ],
@@ -1218,7 +1341,14 @@ export default function App() {
                               ...r,
                               comments: [
                                 ...r.comments,
-                                { id: `c-${Date.now()}`, author: 'John Smith', role: 'Staff', text, createdAt: new Date().toISOString() },
+                                {
+                                  id: `c-${Date.now()}`,
+                                  author: resignationUser.staffName,
+                                  // A manager commenting on a team member's request speaks as the manager
+                                  role: isManager ? 'Manager' : 'Staff',
+                                  text,
+                                  createdAt: new Date().toISOString(),
+                                },
                               ],
                             }
                           : r
@@ -1227,6 +1357,11 @@ export default function App() {
                   }
                   submittedType={advanceSubmittedType}
                   onDismissSubmitted={() => setAdvanceSubmittedType(null)}
+                  team={
+                    isManager
+                      ? { requests: advanceRequests.filter((r) => ADVANCE_TEAM.includes(r.staffName)), onReview: reviewAdvance }
+                      : undefined
+                  }
                 />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
@@ -1702,9 +1837,38 @@ export default function App() {
                       )}
                     </div>
                   ) : activeModuleTab === 'WFO Days' ? (
-                  <WFODaysView
-                    onViewDetails={(rec) => setSelectedWFORecord(rec)}
-                  />
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      {isManager && (
+                        <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                          <SegmentedTabs
+                            ariaLabel="WFO Days view"
+                            value={wfoTab}
+                            onChange={setWfoTab}
+                            options={[
+                              { id: 'mine', label: 'My WFO Days' },
+                              {
+                                id: 'team',
+                                label: "Team's WFO Days",
+                                badge: teamWFOList.filter((r) => r.status === 'Pending').length,
+                              },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      {isManager && wfoTab === 'team' ? (
+                        <TeamWFOView records={teamWFOList} onReview={reviewWFO} />
+                      ) : (
+                        <WFODaysView
+                          key={userRole}
+                          records={myWFORecords}
+                          onViewDetails={(rec) => setSelectedWFORecord(rec)}
+                          onSubmit={(month, year, days, idToEdit) => {
+                            submitWFO(month, year, days, idToEdit);
+                            showToast(idToEdit ? 'WFO request updated successfully.' : 'WFO days submitted for approval.');
+                          }}
+                        />
+                      )}
+                    </div>
                 ) : (
                   <div className="flex-1 min-h-0 flex flex-col">
                   {/* Manager: My Attendance / Team's Attendance (segmented, so it reads as a view switch) */}
@@ -1922,18 +2086,9 @@ export default function App() {
               isOpen={Boolean(editingWFORecordFromDetails)}
               onClose={() => setEditingWFORecordFromDetails(null)}
               recordToEdit={editingWFORecordFromDetails}
-              existingRecords={INITIAL_WFO_RECORDS}
-              onSubmit={(month, year, days) => {
-                if (selectedWFORecord) {
-                  setSelectedWFORecord({
-                    ...selectedWFORecord,
-                    month,
-                    year,
-                    days,
-                    monthYear: `${month} ${year}`,
-                    status: 'Pending',
-                  });
-                }
+              existingRecords={myWFORecords}
+              onSubmit={(month, year, days, idToEdit) => {
+                submitWFO(month, year, days, idToEdit);
                 showToast('WFO request updated successfully.');
               }}
             />

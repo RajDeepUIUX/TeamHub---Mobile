@@ -14,6 +14,8 @@ import {
   Zap,
   Laptop,
   Car,
+  Coins,
+  Building2,
 } from 'lucide-react';
 import { AppNotification, NotificationCategory, NOTIFICATION_CATEGORIES } from '../../data/notificationsData';
 
@@ -27,6 +29,8 @@ const CATEGORY_META: Record<NotificationCategory, { icon: React.ElementType; tin
   Resignation: { icon: FileText, tint: 'bg-rose-50 text-rose-500' },
   Assets: { icon: Laptop, tint: 'bg-indigo-50 text-indigo-600' },
   'Cab Request': { icon: Car, tint: 'bg-cyan-50 text-cyan-600' },
+  'Adv. Salary': { icon: Coins, tint: 'bg-amber-50 text-amber-600' },
+  'WFO Days': { icon: Building2, tint: 'bg-teal-50 text-teal-600' },
   Celebrations: { icon: Cake, tint: 'bg-pink-50 text-pink-500' },
   Announcements: { icon: Megaphone, tint: 'bg-sky-50 text-sky-600' },
 };

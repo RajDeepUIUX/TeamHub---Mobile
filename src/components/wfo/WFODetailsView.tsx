@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Calendar, Info, Pencil, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Calendar, Info, Pencil, IndianRupee, MessageSquareText } from 'lucide-react';
 import { WFORecord } from '../../types/wfo';
 import { WFO_DAILY_ALLOWANCE, WFO_ALLOWANCE_BRANCH, formatINR, wfoAllowanceFor } from '../../data/wfoData';
 
@@ -15,6 +15,8 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
   onEdit,
 }) => {
   const isPending = record.status === 'Pending';
+  const isRejected = record.status === 'Rejected';
+  const review = record.review;
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -42,14 +44,18 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
           className={`rounded-2xl px-3.5 py-3 flex items-center gap-3 border ${
             isPending
               ? 'bg-[#FEF9EE] border-[#FDE6B8]'
-              : 'bg-[#F0FDF4] border-[#BBF7D0]'
+              : isRejected
+                ? 'bg-[#FEF2F2] border-[#FECACA]'
+                : 'bg-[#F0FDF4] border-[#BBF7D0]'
           }`}
         >
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
               isPending
                 ? 'bg-[#FDE9C0]/60 text-[#D97706]'
-                : 'bg-[#DCFCE7] text-[#16A34A]'
+                : isRejected
+                  ? 'bg-[#FEE2E2] text-[#DC2626]'
+                  : 'bg-[#DCFCE7] text-[#16A34A]'
             }`}
           >
             <Calendar className="w-5 h-5 stroke-[2]" />
@@ -66,7 +72,9 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
             className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${
               isPending
                 ? 'bg-[#FEF3C7] text-[#D97706]'
-                : 'bg-[#DCFCE7] text-[#16A34A]'
+                : isRejected
+                  ? 'bg-[#FEE2E2] text-[#DC2626]'
+                  : 'bg-[#DCFCE7] text-[#16A34A]'
             }`}
           >
             {record.status}
@@ -137,13 +145,31 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
           </div>
         )}
 
+        {/* Manager's decision */}
+        {review && (
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs">
+            <div className="flex items-center gap-2 text-sm font-bold text-[#1E293B]">
+              <MessageSquareText className="w-4 h-4 text-slate-400" />
+              {isRejected ? 'Rejected' : 'Approved'} by {review.by}
+            </div>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              {new Date(`${review.on}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+            </p>
+            {review.comment && (
+              <p className="mt-2.5 text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-xl px-3 py-2.5">“{review.comment}”</p>
+            )}
+          </div>
+        )}
+
         {/* Info Banner matching Image 4 */}
         <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
           <span>
             {isPending
               ? 'This request is pending approval. You can edit this request while it is pending.'
-              : 'This request has been approved and is locked for edits.'}
+              : isRejected
+                ? 'This request was rejected. You can submit a fresh request for this month.'
+                : 'This request has been approved and is locked for edits.'}
           </span>
         </div>
       </div>

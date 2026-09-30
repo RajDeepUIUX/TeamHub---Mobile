@@ -6,6 +6,8 @@ export type NotificationCategory =
   | 'Resignation'
   | 'Assets'
   | 'Cab Request'
+  | 'Adv. Salary'
+  | 'WFO Days'
   | 'Celebrations'
   | 'Announcements';
 
@@ -19,6 +21,8 @@ export type NotificationLink =
   | 'resignation'
   | 'assets'
   | 'cab-request'
+  | 'advance-salary'
+  | 'wfo'
   | 'celebrations';
 
 export interface AppNotification {
@@ -41,6 +45,8 @@ export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   'Resignation',
   'Assets',
   'Cab Request',
+  'Adv. Salary',
+  'WFO Days',
   'Celebrations',
   'Announcements',
 ];

@@ -18,6 +18,8 @@ import { BottomSheet } from '../common/BottomSheet';
 import { CommentThreadSheet } from '../common/CommentThreadSheet';
 import { todayIso } from '../common/DateWheelSheet';
 import { Dropdown } from '../../design-system/components/Dropdown';
+import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
+import { AdvanceDecision, TeamAdvanceList, awaitsManager } from './TeamAdvanceList';
 import {
   ADVANCE_STATUSES,
   AdvanceRequest,
@@ -48,6 +50,8 @@ interface AdvanceSalaryViewProps {
   /** Type of the request just submitted — shows the success sheet */
   submittedType: AdvanceRequestType | null;
   onDismissSubmitted: () => void;
+  /** Present for managers: enables the "Team's Requests" tab */
+  team?: { requests: AdvanceRequest[]; onReview: (id: string, decision: AdvanceDecision, comment: string) => void };
 }
 
 const TYPE_META: Record<AdvanceRequestType, { icon: React.ElementType; tint: string }> = {
@@ -95,7 +99,10 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
   onComment,
   submittedType,
   onDismissSubmitted,
+  team,
 }) => {
+  const [tab, setTab] = useState<'mine' | 'team'>(team ? 'team' : 'mine');
+  const showTeam = Boolean(team) && tab === 'team';
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<AdvanceStatus | 'All'>('All');
   const [rcFilter, setRcFilter] = useState<RcFilter>('All');
@@ -119,7 +126,8 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
       (rcFilter === 'All' || (isEvLoan(r.type) && (rcFilter === 'Yes') === Boolean(r.rcUploaded)))
   );
   const activeFilters = (statusFilter !== 'All' ? 1 : 0) + (rcFilter !== 'All' ? 1 : 0);
-  const commentsFor = requests.find((r) => r.id === commentsId);
+  const commentsFor = [...requests, ...(team?.requests ?? [])].find((r) => r.id === commentsId);
+  const teamPending = team ? team.requests.filter(awaitsManager).length : 0;
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -143,8 +151,25 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
             Guidelines
           </button>
         </div>
+        {team && (
+          <div className="px-4 pb-3">
+            <SegmentedTabs
+              ariaLabel="Advance request view"
+              value={tab}
+              onChange={setTab}
+              options={[
+                { id: 'mine', label: 'My Requests' },
+                { id: 'team', label: "Team's Requests", badge: teamPending },
+              ]}
+            />
+          </div>
+        )}
       </header>
 
+      {showTeam && team ? (
+        <TeamAdvanceList requests={team.requests} onReview={team.onReview} onOpenComments={setCommentsId} />
+      ) : (
+      <>
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
         {/* What can be requested right now */}
         <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
@@ -329,6 +354,8 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
           Raise Request
         </button>
       </div>
+      </>
+      )}
 
       {/* Filters */}
       <BottomSheet isOpen={filterOpen} onClose={() => setFilterOpen(false)} maxHeight="max-h-[70%]">
@@ -422,12 +449,20 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
       <CommentThreadSheet
         isOpen={Boolean(commentsFor)}
         title="Comments"
-        subtitle={commentsFor ? `${commentsFor.type} · ${formatINR(commentsFor.amount)}` : ''}
+        subtitle={
+          commentsFor
+            ? `${commentsFor.staffName !== currentUser ? `${commentsFor.staffName} · ` : ''}${commentsFor.type} · ${formatINR(commentsFor.amount)}`
+            : ''
+        }
         comments={commentsFor?.comments ?? []}
         currentUser={currentUser}
         onClose={() => setCommentsId(null)}
         onSend={(text) => commentsId && onComment(commentsId, text)}
-        placeholder="Write to your manager, HR or Finance"
+        placeholder={
+          commentsFor && commentsFor.staffName !== currentUser
+            ? `Write to ${commentsFor.staffName.split(' ')[0]}, HR or Finance`
+            : 'Write to your manager, HR or Finance'
+        }
       />
 
       {/* Submitted */}

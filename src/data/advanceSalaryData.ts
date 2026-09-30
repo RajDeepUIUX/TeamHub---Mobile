@@ -112,6 +112,9 @@ export interface AdvanceCheque {
 
 export interface AdvanceRequest {
   id: string;
+  /** Who raised it (staff and manager views read one shared list) */
+  staffName: string;
+  staffCode: string;
   type: AdvanceRequestType;
   amount: number;
   months: number;
@@ -151,6 +154,8 @@ export const REQUIRED_DOCUMENTS: Record<'advance' | 'ev', { label: string; multi
 export const ADVANCE_REQUESTS_SEED: AdvanceRequest[] = [
   {
     id: 'adv-2025-031',
+    staffName: 'John Smith',
+    staffCode: 'A03780',
     type: 'Advance Salary',
     amount: 60000,
     months: 6,
@@ -186,6 +191,149 @@ export const ADVANCE_REQUESTS_SEED: AdvanceRequest[] = [
         role: 'Support',
         text: 'All EMIs received. Your request is now closed.',
         createdAt: '2025-10-06T16:05:00+05:30',
+      },
+    ],
+  },
+];
+
+/** The reporting manager who reviews Advance Salary requests (EV loans go straight to the CTM) */
+export const ADVANCE_MANAGER = 'Naveen Das';
+/** Team members whose requests the manager can see */
+export const ADVANCE_TEAM = ['John Smith', 'Ananya Kulkarni', 'Kunal Desai', 'Nidhi Purohit'];
+
+/** The rest of Naveen's team (John's own requests come from ADVANCE_REQUESTS_SEED) */
+export const TEAM_ADVANCE_REQUESTS_SEED: AdvanceRequest[] = [
+  {
+    id: 'adv-2026-118',
+    staffName: 'Kunal Desai',
+    staffCode: 'A02988',
+    type: 'Advance Salary',
+    amount: 45000,
+    months: 5,
+    reason: 'Home Repair',
+    otherReason: '',
+    bank: 'ICICI BANK',
+    expectedPurchaseDate: '',
+    cheques: [
+      { number: '220341', file: 'cheque_220341.pdf' },
+      { number: '220342', file: 'cheque_220342.pdf' },
+    ],
+    documents: {
+      'Supporting Document (for the reason selected)': ['roof_repair_quote.pdf'],
+      'Last 3 months Bank Statement (Salary Account)': ['icici_statement_jun_aug.pdf'],
+    },
+    status: 'Manager Review Pending',
+    submittedOn: '2026-09-28',
+    comments: [
+      {
+        id: 'c-118-1',
+        author: 'Kunal Desai',
+        role: 'Staff',
+        text: 'The monsoon damaged part of our roof. The contractor needs to start before October.',
+        createdAt: '2026-09-28T11:40:00+05:30',
+      },
+    ],
+  },
+  {
+    id: 'adv-2026-114',
+    staffName: 'Ananya Kulkarni',
+    staffCode: 'A03515',
+    type: 'Advance Salary',
+    amount: 90000,
+    months: 6,
+    reason: 'Education Expenses',
+    otherReason: '',
+    bank: 'HDFC BANK',
+    expectedPurchaseDate: '',
+    cheques: [
+      { number: '318877', file: 'cheque_318877.pdf' },
+      { number: '318878', file: 'cheque_318878.pdf' },
+    ],
+    documents: {
+      'Supporting Document (for the reason selected)': ['university_fee_notice.pdf'],
+      'Last 3 months Bank Statement (Salary Account)': ['hdfc_statement_jun_aug.pdf'],
+    },
+    status: 'Manager Review Pending',
+    submittedOn: '2026-09-25',
+    comments: [],
+  },
+  {
+    id: 'adv-2026-102',
+    staffName: 'Nidhi Purohit',
+    staffCode: 'A03211',
+    type: 'EV Two-Wheeler Loan',
+    amount: 30000,
+    months: 6,
+    reason: '',
+    otherReason: '',
+    bank: 'KOTAK MAHINDRA BANK',
+    expectedPurchaseDate: '2026-10-20',
+    cheques: [{ number: '771204', file: 'cheque_771204.pdf' }],
+    documents: {
+      'EV Loan Application Form': ['ev_application_nidhi.pdf'],
+      'Vehicle Quotation (authorized dealer)': ['ather_450s_quote.pdf'],
+      'ID Proof': ['aadhaar.pdf'],
+      'Address Proof': ['electricity_bill.pdf'],
+      'Driving Licence': ['driving_licence.pdf'],
+    },
+    status: 'CTM Review Pending',
+    submittedOn: '2026-09-15',
+    rcUploaded: false,
+    comments: [],
+  },
+  {
+    id: 'adv-2026-061',
+    staffName: 'Kunal Desai',
+    staffCode: 'A02988',
+    type: 'Advance Salary',
+    amount: 30000,
+    months: 3,
+    reason: 'Family Event',
+    otherReason: '',
+    bank: 'ICICI BANK',
+    expectedPurchaseDate: '',
+    cheques: [{ number: '219004', file: 'cheque_219004.pdf' }],
+    documents: {
+      'Supporting Document (for the reason selected)': ['wedding_invite.pdf'],
+      'Last 3 months Bank Statement (Salary Account)': ['icici_statement_feb_apr.pdf'],
+    },
+    status: 'Closed',
+    submittedOn: '2026-05-06',
+    disbursedOn: '2026-05-22',
+    lastEmiDate: '2026-08-31',
+    closedOn: '2026-09-04',
+    comments: [
+      {
+        id: 'c-061-1',
+        author: 'Naveen Das',
+        role: 'Manager',
+        text: 'Approved. Congratulations to your sister, Kunal!',
+        createdAt: '2026-05-07T09:15:00+05:30',
+      },
+    ],
+  },
+  {
+    id: 'adv-2026-044',
+    staffName: 'Nidhi Purohit',
+    staffCode: 'A03211',
+    type: 'Advance Salary',
+    amount: 120000,
+    months: 9,
+    reason: 'Other',
+    otherReason: 'Personal travel',
+    bank: 'KOTAK MAHINDRA BANK',
+    expectedPurchaseDate: '',
+    cheques: [],
+    documents: {},
+    status: 'Manager Rejected',
+    submittedOn: '2026-03-18',
+    comments: [
+      {
+        id: 'c-044-1',
+        author: 'Naveen Das',
+        role: 'Manager',
+        text: 'Advances are meant for emergencies, so I can’t approve travel. Happy to talk through other options.',
+        createdAt: '2026-03-19T14:02:00+05:30',
       },
     ],
   },

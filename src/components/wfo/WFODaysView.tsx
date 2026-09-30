@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { WFORecord } from '../../types/wfo';
 import {
-  INITIAL_WFO_RECORDS,
   WFO_DAILY_ALLOWANCE,
   WFO_ALLOWANCE_BRANCH,
   formatINR,
@@ -20,11 +19,14 @@ import { FilterWFOSheet } from './FilterWFOSheet';
 import { AddWFOSheet } from './AddWFOSheet';
 
 interface WFODaysViewProps {
+  /** The signed-in user's own requests */
+  records: WFORecord[];
   onViewDetails: (record: WFORecord) => void;
+  /** Creates a request, or updates `idToEdit` (edits go back to Pending) */
+  onSubmit: (month: string, year: number, days: number, idToEdit?: string) => void;
 }
 
-export const WFODaysView: React.FC<WFODaysViewProps> = ({ onViewDetails }) => {
-  const [records, setRecords] = useState<WFORecord[]>(INITIAL_WFO_RECORDS);
+export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails, onSubmit }) => {
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const [filterYear, setFilterYear] = useState<number | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -46,47 +48,6 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ onViewDetails }) => {
   const handleClearFilter = () => {
     setFilterMonth(null);
     setFilterYear(null);
-  };
-
-  const handleAddOrEditSubmit = (
-    month: string,
-    year: number,
-    days: number,
-    idToEdit?: string
-  ) => {
-    // Guard: never create a second request for a month that already has one
-    const duplicate = records.some(
-      (r) => r.month === month && r.year === year && r.id !== idToEdit && r.status !== 'Rejected'
-    );
-    if (duplicate) return;
-
-    if (idToEdit) {
-      setRecords((prev) =>
-        prev.map((r) =>
-          r.id === idToEdit
-            ? {
-                ...r,
-                month,
-                year,
-                days,
-                monthYear: `${month} ${year}`,
-                status: 'Pending',
-              }
-            : r
-        )
-      );
-    } else {
-      const newRec: WFORecord = {
-        id: `wfo-${year}-${month.toLowerCase().slice(0, 3)}-${Date.now()}`,
-        month,
-        year,
-        monthYear: `${month} ${year}`,
-        days,
-        status: 'Pending',
-        submittedAt: 'Just now',
-      };
-      setRecords((prev) => [newRec, ...prev]);
-    }
   };
 
   const activeSelectorLabel = filterMonth && filterYear
@@ -262,7 +223,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ onViewDetails }) => {
           setRecordToEdit(null);
         }}
         recordToEdit={recordToEdit}
-        onSubmit={handleAddOrEditSubmit}
+        onSubmit={onSubmit}
         existingRecords={records}
       />
     </div>
