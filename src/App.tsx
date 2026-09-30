@@ -48,6 +48,7 @@ import { ComingSoonView } from './components/home/ComingSoonView';
 import { AppBottomNav, AppTab } from './components/home/AppBottomNav';
 import { AppHeader } from './components/home/AppHeader';
 import { MyProfileView } from './components/profile/MyProfileView';
+import { StaffReviewView } from './components/profile/StaffReviewView';
 import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
 import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
@@ -132,6 +133,8 @@ export default function App() {
   const [editingFlex, setEditingFlex] = useState<FlexRequest | null>(null);
   // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
   const [profileModule, setProfileModule] = useState<string | null>(null);
+  // Staff Review can be opened from the Dashboard's Action Queue; Back returns there
+  const [staffReviewFromHome, setStaffReviewFromHome] = useState(false);
   // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
   const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
@@ -909,6 +912,7 @@ export default function App() {
                     profilePhoto={profilePhoto}
                     unreadNotifications={unreadNotifications}
                     onOpenNotifications={() => setIsNotificationsOpen(true)}
+                    onGoHome={() => handleAppTabChange('home')}
                     onOpenProfile={() => {
                       setIsNotificationsOpen(false);
                       setProfileModule(null);
@@ -933,6 +937,14 @@ export default function App() {
                     setMyProfile(next);
                     showToast('Profile updated.');
                   }}
+                />
+              ) : isProfileOpen && profileModule === 'Staff Review' ? (
+                <StaffReviewView
+                  onBack={() => {
+                    setProfileModule(null);
+                    if (staffReviewFromHome) setIsProfileOpen(false);
+                  }}
+                  onStartEvaluation={() => showToast('The evaluation form is coming soon.')}
                 />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
@@ -1000,6 +1012,9 @@ export default function App() {
                     if (label === 'My Profile' || label === 'Edit Profile') {
                       setMyProfileStartEditing(label === 'Edit Profile');
                       setProfileModule('My Profile');
+                    } else if (label === 'Staff Review') {
+                      setStaffReviewFromHome(false);
+                      setProfileModule('Staff Review');
                     } else if (label === 'Resignation' || label === 'Tickets') {
                       setIsApplyingResignation(false);
                       setIsCreatingTicket(false);
@@ -1039,7 +1054,15 @@ export default function App() {
                     onOpenCelebrations={(tab) => setCelebrationsTab(tab)}
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
-                    onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
+                    onComingSoon={(feature) => {
+                      if (feature === 'Staff Review') {
+                        setStaffReviewFromHome(true);
+                        setProfileModule('Staff Review');
+                        setIsProfileOpen(true);
+                      } else {
+                        showToast(`${feature} is coming soon.`);
+                      }
+                    }}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>

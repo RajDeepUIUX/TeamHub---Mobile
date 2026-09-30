@@ -9,6 +9,7 @@ interface AppHeaderProps {
   unreadNotifications: number;
   onOpenNotifications: () => void;
   onOpenProfile: () => void;
+  onGoHome: () => void;
 }
 
 /** Brand bar pinned to the top of every signed-in screen */
@@ -18,9 +19,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   unreadNotifications,
   onOpenNotifications,
   onOpenProfile,
+  onGoHome,
 }) => (
   <header className="shrink-0 bg-white/95 backdrop-blur-md px-4 h-14 flex items-center justify-between border-b border-[#EBF0F7] z-10">
-    <BrandLogoHorizontal className="h-5" />
+    <button type="button" onClick={onGoHome} className="flex items-center cursor-pointer" aria-label="Go to dashboard">
+      <BrandLogoHorizontal className="h-5" />
+    </button>
     <div className="flex items-center gap-3">
       <button
         type="button"
