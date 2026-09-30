@@ -171,7 +171,7 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
           title="Extra Available Hours"
           right={<span className="text-[10px] text-slate-400">Optional</span>}
         >
-          <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Extra available hours">
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100" role="radiogroup" aria-label="Extra available hours">
             {OT_EXTRA_HOURS.map((h) => {
               const on = extraHours === h;
               return (
@@ -181,12 +181,11 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
                   role="radio"
                   aria-checked={on}
                   onClick={() => setExtraHours(on ? null : h)}
-                  className={`h-16 rounded-2xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                    on ? 'border-[#2F68FE] bg-[#2F68FE] text-white shadow-[0_8px_16px_-8px_rgba(47,104,254,0.6)]' : 'border-slate-200 bg-white text-[#1E293B]'
+                  className={`h-9 rounded-lg text-xs font-semibold tabular-nums transition-all cursor-pointer ${
+                    on ? 'bg-white text-[#2F68FE] shadow-sm' : 'text-slate-500'
                   }`}
                 >
-                  <span className="text-lg font-extrabold leading-none tabular-nums">{h}</span>
-                  <span className={`text-[10px] font-semibold mt-0.5 ${on ? 'text-white/80' : 'text-slate-400'}`}>hours</span>
+                  {h} hrs
                 </button>
               );
             })}
