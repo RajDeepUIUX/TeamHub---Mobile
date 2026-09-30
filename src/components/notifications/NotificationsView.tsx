@@ -12,6 +12,8 @@ import {
   ChevronRight,
   BellOff,
   Zap,
+  Laptop,
+  Car,
 } from 'lucide-react';
 import { AppNotification, NotificationCategory, NOTIFICATION_CATEGORIES } from '../../data/notificationsData';
 
@@ -23,6 +25,8 @@ const CATEGORY_META: Record<NotificationCategory, { icon: React.ElementType; tin
   Attendance: { icon: CalendarCheck, tint: 'bg-amber-50 text-amber-600' },
   Tickets: { icon: Ticket, tint: 'bg-violet-50 text-violet-600' },
   Resignation: { icon: FileText, tint: 'bg-rose-50 text-rose-500' },
+  Assets: { icon: Laptop, tint: 'bg-indigo-50 text-indigo-600' },
+  'Cab Request': { icon: Car, tint: 'bg-cyan-50 text-cyan-600' },
   Celebrations: { icon: Cake, tint: 'bg-pink-50 text-pink-500' },
   Announcements: { icon: Megaphone, tint: 'bg-sky-50 text-sky-600' },
 };

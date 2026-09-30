@@ -1,5 +1,24 @@
 import React, { useState } from 'react';
-import { Search, X, UserRound, Clock3, TrendingUp, IdCard, ChevronRight, Timer } from 'lucide-react';
+import {
+  Search,
+  X,
+  UserRound,
+  Clock3,
+  TrendingUp,
+  IdCard,
+  ChevronRight,
+  Timer,
+  Headphones,
+  FileText,
+  Ticket,
+  MessageCircle,
+  UtensilsCrossed,
+  Coins,
+  Phone,
+  Laptop,
+  Users,
+  Car,
+} from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
 export interface MoreModule {
@@ -44,6 +63,29 @@ export const MORE_GROUPS: MoreGroup[] = [
         tint: 'bg-violet-50 text-violet-600',
         roles: ['Manager'],
       },
+    ],
+  },
+  {
+    // Same modules as Profile › Support
+    id: 'support',
+    label: 'Support',
+    icon: Headphones,
+    modules: [
+      { id: 'Resignation', label: 'Resignation', hint: 'Apply for or track your resignation', icon: FileText, tint: 'bg-rose-50 text-rose-500' },
+      { id: 'Tickets', label: 'Tickets', hint: 'Raise and track support tickets', icon: Ticket, tint: 'bg-violet-50 text-violet-600' },
+      { id: 'Feedback', label: 'Feedback', hint: 'Share feedback with the team', icon: MessageCircle, tint: 'bg-sky-50 text-sky-600' },
+      { id: 'Dinner', label: 'Dinner', hint: 'Late-shift dinner requests', icon: UtensilsCrossed, tint: 'bg-orange-50 text-orange-500' },
+      {
+        id: 'Adv. Salary & EV Loan',
+        label: 'Adv. Salary & EV Loan',
+        hint: 'Salary advance and EV loan requests',
+        icon: Coins,
+        tint: 'bg-amber-50 text-amber-600',
+      },
+      { id: 'Relevant Contacts', label: 'Relevant Contacts', hint: 'Key people to reach out to', icon: Phone, tint: 'bg-emerald-50 text-emerald-600' },
+      { id: 'Asset', label: 'Asset', hint: 'Devices and equipment assigned to you', icon: Laptop, tint: 'bg-indigo-50 text-indigo-600' },
+      { id: 'VOIP Directory', label: 'VOIP Directory', hint: "Find colleagues' extensions", icon: Users, tint: 'bg-teal-50 text-teal-600' },
+      { id: 'Cab Request', label: 'Cab Request', hint: 'Book office transport', icon: Car, tint: 'bg-cyan-50 text-cyan-600' },
     ],
   },
 ];

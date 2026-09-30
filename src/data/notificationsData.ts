@@ -4,6 +4,8 @@ export type NotificationCategory =
   | 'Attendance'
   | 'Tickets'
   | 'Resignation'
+  | 'Assets'
+  | 'Cab Request'
   | 'Celebrations'
   | 'Announcements';
 
@@ -15,6 +17,8 @@ export type NotificationLink =
   | 'ot-request'
   | 'tickets'
   | 'resignation'
+  | 'assets'
+  | 'cab-request'
   | 'celebrations';
 
 export interface AppNotification {
@@ -35,6 +39,8 @@ export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   'Attendance',
   'Tickets',
   'Resignation',
+  'Assets',
+  'Cab Request',
   'Celebrations',
   'Announcements',
 ];

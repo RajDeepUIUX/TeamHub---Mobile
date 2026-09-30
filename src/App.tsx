@@ -51,6 +51,13 @@ import { AppHeader } from './components/home/AppHeader';
 import { MyProfileView } from './components/profile/MyProfileView';
 import { StaffReviewView } from './components/profile/StaffReviewView';
 import { AnnualReviewView } from './components/profile/AnnualReviewView';
+import { AdvanceSalaryView } from './components/support/AdvanceSalaryView';
+import { AdvanceDraft, AdvanceRequestView } from './components/support/AdvanceRequestView';
+import { AdvanceGuidelineSheet } from './components/support/AdvanceGuidelineSheet';
+import { CabDecision, CabRequestView } from './components/support/CabRequestView';
+import { CabRequestFormView } from './components/support/CabRequestFormView';
+import { CAB_MANAGER, CAB_REQUESTS_SEED, CAB_TEAM, CabDraft, CabRequest, cabTitle } from './data/cabRequestData';
+import { ADVANCE_REQUESTS_SEED, AdvanceRequest, AdvanceRequestType, isEvLoan } from './data/advanceSalaryData';
 import { REVIEW_CYCLES_SEED, ReviewCycle } from './data/annualReviewData';
 import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
@@ -81,6 +88,11 @@ import { ResignationRecord, ReviewDecision } from './types/resignation';
 import { REPORTING_MANAGER, CURRENT_STAFF, TEAM_RESIGNATIONS_SEED, toISODate } from './data/resignationData';
 import type { ResignationFormData } from './components/resignation/ApplyResignationView';
 import { TicketsView } from './components/tickets/TicketsView';
+import { RelevantContactsView } from './components/more/RelevantContactsView';
+import { VoipDirectoryView } from './components/more/VoipDirectoryView';
+import { AssetsView } from './components/assets/AssetsView';
+import { ASSETS_SEED, TEAM_ASSET_MEMBERS } from './data/assetsData';
+import type { AssetRecord } from './types/assets';
 import { CreateTicketView } from './components/tickets/CreateTicketView';
 import { Ticket } from './types/tickets';
 import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
@@ -136,11 +148,43 @@ export default function App() {
   const [editingFlex, setEditingFlex] = useState<FlexRequest | null>(null);
   // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
   const [profileModule, setProfileModule] = useState<string | null>(null);
-  // Staff Review can be opened from the Dashboard's Action Queue; Back returns there
-  const [staffReviewFromHome, setStaffReviewFromHome] = useState(false);
+  // Profile modules can also be opened from Home (Staff Review) or More (Support);
+  // when true, Back from the module returns there instead of the Profile menu
+  const [profileModuleFromApp, setProfileModuleFromApp] = useState(false);
+  const closeProfileModule = () => {
+    setProfileModule(null);
+    if (profileModuleFromApp) setIsProfileOpen(false);
+  };
   // Staff Review › Start Evaluation (Team Member Annual Review)
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [reviewCycles, setReviewCycles] = useState<ReviewCycle[]>(REVIEW_CYCLES_SEED);
+  // Support › Adv. Salary & EV Loan
+  const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>(ADVANCE_REQUESTS_SEED);
+  /** 'new' = raising a request, an id = editing it, null = list */
+  const [advanceFormFor, setAdvanceFormFor] = useState<string | null>(null);
+  const [advanceSubmittedType, setAdvanceSubmittedType] = useState<AdvanceRequestType | null>(null);
+  const [advanceGuideOpen, setAdvanceGuideOpen] = useState(false);
+  const submitAdvance = (draft: AdvanceDraft) => {
+    if (advanceFormFor && advanceFormFor !== 'new') {
+      setAdvanceRequests((prev) => prev.map((r) => (r.id === advanceFormFor ? { ...r, ...draft } : r)));
+      showToast('Request updated.');
+    } else {
+      setAdvanceRequests((prev) => [
+        {
+          ...draft,
+          id: `adv-${Date.now()}`,
+          // EV loans go straight to the CTM (Employee > CTM > HR > Finance)
+          status: isEvLoan(draft.type) ? 'CTM Review Pending' : 'Manager Review Pending',
+          submittedOn: toISODate(new Date()),
+          rcUploaded: isEvLoan(draft.type) ? false : undefined,
+          comments: [],
+        },
+        ...prev,
+      ]);
+      setAdvanceSubmittedType(draft.type);
+    }
+    setAdvanceFormFor(null);
+  };
   // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
   const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
@@ -157,13 +201,92 @@ export default function App() {
   const [managerTickets, setManagerTickets] = useState<Ticket[]>([]);
   const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
+  // Assets module: one shared list so a staff member's return request shows on the manager's Team tab
+  const [assets, setAssets] = useState<AssetRecord[]>(ASSETS_SEED);
+
+  // Support › Cab Request: one shared list so manager decisions reflect on the staff side
+  const [cabRequests, setCabRequests] = useState<CabRequest[]>(CAB_REQUESTS_SEED);
+  /** 'new' = raising a request, an id = editing it, null = list */
+  const [cabFormFor, setCabFormFor] = useState<string | null>(null);
+  const [cabSubmitted, setCabSubmitted] = useState(false);
+
   const isManager = userRole === 'Manager';
   // Identity used for the resignation module: staff = John, manager = his reporting manager
   const resignationUser = isManager
     ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
     : CURRENT_STAFF;
   const myResignations = isManager ? managerResignations : resignations;
+
+  const requestAssetReturn = (ids: string[]) => {
+    const today = toISODate(new Date());
+    setAssets((prev) =>
+      prev.map((a) => (ids.includes(a.id) && a.status === 'Assigned' ? { ...a, status: 'Return Requested', returnRequestedOn: today } : a))
+    );
+    showToast(ids.length === 1 ? 'Return requested. IT will collect it from your desk.' : `Return requested for ${ids.length} assets.`);
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'Assets',
+        title: `Asset return requested by ${resignationUser.staffName}`,
+        body: `${ids.length} ${ids.length === 1 ? 'asset is' : 'assets are'} being handed back to IT. See Team's Assets.`,
+        link: 'assets',
+      });
+    }
+  };
   const setMyResignations = isManager ? setManagerResignations : setResignations;
+
+  const submitCabRequest = (draft: CabDraft) => {
+    if (cabFormFor && cabFormFor !== 'new') {
+      setCabRequests((prev) => prev.map((r) => (r.id === cabFormFor ? { ...r, ...draft } : r)));
+      showToast('Cab request updated.');
+    } else {
+      setCabRequests((prev) => [
+        {
+          ...draft,
+          id: `cab-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
+          status: 'Pending',
+          submittedOn: toISODate(new Date()),
+        },
+        ...prev,
+      ]);
+      setCabSubmitted(true);
+      if (!isManager) {
+        pushNotification('Manager', {
+          category: 'Cab Request',
+          title: `Cab request from ${resignationUser.staffName}`,
+          body: `${cabTitle(draft)} · pickup at ${draft.pickupTime}. Review it in Team's Requests.`,
+          link: 'cab-request',
+          actionRequired: true,
+        });
+      }
+    }
+    setCabFormFor(null);
+  };
+  const closeCabRequest = (id: string, how: 'cancel' | 'stop') => {
+    const today = toISODate(new Date());
+    setCabRequests((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, status: how === 'stop' ? 'Terminated' : 'Cancelled', terminatedOn: how === 'stop' ? today : r.terminatedOn } : r
+      )
+    );
+    showToast(how === 'stop' ? 'Daily cab stopped from today.' : 'Cab request cancelled.');
+  };
+  const reviewCabRequest = (id: string, decision: CabDecision, comment: string) => {
+    const req = cabRequests.find((r) => r.id === id);
+    setCabRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: decision, review: { by: CAB_MANAGER, comment, on: toISODate(new Date()) } } : r))
+    );
+    showToast(decision === 'Approved' ? 'Cab request approved.' : 'Cab request rejected.');
+    if (req?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'Cab Request',
+        title: `Your cab request was ${decision.toLowerCase()}`,
+        body: `${cabTitle(req)} · ${req.pickupTime}${comment ? ` — "${comment}"` : ''}`,
+        link: 'cab-request',
+      });
+    }
+  };
 
   const submitResignation = (data: ResignationFormData) => {
     setMyResignations((prev) => [
@@ -356,11 +479,20 @@ export default function App() {
         setAppTab('more');
         setMoreModule('ot-request');
         break;
+      case 'cab-request':
+        setAppTab('home');
+        setProfileModuleFromApp(false);
+        setIsProfileOpen(true);
+        setCabFormFor(null);
+        setProfileModule('Cab Request');
+        break;
       case 'tickets':
       case 'resignation':
+      case 'assets':
         setAppTab('home');
+        setProfileModuleFromApp(false);
         setIsProfileOpen(true);
-        setProfileModule(n.link === 'tickets' ? 'Tickets' : 'Resignation');
+        setProfileModule(n.link === 'tickets' ? 'Tickets' : n.link === 'assets' ? 'Asset' : 'Resignation');
         break;
       case 'celebrations':
         setAppTab('home');
@@ -769,7 +901,9 @@ export default function App() {
       const inForm =
         (profileModule === 'Staff Review' && isEvaluating) ||
         (profileModule === 'Tickets' && isCreatingTicket) ||
-        (profileModule === 'Resignation' && isApplyingResignation);
+        (profileModule === 'Resignation' && isApplyingResignation) ||
+        (profileModule === 'Adv. Salary & EV Loan' && Boolean(advanceFormFor)) ||
+        (profileModule === 'Cab Request' && Boolean(cabFormFor));
       return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
@@ -988,12 +1122,111 @@ export default function App() {
                 />
               ) : isProfileOpen && profileModule === 'Staff Review' ? (
                 <StaffReviewView
-                  onBack={() => {
-                    setProfileModule(null);
-                    if (staffReviewFromHome) setIsProfileOpen(false);
-                  }}
+                  onBack={closeProfileModule}
                   onStartEvaluation={() => setIsEvaluating(true)}
                   evaluationSubmitted={!reviewCycles.some((c) => c.status === 'Open')}
+                />
+              ) : isProfileOpen && profileModule === 'Relevant Contacts' ? (
+                <RelevantContactsView onBack={closeProfileModule} onToast={showToast} />
+              ) : isProfileOpen && profileModule === 'VOIP Directory' ? (
+                <VoipDirectoryView
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  onBack={closeProfileModule}
+                  onToast={showToast}
+                />
+              ) : isProfileOpen && profileModule === 'Asset' ? (
+                <AssetsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  assets={assets.filter((a) => a.staffName === resignationUser.staffName)}
+                  onBack={closeProfileModule}
+                  onRequestReturn={requestAssetReturn}
+                  team={isManager ? { assets: assets.filter((a) => TEAM_ASSET_MEMBERS.includes(a.staffName)) } : undefined}
+                />
+              ) : isProfileOpen && profileModule === 'Cab Request' && cabFormFor ? (
+                <CabRequestFormView
+                  key={cabFormFor}
+                  requests={cabRequests.filter((r) => r.staffName === resignationUser.staffName)}
+                  initial={cabRequests.find((r) => r.id === cabFormFor)}
+                  onBack={() => setCabFormFor(null)}
+                  onSubmit={submitCabRequest}
+                />
+              ) : isProfileOpen && profileModule === 'Cab Request' ? (
+                <CabRequestView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={cabRequests.filter((r) => r.staffName === resignationUser.staffName)}
+                  onBack={closeProfileModule}
+                  onNew={() => setCabFormFor('new')}
+                  onEdit={(id) => setCabFormFor(id)}
+                  onCancel={(id) => closeCabRequest(id, 'cancel')}
+                  onStop={(id) => closeCabRequest(id, 'stop')}
+                  submitted={cabSubmitted}
+                  onDismissSubmitted={() => setCabSubmitted(false)}
+                  team={
+                    isManager
+                      ? { requests: cabRequests.filter((r) => CAB_TEAM.includes(r.staffName)), onReview: reviewCabRequest }
+                      : undefined
+                  }
+                />
+              ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' && advanceFormFor ? (
+                <AdvanceRequestView
+                  key={advanceFormFor}
+                  requests={advanceRequests}
+                  initial={advanceRequests.find((r) => r.id === advanceFormFor)}
+                  onBack={() => setAdvanceFormFor(null)}
+                  onOpenGuidelines={() => setAdvanceGuideOpen(true)}
+                  onSubmit={submitAdvance}
+                />
+              ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' ? (
+                <AdvanceSalaryView
+                  firstName="John"
+                  currentUser="John Smith"
+                  requests={advanceRequests}
+                  onBack={closeProfileModule}
+                  onOpenGuidelines={() => setAdvanceGuideOpen(true)}
+                  onRaise={() => setAdvanceFormFor('new')}
+                  onEdit={(id) => setAdvanceFormFor(id)}
+                  onWithdraw={(id) => {
+                    setAdvanceRequests((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? {
+                              ...r,
+                              status: 'Withdrawn',
+                              comments: [
+                                ...r.comments,
+                                {
+                                  id: `c-${Date.now()}`,
+                                  author: 'System',
+                                  role: 'System',
+                                  text: 'Request withdrawn by John Smith.',
+                                  createdAt: new Date().toISOString(),
+                                },
+                              ],
+                            }
+                          : r
+                      )
+                    );
+                    showToast('Request withdrawn.');
+                  }}
+                  onComment={(id, text) =>
+                    setAdvanceRequests((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? {
+                              ...r,
+                              comments: [
+                                ...r.comments,
+                                { id: `c-${Date.now()}`, author: 'John Smith', role: 'Staff', text, createdAt: new Date().toISOString() },
+                              ],
+                            }
+                          : r
+                      )
+                    )
+                  }
+                  submittedType={advanceSubmittedType}
+                  onDismissSubmitted={() => setAdvanceSubmittedType(null)}
                 />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
@@ -1004,7 +1237,7 @@ export default function App() {
                   currentUser={resignationUser.staffName}
                   tickets={myTickets}
                   teamTickets={isManager ? teamTicketList : undefined}
-                  onBack={() => setProfileModule(null)}
+                  onBack={closeProfileModule}
                   onCreate={() => setIsCreatingTicket(true)}
                   onComment={commentOnTicket}
                   onReopen={reopenTicket}
@@ -1020,7 +1253,7 @@ export default function App() {
                   key={userRole}
                   firstName={resignationUser.staffName.split(' ')[0]}
                   records={myResignations}
-                  onBack={() => setProfileModule(null)}
+                  onBack={closeProfileModule}
                   onApply={() => setIsApplyingResignation(true)}
                   team={
                     isManager
@@ -1058,14 +1291,26 @@ export default function App() {
                     setIsLoggedIn(false);
                   }}
                   onOpenItem={(label) => {
+                    setProfileModuleFromApp(false);
                     if (label === 'My Profile' || label === 'Edit Profile') {
                       setMyProfileStartEditing(label === 'Edit Profile');
                       setProfileModule('My Profile');
                     } else if (label === 'Staff Review') {
-                      setStaffReviewFromHome(false);
                       setIsEvaluating(false);
                       setProfileModule('Staff Review');
-                    } else if (label === 'Resignation' || label === 'Tickets') {
+                    } else if (label === 'Adv. Salary & EV Loan') {
+                      setAdvanceFormFor(null);
+                      setProfileModule(label);
+                    } else if (label === 'Cab Request') {
+                      setCabFormFor(null);
+                      setProfileModule(label);
+                    } else if (
+                      label === 'Resignation' ||
+                      label === 'Tickets' ||
+                      label === 'Relevant Contacts' ||
+                      label === 'Asset' ||
+                      label === 'VOIP Directory'
+                    ) {
                       setIsApplyingResignation(false);
                       setIsCreatingTicket(false);
                       setProfileModule(label);
@@ -1106,7 +1351,7 @@ export default function App() {
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => {
                       if (feature === 'Staff Review') {
-                        setStaffReviewFromHome(true);
+                        setProfileModuleFromApp(true);
                         setIsEvaluating(false);
                         setProfileModule('Staff Review');
                         setIsProfileOpen(true);
@@ -1240,6 +1485,23 @@ export default function App() {
                       } else if (m.id === 'ot-request') {
                         setIsAddingOT(false);
                         setMoreModule(m.id);
+                      } else if (
+                        m.id === 'Resignation' ||
+                        m.id === 'Tickets' ||
+                        m.id === 'Relevant Contacts' ||
+                        m.id === 'Asset' ||
+                        m.id === 'VOIP Directory' ||
+                        m.id === 'Adv. Salary & EV Loan' ||
+                        m.id === 'Cab Request'
+                      ) {
+                        // Support modules live in the profile flow; Back returns to More
+                        setIsApplyingResignation(false);
+                        setIsCreatingTicket(false);
+                        setAdvanceFormFor(null);
+                        setCabFormFor(null);
+                        setProfileModuleFromApp(true);
+                        setProfileModule(m.id);
+                        setIsProfileOpen(true);
                       } else {
                         showToast(`${m.label} is coming soon.`);
                       }
@@ -1613,6 +1875,8 @@ export default function App() {
               </ScreenTransition>
                 </div>
               )}
+
+            <AdvanceGuidelineSheet isOpen={advanceGuideOpen} onClose={() => setAdvanceGuideOpen(false)} />
 
             {/* Bottom Sheet: Punch Logs (Screenshot 4) */}
             <PunchLogsSheet
