@@ -430,3 +430,20 @@ REVIEW_CYCLES_SEED.find((c) => c.id === 'April-2025')!.form.additional = {
     'ptc-training': { interested: false, rows: [], values: {}, remarks: '' },
   },
 };
+
+/** ⓘ help for the Personal Skill sections, keyed by section title */
+export const SKILL_SECTION_INFO: Record<string, string> = {
+  'Technical Skills':
+    'Evaluate your proficiency in technical areas relevant in your current role and those needed for future. (You might have basic understanding of 1120 H but in near future you would like to upgrade it to Intermediate or Advanced level so you have to map it accordingly)',
+  'Software Expertise':
+    'Measure your familiarity and proficiency with specific software applications or essential in your role and those required in near future. (You might have basic understanding of Quickbooks but in near future you would like to upgrade it to Intermediate or Advanced level so you have to map it accordingly)',
+  // Same copy as Software Expertise on the web
+  'Communication Skills':
+    'Measure your familiarity and proficiency with specific software applications or essential in your role and those required in near future. (You might have basic understanding of Quickbooks but in near future you would like to upgrade it to Intermediate or Advanced level so you have to map it accordingly)',
+  'Overall Domain Understanding':
+    'Assess your understanding of the domain in which you work, including key concepts, trends, and challenges and to what level you would like to upgrade your domain understanding. You can select multiple domains here. (e.g- Your might have a basic understanding of Accounting Domain and you in future you would like to upgrade it with Intermediate or Advanced Level)',
+  'Current Qualifications':
+    'Review your currently mapped qualifications and add the qualification you are pursuing with targeted date of completion.',
+  'Future Qualifications':
+    'Review your currently mapped qualifications and add the qualification you are pursuing with targeted date of completion.',
+};

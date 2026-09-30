@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -16,6 +16,8 @@ import {
   Wrench,
   Lock,
   Plus,
+  Info,
+  RotateCcw,
   Trash2,
   X,
 } from 'lucide-react';
@@ -34,6 +36,7 @@ import {
   FutureQualification,
   QUALIFICATIONS,
   QUALIFICATION_STATUSES,
+  SKILL_SECTION_INFO,
   RATING_PARAMETERS,
   REVIEW_IMPORTANT_NOTES,
   REVIEW_INSTRUCTIONS_CLOSING,
@@ -45,6 +48,7 @@ import {
   SkillLevel,
   SkillRow,
   TECHNICAL_SKILLS,
+  emptyReviewForm,
   newSkillRow,
   softwareCategory,
 } from '../../data/annualReviewData';
@@ -110,7 +114,10 @@ const SectionCard: React.FC<{
   done?: boolean;
   action?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ icon: Icon, title, subtitle, done, action, children }) => (
+}> = ({ icon: Icon, title, subtitle, done, action, children }) => {
+  const info = SKILL_SECTION_INFO[title];
+  const [infoOpen, setInfoOpen] = useState(false);
+  return (
   <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
     <div className="flex items-center gap-3 p-3.5 pb-3">
       <span className="w-9 h-9 rounded-xl bg-indigo-50 text-[#4F46E5] flex items-center justify-center shrink-0">
@@ -119,6 +126,16 @@ const SectionCard: React.FC<{
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-1.5">
           <span className="text-[13px] font-bold text-[#1E293B] leading-snug">{title}</span>
+          {info && (
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              className="w-5 h-5 -m-0.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 active:bg-slate-100 shrink-0 cursor-pointer"
+              aria-label={`About ${title}`}
+            >
+              <Info className="w-3.5 h-3.5" />
+            </button>
+          )}
           {done && (
             <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
               <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -130,8 +147,33 @@ const SectionCard: React.FC<{
       {action}
     </div>
     <div className="px-3.5 pb-3.5 space-y-2.5">{children}</div>
+
+    {info && (
+      <BottomSheet isOpen={infoOpen} onClose={() => setInfoOpen(false)} maxHeight="max-h-[50%]">
+        <div className="pt-3 pb-1 flex justify-center shrink-0">
+          <div className="w-10 h-1 bg-slate-300 rounded-full" />
+        </div>
+        <div className="px-5 pt-2 pb-6">
+          <div className="flex items-start gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-blue-50 text-[#2F68FE] flex items-center justify-center shrink-0">
+              <Info className="w-4 h-4" />
+            </span>
+            <h2 className="text-sm font-bold text-[#1E293B] leading-snug pt-1.5">{title}</h2>
+          </div>
+          <p className="mt-2.5 text-[12.5px] text-slate-600 leading-relaxed">{info}</p>
+          <button
+            type="button"
+            onClick={() => setInfoOpen(false)}
+            className="mt-5 w-full h-11 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold active:bg-slate-200 cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </BottomSheet>
+    )}
   </section>
-);
+  );
+};
 
 const LevelFields: React.FC<{ row: SkillRow; onChange: (patch: Partial<SkillRow>) => void }> = ({ row, onChange }) => (
   <div className="grid grid-cols-2 gap-2">
@@ -239,6 +281,11 @@ const LEVEL_TONES: Record<SkillLevel, string> = {
 
 const InstructionsSheet: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [view, setView] = useState<'guide' | 'ratings'>('guide');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Each tab starts at the top, whether switched from the tabs or the "How does Rating Parameters work?" link
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [view]);
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
       <div className="pt-3 pb-1 flex justify-center shrink-0">
@@ -270,7 +317,7 @@ const InstructionsSheet: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 text-[12.5px] text-slate-600 leading-relaxed">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 text-[12.5px] text-slate-600 leading-relaxed">
         {view === 'guide' ? (
           <div className="space-y-4">
             {/* Deadline & saving first — the two things people most need to know */}
@@ -353,7 +400,7 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [qualPickerOpen, setQualPickerOpen] = useState(false);
   const [datePicker, setDatePicker] = useState<{ name: string; field: 'targetDate' | 'completionDate' } | null>(null);
-  const [confirm, setConfirm] = useState<'submit' | 'discard' | null>(null);
+  const [confirm, setConfirm] = useState<'submit' | 'discard' | 'reset' | null>(null);
 
   const cycle = cycles.find((c) => c.id === cycleId) ?? openCycle;
   const readOnly = cycle.status === 'Submitted';
@@ -394,9 +441,6 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
   };
 
   const handleBack = () => (dirty ? setConfirm('discard') : onBack());
-  const handleSave = () => {
-    onSaveDraft(cycle.id, form);
-  };
   const handleSubmitTap = () => {
     const next = { ...validate(form), ...validateAdditional(form.additional) };
     setErrors(next);
@@ -755,10 +799,18 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
 
       {/* Actions */}
       {!readOnly && (
-        <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex gap-2.5">
+        <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex gap-2">
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => setConfirm('reset')}
+            className="flex-1 h-12 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset
+          </button>
+          <button
+            type="button"
+            onClick={() => onSaveDraft(cycle.id, form)}
             className="flex-1 h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
           >
             Save
@@ -766,7 +818,7 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
           <button
             type="button"
             onClick={handleSubmitTap}
-            className="flex-[1.6] h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
+            className="flex-[1.5] h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
           >
             <Check className="w-4 h-4" />
             Save & Submit
@@ -831,6 +883,25 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
             },
           },
           { label: 'Keep Editing', tone: 'secondary', onClick: () => setConfirm(null) },
+        ]}
+      />
+
+      <ConfirmSheet
+        isOpen={confirm === 'reset'}
+        title="Reset the form?"
+        body="This clears all your answers on both Personal Skill and Additional Responsibilities."
+        onClose={() => setConfirm(null)}
+        actions={[
+          {
+            label: 'Reset Form',
+            tone: 'danger',
+            onClick: () => {
+              setConfirm(null);
+              setForm(emptyReviewForm());
+              setErrors({});
+            },
+          },
+          { label: 'Keep My Answers', tone: 'secondary', onClick: () => setConfirm(null) },
         ]}
       />
 

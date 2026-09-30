@@ -16,6 +16,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { MobileDeviceFrame, DeviceModel } from './design-system/components/MobileDeviceFrame';
+import { ScreenTransition } from './design-system/components/ScreenTransition';
 import { AttendanceRecord, AttendanceKPIs as AttendanceKPIsType } from './types/attendance';
 import { ATTENDANCE_MONTHS, ALL_ATTENDANCE_RECORDS } from './data/attendanceMonths';
 import { AttendanceKPIs } from './components/attendance/AttendanceKPIs';
@@ -760,6 +761,31 @@ export default function App() {
     })
     .sort((a, b) => b.date.localeCompare(a.date));
 
+  // Which screen is showing (mirrors the render chain below) and how deep it sits, for the slide transition
+  const screen = ((): { key: string; depth: number } => {
+    if (isNotificationsOpen) return { key: 'notifications', depth: 1 };
+    if (isProfileOpen) {
+      if (!profileModule) return { key: 'profile', depth: 1 };
+      const inForm =
+        (profileModule === 'Staff Review' && isEvaluating) ||
+        (profileModule === 'Tickets' && isCreatingTicket) ||
+        (profileModule === 'Resignation' && isApplyingResignation);
+      return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
+    }
+    if (celebrationsTab) return { key: 'celebrations', depth: 1 };
+    if (appTab === 'more' && (moreModule === 'work-timing' || moreModule === 'ot-request')) {
+      const inForm = moreModule === 'work-timing' ? isRequestingFlex || Boolean(editingFlex) : isAddingOT;
+      return { key: `more/${moreModule}${inForm ? '/form' : ''}`, depth: inForm ? 2 : 1 };
+    }
+    if (appTab !== 'attendance') return { key: appTab, depth: 0 };
+    if (editingLeave) return { key: 'attendance/edit-leave', depth: 2 };
+    if (isApplyingLeaveOpen) return { key: 'attendance/apply-leave', depth: 2 };
+    if (selectedLeave) return { key: 'attendance/leave', depth: 1 };
+    if (applyingLeaveRecord) return { key: 'attendance/apply-for-day', depth: 1 };
+    if (selectedWFORecord) return { key: 'attendance/wfo', depth: 1 };
+    return { key: 'attendance', depth: 0 };
+  })();
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased">
       {/* Top Studio Control Bar */}
@@ -924,6 +950,7 @@ export default function App() {
                       setIsProfileOpen(true);
                     }}
                   />
+              <ScreenTransition screenKey={screen.key} depth={screen.depth}>
               {isNotificationsOpen ? (
                 <NotificationsView
                   notifications={myNotifications}
@@ -1583,6 +1610,7 @@ export default function App() {
                 )}
               </div>
             )}
+              </ScreenTransition>
                 </div>
               )}
 
