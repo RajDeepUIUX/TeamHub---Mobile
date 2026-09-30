@@ -97,6 +97,8 @@ export interface ProfileSection {
   badge?: string;
   /** Short explanation under the section title */
   description?: string;
+  /** Profile introduction video (upload / link) block */
+  video?: boolean;
 }
 
 export type ProfileTabId = 'personal' | 'professional' | 'skills' | 'learning' | 'clients' | 'availability' | 'video';
@@ -274,6 +276,14 @@ const TECHNICAL_SKILL_OPTIONS = [
   { name: 'Financial statement review' },
   { name: 'W-2 Payroll' },
   { name: 'Financial reporting and presentation' },
+];
+
+/** "When does this apply?" choices for Hybrid Working / Work From Home */
+const WORK_MODE_APPLIES = [
+  { value: 'Permanent', hint: 'Year-round, regardless of season' },
+  { value: 'Seasonal', hint: 'Peak / busy seasons only' },
+  { value: 'Non-Seasonal', hint: 'Off-season periods only' },
+  { value: 'Upon Request', hint: 'Approved per staff request, case-by-case' },
 ];
 
 /** Hourly interview slots, 1 PM – 11 PM IST */
@@ -590,12 +600,7 @@ export const PROFILE_TABS: ProfileTab[] = [
             followUp: {
               key: 'prefHybridApplies',
               label: 'When does this apply?',
-              options: [
-                { value: 'Permanent', hint: 'Year-round, regardless of season' },
-                { value: 'Seasonal', hint: 'Peak / busy seasons only' },
-                { value: 'Non-Seasonal', hint: 'Off-season periods only' },
-                { value: 'Upon Request', hint: 'Approved per staff request, case-by-case' },
-              ],
+              options: WORK_MODE_APPLIES,
             },
           },
           {
@@ -604,6 +609,7 @@ export const PROFILE_TABS: ProfileTab[] = [
             type: 'toggle',
             options: YES_NO,
             question: 'Do you prefer working from home, either fully or on certain days?',
+            followUp: { key: 'prefWfhApplies', label: 'When does this apply?', options: WORK_MODE_APPLIES },
           },
         ],
       },
@@ -649,13 +655,13 @@ export const PROFILE_TABS: ProfileTab[] = [
         fields: [
           { key: 'otHours', label: 'Hours', type: 'text', locked: true },
           { key: 'otClientType', label: 'Preferred Client Type', type: 'text', locked: true },
-          { key: 'otAvailabilityType', label: 'Type of Availability', type: 'text', locked: true, full: true },
+          { key: 'otAvailabilityType', label: 'Type of Availability', type: 'text', locked: true },
           { key: 'otEaSupport', label: 'EA Support Needed', type: 'text', locked: true },
         ],
       },
     ],
   },
-  { id: 'video', label: 'Profile Introduction Video', sections: [] },
+  { id: 'video', label: 'Profile Introduction Video', sections: [{ title: 'Profile Introduction Video', video: true }] },
 ];
 
 /** Short tab labels for the mobile tab strip */
@@ -702,6 +708,7 @@ export const MY_PROFILE_SEED: MyProfileData = {
     prefHybrid: 'Yes',
     prefHybridApplies: 'Permanent',
     prefWfh: 'No',
+    prefWfhApplies: '',
     prefEarlyShift: '',
     prefLateAvailability: 'Yes',
     prefLateApplies: 'Peak / Busy Seasons Only',
@@ -710,6 +717,12 @@ export const MY_PROFILE_SEED: MyProfileData = {
     otClientType: '',
     otAvailabilityType: '',
     otEaSupport: '',
+
+    // Profile Introduction Video (none yet)
+    introVideoType: '',
+    introVideoName: '',
+    introVideoUrl: '',
+    introVideoAddedOn: '',
 
     // Client Exposure (manager / system managed)
     clientTypes: '',

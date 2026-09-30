@@ -31,6 +31,7 @@ import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet, todayIso } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
 import { TimeWheelSheet } from '../common/TimeWheelSheet';
+import { IntroVideoSection } from './IntroVideoSection';
 import {
   MyProfileData,
   PROFILE_TABS,
@@ -53,6 +54,8 @@ interface MyProfileViewProps {
   startEditing?: boolean;
   onBack: () => void;
   onSave: (profile: MyProfileData) => void;
+  /** Short toast for actions outside the form (e.g. "coming soon") */
+  onNotify?: (message: string) => void;
 }
 
 const TAB_ICONS: Record<ProfileTabId, React.ElementType> = {
@@ -1002,7 +1005,7 @@ const SkillsSection: React.FC<{
 
 /* ---------------------------------- Screen ---------------------------------- */
 
-export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, startEditing, onBack, onSave }) => {
+export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, startEditing, onBack, onSave, onNotify }) => {
   const [tab, setTab] = useState<ProfileTabId>('personal');
   const [editing, setEditing] = useState(Boolean(startEditing));
   const [draft, setDraft] = useState<MyProfileData>(profile);
@@ -1018,7 +1021,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const current = PROFILE_TABS.find((t) => t.id === tab)!;
   const hasContent = current.sections.length > 0;
   // Tabs made only of HR / system fields (e.g. Client Exposure) have nothing to edit
-  const canEdit = current.sections.some((s) => s.list || s.skills || s.fields?.some((f) => !isReadOnly(f)));
+  const canEdit = current.sections.some((s) => s.video || s.list || s.skills || s.fields?.some((f) => !isReadOnly(f)));
   const shown = editing ? draft : profile;
   const dirty = editing && JSON.stringify(draft) !== JSON.stringify(profile);
 
@@ -1218,7 +1221,9 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               )}
 
               {current.sections.map((section) =>
-                section.skills ? (
+                section.video ? (
+                  <IntroVideoSection key={section.title} values={shown.values} editing={editing} onChange={setValue} onNotify={onNotify} />
+                ) : section.skills ? (
                   <SkillsSection
                     key={section.title}
                     title={section.title}

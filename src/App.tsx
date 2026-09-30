@@ -928,6 +928,7 @@ export default function App() {
                   photoUrl={profilePhoto}
                   startEditing={myProfileStartEditing}
                   onBack={() => setProfileModule(null)}
+                  onNotify={showToast}
                   onSave={(next) => {
                     setMyProfile(next);
                     showToast('Profile updated.');
