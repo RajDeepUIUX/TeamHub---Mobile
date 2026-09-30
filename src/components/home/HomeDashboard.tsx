@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Bell,
   Cake,
   ChevronRight,
   ArrowRight,
@@ -19,9 +18,7 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import { RECENT_ATTENDANCE, CELEBRATION_TOTALS, TeamCelebration } from '../../data/dashboardData';
-import { BrandLogoHorizontal } from '../auth/BrandLogo';
 import { OverviewTasks } from './OverviewTasks';
-import { ProfileAvatar } from '../profile/ProfileAvatar';
 
 interface HomeDashboardProps {
   userName: string;
@@ -32,11 +29,6 @@ interface HomeDashboardProps {
   onViewLog: () => void;
   onWish: (person: TeamCelebration) => void;
   onComingSoon: (feature: string) => void;
-  onOpenProfile: () => void;
-  onOpenNotifications: () => void;
-  unreadNotifications: number;
-  fullName: string;
-  profilePhoto: string | null;
 }
 
 const greetingFor = (date: Date) => {
@@ -112,11 +104,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onViewLog,
   onWish,
   onComingSoon,
-  onOpenProfile,
-  onOpenNotifications,
-  unreadNotifications,
-  fullName,
-  profilePhoto,
 }) => {
   const now = new Date();
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -132,34 +119,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      {/* App Header */}
-      <header className="shrink-0 bg-white/95 backdrop-blur-md px-4 h-14 flex items-center justify-between border-b border-[#EBF0F7]">
-        <BrandLogoHorizontal className="h-5" />
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onOpenNotifications}
-            className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 cursor-pointer"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadNotifications > 0 && (
-              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenProfile}
-            className="w-8 h-8 rounded-full ring-2 ring-white shadow-xs hover:ring-[#C7D2FE] transition cursor-pointer"
-            aria-label="My profile"
-          >
-            <ProfileAvatar name={fullName} photoUrl={profilePhoto} className="w-8 h-8 rounded-full" textClassName="text-[11px]" />
-          </button>
-        </div>
-      </header>
-
       {/* Scrollable Dashboard */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
         {/* Greeting */}

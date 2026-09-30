@@ -17,4 +17,8 @@ export interface OTRequest {
   assignedHours: number;
   status: OTStatus;
   submittedAt: string; // ISO timestamp
+  /** Set when the reporting manager approves or rejects */
+  reviewedBy?: string;
+  reviewedAt?: string;
+  managerComment?: string;
 }

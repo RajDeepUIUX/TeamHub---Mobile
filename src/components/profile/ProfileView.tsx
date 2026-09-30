@@ -61,7 +61,7 @@ interface MenuItem {
 }
 
 const ACCOUNT_ITEMS: MenuItem[] = [
-  { label: 'Personal Information', icon: User, tint: 'bg-blue-50 text-blue-600', hint: 'Contact, address, emergency' },
+  { label: 'My Profile', icon: User, tint: 'bg-blue-50 text-blue-600', hint: 'Personal, professional, skills & more' },
   {
     label: 'Staff Review',
     icon: ClipboardCheck,

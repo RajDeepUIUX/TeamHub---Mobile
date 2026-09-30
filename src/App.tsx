@@ -46,6 +46,9 @@ import { HomeDashboard } from './components/home/HomeDashboard';
 import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
 import { ComingSoonView } from './components/home/ComingSoonView';
 import { AppBottomNav, AppTab } from './components/home/AppBottomNav';
+import { AppHeader } from './components/home/AppHeader';
+import { MyProfileView } from './components/profile/MyProfileView';
+import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
 import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
 import { HOLIDAYS_DATA } from './data/holidayData';
@@ -62,6 +65,8 @@ import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
 import { AddOTRequestView } from './components/more/AddOTRequestView';
 import { OTRequest } from './types/overtime';
+import type { OTDecision } from './components/more/OTReviewSheet';
+import { TEAM_OT_REQUESTS_SEED } from './data/overtimeData';
 import { RequestFlexibilityView } from './components/more/RequestFlexibilityView';
 import { FlexRequest } from './types/workTiming';
 import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
@@ -114,6 +119,8 @@ export default function App() {
   // OT requests (staff & manager keep their own lists); submitted requests can't be edited
   const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
   const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
+  // Manager: the rest of the team's OT requests (the staff member's own come from staffOTRequests)
+  const [teamOTRequests, setTeamOTRequests] = useState<OTRequest[]>(TEAM_OT_REQUESTS_SEED);
   const [isAddingOT, setIsAddingOT] = useState(false);
   // Work Timing: flexibility requests (empty initially) and the request flow
   const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
@@ -125,6 +132,9 @@ export default function App() {
   const [editingFlex, setEditingFlex] = useState<FlexRequest | null>(null);
   // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
   const [profileModule, setProfileModule] = useState<string | null>(null);
+  // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
+  const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
+  const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
   // Resignation module: no logs initially; newest first
   const [resignations, setResignations] = useState<ResignationRecord[]>([]);
   // Other team members' resignations (seen by the reporting manager)
@@ -331,6 +341,11 @@ export default function App() {
         setEditingFlex(null);
         setAppTab('more');
         setMoreModule('work-timing');
+        break;
+      case 'ot-request':
+        setIsAddingOT(false);
+        setAppTab('more');
+        setMoreModule('ot-request');
         break;
       case 'tickets':
       case 'resignation':
@@ -632,6 +647,39 @@ export default function App() {
     showToast(ids.length === 1 ? `Request ${verb}.` : `${ids.length} requests ${verb}.`);
   };
 
+  // Staff member's OT requests + the rest of the team's: pending first, then newest
+  const teamOTList = [...staffOTRequests, ...teamOTRequests].sort((a, b) =>
+    a.status === 'Pending' && b.status !== 'Pending'
+      ? -1
+      : b.status === 'Pending' && a.status !== 'Pending'
+        ? 1
+        : b.submittedAt.localeCompare(a.submittedAt)
+  );
+
+  // Manager decision on OT requests → reflected on the staff member's list
+  const reviewOT = (ids: string[], decision: OTDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: OTRequest[]) =>
+      list.map((r) =>
+        idSet.has(r.id) ? { ...r, status: decision, managerComment: comment || undefined, reviewedBy: ATTENDANCE_REVIEWER, reviewedAt } : r
+      );
+    setStaffOTRequests(apply);
+    setTeamOTRequests(apply);
+    const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    staffOTRequests
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Work Timing',
+          title: `OT request ${verb}`,
+          body: `Your ${x.domain} OT request (${x.country}) was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
+          link: 'ot-request',
+        })
+      );
+    showToast(ids.length === 1 ? `OT request ${verb}.` : `${ids.length} OT requests ${verb}.`);
+  };
+
   // Submit Request Edit
   const handleSubmitEdit = (
     recordId: string,
@@ -854,12 +902,36 @@ export default function App() {
                     showToast(`Signed in as ${userRole}`);
                   }}
                 />
-              ) : isNotificationsOpen ? (
+              ) : (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <AppHeader
+                    fullName="John Smith"
+                    profilePhoto={profilePhoto}
+                    unreadNotifications={unreadNotifications}
+                    onOpenNotifications={() => setIsNotificationsOpen(true)}
+                    onOpenProfile={() => {
+                      setIsNotificationsOpen(false);
+                      setProfileModule(null);
+                      setIsProfileOpen(true);
+                    }}
+                  />
+              {isNotificationsOpen ? (
                 <NotificationsView
                   notifications={myNotifications}
                   onBack={() => setIsNotificationsOpen(false)}
                   onOpen={openNotification}
                   onMarkAllRead={() => setMyNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
+                />
+              ) : isProfileOpen && profileModule === 'My Profile' ? (
+                <MyProfileView
+                  profile={myProfile}
+                  photoUrl={profilePhoto}
+                  startEditing={myProfileStartEditing}
+                  onBack={() => setProfileModule(null)}
+                  onSave={(next) => {
+                    setMyProfile(next);
+                    showToast('Profile updated.');
+                  }}
                 />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
@@ -924,7 +996,10 @@ export default function App() {
                     setIsLoggedIn(false);
                   }}
                   onOpenItem={(label) => {
-                    if (label === 'Resignation' || label === 'Tickets') {
+                    if (label === 'My Profile' || label === 'Edit Profile') {
+                      setMyProfileStartEditing(label === 'Edit Profile');
+                      setProfileModule('My Profile');
+                    } else if (label === 'Resignation' || label === 'Tickets') {
                       setIsApplyingResignation(false);
                       setIsCreatingTicket(false);
                       setProfileModule(label);
@@ -964,14 +1039,6 @@ export default function App() {
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
-                    onOpenNotifications={() => setIsNotificationsOpen(true)}
-                    unreadNotifications={unreadNotifications}
-                    onOpenProfile={() => {
-                      setProfileModule(null);
-                      setIsProfileOpen(true);
-                    }}
-                    fullName="John Smith"
-                    profilePhoto={profilePhoto}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>
@@ -1070,7 +1137,7 @@ export default function App() {
                         category: 'Work Timing',
                         title: `New OT request from ${resignationUser.staffName}`,
                         body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. Needs your approval.`,
-                        link: 'work-timing',
+                        link: 'ot-request',
                         actionRequired: true,
                       });
                     }
@@ -1078,11 +1145,13 @@ export default function App() {
                 />
               ) : appTab === 'more' && moreModule === 'ot-request' ? (
                 <OTRequestView
+                  key={userRole}
                   firstName={resignationUser.staffName.split(' ')[0]}
                   requests={isManager ? managerOTRequests : staffOTRequests}
                   otHours={myLeaveBalance.otHours}
                   onBack={() => setMoreModule(null)}
                   onAddRequest={() => setIsAddingOT(true)}
+                  team={isManager ? { requests: teamOTList, onReview: reviewOT } : undefined}
                 />
               ) : appTab === 'more' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -1466,6 +1535,8 @@ export default function App() {
                 )}
               </div>
             )}
+                </div>
+              )}
 
             {/* Bottom Sheet: Punch Logs (Screenshot 4) */}
             <PunchLogsSheet

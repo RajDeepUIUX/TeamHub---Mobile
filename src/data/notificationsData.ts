@@ -12,6 +12,7 @@ export type NotificationLink =
   | 'attendance'
   | 'leaves'
   | 'work-timing'
+  | 'ot-request'
   | 'tickets'
   | 'resignation'
   | 'celebrations';
