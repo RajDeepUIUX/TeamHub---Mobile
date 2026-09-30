@@ -17,6 +17,12 @@ export type ProfileFieldType =
   | 'file'
   /** Several picks from a searchable list; the value is a string[] */
   | 'multiselect'
+  /** Weekday chips with an "All" shortcut; options are the days; the value is a string[] */
+  | 'days'
+  /** Hourly time-slot chips; options are "HH:MM-HH:MM"; the value is a string[] */
+  | 'slots'
+  /** "HH:MM" picked on hour / minute wheels */
+  | 'time'
   /** Calculated from other values; never edited */
   | 'auto';
 
@@ -48,6 +54,12 @@ export interface ProfileField {
   hint?: string;
   /** Must differ from another field (e.g. Secondary vs Primary Domain) */
   notEqual?: { key: string; label: string };
+  /** Renders as a question card: bold label, this text, then the answer */
+  question?: string;
+  /** Text shown in view mode when there's no value */
+  emptyText?: string;
+  /** Question fields: extra single-choice asked when the answer is "Yes" */
+  followUp?: { key: string; label: string; options: { value: string; hint: string }[] };
 }
 
 /** A repeatable list inside a section (Family Members, Qualifications, Experience) */
@@ -81,6 +93,10 @@ export interface ProfileSection {
   skills?: ProfileSkillsConfig;
   /** Line of small print under the section */
   note?: string;
+  /** Tag on the right of the section title (replaces per-field tags, e.g. "Auto") */
+  badge?: string;
+  /** Short explanation under the section title */
+  description?: string;
 }
 
 export type ProfileTabId = 'personal' | 'professional' | 'skills' | 'learning' | 'clients' | 'availability' | 'video';
@@ -259,6 +275,9 @@ const TECHNICAL_SKILL_OPTIONS = [
   { name: 'W-2 Payroll' },
   { name: 'Financial reporting and presentation' },
 ];
+
+/** Hourly interview slots, 1 PM – 11 PM IST */
+const INTERVIEW_SLOTS = Array.from({ length: 10 }, (_, i) => `${13 + i}:00-${14 + i}:00`);
 
 /* ---------------------------------- Schema ---------------------------------- */
 
@@ -485,6 +504,7 @@ export const PROFILE_TABS: ProfileTab[] = [
       },
       {
         title: 'Quality, Risk & Performance Signals',
+        badge: 'Auto',
         note: 'Escalations, Appreciations, Replacements and Terminations are computed from operational data.',
         fields: [
           { key: 'mentorJuniors', label: 'Suitable to Mentor Juniors', type: 'text', locked: true, full: true },
@@ -497,8 +517,144 @@ export const PROFILE_TABS: ProfileTab[] = [
     ],
   },
   { id: 'learning', label: 'Learning & Growth', sections: [] },
-  { id: 'clients', label: 'Client Exposure', sections: [] },
-  { id: 'availability', label: 'Availability & Work Preferences', sections: [] },
+  {
+    id: 'clients',
+    label: 'Client Exposure',
+    sections: [
+      {
+        title: 'Client Exposure & Communication Readiness',
+        description: 'Set by your manager or taken from system records, so they can’t be edited here.',
+        fields: [
+          { key: 'clientTypes', label: 'Type of Clients Worked With', type: 'text', locked: true },
+          { key: 'workedAs', label: 'Worked As', type: 'text', locked: true },
+          { key: 'communicationSkills', label: 'Communication Skills', type: 'text', locked: true },
+          { key: 'eligibleAssociate', label: 'Eligible for Associate', type: 'text', locked: true },
+          { key: 'eligibleFace', label: 'Eligible for Face', type: 'text', locked: true },
+          {
+            key: 'clientInterviewRejections',
+            label: 'Rejections in Client Interview',
+            type: 'auto',
+            compute: (v) => String(v.clientInterviewRejections ?? 0),
+          },
+          { key: 'managingEndClients', label: 'Managing End Clients', type: 'text', locked: true },
+          { key: 'endClientInteractionQuality', label: 'End Client Interaction Quality', type: 'text', locked: true },
+          { key: 'endClientInteraction', label: 'End Client Interaction', type: 'text', locked: true },
+          { key: 'smootherOnboarding', label: 'Helped Smoother Onboarding', type: 'text', locked: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'availability',
+    label: 'Availability & Work Preferences',
+    sections: [
+      {
+        title: 'Interview Availability',
+        fields: [
+          {
+            key: 'interviewDays',
+            label: 'Days',
+            type: 'days',
+            full: true,
+            options: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+            emptyText: 'No interview days selected',
+          },
+          {
+            key: 'interviewSlots',
+            label: 'Time Slots (IST)',
+            type: 'slots',
+            full: true,
+            options: INTERVIEW_SLOTS,
+            emptyText: 'No time slots selected',
+          },
+        ],
+      },
+      {
+        title: 'Current Shift & Work Mode',
+        fields: [
+          { key: 'currentWorkMode', label: 'Current Work Mode', type: 'text', locked: true },
+          { key: 'shiftTiming', label: 'Shift Timing', type: 'text', locked: true },
+          { key: 'availableUptoRoy', label: 'Available Up To (ROY)', type: 'time', required: true },
+          { key: 'availableUptoSeasonal', label: 'Available Up To (Seasonal)', type: 'time', required: true },
+        ],
+      },
+      {
+        title: 'Work Flexibility Preferences',
+        fields: [
+          {
+            key: 'prefHybrid',
+            label: 'Hybrid Working',
+            type: 'toggle',
+            options: YES_NO,
+            question: 'Do you prefer a hybrid working arrangement — splitting your time between the office and home?',
+            followUp: {
+              key: 'prefHybridApplies',
+              label: 'When does this apply?',
+              options: [
+                { value: 'Permanent', hint: 'Year-round, regardless of season' },
+                { value: 'Seasonal', hint: 'Peak / busy seasons only' },
+                { value: 'Non-Seasonal', hint: 'Off-season periods only' },
+                { value: 'Upon Request', hint: 'Approved per staff request, case-by-case' },
+              ],
+            },
+          },
+          {
+            key: 'prefWfh',
+            label: 'Work From Home',
+            type: 'toggle',
+            options: YES_NO,
+            question: 'Do you prefer working from home, either fully or on certain days?',
+          },
+        ],
+      },
+      {
+        title: 'Additional Flexibilities',
+        description:
+          'Extra preferences you can opt into. They apply whatever your main working mode is (office, hybrid or from home).',
+        fields: [
+          {
+            key: 'prefEarlyShift',
+            label: 'Early Shift Timing',
+            type: 'toggle',
+            options: YES_NO,
+            question: 'During the off-season, would you prefer to come in early and leave early instead of following the standard shift timing?',
+          },
+          {
+            key: 'prefLateAvailability',
+            label: 'Late Availability',
+            type: 'toggle',
+            options: YES_NO,
+            question:
+              'If a client call, team meeting or other business need comes up outside office hours, are you comfortable joining remotely from home using your assigned laptop?',
+            followUp: {
+              key: 'prefLateApplies',
+              label: 'When does this apply?',
+              options: [
+                { value: 'All Year, regardless of season', hint: 'Available any time it is needed' },
+                { value: 'Peak / Busy Seasons Only', hint: 'Tax season, audit season or other peak periods' },
+              ],
+            },
+          },
+          {
+            key: 'prefEarlyFridays',
+            label: 'Early Fridays',
+            type: 'toggle',
+            options: YES_NO,
+            question: 'During the off-season, would you prefer to come in early and leave early on Fridays, giving you more time with your family in the evening?',
+          },
+        ],
+      },
+      {
+        title: 'Overtime Availability',
+        fields: [
+          { key: 'otHours', label: 'Hours', type: 'text', locked: true },
+          { key: 'otClientType', label: 'Preferred Client Type', type: 'text', locked: true },
+          { key: 'otAvailabilityType', label: 'Type of Availability', type: 'text', locked: true, full: true },
+          { key: 'otEaSupport', label: 'EA Support Needed', type: 'text', locked: true },
+        ],
+      },
+    ],
+  },
   { id: 'video', label: 'Profile Introduction Video', sections: [] },
 ];
 
@@ -535,6 +691,37 @@ export const MY_PROFILE_SEED: MyProfileData = {
     appreciations: '3',
     replacements: '0',
     terminations: '0',
+
+    // Availability & Work Preferences
+    interviewDays: ['Tue', 'Thu'],
+    interviewSlots: ['14:00-15:00', '15:00-16:00', '16:00-17:00', '19:00-20:00'],
+    currentWorkMode: 'Hybrid',
+    shiftTiming: '12:00 - 21:00',
+    availableUptoRoy: '21:00',
+    availableUptoSeasonal: '22:30',
+    prefHybrid: 'Yes',
+    prefHybridApplies: 'Permanent',
+    prefWfh: 'No',
+    prefEarlyShift: '',
+    prefLateAvailability: 'Yes',
+    prefLateApplies: 'Peak / Busy Seasons Only',
+    prefEarlyFridays: 'Yes',
+    otHours: '',
+    otClientType: '',
+    otAvailabilityType: '',
+    otEaSupport: '',
+
+    // Client Exposure (manager / system managed)
+    clientTypes: '',
+    workedAs: '',
+    communicationSkills: '',
+    eligibleAssociate: '',
+    eligibleFace: '',
+    clientInterviewRejections: '0',
+    managingEndClients: '',
+    endClientInteractionQuality: '',
+    endClientInteraction: '',
+    smootherOnboarding: '',
 
     ptinStatus: '',
     ptinNumber: '',

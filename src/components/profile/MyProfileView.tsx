@@ -23,12 +23,14 @@ import {
   FileText,
   Upload,
   ChevronDown,
+  X,
 } from 'lucide-react';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet, todayIso } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
+import { TimeWheelSheet } from '../common/TimeWheelSheet';
 import {
   MyProfileData,
   PROFILE_TABS,
@@ -66,6 +68,29 @@ const TAB_ICONS: Record<ProfileTabId, React.ElementType> = {
 /** Marks list items added in the current edit session */
 const NEW_FLAG = '__new';
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/* Interview slots are stored as "HH:MM-HH:MM" (24h, hourly) */
+const slotStart = (slot: string) => Number(slot.slice(0, 2));
+const hour12 = (h: number) => h % 12 || 12;
+const meridiem = (h: number) => (h % 24 < 12 ? 'AM' : 'PM');
+/** "13:00-14:00" → "1–2 PM" */
+const slotShort = (slot: string) => {
+  const a = slotStart(slot);
+  const b = a + 1;
+  return meridiem(a) === meridiem(b) ? `${hour12(a)}–${hour12(b)} ${meridiem(b)}` : `${hour12(a)} ${meridiem(a)}–${hour12(b)} ${meridiem(b)}`;
+};
+/** Merge back-to-back slots: 14–15, 15–16, 16–17 → "2:00 PM – 5:00 PM" */
+const slotRanges = (slots: string[]) => {
+  const starts = slots.map(slotStart).sort((x, y) => x - y);
+  const ranges: [number, number][] = [];
+  starts.forEach((h) => {
+    const last = ranges[ranges.length - 1];
+    if (last && last[1] === h) last[1] = h + 1;
+    else ranges.push([h, h + 1]);
+  });
+  return ranges.map(([a, b]) => `${hour12(a)}:00 ${meridiem(a)} – ${hour12(b)}:00 ${meridiem(b)}`);
+};
 
 const formatDate = (iso: string) =>
   iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '';
@@ -87,6 +112,8 @@ const isWide = (f: ProfileField) =>
   f.type === 'email' ||
   f.type === 'checkbox' ||
   f.type === 'multiselect' ||
+  f.type === 'days' ||
+  Boolean(f.question) ||
   (f.type === 'radio' && (f.options?.length ?? 0) > 2);
 
 const isReadOnly = (f: ProfileField) => Boolean(f.locked) || f.type === 'auto';
@@ -117,6 +144,34 @@ const FieldValue: React.FC<{ field: ProfileField; values: ProfileValues }> = ({ 
       </span>
     ) : (
       <span className="block text-[12px] font-medium text-slate-400 mt-0.5">Not opted</span>
+    );
+  }
+  if (field.type === 'days') {
+    const picked = (field.options ?? WEEKDAYS).filter((d) => ((value as string[] | undefined) ?? []).includes(d));
+    return picked.length ? (
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {picked.map((d) => (
+          <span key={d} className="w-11 h-8 rounded-lg bg-[#EFF6FF] text-[#2F68FE] text-[12px] font-bold flex items-center justify-center">
+            {d}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <span className="block text-[12.5px] italic text-slate-400 mt-0.5">{field.emptyText ?? '—'}</span>
+    );
+  }
+  if (field.type === 'slots') {
+    const list = (value as string[] | undefined) ?? [];
+    return list.length ? (
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {slotRanges(list).map((r) => (
+          <span key={r} className="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#2F68FE] text-[11.5px] font-semibold tabular-nums">
+            {r}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <span className="block text-[12.5px] italic text-slate-400 mt-0.5">{field.emptyText ?? '—'}</span>
     );
   }
   if (field.type === 'multiselect') {
@@ -230,6 +285,33 @@ const MultiSelectField: React.FC<{ field: ProfileField; value: string[]; error: 
         onClose={() => setOpen(false)}
         onApply={(next) => {
           onChange(next);
+          setOpen(false);
+        }}
+      />
+    </>
+  );
+};
+
+/** Tappable time field that opens the hour / minute wheel sheet */
+const TimeField: React.FC<{ label: string; value: string; error: boolean; onChange: (v: string) => void }> = ({ label, value, error, onChange }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`${inputBase} ${error ? 'border-rose-300' : 'border-slate-200'} flex items-center justify-between gap-2 text-left tabular-nums cursor-pointer`}
+      >
+        <span className={value ? '' : 'text-slate-400'}>{value || 'Select time'}</span>
+        <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
+      </button>
+      <TimeWheelSheet
+        isOpen={open}
+        title={label}
+        value={value}
+        onClose={() => setOpen(false)}
+        onApply={(t) => {
+          onChange(t);
           setOpen(false);
         }}
       />
@@ -385,6 +467,78 @@ const FieldInput: React.FC<{
       );
     case 'file':
       return <FileField value={(value as string) ?? ''} onChange={onChange} />;
+    case 'days': {
+      const days = f.options ?? WEEKDAYS;
+      const picked = (value as string[]) ?? [];
+      const all = days.every((d) => picked.includes(d));
+      const chip = (on: boolean) =>
+        `h-11 rounded-xl border text-[11.5px] font-bold transition-colors cursor-pointer ${
+          on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
+        }`;
+      return (
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length + 1}, minmax(0, 1fr))` }} role="group" aria-label={f.label}>
+          <button type="button" aria-pressed={all} onClick={() => onChange(all ? [] : [...days])} className={chip(all)}>
+            All
+          </button>
+          {days.map((d) => {
+            const on = picked.includes(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onChange(days.filter((x) => (x === d ? !on : picked.includes(x))))}
+                className={chip(on)}
+              >
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+    case 'slots': {
+      const slots = f.options ?? [];
+      const picked = (value as string[]) ?? [];
+      const all = slots.length > 0 && slots.every((x) => picked.includes(x));
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-400">
+              {picked.length ? `${picked.length} of ${slots.length} selected` : 'Tap the hours you can take interviews'}
+            </span>
+            <button
+              type="button"
+              onClick={() => onChange(all ? [] : [...slots])}
+              className="text-[11px] font-bold text-[#2F68FE] cursor-pointer"
+            >
+              {all ? 'Clear all' : 'Select all'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label={f.label}>
+            {slots.map((slot) => {
+              const on = picked.includes(slot);
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onChange(slots.filter((x) => (x === slot ? !on : picked.includes(x))))}
+                  className={`h-10 rounded-xl border flex items-center justify-center gap-1.5 text-[12px] font-semibold tabular-nums transition-colors cursor-pointer ${
+                    on ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+                  }`}
+                >
+                  {on && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  {slotShort(slot)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    case 'time':
+      return <TimeField label={f.label} value={(value as string) ?? ''} error={Boolean(error)} onChange={onChange} />;
     case 'multiselect':
       return <MultiSelectField field={f} value={(value as string[]) ?? []} error={Boolean(error)} onChange={onChange} />;
     case 'textarea':
@@ -431,9 +585,112 @@ const FieldGrid: React.FC<{
   errors: Record<string, string>;
   errorKey: (fieldKey: string) => string;
   onChange: (fieldKey: string, v: ProfileValue) => void;
-}> = ({ fields, values, editing, errors, errorKey, onChange }) => {
+  /** The section already carries an "Auto" tag */
+  hideAutoTags?: boolean;
+}> = ({ fields, values, editing, errors, errorKey, onChange, hideAutoTags }) => {
   const gap = editing ? 'gap-x-3 gap-y-3.5' : 'gap-x-4 gap-y-3.5';
   const render = (f: ProfileField) => {
+    if (f.question) {
+      const key = errorKey(f.key);
+      const answer = values[f.key] as string;
+      const fu = f.followUp;
+      const fuKey = fu ? errorKey(fu.key) : '';
+      const fuValue = fu ? ((values[fu.key] as string) ?? '') : '';
+      const showFollowUp = Boolean(fu) && answer === 'Yes';
+      return (
+        <div key={f.key} data-field={key} className="col-span-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-[13px] font-bold text-[#1E293B]">{f.label}</span>
+            {!editing && (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                  answer === 'Yes'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : answer === 'No'
+                      ? 'bg-rose-50 text-rose-600'
+                      : 'bg-white border border-slate-200 text-slate-400'
+                }`}
+              >
+                {answer || 'Not answered'}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[11.5px] text-slate-500 leading-relaxed">{f.question}</p>
+
+          {!editing && showFollowUp && fuValue && (
+            <p className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white border border-slate-100 text-[11px] text-slate-500">
+              Applies: <span className="font-bold text-[#1E293B]">{fuValue}</span>
+            </p>
+          )}
+
+          {editing && (
+            <div className="mt-2.5 grid grid-cols-2 gap-2" role="radiogroup" aria-label={f.label}>
+              {(f.options ?? []).map((o) => {
+                const on = answer === o;
+                const yes = o === 'Yes';
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      onChange(f.key, o);
+                      // A "No" answer makes the follow-up irrelevant
+                      if (fu && o !== 'Yes' && fuValue) onChange(fu.key, '');
+                    }}
+                    className={`h-10 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                      on
+                        ? yes
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                          : 'border-rose-300 bg-rose-50 text-rose-600'
+                        : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+                    }`}
+                  >
+                    {yes ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <X className="w-3.5 h-3.5 stroke-[3]" />}
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {editing && showFollowUp && fu && (
+            <div data-field={fuKey} className="mt-3 pt-3 border-t border-dashed border-slate-200 animate-in fade-in slide-in-from-top-1 duration-200">
+              <p className="mb-2 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
+                {fu.label} <span className="text-rose-500">*</span>
+              </p>
+              <div className="space-y-1.5" role="radiogroup" aria-label={fu.label}>
+                {fu.options.map((opt) => {
+                  const on = fuValue === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => onChange(fu.key, opt.value)}
+                      className={`w-full px-3 py-2.5 rounded-xl border flex items-center gap-3 text-left transition-colors cursor-pointer ${
+                        on ? 'border-[#2F68FE] bg-blue-50/60' : `bg-white active:bg-slate-50 ${errors[fuKey] ? 'border-rose-200' : 'border-slate-200'}`
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${on ? 'border-[#2F68FE]' : 'border-slate-300'}`}>
+                        {on && <span className="w-2 h-2 rounded-full bg-[#2F68FE]" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block text-[12.5px] font-bold ${on ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{opt.value}</span>
+                        <span className="block text-[11px] text-slate-500">{opt.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {errors[fuKey] && <p className="mt-1.5 px-0.5 text-[11px] font-medium text-rose-500">{errors[fuKey]}</p>}
+            </div>
+          )}
+        </div>
+      );
+    }
     if (!editing) {
       return (
         <div key={f.key} className={isWide(f) || f.type === 'textarea' || f.type === 'file' ? 'col-span-2' : 'min-w-0'}>
@@ -453,7 +710,7 @@ const FieldGrid: React.FC<{
               {f.label}
               {f.required && !isReadOnly(f) && <span className="text-rose-500"> *</span>}
             </span>
-            {f.type === 'auto' && (
+            {f.type === 'auto' && !hideAutoTags && (
               <span className="px-1.5 py-px rounded-md bg-blue-50 text-[9px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">Auto</span>
             )}
           </label>
@@ -714,9 +971,12 @@ const SkillsSection: React.FC<{
                   <span className="block text-[13px] font-semibold text-[#1E293B] truncate">{it.name as string}</span>
                   {it.category && <span className="block text-[10.5px] text-slate-400">{it.category as string} Software</span>}
                 </span>
-                <span className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[11px] font-bold ${it.level ? 'text-[#1E293B]' : 'text-slate-400'}`}>{(it.level as string) || 'Not rated'}</span>
-                  <LevelBars value={(it.level as string) ?? ''} />
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ${
+                    it.level ? 'bg-blue-50 text-[#2F68FE]' : 'bg-slate-100 text-slate-400'
+                  }`}
+                >
+                  {(it.level as string) || 'Not rated'}
                 </span>
               </li>
             )
@@ -757,6 +1017,8 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const v = profile.values;
   const current = PROFILE_TABS.find((t) => t.id === tab)!;
   const hasContent = current.sections.length > 0;
+  // Tabs made only of HR / system fields (e.g. Client Exposure) have nothing to edit
+  const canEdit = current.sections.some((s) => s.list || s.skills || s.fields?.some((f) => !isReadOnly(f)));
   const shown = editing ? draft : profile;
   const dirty = editing && JSON.stringify(draft) !== JSON.stringify(profile);
 
@@ -810,6 +1072,9 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         visibleFields(s.fields, draft.values).forEach((f) => {
           const msg = validate(f, draft.values);
           if (msg) found[f.key] = msg;
+          if (f.followUp && draft.values[f.key] === 'Yes' && !draft.values[f.followUp.key]) {
+            found[f.followUp.key] = 'Choose when this applies.';
+          }
         });
       }
       if (s.list) {
@@ -979,7 +1244,20 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   />
                 ) : (
                   <section key={section.title} className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
-                    <h3 className="pb-2.5 mb-3 border-b border-slate-100 text-[13px] font-bold text-[#1E293B]">{section.title}</h3>
+                    <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+                      <h3 className="text-[13px] font-bold text-[#1E293B] leading-snug">{section.title}</h3>
+                      {section.badge && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[9.5px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">
+                          {section.badge}
+                        </span>
+                      )}
+                    </div>
+                    {section.description && (
+                      <p className="-mt-1 mb-3.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed">
+                        <Info className="w-3.5 h-3.5 shrink-0 mt-px text-slate-400" />
+                        {section.description}
+                      </p>
+                    )}
                     <FieldGrid
                       fields={section.fields ?? []}
                       values={shown.values}
@@ -987,6 +1265,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                       errors={errors}
                       errorKey={(k) => k}
                       onChange={setValue}
+                      hideAutoTags={Boolean(section.badge)}
                     />
                     {section.note && <p className="mt-3.5 pt-3 border-t border-slate-100 text-[10.5px] text-slate-400 leading-relaxed">{section.note}</p>}
                   </section>
@@ -998,7 +1277,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
       </div>
 
       {/* Footer: Edit (view mode) or Cancel / Save (edit mode) */}
-      {hasContent && (
+      {hasContent && canEdit && (
         <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           {editing ? (
             <div className="grid grid-cols-[1fr_2fr] gap-2.5">

@@ -33,12 +33,12 @@ export const todayIso = () => {
 
 /* ------------------------------- Wheel column ------------------------------- */
 
-interface WheelItem {
+export interface WheelItem {
   value: number;
   label: string;
 }
 
-const WheelColumn: React.FC<{ items: WheelItem[]; value: number; onChange: (v: number) => void; ariaLabel: string }> = ({
+export const WheelColumn: React.FC<{ items: WheelItem[]; value: number; onChange: (v: number) => void; ariaLabel: string }> = ({
   items,
   value,
   onChange,
