@@ -58,7 +58,7 @@ ${name}`;
 
 /** The signed-in staff member, attached to resignations they submit */
 export const CURRENT_STAFF = {
-  staffName: 'Shanker Dey',
+  staffName: 'John Smith',
   staffCode: 'A03780',
   designation: 'Lead Designer',
   department: 'Product Design',

@@ -128,11 +128,11 @@ export const htmlToText = (html: string) => {
 
 const at = (date: string, time = '10:30') => new Date(`${date}T${time}:00`).toISOString();
 
-/** Tickets already raised by the signed-in staff member (Shanker Dey) */
+/** Tickets already raised by the signed-in staff member (John Smith) */
 export const STAFF_TICKETS_SEED: Ticket[] = [
   {
     id: '93349',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     subject: 'EPFO Balance Not Transferred from Entigrity to MyCPE One Solutions',
     department: 'HR/Finance',
@@ -146,14 +146,14 @@ export const STAFF_TICKETS_SEED: Ticket[] = [
         id: 'c-93349-1',
         author: 'HR Support',
         role: 'Support',
-        text: 'Thanks Shanker, we have forwarded this to the Finance team for review.',
+        text: 'Thanks John, we have forwarded this to the Finance team for review.',
         createdAt: at('2026-09-09', '10:05'),
       },
     ],
   },
   {
     id: '93263',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     subject: 'Salary Credit Difference of ₹1,944 and ₹3,645 - Request for Review',
     department: 'HR/Finance',
@@ -173,7 +173,7 @@ export const STAFF_TICKETS_SEED: Ticket[] = [
   },
   {
     id: '85644',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     subject: 'Opt Out from PF',
     department: 'HR/Finance',

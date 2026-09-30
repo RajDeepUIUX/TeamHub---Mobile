@@ -51,8 +51,17 @@ import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData'
 import { HOLIDAYS_DATA } from './data/holidayData';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { ProfileView } from './components/profile/ProfileView';
+import { NotificationsView } from './components/notifications/NotificationsView';
+import {
+  AppNotification,
+  STAFF_NOTIFICATIONS_SEED,
+  MANAGER_NOTIFICATIONS_SEED,
+} from './data/notificationsData';
 import { MoreView } from './components/more/MoreView';
 import { WorkTimingView } from './components/more/WorkTimingView';
+import { OTRequestView } from './components/more/OTRequestView';
+import { AddOTRequestView } from './components/more/AddOTRequestView';
+import { OTRequest } from './types/overtime';
 import { RequestFlexibilityView } from './components/more/RequestFlexibilityView';
 import { FlexRequest } from './types/workTiming';
 import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
@@ -86,8 +95,26 @@ export default function App() {
   const [appTab, setAppTab] = useState<AppTab>('home');
   const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Notifications per role; events (approvals, new requests, IT review) add to the right inbox
+  const [staffNotifications, setStaffNotifications] = useState<AppNotification[]>(STAFF_NOTIFICATIONS_SEED);
+  const [managerNotifications, setManagerNotifications] = useState<AppNotification[]>(MANAGER_NOTIFICATIONS_SEED);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const pushNotification = (to: 'Staff' | 'Manager', n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
+    const item: AppNotification = {
+      ...n,
+      id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    (to === 'Staff' ? setStaffNotifications : setManagerNotifications)((prev) => [item, ...prev]);
+  };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
+  // OT requests (staff & manager keep their own lists); submitted requests can't be edited
+  const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
+  const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
+  const [isAddingOT, setIsAddingOT] = useState(false);
   // Work Timing: flexibility requests (empty initially) and the request flow
   const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
   // Manager: the rest of the team's requests, and their own ("My Work Timing")
@@ -112,7 +139,7 @@ export default function App() {
   const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
   const isManager = userRole === 'Manager';
-  // Identity used for the resignation module: staff = Shanker, manager = his reporting manager
+  // Identity used for the resignation module: staff = John, manager = his reporting manager
   const resignationUser = isManager
     ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
     : CURRENT_STAFF;
@@ -135,6 +162,15 @@ export default function App() {
     ]);
     setIsApplyingResignation(false);
     showToast('Resignation submitted to your reporting manager.');
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'Resignation',
+        title: `Resignation submitted by ${resignationUser.staffName}`,
+        body: `Last working day would be ${data.lastWorkingDate}. Review it in Team Resignations.`,
+        link: 'resignation',
+        actionRequired: true,
+      });
+    }
   };
 
   // Manager decision → updates the shared record, so the staff side reflects it instantly
@@ -154,6 +190,14 @@ export default function App() {
     setResignations(apply);
     setTeamResignations(apply);
     showToast(`Resignation ${decision === 'Approved' ? 'approved' : 'rejected'}.`);
+    if (resignations.some((x) => x.id === id)) {
+      pushNotification('Staff', {
+        category: 'Resignation',
+        title: `Your resignation was ${decision.toLowerCase()}`,
+        body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+        link: 'resignation',
+      });
+    }
   };
 
   const byNewest = (list: Ticket[]) => [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -240,6 +284,16 @@ export default function App() {
     setRecords(apply);
     setTeamAttendanceRequests(apply);
     const verb = decision === 'approved' ? 'approved' : 'rejected';
+    records
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Attendance',
+          title: `Attendance edit ${verb} for ${x.dateFormatted}`,
+          body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+          link: 'attendance',
+        })
+      );
     showToast(ids.length === 1 ? `Edit request ${verb}.` : `${ids.length} edit requests ${verb}.`);
   };
   const reviewAttendance = (id: string, decision: AttendanceDecision, comment: string) =>
@@ -254,11 +308,49 @@ export default function App() {
     (h) => new Date(`${h.date}T00:00:00`).getTime() - Date.now() <= 30 * 86400000
   ).length;
 
+  const myNotifications = isManager ? managerNotifications : staffNotifications;
+  const setMyNotifications = isManager ? setManagerNotifications : setStaffNotifications;
+  const unreadNotifications = myNotifications.filter((n) => !n.read).length;
+
+  const openNotification = (n: AppNotification) => {
+    setMyNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    if (!n.link) return;
+    setIsNotificationsOpen(false);
+    setIsProfileOpen(false);
+    setProfileModule(null);
+    setCelebrationsTab(null);
+    setMoreModule(null);
+    switch (n.link) {
+      case 'attendance':
+      case 'leaves':
+        setActiveModuleTab(n.link === 'leaves' ? 'Leaves' : 'Attendance');
+        setAppTab('attendance');
+        break;
+      case 'work-timing':
+        setIsRequestingFlex(false);
+        setEditingFlex(null);
+        setAppTab('more');
+        setMoreModule('work-timing');
+        break;
+      case 'tickets':
+      case 'resignation':
+        setAppTab('home');
+        setIsProfileOpen(true);
+        setProfileModule(n.link === 'tickets' ? 'Tickets' : 'Resignation');
+        break;
+      case 'celebrations':
+        setAppTab('home');
+        setCelebrationsTab('Birthdays');
+        break;
+    }
+  };
+
   const handleAppTabChange = (tab: AppTab) => {
     setCelebrationsTab(null);
     setIsProfileOpen(false);
     setProfileModule(null);
     setMoreModule(null);
+    setIsNotificationsOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     setAppTab(tab);
   };
@@ -404,6 +496,16 @@ export default function App() {
     setLeaveRequests(apply);
     setTeamLeaveRequests(apply);
     const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    leaveRequests
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Leaves',
+          title: `Leave ${verb}`,
+          body: `Your ${x.type} for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
+          link: 'leaves',
+        })
+      );
     showToast(ids.length === 1 ? `Leave request ${verb}.` : `${ids.length} leave requests ${verb}.`);
   };
 
@@ -463,6 +565,16 @@ export default function App() {
               }
         );
         showToast(`IT review done for ${req.staffName.split(' ')[0]}'s ${req.type} request.`);
+        if (req.staffName === CURRENT_STAFF.staffName) {
+          pushNotification('Staff', {
+            category: 'Work Timing',
+            title: `IT review done for your ${req.type} request`,
+            body: req.wfh && Object.keys(req.wfh.assets).length
+              ? 'Your assets will be dispatched to the delivery address. The signed agreement is ready to view.'
+              : 'Everything is set up. The arrangement is now active.',
+            link: 'work-timing',
+          });
+        }
       }, IT_REVIEW_DELAY_MS);
       itReviewTimers.current.set(req.id, timer);
     });
@@ -507,6 +619,16 @@ export default function App() {
     setFlexRequests(apply);
     setTeamFlexRequests(apply);
     const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    flexRequests
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Work Timing',
+          title: `${x.type} request ${verb}`,
+          body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+          link: 'work-timing',
+        })
+      );
     showToast(ids.length === 1 ? `Request ${verb}.` : `${ids.length} requests ${verb}.`);
   };
 
@@ -537,6 +659,14 @@ export default function App() {
       })
     );
     showToast('Attendance edit request submitted successfully.');
+    const rec = records.find((x) => x.id === recordId);
+    pushNotification('Manager', {
+      category: 'Attendance',
+      title: `Attendance edit request from ${CURRENT_STAFF.staffName}`,
+      body: `${rec?.dateFormatted ?? ''} · ${reason}${note ? ` — “${note}”` : ''}`,
+      link: 'attendance',
+      actionRequired: true,
+    });
   };
 
   // Submit Apply Leave
@@ -724,6 +854,13 @@ export default function App() {
                     showToast(`Signed in as ${userRole}`);
                   }}
                 />
+              ) : isNotificationsOpen ? (
+                <NotificationsView
+                  notifications={myNotifications}
+                  onBack={() => setIsNotificationsOpen(false)}
+                  onOpen={openNotification}
+                  onMarkAllRead={() => setMyNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
+                />
               ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
                 <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
               ) : isProfileOpen && profileModule === 'Tickets' ? (
@@ -775,8 +912,8 @@ export default function App() {
                 />
               ) : isProfileOpen ? (
                 <ProfileView
-                  name="Shanker Dey"
-                  email="shanker.dey@my-cpe.com"
+                  name="John Smith"
+                  email="john.smith@my-cpe.com"
                   role="Lead Designer"
                   branch="Ahmedabad - Gota Branch"
                   employeeId="A03780"
@@ -819,7 +956,7 @@ export default function App() {
               ) : appTab === 'home' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <HomeDashboard
-                    userName="Shanker"
+                    userName="John"
                     todaysBirthdays={BIRTHDAYS.filter((b) => b.inDays === 0)}
                     upcomingHolidayCount={holidaysNext30Days}
                     onOpenAttendance={() => handleAppTabChange('attendance')}
@@ -827,11 +964,13 @@ export default function App() {
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => showToast(`${feature} is coming soon.`)}
+                    onOpenNotifications={() => setIsNotificationsOpen(true)}
+                    unreadNotifications={unreadNotifications}
                     onOpenProfile={() => {
                       setProfileModule(null);
                       setIsProfileOpen(true);
                     }}
-                    fullName="Shanker Dey"
+                    fullName="John Smith"
                     profilePhoto={profilePhoto}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
@@ -878,6 +1017,15 @@ export default function App() {
                       ]);
                       setIsRequestingFlex(false);
                       showToast('Flexibility request sent to your reporting manager.');
+                      if (!isManager) {
+                        pushNotification('Manager', {
+                          category: 'Work Timing',
+                          title: `New flexibility request from ${resignationUser.staffName}`,
+                          body: `${req.type}${req.duration ? ` · ${req.duration}` : ''}. Needs your approval.`,
+                          link: 'work-timing',
+                          actionRequired: true,
+                        });
+                      }
                     }
                   }}
                 />
@@ -899,13 +1047,54 @@ export default function App() {
                   }
                   team={isManager ? { requests: teamFlexList, onReview: reviewFlex } : undefined}
                 />
+              ) : appTab === 'more' && moreModule === 'ot-request' && isAddingOT ? (
+                <AddOTRequestView
+                  onBack={() => setIsAddingOT(false)}
+                  onSubmit={(req) => {
+                    (isManager ? setManagerOTRequests : setStaffOTRequests)((prev) => [
+                      {
+                        ...req,
+                        id: `ot-${Date.now()}`,
+                        staffName: resignationUser.staffName,
+                        staffCode: resignationUser.staffCode,
+                        assignedHours: 0,
+                        status: 'Pending',
+                        submittedAt: new Date().toISOString(),
+                      },
+                      ...prev,
+                    ]);
+                    setIsAddingOT(false);
+                    showToast('OT request sent to your reporting manager.');
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Work Timing',
+                        title: `New OT request from ${resignationUser.staffName}`,
+                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. Needs your approval.`,
+                        link: 'work-timing',
+                        actionRequired: true,
+                      });
+                    }
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'ot-request' ? (
+                <OTRequestView
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={isManager ? managerOTRequests : staffOTRequests}
+                  otHours={myLeaveBalance.otHours}
+                  onBack={() => setMoreModule(null)}
+                  onAddRequest={() => setIsAddingOT(true)}
+                />
               ) : appTab === 'more' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <MoreView
+                    role={userRole}
                     onOpenModule={(m) => {
                       if (m.id === 'work-timing') {
                         setIsRequestingFlex(false);
                         setEditingFlex(null);
+                        setMoreModule(m.id);
+                      } else if (m.id === 'ot-request') {
+                        setIsAddingOT(false);
                         setMoreModule(m.id);
                       } else {
                         showToast(`${m.label} is coming soon.`);
@@ -988,6 +1177,15 @@ export default function App() {
                       ...prev,
                       ptoAvailable: Math.max(0, prev.ptoAvailable - data.daysCount),
                     }));
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Leaves',
+                        title: `Leave request from ${resignationUser.staffName}`,
+                        body: `${newReq.type} · ${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
+                        link: 'leaves',
+                        actionRequired: true,
+                      });
+                    }
                     setSubmittedLeave({
                       request: newReq,
                       code: `LV${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getTime()).slice(-4)}`,

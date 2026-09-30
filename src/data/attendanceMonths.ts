@@ -120,7 +120,7 @@ const buildAugustRecords = (): AttendanceRecord[] => {
       date: dateKey,
       dateFormatted: `${MONTHS_SHORT[d.getMonth()]} ${pad(d.getDate())}, ${d.getFullYear()}`,
       dayOfWeek: WEEKDAYS[weekday],
-      staffName: 'Shanker Dey',
+      staffName: 'John Smith',
       workplace: 'Ahmedabad - Gota Office',
       workMode: 'Office',
       startTime,

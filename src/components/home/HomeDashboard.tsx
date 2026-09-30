@@ -33,6 +33,8 @@ interface HomeDashboardProps {
   onWish: (person: TeamCelebration) => void;
   onComingSoon: (feature: string) => void;
   onOpenProfile: () => void;
+  onOpenNotifications: () => void;
+  unreadNotifications: number;
   fullName: string;
   profilePhoto: string | null;
 }
@@ -111,6 +113,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onWish,
   onComingSoon,
   onOpenProfile,
+  onOpenNotifications,
+  unreadNotifications,
   fullName,
   profilePhoto,
 }) => {
@@ -134,12 +138,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => onComingSoon('Notifications')}
+            onClick={onOpenNotifications}
             className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 cursor-pointer"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+            {unreadNotifications > 0 && (
+              <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
           </button>
           <button
             type="button"

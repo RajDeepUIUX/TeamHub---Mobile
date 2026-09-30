@@ -10,7 +10,7 @@ export const INITIAL_LEAVE_BALANCE: LeaveBalance = {
 export const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
   {
     id: 'leave-1',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     type: 'PTO',
     dateRange: 'Dec 20, 2026 – Dec 23, 2026',
@@ -31,7 +31,7 @@ export const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
   },
   {
     id: 'leave-2',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     type: 'PTO',
     dateRange: 'Dec 29, 2025',
@@ -50,7 +50,7 @@ export const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
   },
   {
     id: 'leave-3',
-    staffName: 'Shanker Dey',
+    staffName: 'John Smith',
     staffCode: 'A03780',
     type: 'Additional Leave',
     dateRange: 'Nov 10, 2025 – Nov 12, 2025',

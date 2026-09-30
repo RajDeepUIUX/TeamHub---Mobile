@@ -133,7 +133,7 @@ export const AuthTopBar: React.FC<{ left?: React.ReactNode; onQuickFill?: () => 
 /* ------------------------- Demo data for Quick Fill ------------------------- */
 
 const DEMO_PEOPLE = [
-  ['shanker', 'dey'],
+  ['john', 'smith'],
   ['jhanvi', 'motwani'],
   ['arpan', 'shah'],
   ['nidhi', 'purohit'],

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, X, UserRound, Clock3, TrendingUp, IdCard, ChevronRight } from 'lucide-react';
+import { Search, X, UserRound, Clock3, TrendingUp, IdCard, ChevronRight, Timer } from 'lucide-react';
+import type { UserRole } from '../../types/user';
 
 export interface MoreModule {
   id: string;
@@ -7,6 +8,8 @@ export interface MoreModule {
   hint: string;
   icon: React.ElementType;
   tint: string;
+  /** Roles that can see this module (all roles when omitted) */
+  roles?: UserRole[];
 }
 
 export interface MoreGroup {
@@ -24,23 +27,43 @@ export const MORE_GROUPS: MoreGroup[] = [
     icon: UserRound,
     modules: [
       { id: 'work-timing', label: 'Work Timing', hint: 'Shift hours & flexibility requests', icon: Clock3, tint: 'bg-blue-50 text-[#2F68FE]' },
-      { id: 'appraisal', label: 'Appraisal', hint: 'Reviews, goals & ratings', icon: TrendingUp, tint: 'bg-emerald-50 text-emerald-600' },
-      { id: 'work-profile', label: 'Work Profile', hint: 'Role, team & reporting line', icon: IdCard, tint: 'bg-violet-50 text-violet-600' },
+      { id: 'ot-request', label: 'OT Request', hint: 'Log and track your overtime', icon: Timer, tint: 'bg-amber-50 text-amber-600' },
+      {
+        id: 'appraisal',
+        label: 'Appraisal',
+        hint: 'Reviews, goals & ratings',
+        icon: TrendingUp,
+        tint: 'bg-emerald-50 text-emerald-600',
+        roles: ['Manager'],
+      },
+      {
+        id: 'work-profile',
+        label: 'Work Profile',
+        hint: 'Role, team & reporting line',
+        icon: IdCard,
+        tint: 'bg-violet-50 text-violet-600',
+        roles: ['Manager'],
+      },
     ],
   },
 ];
 
 interface MoreViewProps {
+  role: UserRole;
   onOpenModule: (module: MoreModule) => void;
 }
 
-export const MoreView: React.FC<MoreViewProps> = ({ onOpenModule }) => {
+export const MoreView: React.FC<MoreViewProps> = ({ role, onOpenModule }) => {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
 
   const groups = MORE_GROUPS.map((g) => ({
     ...g,
-    modules: g.modules.filter((m) => !q || m.label.toLowerCase().includes(q) || m.hint.toLowerCase().includes(q)),
+    modules: g.modules.filter(
+      (m) =>
+        (!m.roles || m.roles.includes(role)) &&
+        (!q || m.label.toLowerCase().includes(q) || m.hint.toLowerCase().includes(q))
+    ),
   })).filter((g) => g.modules.length > 0);
 
   return (
