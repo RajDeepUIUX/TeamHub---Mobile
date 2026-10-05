@@ -1,13 +1,13 @@
 import React from 'react';
-import { Home, CalendarCheck, GraduationCap, FileText, LayoutGrid } from 'lucide-react';
+import { Home, CalendarCheck, GraduationCap, Luggage, LayoutGrid } from 'lucide-react';
 
-export type AppTab = 'home' | 'attendance' | 'learning' | 'requests' | 'more';
+export type AppTab = 'home' | 'attendance' | 'learning' | 'leaves' | 'more';
 
 const TABS: { id: AppTab; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'learning', label: 'Learning', icon: GraduationCap },
-  { id: 'requests', label: 'Requests', icon: FileText },
+  { id: 'leaves', label: 'Leaves', icon: Luggage },
   { id: 'more', label: 'More', icon: LayoutGrid },
 ];
 

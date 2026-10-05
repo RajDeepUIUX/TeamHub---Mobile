@@ -3,7 +3,6 @@ import {
   Cake,
   ChevronRight,
   ArrowRight,
-  ListChecks,
   GraduationCap,
   Clock,
   Sun,
@@ -135,33 +134,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
         {/* Birthday nudge */}
         {firstBirthday && (
-          <button
-            type="button"
-            onClick={() => onWish(firstBirthday)}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#FFF1F2] border border-[#FECDD3] text-left cursor-pointer hover:bg-[#FFE4E6] transition-colors"
-          >
+          <div className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#FFF1F2] border border-[#FECDD3]">
             <span className="w-8 h-8 rounded-xl bg-white text-rose-500 flex items-center justify-center shrink-0 shadow-2xs">
               <Cake className="w-4 h-4" />
             </span>
             <span className="flex-1 text-xs text-rose-700 leading-snug">
               <strong className="font-bold">{firstBirthday.name}'s</strong> birthday is today — a quick wish would be nice.
             </span>
-            <ChevronRight className="w-4 h-4 text-rose-400 shrink-0" />
-          </button>
+          </div>
         )}
-
-        {/* Action queue nudge */}
-        <button
-          type="button"
-          onClick={() => onComingSoon('Action Queue')}
-          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#EEF2FF] border border-[#C7D2FE] text-left cursor-pointer hover:bg-[#E0E7FF] transition-colors"
-        >
-          <span className="w-8 h-8 rounded-xl bg-white text-[#4F46E5] flex items-center justify-center shrink-0 shadow-2xs">
-            <ListChecks className="w-4 h-4" />
-          </span>
-          <span className="flex-1 text-xs text-[#3730A3] font-medium">1 thing in your Action Queue needs your attention.</span>
-          <ChevronRight className="w-4 h-4 text-[#818CF8] shrink-0" />
-        </button>
 
         {/* Overview & Tasks (switchable layout) */}
         <OverviewTasks onSelect={onComingSoon} />

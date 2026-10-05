@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 
@@ -18,7 +18,12 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
   onClear,
 }) => {
   const [status, setStatus] = useState<string>(currentStatus || 'All');
-  const [isCalendarExpanded, setIsCalendarExpanded] = useState(true);
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+
+  // Calendar starts collapsed each time the sheet opens
+  useEffect(() => {
+    if (isOpen) setIsCalendarExpanded(false);
+  }, [isOpen]);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(8); // September = 8
   const [currentYear, setCurrentYear] = useState(2026);
   const [selectedStartDay, setSelectedStartDay] = useState<number | null>(21);

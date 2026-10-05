@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Search, SlidersHorizontal, ChevronRight, X, Check, Users } from 'lucide-react';
+import { ArrowLeft, Search, SlidersHorizontal, X, Check, Users } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { TeamCelebration, CELEBRATION_TOTALS } from '../../data/dashboardData';
 import { Holiday } from '../../data/holidayData';
@@ -16,7 +16,6 @@ interface CelebrationsViewProps {
   /** Holidays in the next 30 days, shown on the Holidays tab badge */
   holidaysNext30Days: number;
   onBack: () => void;
-  onWish: (person: TeamCelebration, kind: 'birthday' | 'anniversary') => void;
 }
 
 const TAB_META: Record<CelebrationTab, { emoji: string }> = {
@@ -50,7 +49,6 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
   upcomingHolidays,
   holidaysNext30Days,
   onBack,
-  onWish,
 }) => {
   const [tab, setTab] = useState<CelebrationTab>(initialTab);
   const [query, setQuery] = useState('');
@@ -59,7 +57,6 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
 
   const today = new Date();
   const people = tab === 'Anniversaries' ? anniversaries : birthdays;
-  const kind = tab === 'Anniversaries' ? 'anniversary' : 'birthday';
   const noun = tab === 'Anniversaries' ? 'Anniversaries' : 'Birthdays';
 
   const counts = {
@@ -291,11 +288,9 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                     group.pill ||
                     addDays(today, p.inDays).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      type="button"
-                      onClick={() => onWish(p, kind)}
-                      className="w-full flex items-center gap-3 p-3 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs text-left hover:border-slate-300 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 p-3 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs"
                     >
                       <span
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(idx)}`}
@@ -318,8 +313,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                           {p.years ? ` · ${p.years} ${p.years === 1 ? 'year' : 'years'}` : ''}
                         </span>
                       </span>
-                      <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                    </button>
+                    </div>
                   );
                 })}
               </div>

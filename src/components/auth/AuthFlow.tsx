@@ -111,7 +111,7 @@ const LoginScreen: React.FC<{
           <AuthInput
             icon={<Mail className="w-5 h-5" />}
             type="email"
-            placeholder="Email"
+            placeholder="Company Email"
             autoComplete="email"
             value={email}
             error={errors.email}
@@ -141,12 +141,6 @@ const LoginScreen: React.FC<{
         <GradientButton type="submit" loading={loading} className="mt-6">
           {loading ? 'Signing In…' : 'Sign In'}
         </GradientButton>
-
-        <p className="mt-8 text-center text-xs text-slate-500 leading-relaxed">
-          Need help signing in?
-          <br />
-          Contact your administrator.
-        </p>
       </form>
     </AuthScreen>
   );
@@ -203,7 +197,7 @@ const ForgotScreen: React.FC<{
           className="mt-7"
           icon={<Mail className="w-5 h-5" />}
           type="email"
-          placeholder="Company email"
+          placeholder="Company Email"
           autoComplete="email"
           value={email}
           error={error}
@@ -474,34 +468,66 @@ const ResetScreen: React.FC<{ onUpdated: () => void; onBack: () => void }> = ({ 
 
 /* ----------------------------- Password updated ----------------------------- */
 
+/** Confetti pieces fired from the tick: angle (deg), travel distance, colour, shape */
+const SUCCESS_BURST: [number, number, string, string][] = [
+  [0, 58, 'bg-emerald-400', 'w-1.5 h-3.5 rounded-full'],
+  [45, 62, 'bg-[#6366F1]', 'w-2 h-2 rounded-full'],
+  [90, 58, 'bg-amber-400', 'w-1.5 h-3.5 rounded-full'],
+  [135, 62, 'bg-emerald-300', 'w-2 h-2 rounded-sm'],
+  [180, 56, 'bg-sky-400', 'w-1.5 h-3.5 rounded-full'],
+  [225, 62, 'bg-violet-400', 'w-2 h-2 rounded-full'],
+  [270, 58, 'bg-emerald-400', 'w-1.5 h-3.5 rounded-full'],
+  [315, 62, 'bg-rose-400', 'w-2 h-2 rounded-sm'],
+];
+
 const UpdatedScreen: React.FC<{ onBackToLogin: () => void }> = ({ onBackToLogin }) => (
   <AuthScreen className="flex flex-col">
     <div className="flex-1 flex flex-col justify-center py-8">
       <BrandLogo size="sm" />
       <div className="mt-8 bg-white/90 backdrop-blur-sm border border-slate-100 rounded-3xl px-6 py-8 shadow-[0_20px_40px_-20px_rgba(79,70,229,0.25)] text-center animate-in fade-in zoom-in-95 duration-300">
-        <div className="relative mx-auto w-28 h-28 flex items-center justify-center">
-          <span className="absolute inset-0 rounded-full bg-emerald-50" />
-          <span className="absolute inset-3 rounded-full bg-emerald-100/70" />
-          {/* Burst marks */}
-          {[
-            'left-0 top-6 -rotate-45',
-            'left-[-6px] top-14 rotate-[20deg]',
-            'right-0 top-6 rotate-45',
-            'right-[-6px] top-14 -rotate-[20deg]',
-          ].map((pos) => (
-            <span key={pos} className={`absolute w-1.5 h-3.5 rounded-full bg-emerald-300/80 ${pos}`} />
+        <div className="success-float relative mx-auto w-28 h-28 flex items-center justify-center">
+          <span className="success-pop absolute inset-0 rounded-full bg-emerald-50" style={{ animationDelay: '0.05s' }} />
+          <span className="success-pop absolute inset-3 rounded-full bg-emerald-100/70" style={{ animationDelay: '0.15s' }} />
+          {/* Ripple ring */}
+          <span className="success-ripple absolute inset-7 rounded-full border-2 border-emerald-400/60" />
+          {/* Confetti burst */}
+          {SUCCESS_BURST.map(([angle, dist, color, shape]) => (
+            <span
+              key={angle}
+              className={`success-burst absolute left-1/2 top-1/2 -ml-1 -mt-1.5 ${shape} ${color}`}
+              style={{ '--angle': `${angle}deg`, '--dist': `-${dist}px` } as React.CSSProperties}
+            />
           ))}
-          <span className="relative w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(16,185,129,0.6)]">
-            <Check className="w-7 h-7 text-white stroke-[3]" />
+          <span
+            className="success-pop relative w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(16,185,129,0.6)]"
+            style={{ animationDelay: '0.25s' }}
+          >
+            <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" aria-hidden="true">
+              <path
+                d="M5 12.5l4.5 4.5L19 7.5"
+                className="success-draw"
+                stroke="white"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </span>
         </div>
-        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-[#1E1B4B]">Password Updated</h1>
-        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+        <h1
+          className="success-rise mt-5 text-2xl font-extrabold tracking-tight text-[#1E1B4B]"
+          style={{ animationDelay: '0.7s' }}
+        >
+          Password Updated
+        </h1>
+        <p className="success-rise mt-2 text-sm text-slate-500 leading-relaxed" style={{ animationDelay: '0.82s' }}>
           Your password has been changed successfully. You can now log in using your new password.
         </p>
-        <GradientButton type="button" onClick={onBackToLogin} className="mt-6">
-          Back to Log In
-        </GradientButton>
+        <div className="success-rise" style={{ animationDelay: '0.95s' }}>
+          <GradientButton type="button" onClick={onBackToLogin} className="mt-6">
+            Back to Log In
+          </GradientButton>
+        </div>
       </div>
     </div>
   </AuthScreen>

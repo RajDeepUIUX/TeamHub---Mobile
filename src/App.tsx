@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
@@ -580,6 +579,12 @@ export default function App() {
     setMoreModule(null);
     setIsNotificationsOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
+    // Leaves lives on the Attendance & Leaves screen
+    if (tab === 'leaves') {
+      setActiveModuleTab('Leaves');
+      setAppTab('attendance');
+      return;
+    }
     setAppTab(tab);
   };
   const [scale, setScale] = useState<number>(100);
@@ -1470,7 +1475,6 @@ export default function App() {
                     upcomingHolidays={upcomingHolidays}
                     holidaysNext30Days={holidaysNext30Days}
                     onBack={() => setCelebrationsTab(null)}
-                    onWish={(person, kind) => setWishTarget({ person, kind })}
                   />
                   <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>
@@ -1613,7 +1617,11 @@ export default function App() {
                   <MoreView
                     role={userRole}
                     onOpenModule={(m) => {
-                      if (m.id === 'work-timing') {
+                      if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
+                        setSelectedWFORecord(null);
+                        setActiveModuleTab(m.id);
+                        setAppTab('attendance');
+                      } else if (m.id === 'work-timing') {
                         setIsRequestingFlex(false);
                         setEditingFlex(null);
                         setMoreModule(m.id);
@@ -1647,7 +1655,7 @@ export default function App() {
               ) : appTab !== 'attendance' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <ComingSoonView
-                    title={appTab === 'learning' ? 'Learning' : appTab === 'requests' ? 'Requests' : 'More'}
+                    title={appTab === 'learning' ? 'Learning' : 'More'}
                     onGoHome={() => handleAppTabChange('home')}
                   />
                   <AppBottomNav activeTab={appTab} onTabChange={handleAppTabChange} />
@@ -1770,35 +1778,10 @@ export default function App() {
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
                       </button>
                       <h1 className="text-base font-bold text-[#1E293B] ml-2">
-                        Attendance &amp; Leaves
+                        {activeModuleTab}
                       </h1>
                     </div>
 
-                    {/* 4 Module Sub-Tabs matching Screenshot 1 */}
-                    <div className="flex items-center justify-between px-3 border-t border-[#F1F5F9] text-xs font-semibold">
-                      {(['Attendance', 'Holidays', 'Leaves', 'WFO Days'] as const).map(
-                        (tab) => {
-                          const isActive = activeModuleTab === tab;
-                          return (
-                            <button
-                              key={tab}
-                              type="button"
-                              onClick={() => setActiveModuleTab(tab)}
-                              className={`flex-1 py-3 text-center transition-all relative cursor-pointer ${
-                                isActive
-                                  ? 'text-[#2F68FE] font-bold'
-                                  : 'text-slate-400 font-medium hover:text-slate-700'
-                              }`}
-                            >
-                              <span>{tab}</span>
-                              {isActive && (
-                                <div className="absolute bottom-0 left-2 right-2 h-0.75 bg-[#2F68FE] rounded-t-full" />
-                              )}
-                            </button>
-                          );
-                        }
-                      )}
-                    </div>
                   </header>
 
                   {/* Sub-tab Content: Holidays | Leaves | WFO Days | Attendance */}
@@ -1901,40 +1884,7 @@ export default function App() {
                   ) : (
                   /* 2. Scrollable Attendance Content */
                   <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-20 space-y-3.5 no-scrollbar">
-                  {/* Month Navigation Strip */}
-                  <div className="flex items-center justify-between px-1">
-                    <button
-                      type="button"
-                      onClick={() => changeMonth(monthIndex - 1)}
-                      disabled={monthIndex === 0}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      aria-label="Previous month"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    <h2 className="text-sm font-bold text-[#1E293B]">
-                      {currentMonth.label}
-                    </h2>
-
-                    <button
-                      type="button"
-                      onClick={() => changeMonth(monthIndex + 1)}
-                      disabled={monthIndex === ATTENDANCE_MONTHS.length - 1}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      aria-label="Next month"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* 3. 3-KPI Card Container (Screenshot 1) */}
-                  <AttendanceKPIs
-                    kpis={kpis}
-                    onOpenSummarySheet={() => setIsKPISummaryOpen(true)}
-                  />
-
-                  {/* 4. Date Range & Filter Row (Screenshot 1) */}
+                  {/* 3. Date Range & Filter Row (top) */}
                   <div className="flex items-center gap-2.5">
                     {/* Date Range Selector Button */}
                     <button
@@ -1967,6 +1917,12 @@ export default function App() {
                       <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
                     </button>
                   </div>
+
+                  {/* 4. 3-KPI Card Container */}
+                  <AttendanceKPIs
+                    kpis={kpis}
+                    onOpenSummarySheet={() => setIsKPISummaryOpen(true)}
+                  />
 
                   {/* 5. Daily Attendance Cards (Collapsible by default) */}
                   <div className="space-y-3 pt-1">
@@ -2034,6 +1990,7 @@ export default function App() {
                   )}
                   </div>
                 )}
+                  <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
               </div>
             )}
               </ScreenTransition>
@@ -2069,6 +2026,9 @@ export default function App() {
                 setActiveFilterStatus(status);
                 setActiveWorkMode(workMode);
                 setAttendanceRange({ from, to });
+                // KPIs follow the attendance cycle the selected range ends in
+                const cycle = ATTENDANCE_MONTHS.findIndex((m) => to >= m.range.from && to <= m.range.to);
+                if (cycle !== -1) setMonthIndex(cycle);
                 showToast(`Filter applied: ${status}`);
               }}
             />

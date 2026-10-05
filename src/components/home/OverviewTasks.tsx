@@ -60,7 +60,7 @@ interface OverviewTasksProps {
   initialLayout?: OverviewLayout;
 }
 
-export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, initialLayout = 'grid' }) => {
+export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, initialLayout = 'unified' }) => {
   const [layout, setLayout] = useState<OverviewLayout>(initialLayout);
 
   return (

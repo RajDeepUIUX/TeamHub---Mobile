@@ -18,6 +18,10 @@ import {
   Laptop,
   Users,
   Car,
+  CalendarCheck,
+  CalendarDays,
+  Luggage,
+  Building2,
 } from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
@@ -40,6 +44,18 @@ export interface MoreGroup {
 
 /** Portal modules shown under "More" (add new groups/modules here) */
 export const MORE_GROUPS: MoreGroup[] = [
+  {
+    // Same tabs as the Attendance bottom-nav screen
+    id: 'attendance-leaves',
+    label: 'Attendance & Leaves',
+    icon: CalendarCheck,
+    modules: [
+      { id: 'Attendance', label: 'Attendance', hint: 'Daily punches & regularization', icon: CalendarCheck, tint: 'bg-blue-50 text-[#2F68FE]' },
+      { id: 'Leaves', label: 'Leaves', hint: 'Apply for leave & check balances', icon: Luggage, tint: 'bg-rose-50 text-rose-500' },
+      { id: 'Holidays', label: 'Holidays', hint: 'Company holiday calendar', icon: CalendarDays, tint: 'bg-amber-50 text-amber-600' },
+      { id: 'WFO Days', label: 'WFO Days', hint: 'Work-from-office days & requests', icon: Building2, tint: 'bg-emerald-50 text-emerald-600' },
+    ],
+  },
   {
     id: 'staff',
     label: 'Staff',
