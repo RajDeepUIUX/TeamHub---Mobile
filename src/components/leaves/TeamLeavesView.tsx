@@ -17,7 +17,7 @@ import {
 import { LeaveRequest } from '../../types/leaves';
 import { BottomSheet } from '../common/BottomSheet';
 import {
-  FilterIconButton,
+  TeamFilterBar,
   FilterSelection,
   TeamFilterSheet,
   activeFilterCount,
@@ -182,6 +182,9 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-8 space-y-3.5 no-scrollbar">
+        {/* Filters on top */}
+        <TeamFilterBar selection={filters} placeholder="All team members" onClick={() => setIsFilterOpen(true)} />
+
         {/* KPI card */}
         <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -213,7 +216,7 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
           </div>
         </div>
 
-        {/* List header: Select + filter */}
+        {/* List header: Select */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-[#1E293B]">Leave Requests</span>
@@ -240,7 +243,6 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
                 </button>
               )
             )}
-            <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
           </div>
         </div>
 

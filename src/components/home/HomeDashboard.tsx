@@ -8,7 +8,6 @@ import {
   Sun,
   Coffee,
   CalendarDays,
-  LayoutGrid,
   AlertTriangle,
   CheckSquare,
   MessageSquare,
@@ -295,18 +294,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <StatRow value={1} title="Courses Assigned" subtitle="Not Yet Completed" onClick={() => onComingSoon('Learning')} last />
           </div>
         </section>
-
-        {/* MYCPE ONE Updates */}
-        <SectionCard icon={<LayoutGrid className="w-4 h-4" />} title="MYCPE ONE Updates">
-          <StatRow value={50} title="Policies Updated" subtitle="In the last 60 days" onClick={() => onComingSoon('Policies')} />
-          <StatRow
-            value={<span className="text-[9px] font-extrabold uppercase tracking-wide">New</span>}
-            title="Annual Letter 2025-26"
-            subtitle="Latest available"
-            onClick={() => onComingSoon('Annual Letter')}
-            last
-          />
-        </SectionCard>
 
         {/* Requests */}
         <SectionCard

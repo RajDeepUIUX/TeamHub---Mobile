@@ -7,8 +7,8 @@ import {
   Clock,
   Building,
   BarChart2,
-  List,
   ChevronDown,
+  Fingerprint,
   ChevronRight,
   AlertCircle,
   Info,
@@ -354,18 +354,21 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             </div>
           )}
 
-          {/* View Attendance Details Link Row */}
-          {!isWeeklyOff && (
+          {/* Punch logs: opens the full punch log sheet */}
+          {!isWeeklyOff && record.punches.length > 0 && (
             <button
               type="button"
               onClick={() => onViewPunchLogs(record)}
-              className="w-full flex items-center justify-between text-xs font-medium text-gray-600 hover:text-[#2F68FE] pt-1 transition-colors group cursor-pointer"
+              className="w-full flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] hover:bg-[#EEF4FF] active:scale-[0.99] transition-all cursor-pointer group"
             >
-              <div className="flex items-center gap-2">
-                <List className="w-4 h-4 text-gray-400 group-hover:text-[#2F68FE]" />
-                <span>View Attendance Details</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+              <span className="w-7 h-7 rounded-lg bg-white text-[#2F68FE] flex items-center justify-center shadow-2xs">
+                <Fingerprint className="w-4 h-4" />
+              </span>
+              <span className="flex-1 text-left text-xs font-semibold text-[#2F68FE]">View Punch Logs</span>
+              <span className="px-1.5 py-px rounded-md bg-white text-[10px] font-bold text-[#2F68FE]">
+                {record.punches.length}
+              </span>
+              <ChevronRight className="w-4 h-4 text-[#2F68FE] group-hover:translate-x-0.5 transition-transform" />
             </button>
           )}
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   BarChart2,
   ChevronRight,
+  Calendar,
+  Filter,
   X,
   Check,
   List,
@@ -17,15 +19,14 @@ import {
 import { AttendanceRecord } from '../../types/attendance';
 import { BottomSheet } from '../common/BottomSheet';
 import {
-  FilterIconButton,
-  FilterSelection,
-  TeamFilterSheet,
-  activeFilterCount,
-  matchesFilters,
-} from '../common/TeamFilterSheet';
+  TeamAttendanceFilterSheet,
+  TeamAttendanceFilters,
+  DEFAULT_TEAM_ATTENDANCE_FILTERS,
+  teamAttendanceFilterCount,
+} from './TeamAttendanceFilterSheet';
 import { AttendanceReviewSheet, AttendanceDecision } from './AttendanceReviewSheet';
 import { BulkReviewSheet } from './BulkReviewSheet';
-import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote } from '../../data/teamAttendanceData';
+import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote, reportingManagerOf } from '../../data/teamAttendanceData';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
 type RequestState = 'Pending' | 'Approved' | 'Rejected';
@@ -49,6 +50,8 @@ const DAY_STATUS_CHIP: Record<string, string> = {
 
 interface TeamAttendanceViewProps {
   requests: AttendanceRecord[];
+  /** Regular (non-edit) attendance for the team; listed when "Only see Edit Requests" is off */
+  dailyRecords: AttendanceRecord[];
   onReview: (id: string, decision: AttendanceDecision, comment: string) => void;
   onBulkReview: (ids: string[], decision: AttendanceDecision, comment: string) => void;
   onViewLogs: (record: AttendanceRecord) => void;
@@ -169,9 +172,66 @@ const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => voi
   );
 };
 
+/* --------------------------- Regular attendance card --------------------------- */
+
+const DailyRecordCard: React.FC<{ record: AttendanceRecord; dimmed: boolean; onViewLogs: () => void }> = ({
+  record: r,
+  dimmed,
+  onViewLogs,
+}) => {
+  const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
+  return (
+    <article
+      className={`bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden transition-opacity ${
+        dimmed ? 'opacity-45' : ''
+      }`}
+    >
+      <div className="p-3.5 pb-3 flex items-start gap-3">
+        <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
+          {initialsOf(r.staffName)}
+        </span>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-[#1E293B] truncate">{r.staffName}</h3>
+          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+            <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+            {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
+            <span className="text-slate-300">·</span>
+            {r.workMode}
+          </p>
+        </div>
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${DAY_STATUS_CHIP[r.status] ?? DAY_STATUS_CHIP.holiday}`}>
+          {r.statusLabel}
+        </span>
+      </div>
+      <div className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
+        {[
+          { label: 'Office', value: r.totalOfficeTime },
+          { label: 'Working', value: r.totalWorkingTime },
+        ].map((t) => (
+          <div key={t.label} className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t.label}</span>
+            <span className="block font-bold text-[#1E293B] tabular-nums">{t.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 px-3.5 py-2.5 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={onViewLogs}
+          disabled={r.punches.length === 0 || dimmed}
+          className="h-9 px-3 rounded-xl text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-300 flex items-center gap-1.5 active:bg-blue-50 cursor-pointer disabled:cursor-default"
+        >
+          <List className="w-4 h-4" />
+          {r.punches.length ? `View Logs (${r.punches.length})` : 'No logs'}
+        </button>
+      </div>
+    </article>
+  );
+};
+
 /* --------------------------------- Screen --------------------------------- */
 
-export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests, onReview, onBulkReview, onViewLogs }) => {
+export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests, dailyRecords, onReview, onBulkReview, onViewLogs }) => {
   // Bulk selection mode: only pending requests can be picked
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -188,30 +248,80 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
       else next.add(id);
       return next;
     });
-  const [filters, setFilters] = useState<FilterSelection>({});
+  const [filters, setFilters] = useState<TeamAttendanceFilters>(DEFAULT_TEAM_ATTENDANCE_FILTERS);
+  // Long lists (31 days × whole team) render in pages
+  const PAGE_SIZE = 20;
+  const [shownCount, setShownCount] = useState(PAGE_SIZE);
+  const applyFilters = (next: TeamAttendanceFilters) => {
+    setFilters(next);
+    setShownCount(PAGE_SIZE);
+  };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [review, setReview] = useState<{ record: AttendanceRecord; decision: AttendanceDecision } | null>(null);
 
-  const visible = requests.filter((r) =>
-    matchesFilters(filters, { member: r.staffName, status: stateOf(r), reason: r.editReason ?? '' })
-  );
-  const filterCount = activeFilterCount(filters);
-  const selectablePending = visible.filter((r) => stateOf(r) === 'Pending');
+  const pool = filters.editOnly
+    ? requests
+    : [...requests, ...dailyRecords].sort((a, b) => b.date.localeCompare(a.date) || a.staffName.localeCompare(b.staffName));
+  const any = (selected: string[], value: string | undefined) =>
+    selected.length === 0 || (value !== undefined && selected.includes(value));
+  const visible = pool.filter((r) => {
+    const isEdit = Boolean(r.editRequested);
+    return (
+      any(filters.managers, reportingManagerOf(r.staffName)?.name) &&
+      any(filters.staff, r.staffName) &&
+      (!filters.from || r.date >= filters.from) &&
+      (!filters.to || r.date <= filters.to) &&
+      any(filters.status, isEdit ? stateOf(r) : undefined) &&
+      any(filters.workMode, r.workMode)
+    );
+  });
+  const filterCount = teamAttendanceFilterCount(filters);
+  const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Date range shown in the top row (same as the staff view)
+  const dateRangeLabel = `${shortDate(filters.from)} - ${shortDate(filters.to)}`;
+  const selectablePending = visible.filter((r) => r.editRequested && stateOf(r) === 'Pending');
   const selectedRecords = requests.filter((r) => selectedIds.has(r.id));
   const allPendingSelected =
     selectablePending.length > 0 && selectablePending.every((r) => selectedIds.has(r.id));
   const countState = (s: RequestState) => requests.filter((r) => stateOf(r) === s).length;
 
-  const filterSections = [
-    { id: 'member', label: 'Team Member', options: Array.from(new Set(requests.map((r) => r.staffName))).sort() },
-    { id: 'status', label: 'Status', options: ['Pending', 'Approved', 'Rejected'] },
-    { id: 'reason', label: 'Reason', options: ATTENDANCE_EDIT_REASONS },
-  ];
+  const staffNames = Array.from(new Set([...requests, ...dailyRecords].map((r) => r.staffName))).sort();
+  const staffCodes = Object.fromEntries([...requests, ...dailyRecords].filter((r) => r.staffCode).map((r) => [r.staffName, r.staffCode as string]));
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
     <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-8 space-y-3.5 no-scrollbar">
+      {/* Filters on top */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => setIsFilterOpen(true)}
+          className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="truncate">{dateRangeLabel}</span>
+          </span>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsFilterOpen(true)}
+          aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
+          className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
+            filterCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
+          }`}
+        >
+          <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
+          {filterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F8FAFC]">
+              {filterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* KPI card (same pattern as the Attendance summary) */}
       <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -243,10 +353,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         </div>
       </div>
 
-      {/* List header + filter icon */}
+      {/* List header + select */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-[#1E293B]">Edit Requests</span>
+          <span className="font-bold text-sm text-[#1E293B]">{filters.editOnly ? 'Edit Requests' : 'Attendance Records'}</span>
           <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -270,7 +380,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
               </button>
             )
           )}
-          <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
         </div>
       </div>
 
@@ -290,7 +399,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         </div>
       )}
 
-      {visible.map((r) => {
+      {visible.slice(0, shownCount).map((r) => {
+        if (!r.editRequested) {
+          return <DailyRecordCard key={r.id} record={r} dimmed={selectMode} onViewLogs={() => onViewLogs(r)} />;
+        }
         const state = stateOf(r);
         const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
         const selectable = selectMode && state === 'Pending';
@@ -428,18 +540,28 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         );
       })}
 
+      {visible.length > shownCount && (
+        <button
+          type="button"
+          onClick={() => setShownCount((n) => n + PAGE_SIZE)}
+          className="w-full h-11 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] text-xs font-semibold text-[#2F68FE] active:bg-[#EEF4FF] cursor-pointer"
+        >
+          Load more · showing {shownCount} of {visible.length}
+        </button>
+      )}
+
       {visible.length === 0 && (
         <div className="py-12 flex flex-col items-center text-center">
           <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
             <Inbox className="w-6 h-6" />
           </span>
           <p className="mt-3 text-sm font-bold text-[#1E293B]">
-            {filterCount ? 'No requests match your filters' : 'No edit requests from your team'}
+            {filterCount ? 'No records match your filters' : 'No edit requests from your team'}
           </p>
           {filterCount > 0 && (
             <button
               type="button"
-              onClick={() => setFilters({})}
+              onClick={() => applyFilters(DEFAULT_TEAM_ATTENDANCE_FILTERS)}
               className="mt-1 text-xs font-semibold text-[#2F68FE] cursor-pointer"
             >
               Clear filters
@@ -501,14 +623,14 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
           onBulkReview(ids, decision, comment);
         }}
       />
-      <TeamFilterSheet
+      <TeamAttendanceFilterSheet
         isOpen={isFilterOpen}
-        title="Filter Team's Attendance"
-        sections={filterSections}
-        selection={filters}
+        filters={filters}
+        staffNames={staffNames}
+        staffCodes={staffCodes}
         onClose={() => setIsFilterOpen(false)}
         onApply={(next) => {
-          setFilters(next);
+          applyFilters(next);
           setIsFilterOpen(false);
         }}
       />

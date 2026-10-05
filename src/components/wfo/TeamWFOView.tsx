@@ -3,7 +3,7 @@ import { BarChart2, Calendar, Check, ChevronRight, IndianRupee, Inbox, LayoutGri
 import { WFORecord, WFOStatus } from '../../types/wfo';
 import { WFO_DAILY_ALLOWANCE, formatINR, wfoAllowanceFor } from '../../data/wfoData';
 import { BottomSheet } from '../common/BottomSheet';
-import { FilterIconButton, FilterSelection, TeamFilterSheet, activeFilterCount, matchesFilters } from '../common/TeamFilterSheet';
+import { TeamFilterBar, FilterSelection, TeamFilterSheet, activeFilterCount, matchesFilters } from '../common/TeamFilterSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 import { textareaClass } from '../profile/reviewFormParts';
 
@@ -276,14 +276,13 @@ export const TeamWFOView: React.FC<TeamWFOViewProps> = ({ records, onReview }) =
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-3.5 pb-8 space-y-3.5">
+      <TeamFilterBar selection={filters} placeholder="All team members" onClick={() => setIsFilterOpen(true)} />
+
       <WFOKPIs records={records} onViewSummary={() => setIsSummaryOpen(true)} />
 
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-[#1E293B]">Team Requests</span>
-          <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
-        </div>
-        <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
+      <div className="flex items-center gap-2 px-1">
+        <span className="font-bold text-sm text-[#1E293B]">Team Requests</span>
+        <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
       </div>
 
       {visible.map((r) => {

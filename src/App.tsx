@@ -110,7 +110,14 @@ import type { NewTicketData } from './components/tickets/CreateTicketView';
 import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
 import { SegmentedTabs } from './design-system/components/SegmentedTabs';
 import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
-import { TEAM_ATTENDANCE_REQUESTS_SEED, ATTENDANCE_REVIEWER, ATTENDANCE_STAFF_CODE } from './data/teamAttendanceData';
+import {
+  TEAM_ATTENDANCE_REQUESTS_SEED,
+  TEAM_DAILY_ATTENDANCE_SEED,
+  TEAM_CYCLE,
+  generateMemberDays,
+  ATTENDANCE_REVIEWER,
+  ATTENDANCE_STAFF_CODE,
+} from './data/teamAttendanceData';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
@@ -648,6 +655,18 @@ export default function App() {
     ...records.filter((r) => r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
     ...teamAttendanceRequests,
   ].sort((a, b) => b.date.localeCompare(a.date));
+  // Regular (non-edit) days for the team: John's own recent days + the rest of the team
+  const myCycleRecords = records.filter((r) => r.date >= TEAM_CYCLE.from && r.date <= TEAM_CYCLE.to);
+  const teamDailyAttendance = [
+    ...myCycleRecords.filter((r) => !r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
+    // Days of the cycle not yet in John's own records
+    ...generateMemberDays(
+      { staffName: CURRENT_STAFF.staffName, staffCode: ATTENDANCE_STAFF_CODE, workMode: 'Office' },
+      0,
+      new Set(myCycleRecords.map((r) => r.date))
+    ),
+    ...TEAM_DAILY_ATTENDANCE_SEED,
+  ];
   const kpis: AttendanceKPIsType = currentMonth.kpis;
 
   // Active Sheets & Dedicated Views
@@ -1877,6 +1896,7 @@ export default function App() {
                   {isManager && attendanceTab === 'team' ? (
                     <TeamAttendanceView
                       requests={teamAttendanceList}
+                      dailyRecords={teamDailyAttendance}
                       onReview={reviewAttendance}
                       onBulkReview={reviewAttendanceMany}
                       onViewLogs={(rec) => setSelectedPunchRecord(rec)}
