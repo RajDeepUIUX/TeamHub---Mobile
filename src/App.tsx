@@ -91,6 +91,8 @@ import { RequestFlexibilityView } from './components/more/RequestFlexibilityView
 import { FlexRequest } from './types/workTiming';
 import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
 import { Declarant } from './data/staffDeclaration';
+import { CompanyFeedView, FeedPostView } from './components/feed/CompanyFeedView';
+import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
 import type { FlexDecision } from './components/more/FlexReviewSheet';
 import { ResignationView } from './components/resignation/ResignationView';
 import { ApplyResignationView } from './components/resignation/ApplyResignationView';
@@ -149,6 +151,12 @@ export default function App() {
   };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
+  // Company Feed: shared by every role; read state + the user's reactions live for the session
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
+  const [feedReactions, setFeedReactions] = useState<Record<string, FeedReaction>>({});
+  const [feedCategory, setFeedCategory] = useState<FeedCategory>('General');
+  const [openFeedPostId, setOpenFeedPostId] = useState<string | null>(null);
+  const openFeedPost = feedPosts.find((p) => p.id === openFeedPostId) ?? null;
   // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
   const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
   const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
@@ -603,6 +611,7 @@ export default function App() {
     setIsProfileOpen(false);
     setProfileModule(null);
     setMoreModule(null);
+    setOpenFeedPostId(null);
     setIsNotificationsOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     // Leaves lives on the Attendance & Leaves screen
@@ -1042,6 +1051,9 @@ export default function App() {
       return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
+    if (appTab === 'more' && moreModule === 'company-feed') {
+      return { key: `more/company-feed${openFeedPost ? '/post' : ''}`, depth: openFeedPost ? 2 : 1 };
+    }
     if (appTab === 'more' && (moreModule === 'work-timing' || moreModule === 'ot-request')) {
       const inForm = moreModule === 'work-timing' ? isRequestingFlex || Boolean(editingFlex) : isAddingOT;
       return { key: `more/${moreModule}${inForm ? '/form' : ''}`, depth: inForm ? 2 : 1 };
@@ -1564,6 +1576,35 @@ export default function App() {
                     }
                   }}
                 />
+              ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
+                <FeedPostView
+                  post={openFeedPost}
+                  reaction={feedReactions[openFeedPost.id] ?? null}
+                  onBack={() => setOpenFeedPostId(null)}
+                  onReact={(r) => setFeedReactions((prev) => ({ ...prev, [openFeedPost.id]: r }))}
+                  onOpenProfile={() => {
+                    setProfileModuleFromApp(true);
+                    setProfileModule('My Profile');
+                    setIsProfileOpen(true);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'company-feed' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <CompanyFeedView
+                    posts={feedPosts}
+                    reactions={feedReactions}
+                    category={feedCategory}
+                    onCategoryChange={setFeedCategory}
+                    onBack={() => setMoreModule(null)}
+                    onOpenPost={(post) => {
+                      // Opening a post marks it read
+                      setFeedPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, unread: false } : p)));
+                      setOpenFeedPostId(post.id);
+                    }}
+                    onReact={(id, r) => setFeedReactions((prev) => ({ ...prev, [id]: r }))}
+                  />
+                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
+                </div>
               ) : appTab === 'more' && moreModule === 'work-timing' ? (
                 <WorkTimingView
                   key={userRole}
@@ -1637,7 +1678,10 @@ export default function App() {
                   <MoreView
                     role={userRole}
                     onOpenModule={(m) => {
-                      if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
+                      if (m.id === 'company-feed') {
+                        setOpenFeedPostId(null);
+                        setMoreModule(m.id);
+                      } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
                         setSelectedWFORecord(null);
                         setActiveModuleTab(m.id);
                         setAppTab('attendance');

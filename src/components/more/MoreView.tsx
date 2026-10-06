@@ -22,6 +22,8 @@ import {
   CalendarDays,
   Luggage,
   Building2,
+  Newspaper,
+  Megaphone,
 } from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
@@ -44,6 +46,15 @@ export interface MoreGroup {
 
 /** Portal modules shown under "More" (add new groups/modules here) */
 export const MORE_GROUPS: MoreGroup[] = [
+  {
+    // Company-wide announcements, the same for every role
+    id: 'company',
+    label: 'Company',
+    icon: Megaphone,
+    modules: [
+      { id: 'company-feed', label: 'Company Feed', hint: "What's happening around the company", icon: Newspaper, tint: 'bg-indigo-50 text-indigo-600' },
+    ],
+  },
   {
     // Same tabs as the Attendance bottom-nav screen
     id: 'attendance-leaves',
