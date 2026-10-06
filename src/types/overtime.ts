@@ -1,4 +1,5 @@
-export type OTStatus = 'Pending' | 'Approved' | 'Rejected';
+/** OT requests have no manager approval step: they're approved as soon as they're submitted */
+export type OTStatus = 'Approved';
 
 export type OTClientType = 'Existing' | 'New';
 
@@ -9,7 +10,7 @@ export interface OTRequest {
   country: string;
   domain: string;
   clientType: OTClientType;
-  /** Extra hours offered per day (optional on the form) */
+  /** Extra hours offered per day */
   extraHours: number | null;
   availability: string;
   remarks: string;
@@ -17,8 +18,4 @@ export interface OTRequest {
   assignedHours: number;
   status: OTStatus;
   submittedAt: string; // ISO timestamp
-  /** Set when the reporting manager approves or rejects */
-  reviewedBy?: string;
-  reviewedAt?: string;
-  managerComment?: string;
 }

@@ -86,11 +86,11 @@ import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
 import { AddOTRequestView } from './components/more/AddOTRequestView';
 import { OTRequest } from './types/overtime';
-import type { OTDecision } from './components/more/OTReviewSheet';
 import { TEAM_OT_REQUESTS_SEED } from './data/overtimeData';
 import { RequestFlexibilityView } from './components/more/RequestFlexibilityView';
 import { FlexRequest } from './types/workTiming';
 import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
+import { Declarant } from './data/staffDeclaration';
 import type { FlexDecision } from './components/more/FlexReviewSheet';
 import { ResignationView } from './components/resignation/ResignationView';
 import { ApplyResignationView } from './components/resignation/ApplyResignationView';
@@ -149,7 +149,7 @@ export default function App() {
   };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
-  // OT requests (staff & manager keep their own lists); submitted requests can't be edited
+  // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
   const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
   const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
   // Manager: the rest of the team's OT requests (the staff member's own come from staffOTRequests)
@@ -276,11 +276,30 @@ export default function App() {
   const [cabSubmitted, setCabSubmitted] = useState(false);
 
   const isManager = userRole === 'Manager';
+  const myOTRequests = isManager ? managerOTRequests : staffOTRequests;
   // Identity used for the resignation module: staff = John, manager = his reporting manager
   const resignationUser = isManager
     ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
     : CURRENT_STAFF;
   const myResignations = isManager ? managerResignations : resignations;
+  // Fills the WFH/Hybrid Staff Declaration
+  const declarant: Declarant = isManager
+    ? {
+        name: resignationUser.staffName,
+        staffCode: resignationUser.staffCode,
+        designation: resignationUser.designation,
+        department: resignationUser.department,
+        personalEmail: 'naveendas.home@gmail.com',
+        officialEmail: 'naveen.das@my-cpe.com',
+      }
+    : {
+        name: resignationUser.staffName,
+        staffCode: resignationUser.staffCode,
+        designation: resignationUser.designation,
+        department: resignationUser.department,
+        personalEmail: String(myProfile.values.personalEmail ?? ''),
+        officialEmail: String(myProfile.values.officialEmail ?? ''),
+      };
   const myAdvanceRequests = advanceRequests.filter((r) => r.staffName === resignationUser.staffName);
 
   const requestAssetReturn = (ids: string[]) => {
@@ -934,38 +953,8 @@ export default function App() {
     showToast(ids.length === 1 ? `Request ${verb}.` : `${ids.length} requests ${verb}.`);
   };
 
-  // Staff member's OT requests + the rest of the team's: pending first, then newest
-  const teamOTList = [...staffOTRequests, ...teamOTRequests].sort((a, b) =>
-    a.status === 'Pending' && b.status !== 'Pending'
-      ? -1
-      : b.status === 'Pending' && a.status !== 'Pending'
-        ? 1
-        : b.submittedAt.localeCompare(a.submittedAt)
-  );
-
-  // Manager decision on OT requests → reflected on the staff member's list
-  const reviewOT = (ids: string[], decision: OTDecision, comment: string) => {
-    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-    const idSet = new Set(ids);
-    const apply = (list: OTRequest[]) =>
-      list.map((r) =>
-        idSet.has(r.id) ? { ...r, status: decision, managerComment: comment || undefined, reviewedBy: ATTENDANCE_REVIEWER, reviewedAt } : r
-      );
-    setStaffOTRequests(apply);
-    setTeamOTRequests(apply);
-    const verb = decision === 'Approved' ? 'approved' : 'rejected';
-    staffOTRequests
-      .filter((x) => idSet.has(x.id))
-      .forEach((x) =>
-        pushNotification('Staff', {
-          category: 'Work Timing',
-          title: `OT request ${verb}`,
-          body: `Your ${x.domain} OT request (${x.country}) was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
-          link: 'ot-request',
-        })
-      );
-    showToast(ids.length === 1 ? `OT request ${verb}.` : `${ids.length} OT requests ${verb}.`);
-  };
+  // Staff member's OT request + the rest of the team's (view-only for the manager), newest first
+  const teamOTList = [...staffOTRequests, ...teamOTRequests].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 
   // Submit Request Edit
   const handleSubmitEdit = (
@@ -1524,6 +1513,7 @@ export default function App() {
                 <RequestFlexibilityView
                   key={editingFlex?.id ?? 'new'}
                   signerName={resignationUser.staffName}
+                  declarant={declarant}
                   initialRequest={editingFlex}
                   onExit={() => {
                     setIsRequestingFlex(false);
@@ -1592,31 +1582,35 @@ export default function App() {
                   }
                   team={isManager ? { requests: teamFlexList, onReview: reviewFlex } : undefined}
                 />
-              ) : appTab === 'more' && moreModule === 'ot-request' && isAddingOT ? (
+              ) : appTab === 'more' && moreModule === 'ot-request' && isAddingOT && myOTRequests.length === 0 ? (
                 <AddOTRequestView
                   onBack={() => setIsAddingOT(false)}
                   onSubmit={(req) => {
-                    (isManager ? setManagerOTRequests : setStaffOTRequests)((prev) => [
-                      {
-                        ...req,
-                        id: `ot-${Date.now()}`,
-                        staffName: resignationUser.staffName,
-                        staffCode: resignationUser.staffCode,
-                        assignedHours: 0,
-                        status: 'Pending',
-                        submittedAt: new Date().toISOString(),
-                      },
-                      ...prev,
-                    ]);
+                    // Only one OT request per person; it's approved as soon as it's submitted
+                    (isManager ? setManagerOTRequests : setStaffOTRequests)((prev) =>
+                      prev.length
+                        ? prev
+                        : [
+                            {
+                              ...req,
+                              id: `ot-${Date.now()}`,
+                              staffName: resignationUser.staffName,
+                              staffCode: resignationUser.staffCode,
+                              assignedHours: 0,
+                              status: 'Approved',
+                              submittedAt: new Date().toISOString(),
+                            },
+                          ]
+                    );
                     setIsAddingOT(false);
-                    showToast('OT request sent to your reporting manager.');
+                    showToast('OT request submitted and approved.');
                     if (!isManager) {
+                      // FYI only: managers can view it, there's nothing to approve
                       pushNotification('Manager', {
                         category: 'Work Timing',
-                        title: `New OT request from ${resignationUser.staffName}`,
-                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. Needs your approval.`,
+                        title: `${resignationUser.staffName} submitted an OT request`,
+                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. View it in Team's Requests.`,
                         link: 'ot-request',
-                        actionRequired: true,
                       });
                     }
                   }}
@@ -1625,11 +1619,18 @@ export default function App() {
                 <OTRequestView
                   key={userRole}
                   firstName={resignationUser.staffName.split(' ')[0]}
-                  requests={isManager ? managerOTRequests : staffOTRequests}
+                  requests={myOTRequests}
                   otHours={myLeaveBalance.otHours}
                   onBack={() => setMoreModule(null)}
                   onAddRequest={() => setIsAddingOT(true)}
-                  team={isManager ? { requests: teamOTList, onReview: reviewOT } : undefined}
+                  onRaiseTicket={() => {
+                    // Edits to a submitted OT request go through Tickets; Back returns here
+                    setProfileModuleFromApp(true);
+                    setProfileModule('Tickets');
+                    setIsCreatingTicket(true);
+                    setIsProfileOpen(true);
+                  }}
+                  team={isManager ? { requests: teamOTList } : undefined}
                 />
               ) : appTab === 'more' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -10,6 +10,10 @@ interface TimeWheelSheetProps {
   value: string;
   /** Minute step, e.g. 15 → 00 / 15 / 30 / 45 */
   step?: number;
+  /** Only times after this one ("HH:MM") can be set */
+  after?: string | null;
+  /** Also allow a time equal to `after` */
+  inclusive?: boolean;
   onClose: () => void;
   onApply: (value: string) => void;
 }
@@ -21,10 +25,26 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const HOURS: WheelItem[] = Array.from({ length: 24 }, (_, h) => ({ value: h, label: pad(h) }));
 
 /** Hour / minute wheels — faster than scrolling a 96-item list of times */
-export const TimeWheelSheet: React.FC<TimeWheelSheetProps> = ({ isOpen, title, value, step = 15, onClose, onApply }) => {
+export const TimeWheelSheet: React.FC<TimeWheelSheetProps> = ({
+  isOpen,
+  title,
+  value,
+  step = 15,
+  after = null,
+  inclusive = false,
+  onClose,
+  onApply,
+}) => {
   const minutes: WheelItem[] = Array.from({ length: 60 / step }, (_, i) => ({ value: i * step, label: pad(i * step) }));
+  const toMins = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const minMins = after ? toMins(after) + (inclusive ? 0 : step) : null;
   const parse = () => {
-    const [h, m] = (value || '00:00').split(':').map(Number);
+    // Empty field starts at the earliest allowed time (or 09:00)
+    const seed = value || (minMins !== null && minMins < 24 * 60 ? `${pad(Math.floor(minMins / 60))}:${pad(minMins % 60)}` : '09:00');
+    const [h, m] = seed.split(':').map(Number);
     return { h: h || 0, m: Math.floor((m || 0) / step) * step };
   };
   const [sel, setSel] = useState(parse);
@@ -35,6 +55,7 @@ export const TimeWheelSheet: React.FC<TimeWheelSheetProps> = ({ isOpen, title, v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  const tooEarly = minMins !== null && sel.h * 60 + sel.m < minMins;
   const h12 = sel.h % 12 || 12;
   const meridiem = sel.h < 12 ? 'AM' : 'PM';
 
@@ -49,8 +70,8 @@ export const TimeWheelSheet: React.FC<TimeWheelSheetProps> = ({ isOpen, title, v
           <p className="mt-0.5 text-lg font-extrabold text-[#1E293B] tabular-nums">
             {pad(sel.h)}:{pad(sel.m)}
           </p>
-          <p className="text-[11px] text-slate-400 tabular-nums">
-            {h12}:{pad(sel.m)} {meridiem}
+          <p className={`text-[11px] tabular-nums ${tooEarly ? 'font-medium text-rose-500' : 'text-slate-400'}`}>
+            {tooEarly ? `Pick a time ${inclusive ? 'from' : 'after'} ${after}` : `${h12}:${pad(sel.m)} ${meridiem}`}
           </p>
         </div>
         <button
@@ -97,7 +118,8 @@ export const TimeWheelSheet: React.FC<TimeWheelSheetProps> = ({ isOpen, title, v
         <button
           type="button"
           onClick={() => onApply(`${pad(sel.h)}:${pad(sel.m)}`)}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+          disabled={tooEarly}
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
         >
           Set Time
         </button>

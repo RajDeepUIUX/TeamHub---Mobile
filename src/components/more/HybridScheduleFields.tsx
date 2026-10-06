@@ -1,8 +1,8 @@
 import React from 'react';
-import { CalendarCheck, Check, Building2, Home } from 'lucide-react';
-import { Dropdown } from '../../design-system/components/Dropdown';
+import { CalendarCheck, Building2, Home } from 'lucide-react';
+import { TimeField } from '../common/TimeField';
 import { FormSection } from './WfhRequestFields';
-import { TIME_SLOTS, WEEKDAYS, formatSpan, slotMinutes } from '../../data/workTimingData';
+import { WEEKDAYS, formatSpan, slotMinutes } from '../../data/workTimingData';
 import { HybridSchedule } from '../../types/workTiming';
 
 /** Form state for the permanent Hybrid schedule */
@@ -42,25 +42,23 @@ export const toHybridSchedule = (h: HybridFormState): HybridSchedule => ({
   wfhTo: h.wfhTo!,
 });
 
-/** Time slots, with those not strictly after `after` disabled (end must follow start) */
-const slotsAfter = (after: string | null, inclusive = false) =>
-  TIME_SLOTS.map((t) => ({
-    value: t,
-    label: t,
-    disabled: Boolean(after && (inclusive ? slotMinutes(t) < slotMinutes(after) : slotMinutes(t) <= slotMinutes(after))),
-  }));
+/** Earliest allowed time for a field: strictly after `after`, or from it when `inclusive` */
+interface TimeLimit {
+  after: string | null;
+  inclusive?: boolean;
+}
 
 /** One tinted block (WFO / WFH) with From + To times and a duration chip */
 const TimeBlock: React.FC<{
   tone: 'wfo' | 'wfh';
   from: string | null;
   to: string | null;
-  fromOptions: ReturnType<typeof slotsAfter>;
-  toOptions: ReturnType<typeof slotsAfter>;
+  fromLimit: TimeLimit;
+  toLimit: TimeLimit;
   onFrom: (v: string) => void;
   onTo: (v: string) => void;
   error?: string;
-}> = ({ tone, from, to, fromOptions, toOptions, onFrom, onTo, error }) => {
+}> = ({ tone, from, to, fromLimit, toLimit, onFrom, onTo, error }) => {
   const isWfo = tone === 'wfo';
   return (
     <div
@@ -86,11 +84,27 @@ const TimeBlock: React.FC<{
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1 min-w-0">
           <span className="block text-[10.5px] font-semibold text-slate-600">From Time</span>
-          <Dropdown size="md" ariaLabel={`${tone} from time`} value={from} placeholder="Select From" options={fromOptions} onChange={onFrom} />
+          <TimeField
+            title={`${isWfo ? 'Office' : 'Home'} From Time`}
+            value={from}
+            placeholder="Select From"
+            after={fromLimit.after}
+            inclusive={fromLimit.inclusive}
+            invalid={Boolean(error && !from)}
+            onChange={onFrom}
+          />
         </div>
         <div className="space-y-1 min-w-0">
           <span className="block text-[10.5px] font-semibold text-slate-600">To Time</span>
-          <Dropdown size="md" ariaLabel={`${tone} to time`} value={to} placeholder="Select To" options={toOptions} onChange={onTo} />
+          <TimeField
+            title={`${isWfo ? 'Office' : 'Home'} To Time`}
+            value={to}
+            placeholder="Select To"
+            after={toLimit.after}
+            inclusive={toLimit.inclusive}
+            invalid={Boolean(error && !to)}
+            onChange={onTo}
+          />
         </div>
       </div>
       {error && <p className="text-[11px] font-medium text-rose-500">{error}</p>}
@@ -189,12 +203,11 @@ export const HybridScheduleFields: React.FC<HybridScheduleFieldsProps> = ({ valu
                       type="button"
                       aria-pressed={on}
                       onClick={() => toggleDay(d)}
-                      className={`h-11 rounded-xl border text-[11px] font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                      className={`h-11 rounded-xl border text-[11px] font-bold flex items-center justify-center cursor-pointer ${
                         on ? 'border-[#2F68FE] bg-[#2F68FE] text-white' : 'border-slate-200 bg-white text-slate-600'
                       }`}
                     >
                       {d}
-                      {on && <Check className="w-3 h-3 stroke-[3]" />}
                     </button>
                   );
                 })}
@@ -210,8 +223,8 @@ export const HybridScheduleFields: React.FC<HybridScheduleFieldsProps> = ({ valu
             tone="wfo"
             from={h.wfoFrom}
             to={h.wfoTo}
-            fromOptions={slotsAfter(null)}
-            toOptions={slotsAfter(h.wfoFrom)}
+            fromLimit={{ after: null }}
+            toLimit={{ after: h.wfoFrom }}
             onFrom={setWfoFrom}
             onTo={setWfoTo}
             error={errors.wfo}
@@ -221,8 +234,8 @@ export const HybridScheduleFields: React.FC<HybridScheduleFieldsProps> = ({ valu
             from={h.wfhFrom}
             to={h.wfhTo}
             // Home time starts once office time ends
-            fromOptions={slotsAfter(h.wfoTo, true)}
-            toOptions={slotsAfter(h.wfhFrom)}
+            fromLimit={{ after: h.wfoTo, inclusive: true }}
+            toLimit={{ after: h.wfhFrom }}
             onFrom={setWfhFrom}
             onTo={(v) => {
               set({ wfhTo: v });

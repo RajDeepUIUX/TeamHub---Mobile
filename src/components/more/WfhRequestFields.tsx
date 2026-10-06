@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   FileText,
   Upload,
@@ -30,6 +30,8 @@ import {
   WFH_REASONS,
   formatFlexDate,
 } from '../../data/workTimingData';
+import { Declarant } from '../../data/staffDeclaration';
+import { StaffDeclarationSheet } from './StaffDeclarationSheet';
 
 /** Form state for the Work From Home sections */
 export interface WfhFormState {
@@ -139,6 +141,8 @@ interface WfhRequestFieldsProps {
   signerName: string;
   todayISO: string;
   variant?: WfhFieldsVariant;
+  /** Details that fill the Staff Declaration (falls back to the signer's name only) */
+  declarant?: Declarant;
 }
 
 export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
@@ -149,8 +153,12 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
   signerName,
   todayISO,
   variant = 'full',
+  declarant,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDeclarationOpen, setIsDeclarationOpen] = useState(false);
+  const declarationAddress =
+    [f.address.address || SAVED_ADDRESSES.Current.address, f.address.city || SAVED_ADDRESSES.Current.city].filter(Boolean).join(', ');
   const set = (patch: Partial<WfhFormState>) => onChange({ ...f, ...patch });
   const setAddress = (patch: Partial<DeliveryAddress>, errorKey: string) => {
     onChange({ ...f, address: { ...f.address, ...patch } });
@@ -392,8 +400,9 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
           role="checkbox"
           aria-checked={f.accepted}
           onClick={() => {
-            set({ accepted: !f.accepted });
-            clearError('accepted');
+            // Ticking opens the declaration (agreeing there ticks it); an accepted box can be unticked directly
+            if (f.accepted) set({ accepted: false });
+            else setIsDeclarationOpen(true);
           }}
           className="flex items-center gap-2.5 text-left cursor-pointer"
         >
@@ -410,6 +419,20 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
         </button>
         <FieldError message={errors.accepted} />
       </FormSection>
+
+      <StaffDeclarationSheet
+        isOpen={isDeclarationOpen}
+        declarant={
+          declarant ?? { name: signerName, staffCode: '', designation: '', department: '', personalEmail: '', officialEmail: '' }
+        }
+        address={declarationAddress}
+        onClose={() => setIsDeclarationOpen(false)}
+        onAgree={() => {
+          set({ accepted: true });
+          clearError('accepted');
+          setIsDeclarationOpen(false);
+        }}
+      />
       </>
       )}
     </>

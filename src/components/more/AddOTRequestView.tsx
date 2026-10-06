@@ -59,7 +59,7 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
   const [submitting, setSubmitting] = useState(false);
 
   const clearError = (key: string) => setErrors((p) => ({ ...p, [key]: '' }));
-  const ready = Boolean(country && domain && clientType && availability);
+  const ready = Boolean(country && domain && clientType && extraHours && availability);
 
   const quickFill = () => {
     setCountry('United States');
@@ -76,9 +76,10 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
     if (!country) found.country = 'Select a country.';
     if (!domain) found.domain = 'Select a domain.';
     if (!clientType) found.clientType = 'Choose the client type.';
+    if (!extraHours) found.extraHours = 'Select your extra available hours.';
     if (!availability) found.availability = 'Select the type of availability.';
     setErrors(found);
-    if (Object.values(found).some(Boolean) || !country || !domain || !clientType || !availability) return;
+    if (Object.values(found).some(Boolean) || !country || !domain || !clientType || !extraHours || !availability) return;
     setSubmitting(true);
     setTimeout(() => onSubmit({ country, domain, clientType, extraHours, availability, remarks: remarks.trim() }), 600);
   };
@@ -165,13 +166,12 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
           {errors.clientType && <p className="px-0.5 text-[11px] font-medium text-rose-500">{errors.clientType}</p>}
         </FormSection>
 
-        {/* Extra hours */}
-        <FormSection
-          icon={<Timer className="w-4 h-4" />}
-          title="Extra Available Hours"
-          right={<span className="text-[10px] text-slate-400">Optional</span>}
-        >
-          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100" role="radiogroup" aria-label="Extra available hours">
+        {/* Extra hours (required) */}
+        <FormSection icon={<Timer className="w-4 h-4" />} title="Extra Available Hours">
+          <label className="block text-[11px] font-semibold text-slate-600">
+            How many extra hours a day can you take on? <span className="text-rose-500">*</span>
+          </label>
+          <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Extra available hours">
             {OT_EXTRA_HOURS.map((h) => {
               const on = extraHours === h;
               return (
@@ -180,25 +180,37 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
                   type="button"
                   role="radio"
                   aria-checked={on}
-                  onClick={() => setExtraHours(on ? null : h)}
-                  className={`h-9 rounded-lg text-xs font-semibold tabular-nums transition-all cursor-pointer ${
-                    on ? 'bg-white text-[#2F68FE] shadow-sm' : 'text-slate-500'
+                  onClick={() => {
+                    setExtraHours(h);
+                    clearError('extraHours');
+                  }}
+                  className={`relative pt-3 pb-2.5 rounded-xl border flex flex-col items-center transition-colors cursor-pointer active:scale-[0.98] ${
+                    on ? 'border-[#2F68FE] bg-blue-50/60' : errors.extraHours ? 'border-rose-300 bg-white' : 'border-slate-200 bg-white'
                   }`}
                 >
-                  {h} hrs
+                  <span
+                    className={`absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                      on ? 'border-[#2F68FE]' : 'border-slate-300'
+                    }`}
+                  >
+                    {on && <span className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" />}
+                  </span>
+                  <span className={`text-lg font-extrabold leading-none tabular-nums ${on ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{h}</span>
+                  <span className={`mt-0.5 text-[10px] font-semibold ${on ? 'text-[#2F68FE]' : 'text-slate-500'}`}>hrs / day</span>
+                  <span className="mt-1.5 text-[9.5px] text-slate-400 tabular-nums">{otFte(h)} FTE</span>
                 </button>
               );
             })}
           </div>
-          <p className="px-0.5 text-[11px] text-slate-500">
-            {extraHours ? (
-              <>
+          {errors.extraHours ? (
+            <p className="px-0.5 text-[11px] font-medium text-rose-500">{errors.extraHours}</p>
+          ) : (
+            extraHours && (
+              <p className="px-0.5 text-[11px] text-slate-500">
                 That's <strong className="font-bold text-[#1E293B]">{otFte(extraHours)} FTE</strong> on top of your regular day.
-              </>
-            ) : (
-              'How many extra hours a day can you take on? Tap again to clear.'
-            )}
-          </p>
+              </p>
+            )
+          )}
         </FormSection>
 
         {/* Availability */}
@@ -264,7 +276,7 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
 
         <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 leading-relaxed">
           <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
-          Once submitted, an OT request can't be edited. It goes to your reporting manager for approval.
+          You can submit only one OT request. It's approved automatically and can't be edited afterwards — to change it, raise a ticket.
         </p>
       </div>
 

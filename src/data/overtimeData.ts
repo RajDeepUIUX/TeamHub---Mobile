@@ -29,7 +29,7 @@ export const otAvailabilityPeriod = (a: string) => {
   return m ? m[1] : '';
 };
 
-/** Other team members' OT requests, as seen by their reporting manager */
+/** Other team members' OT requests (one each, auto-approved), visible to their manager as view-only */
 export const TEAM_OT_REQUESTS_SEED: OTRequest[] = [
   {
     id: 'ot-team-1',
@@ -42,7 +42,7 @@ export const TEAM_OT_REQUESTS_SEED: OTRequest[] = [
     availability: OT_AVAILABILITY_TYPES[1],
     remarks: 'Happy to cover the filing-season peak for the Hudson & Co. engagement.',
     assignedHours: 0,
-    status: 'Pending',
+    status: 'Approved',
     submittedAt: '2026-09-28T10:15:00.000Z',
   },
   {
@@ -55,8 +55,8 @@ export const TEAM_OT_REQUESTS_SEED: OTRequest[] = [
     extraHours: 2,
     availability: OT_AVAILABILITY_TYPES[0],
     remarks: '',
-    assignedHours: 0,
-    status: 'Pending',
+    assignedHours: 2,
+    status: 'Approved',
     submittedAt: '2026-09-26T07:40:00.000Z',
   },
   {
@@ -72,24 +72,19 @@ export const TEAM_OT_REQUESTS_SEED: OTRequest[] = [
     assignedHours: 4,
     status: 'Approved',
     submittedAt: '2026-09-12T09:05:00.000Z',
-    reviewedBy: 'Naveen Das',
-    reviewedAt: 'Sep 14, 2026',
   },
   {
     id: 'ot-team-4',
-    staffName: 'Kunal Desai',
-    staffCode: 'A02988',
+    staffName: 'Vikram Rao',
+    staffCode: 'A03642',
     country: 'Israel',
     domain: 'Specialized',
     clientType: 'New',
     extraHours: 8,
     availability: OT_AVAILABILITY_TYPES[1],
-    remarks: '',
+    remarks: 'Can take on weekend work during the Jan–Apr season.',
     assignedHours: 0,
-    status: 'Rejected',
+    status: 'Approved',
     submittedAt: '2026-09-02T11:30:00.000Z',
-    reviewedBy: 'Naveen Das',
-    reviewedAt: 'Sep 04, 2026',
-    managerComment: 'Full-day OT on top of your current load is too much — let’s revisit with 2–4 hrs.',
   },
 ];

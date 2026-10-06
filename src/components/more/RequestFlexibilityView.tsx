@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Home,
@@ -21,11 +21,11 @@ import {
   FLEX_TYPES,
   flexMeta,
   formatFlexDate,
-  TIME_SLOTS,
   slotMinutes,
   formatSpan,
 } from '../../data/workTimingData';
-import { Dropdown } from '../../design-system/components/Dropdown';
+import { Declarant } from '../../data/staffDeclaration';
+import { TimeField } from '../common/TimeField';
 import {
   WfhRequestFields,
   WfhFormState,
@@ -53,6 +53,8 @@ export type NewFlexRequest = Omit<
 interface RequestFlexibilityViewProps {
   /** Name used for the acknowledgement signature */
   signerName: string;
+  /** Details that fill the WFH/Hybrid Staff Declaration */
+  declarant?: Declarant;
   /** When set, the form opens on the Details step pre-filled to edit this pending request */
   initialRequest?: FlexRequest | null;
   onExit: () => void;
@@ -127,6 +129,7 @@ const DateButton: React.FC<{ label: string; value: string | null; onClick: () =>
 
 export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
   signerName,
+  declarant,
   initialRequest = null,
   onExit,
   onSubmit,
@@ -161,6 +164,19 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
   const [datePicker, setDatePicker] = useState<'single' | 'range' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  // Bumped on each failed submit so the form scrolls to the first field that needs attention
+  const [invalidSubmit, setInvalidSubmit] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!invalidSubmit) return;
+    const id = requestAnimationFrame(() => {
+      // Error messages render as red <p> under their field; the topmost one wins
+      const firstError = scrollRef.current?.querySelector('p.text-rose-500');
+      (firstError?.parentElement ?? firstError)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [invalidSubmit]);
 
   const asksDuration = type ? flexMeta(type).asksDuration : true;
   // Work From Office only asks for office hours (no dates); every other type is Permanent or Temporary
@@ -177,7 +193,8 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
   const usesRequestSections = isWFH || isHybrid || isStandaloneTiming;
   // Early Shift only needs Request Details (no assets / delivery / acknowledgement)
   const requestVariant = isStandaloneTiming ? 'requestOnly' : 'full';
-  const needsHybridSchedule = isHybrid && duration === 'Permanent';
+  // Hybrid always asks for its schedule (Days / Daily), whether Permanent or Temporary
+  const needsHybridSchedule = isHybrid;
   // Permanent WFH / Hybrid have no dates (matches the web form); other permanent requests need an effective date
   const needsDates = !isWFO && !(usesRequestSections && duration === 'Permanent');
   const notesOnly = isWFO || usesRequestSections;
@@ -281,7 +298,10 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
       if (!endTime) found.endTime = 'Select an end time.';
       else if (startTime && slotMinutes(endTime) <= slotMinutes(startTime)) found.endTime = 'End time must be after the start time.';
       setErrors(found);
-      if (Object.values(found).some(Boolean)) return;
+      if (Object.values(found).some(Boolean)) {
+        setInvalidSubmit((n) => n + 1);
+        return;
+      }
       setSubmitting(true);
       setTimeout(
         () => onSubmit({ type, startTime: startTime ?? undefined, endTime: endTime ?? undefined, reason: reason.trim() }),
@@ -302,7 +322,10 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
       }
       Object.assign(found, validateWfhForm(wfhForm, requestVariant));
       setErrors(found);
-      if (Object.values(found).some(Boolean)) return;
+      if (Object.values(found).some(Boolean)) {
+        setInvalidSubmit((n) => n + 1);
+        return;
+      }
       const assets = isStandaloneTiming ? {} : wfhForm.assets;
       setSubmitting(true);
       setTimeout(
@@ -377,7 +400,7 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar p-4">
         {/* Step 1: type */}
         {step === 'type' && (
           <div className="space-y-3 animate-in fade-in duration-200">
@@ -479,11 +502,11 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <span className="block text-[10.5px] font-semibold text-slate-500">Start Time</span>
-                    <Dropdown
-                      ariaLabel="Start time"
+                    <TimeField
+                      title="Office Start Time"
                       value={startTime}
                       placeholder="Select From"
-                      options={TIME_SLOTS}
+                      invalid={Boolean(errors.startTime)}
                       onChange={(t) => {
                         setStartTime(t);
                         // Drop an end time that is no longer after the start
@@ -494,15 +517,12 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[10.5px] font-semibold text-slate-500">End Time</span>
-                    <Dropdown
-                      ariaLabel="End time"
+                    <TimeField
+                      title="Office End Time"
                       value={endTime}
                       placeholder="Select To"
-                      options={TIME_SLOTS.map((t) => ({
-                        value: t,
-                        label: t,
-                        disabled: Boolean(startTime && slotMinutes(t) <= slotMinutes(startTime)),
-                      }))}
+                      after={startTime}
+                      invalid={Boolean(errors.endTime)}
                       onChange={(t) => {
                         setEndTime(t);
                         clearError('endTime');
@@ -549,6 +569,7 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
                 clearError={clearError}
                 signerName={signerName}
                 todayISO={today}
+                declarant={declarant}
               />
             )}
 
@@ -563,11 +584,11 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
                     <span className="block text-[11px] font-semibold text-slate-600">
                       {timingLabel} Start Time <span className="text-rose-500">*</span>
                     </span>
-                    <Dropdown
-                      ariaLabel={`${timingLabel} start time`}
+                    <TimeField
+                      title={`${timingLabel} Start Time`}
                       value={startTime}
                       placeholder="Select From"
-                      options={TIME_SLOTS}
+                      invalid={Boolean(errors.startTime)}
                       onChange={(t) => {
                         setStartTime(t);
                         if (endTime && slotMinutes(endTime) <= slotMinutes(t)) setEndTime(null);
@@ -579,15 +600,12 @@ export const RequestFlexibilityView: React.FC<RequestFlexibilityViewProps> = ({
                     <span className="block text-[11px] font-semibold text-slate-600">
                       {timingLabel} End Time <span className="text-rose-500">*</span>
                     </span>
-                    <Dropdown
-                      ariaLabel={`${timingLabel} end time`}
+                    <TimeField
+                      title={`${timingLabel} End Time`}
                       value={endTime}
                       placeholder="Select To"
-                      options={TIME_SLOTS.map((t) => ({
-                        value: t,
-                        label: t,
-                        disabled: Boolean(startTime && slotMinutes(t) <= slotMinutes(startTime)),
-                      }))}
+                      after={startTime}
+                      invalid={Boolean(errors.endTime)}
                       onChange={(t) => {
                         setEndTime(t);
                         clearError('endTime');
