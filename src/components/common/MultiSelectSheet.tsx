@@ -15,6 +15,8 @@ interface MultiSelectSheetProps {
   options: MultiSelectOption[];
   selected: string[];
   searchPlaceholder?: string;
+  /** Adds a "Select all" row above the options */
+  showSelectAll?: boolean;
   onClose: () => void;
   onApply: (selected: string[]) => void;
 }
@@ -26,6 +28,7 @@ export const MultiSelectSheet: React.FC<MultiSelectSheetProps> = ({
   options,
   selected,
   searchPlaceholder = 'Search…',
+  showSelectAll = false,
   onClose,
   onApply,
 }) => {
@@ -88,6 +91,25 @@ export const MultiSelectSheet: React.FC<MultiSelectSheetProps> = ({
       </div>
 
       <div role="listbox" aria-multiselectable="true" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-2">
+        {showSelectAll && !q && options.length > 1 && (() => {
+          const all = options.every((o) => draft.includes(o.value));
+          return (
+            <button
+              type="button"
+              onClick={() => setDraft(all ? [] : options.map((o) => o.value))}
+              className="w-full min-h-12 px-3 py-2.5 rounded-xl flex items-center gap-3 text-left border-b border-slate-100 active:bg-slate-50 cursor-pointer"
+            >
+              <span
+                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                  all ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
+                }`}
+              >
+                {all && <Check className="w-3 h-3 stroke-[3]" />}
+              </span>
+              <span className="flex-1 text-[13px] font-bold text-[#1E293B]">Select all</span>
+            </button>
+          );
+        })()}
         {shown.map((o) => {
           const on = draft.includes(o.value);
           return (

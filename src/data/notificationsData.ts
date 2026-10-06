@@ -9,7 +9,8 @@ export type NotificationCategory =
   | 'Adv. Salary'
   | 'WFO Days'
   | 'Celebrations'
-  | 'Announcements';
+  | 'Announcements'
+  | 'Training';
 
 /** Where tapping the notification takes the user */
 export type NotificationLink =
@@ -23,7 +24,8 @@ export type NotificationLink =
   | 'cab-request'
   | 'advance-salary'
   | 'wfo'
-  | 'celebrations';
+  | 'celebrations'
+  | 'training-request';
 
 export interface AppNotification {
   id: string;
@@ -49,6 +51,7 @@ export const NOTIFICATION_CATEGORIES: NotificationCategory[] = [
   'WFO Days',
   'Celebrations',
   'Announcements',
+  'Training',
 ];
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();

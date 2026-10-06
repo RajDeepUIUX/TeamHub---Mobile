@@ -92,6 +92,11 @@ import { FlexRequest } from './types/workTiming';
 import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
 import { Declarant } from './data/staffDeclaration';
 import { CompanyFeedView, FeedPostView } from './components/feed/CompanyFeedView';
+import { RecognitionsView } from './components/more/RecognitionsView';
+import { TrainingRequestView, TrainingScope } from './components/more/TrainingRequestView';
+import { AddTrainingRequestView } from './components/more/AddTrainingRequestView';
+import { TRAINING_BRANCH, TRAINING_REQUESTS_SEED, TRAINING_TEAM, TrainingPerson, TrainingRequest } from './data/trainingRequestData';
+import { RECOGNITIONS_SEED } from './data/recognitionsData';
 import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
 import { MyTeamView } from './components/more/MyTeamView';
 import { MY_TEAM_SEED, TeamMemberRecord, profileForMember } from './data/myTeamData';
@@ -269,9 +274,14 @@ export default function App() {
   // My Team > Edit Details: manager edits a member's full profile (saved per staff code)
   const [editingMemberCode, setEditingMemberCode] = useState<string | null>(null);
   const [teamProfiles, setTeamProfiles] = useState<Record<string, MyProfileData>>({});
+  // L&D › Training Request: one list shared by staff and manager logins
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(TRAINING_REQUESTS_SEED);
+  const [trainingScope, setTrainingScope] = useState<TrainingScope>('my');
+  const [trainingForm, setTrainingForm] = useState<null | { scope: TrainingScope; editId?: string }>(null);
   // Leaving My Team closes any open member profile
   useEffect(() => {
     if (appTab !== 'more' || moreModule !== 'my-team') setEditingMemberCode(null);
+    if (appTab !== 'more' || moreModule !== 'training-request') setTrainingForm(null);
   }, [appTab, moreModule]);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
   // Resignation module: no logs initially; newest first
@@ -616,6 +626,12 @@ export default function App() {
       case 'celebrations':
         setAppTab('home');
         setCelebrationsTab('Birthdays');
+        break;
+      case 'training-request':
+        setTrainingForm(null);
+        setTrainingScope(isManager ? 'team' : 'my');
+        setAppTab('more');
+        setMoreModule('training-request');
         break;
     }
   };
@@ -1053,6 +1069,13 @@ export default function App() {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   // Which screen is showing (mirrors the render chain below) and how deep it sits, for the slide transition
+  const trainingMe: TrainingPerson = isManager
+    ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', reportingManager: 'Priya Nair', branch: TRAINING_BRANCH }
+    : { staffName: CURRENT_STAFF.staffName, staffCode: CURRENT_STAFF.staffCode, reportingManager: REPORTING_MANAGER, branch: TRAINING_BRANCH };
+  // Staff logins have no Team tab
+  const trainingTab: TrainingScope = !isManager && trainingScope === 'team' ? 'my' : trainingScope;
+  const editingTraining = trainingForm?.editId ? trainingRequests.find((r) => r.id === trainingForm.editId) : undefined;
+
   const editingMember = moreModule === 'my-team' ? myTeam.find((m) => m.staffCode === editingMemberCode) ?? null : null;
   // The signed-in manager is in their own team list; their edits go to My Profile
   const isSelf = (m: TeamMemberRecord) => m.staffCode === myProfile.values.employeeId;
@@ -1072,6 +1095,10 @@ export default function App() {
       return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
+    if (appTab === 'more' && moreModule === 'recognitions') return { key: 'more/recognitions', depth: 1 };
+    if (appTab === 'more' && moreModule === 'training-request') {
+      return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
+    }
     if (appTab === 'more' && moreModule === 'my-team') {
       return { key: `more/my-team${editingMember ? '/profile' : ''}`, depth: editingMember ? 2 : 1 };
     }
@@ -1643,6 +1670,77 @@ export default function App() {
                     setIsProfileOpen(true);
                   }}
                 />
+              ) : appTab === 'more' && moreModule === 'training-request' && trainingForm ? (
+                <AddTrainingRequestView
+                  me={trainingMe}
+                  people={isManager ? TRAINING_TEAM : undefined}
+                  defaultStaffCode={trainingForm.scope === 'team' ? '' : trainingMe.staffCode}
+                  initial={editingTraining}
+                  onBack={() => setTrainingForm(null)}
+                  onSubmit={(draft) => {
+                    if (editingTraining) {
+                      setTrainingRequests((prev) => prev.map((r) => (r.id === editingTraining.id ? { ...r, ...draft } : r)));
+                      showToast('Training request updated.');
+                    } else {
+                      const person = [trainingMe, ...TRAINING_TEAM].find((p) => p.staffCode === draft.staffCode) ?? trainingMe;
+                      const forSelf = person.staffCode === trainingMe.staffCode;
+                      const request: TrainingRequest = {
+                        id: `tr-${Date.now()}`,
+                        ...person,
+                        ...draft,
+                        learningStatus: 'Pending',
+                        ldStatus: 'Pending',
+                        raisedBy: trainingMe.staffName,
+                      };
+                      setTrainingRequests((prev) => [request, ...prev]);
+                      const subCount = `${draft.subProgrammes.length} sub programme${draft.subProgrammes.length === 1 ? '' : 's'}`;
+                      if (!isManager) {
+                        pushNotification('Manager', {
+                          category: 'Training',
+                          title: `${person.staffName} requested training`,
+                          body: `${draft.mainProgramme} · ${subCount}. Sent to the L&D team.`,
+                          link: 'training-request',
+                        });
+                      } else if (person.staffCode === CURRENT_STAFF.staffCode) {
+                        pushNotification('Staff', {
+                          category: 'Training',
+                          title: `${trainingMe.staffName} requested training for you`,
+                          body: `${draft.mainProgramme} · ${subCount}. The L&D team will schedule it.`,
+                          link: 'training-request',
+                        });
+                      }
+                      setTrainingScope(forSelf ? 'my' : 'team');
+                      showToast(forSelf ? 'Training request sent to the L&D team.' : `Training requested for ${person.staffName}.`);
+                    }
+                    setTrainingForm(null);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'training-request' ? (
+                <TrainingRequestView
+                  key={userRole}
+                  firstName={trainingMe.staffName.split(' ')[0]}
+                  me={trainingMe}
+                  requests={trainingRequests}
+                  isManager={isManager}
+                  scope={trainingTab}
+                  onScopeChange={setTrainingScope}
+                  onBack={() => setMoreModule(null)}
+                  onAdd={(scope) => setTrainingForm({ scope })}
+                  onEdit={(r) => setTrainingForm({ scope: trainingTab, editId: r.id })}
+                  onWithdraw={(r) => {
+                    setTrainingRequests((prev) => prev.filter((x) => x.id !== r.id));
+                    showToast('Training request withdrawn.');
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'recognitions' ? (
+                <RecognitionsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  recognitions={RECOGNITIONS_SEED}
+                  myCode={resignationUser.staffCode}
+                  isManager={isManager}
+                  onBack={() => setMoreModule(null)}
+                />
               ) : appTab === 'more' && moreModule === 'company-feed' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <CompanyFeedView
@@ -1733,7 +1831,11 @@ export default function App() {
                   <MoreView
                     role={userRole}
                     onOpenModule={(m) => {
-                      if (m.id === 'my-team') {
+                      if (m.id === 'my-team' || m.id === 'recognitions') {
+                        setMoreModule(m.id);
+                      } else if (m.id === 'training-request') {
+                        setTrainingForm(null);
+                        setTrainingScope('my');
                         setMoreModule(m.id);
                       } else if (m.id === 'company-feed') {
                         setOpenFeedPostId(null);
