@@ -193,7 +193,7 @@ const OptionRow: React.FC<{ label: string; checked: boolean; bold?: boolean; onC
     role="checkbox"
     aria-checked={checked}
     onClick={onClick}
-    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs active:bg-slate-50 hover:bg-slate-50 cursor-pointer"
+    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs active:bg-slate-50 cursor-pointer"
   >
     <span
       className={`w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${

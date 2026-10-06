@@ -238,7 +238,11 @@ export interface TeamMember {
   staffName: string;
   staffCode: string;
   workMode: AttendanceRecord['workMode'];
+  branch: string;
 }
+
+/** Office branches (location - city) */
+export const BRANCHES = ['Gota - Ahmedabad', 'Maradia Plaza - Ahmedabad', 'Atulyaksh - Ahmedabad', 'Sadra - Surat'];
 
 export interface ReportingManager {
   name: string;
@@ -252,33 +256,36 @@ export const TEAM_REPORTING_MANAGERS: ReportingManager[] = [
     name: 'Naveen Das',
     code: 'ANM00041',
     members: [
-      { staffName: 'John Smith', staffCode: 'A03780', workMode: 'Office' },
-      { staffName: 'Ananya Kulkarni', staffCode: 'A03515', workMode: 'Office' },
-      { staffName: 'Vikram Rao', staffCode: 'A03642', workMode: 'Office' },
+      { staffName: 'John Smith', staffCode: 'A03780', workMode: 'Office', branch: 'Gota - Ahmedabad' },
+      { staffName: 'Ananya Kulkarni', staffCode: 'A03515', workMode: 'Office', branch: 'Gota - Ahmedabad' },
+      { staffName: 'Vikram Rao', staffCode: 'A03642', workMode: 'Office', branch: 'Maradia Plaza - Ahmedabad' },
     ],
   },
   {
     name: 'Aryan Sharma',
     code: 'ANM00076',
     members: [
-      { staffName: 'Kunal Desai', staffCode: 'A02988', workMode: 'Office' },
-      { staffName: 'Nidhi Purohit', staffCode: 'A03211', workMode: 'Hybrid' },
-      { staffName: 'Pooja Bhatt', staffCode: 'A03377', workMode: 'Office' },
+      { staffName: 'Kunal Desai', staffCode: 'A02988', workMode: 'Office', branch: 'Atulyaksh - Ahmedabad' },
+      { staffName: 'Nidhi Purohit', staffCode: 'A03211', workMode: 'Hybrid', branch: 'Maradia Plaza - Ahmedabad' },
+      { staffName: 'Pooja Bhatt', staffCode: 'A03377', workMode: 'Office', branch: 'Atulyaksh - Ahmedabad' },
     ],
   },
   {
     name: 'Meera Iyer',
     code: 'ANM00093',
     members: [
-      { staffName: 'Rohan Mehta', staffCode: 'A03458', workMode: 'Hybrid' },
-      { staffName: 'Sneha Joshi', staffCode: 'A03590', workMode: 'Office' },
-      { staffName: 'Farhan Shaikh', staffCode: 'A03702', workMode: 'Remote' },
+      { staffName: 'Rohan Mehta', staffCode: 'A03458', workMode: 'Hybrid', branch: 'Sadra - Surat' },
+      { staffName: 'Sneha Joshi', staffCode: 'A03590', workMode: 'Office', branch: 'Sadra - Surat' },
+      { staffName: 'Farhan Shaikh', staffCode: 'A03702', workMode: 'Remote', branch: 'Gota - Ahmedabad' },
     ],
   },
 ];
 
 export const reportingManagerOf = (staffName: string) =>
   TEAM_REPORTING_MANAGERS.find((m) => m.members.some((x) => x.staffName === staffName));
+
+export const branchOf = (staffName: string) =>
+  TEAM_REPORTING_MANAGERS.flatMap((m) => m.members).find((x) => x.staffName === staffName)?.branch;
 
 /** Current attendance cycle (26th → 25th) */
 export const TEAM_CYCLE = { from: '2026-08-26', to: '2026-09-25' };
@@ -330,6 +337,7 @@ export const generateMemberDays = (member: TeamMember, offset: number, skip: Set
     const status = isWeekend ? 'weekly_off' : !start ? 'absent' : office < 6 * 60 ? 'half_day' : 'full_day';
     out.push({
       ...base,
+      workplace: member.branch,
       workMode: member.workMode,
       id: `team-day-${member.staffCode}-${date}`,
       date,

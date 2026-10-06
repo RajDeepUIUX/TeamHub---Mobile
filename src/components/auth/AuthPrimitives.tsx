@@ -68,7 +68,7 @@ export const AuthInput: React.FC<AuthInputProps> = ({ icon, type = 'text', error
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="shrink-0 w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 cursor-pointer"
+            className="shrink-0 w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-50 cursor-pointer"
             aria-label={visible ? 'Hide password' : 'Show password'}
           >
             {visible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
@@ -88,7 +88,7 @@ export const GradientButton: React.FC<GradientButtonProps> = ({ loading, childre
   <button
     {...rest}
     disabled={disabled || loading}
-    className={`w-full h-14 rounded-2xl bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white text-[15px] font-bold shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)] hover:brightness-105 active:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer ${className}`}
+    className={`w-full h-14 rounded-2xl bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white text-[15px] font-bold shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)] active:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer ${className}`}
   >
     {loading && <Loader2 className="w-4.5 h-4.5 animate-spin" />}
     {children}
@@ -99,7 +99,7 @@ export const TextLink: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> =
   <button
     type="button"
     {...rest}
-    className={`text-sm font-semibold text-[#4F46E5] hover:text-[#4338CA] hover:underline disabled:text-slate-400 disabled:no-underline disabled:cursor-default cursor-pointer ${className}`}
+    className={`text-sm font-semibold text-[#4F46E5] disabled:text-slate-400 disabled:no-underline disabled:cursor-default cursor-pointer ${className}`}
   >
     {children}
   </button>
@@ -121,7 +121,7 @@ export const AuthTopBar: React.FC<{ left?: React.ReactNode; onQuickFill?: () => 
       <button
         type="button"
         onClick={onQuickFill}
-        className="h-8 px-3 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-[#4F46E5] text-xs font-semibold flex items-center gap-1.5 shadow-[0_4px_12px_-6px_rgba(79,70,229,0.3)] hover:bg-white active:scale-95 transition cursor-pointer"
+        className="h-8 px-3 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-[#4F46E5] text-xs font-semibold flex items-center gap-1.5 shadow-[0_4px_12px_-6px_rgba(79,70,229,0.3)] active:scale-95 transition cursor-pointer"
       >
         <Wand2 className="w-3.5 h-3.5" />
         Quick Fill

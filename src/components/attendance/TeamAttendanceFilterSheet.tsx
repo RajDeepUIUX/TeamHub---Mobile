@@ -3,9 +3,10 @@ import { X, Calendar, ChevronDown } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { MultiSelectDropdown } from '../common/MultiSelectDropdown';
 import { RangeCalendar, formatShortDate, toDateKey } from '../../design-system/components/RangeCalendar';
-import { TEAM_CYCLE, TEAM_REPORTING_MANAGERS } from '../../data/teamAttendanceData';
+import { BRANCHES, TEAM_CYCLE, TEAM_REPORTING_MANAGERS, branchOf } from '../../data/teamAttendanceData';
 
 export interface TeamAttendanceFilters {
+  branches: string[];
   managers: string[];
   /** Managers ticked automatically because one of their staff was picked (they don't narrow the staff list) */
   autoManagers: string[];
@@ -19,6 +20,7 @@ export interface TeamAttendanceFilters {
 }
 
 export const DEFAULT_TEAM_ATTENDANCE_FILTERS: TeamAttendanceFilters = {
+  branches: [],
   managers: [],
   autoManagers: [],
   staff: [],
@@ -33,6 +35,7 @@ export const DEFAULT_TEAM_ATTENDANCE_FILTERS: TeamAttendanceFilters = {
 
 /** Number of filters that differ from the defaults (for the badge) */
 export const teamAttendanceFilterCount = (f: TeamAttendanceFilters) =>
+  f.branches.length +
   f.managers.length +
   f.staff.length +
   (f.from !== DEFAULT_TEAM_ATTENDANCE_FILTERS.from || f.to !== DEFAULT_TEAM_ATTENDANCE_FILTERS.to ? 1 : 0) +
@@ -100,7 +103,7 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
           type="button"
           onClick={() => setActiveDateField(isActive ? null : field)}
           className={`w-full h-11 px-3 rounded-xl border bg-white flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
-            isActive ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-slate-200 hover:border-slate-300'
+            isActive ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-slate-200'
           }`}
         >
           <span className="flex items-center gap-2 min-w-0">
@@ -124,7 +127,11 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
   const managerLabel = (m: (typeof TEAM_REPORTING_MANAGERS)[number]) => `${m.name} (${m.code})`;
   const pickedManagers = draft.managers.filter((m) => !draft.autoManagers.includes(m));
   const staffOptions = TEAM_REPORTING_MANAGERS.filter((m) => !pickedManagers.length || pickedManagers.includes(m.name)).flatMap((m) =>
-    m.members.map((x) => x.staffName).filter((name) => staffNames.includes(name)).map((name) => ({ value: name, label: staffCodes[name] ? `${name} (${staffCodes[name]})` : name, group: managerLabel(m) }))
+    m.members
+      .filter((x) => !draft.branches.length || draft.branches.includes(x.branch))
+      .map((x) => x.staffName)
+      .filter((name) => staffNames.includes(name))
+      .map((name) => ({ value: name, label: staffCodes[name] ? `${name} (${staffCodes[name]})` : name, group: managerLabel(m) }))
   );
 
   const setManagers = (managers: string[]) =>
@@ -139,6 +146,14 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
         staff: prev.staff.filter((s) => allowed.includes(s)),
       };
     });
+
+  // Changing branches drops picked staff who aren't in them
+  const setBranches = (branches: string[]) =>
+    setDraft((prev) => ({
+      ...prev,
+      branches,
+      staff: branches.length ? prev.staff.filter((s) => branches.includes(branchOf(s) ?? '')) : prev.staff,
+    }));
 
   // Picking staff auto-ticks their reporting manager; an auto-ticked manager is dropped once none of their staff are picked
   const setStaff = (staff: string[]) =>
@@ -173,6 +188,14 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
+        <MultiSelectDropdown
+          label="Branch"
+          placeholder="All branches"
+          options={toOptions(BRANCHES)}
+          selected={draft.branches}
+          onChange={setBranches}
+        />
+
         <MultiSelectDropdown
           label="Reporting Manager"
           placeholder="All reporting managers"

@@ -94,7 +94,7 @@ const MenuRow: React.FC<{ item: MenuItem; onClick: () => void; last?: boolean }>
     <button
       type="button"
       onClick={onClick}
-      className="group w-full flex items-center gap-3 pl-3.5 text-left hover:bg-slate-50/80 active:bg-slate-100/70 transition-colors cursor-pointer"
+      className="group w-full flex items-center gap-3 pl-3.5 text-left active:bg-slate-100/70 transition-colors cursor-pointer"
     >
       <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.tint}`}>
         <Icon className="w-4.5 h-4.5" />
@@ -112,7 +112,7 @@ const MenuRow: React.FC<{ item: MenuItem; onClick: () => void; last?: boolean }>
             {item.badge}
           </span>
         ) : null}
-        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 transition-all" />
       </span>
     </button>
   );
@@ -178,7 +178,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/25 transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm text-white flex items-center justify-center active:bg-white/25 transition-colors cursor-pointer"
               aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -188,7 +188,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((v) => !v)}
-                className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/25 transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm text-white flex items-center justify-center active:bg-white/25 transition-colors cursor-pointer"
                 aria-label="More options"
                 aria-expanded={isMenuOpen}
               >
@@ -204,7 +204,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         setIsMenuOpen(false);
                         onOpenItem('Edit Profile');
                       }}
-                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-xs font-semibold text-slate-700 active:bg-slate-50 cursor-pointer"
                     >
                       <Pencil className="w-4 h-4 text-slate-400" />
                       Edit Profile
@@ -216,7 +216,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         setIsMenuOpen(false);
                         onLogout();
                       }}
-                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-xs font-semibold text-rose-600 active:bg-rose-50 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       Log out
@@ -247,7 +247,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     textClassName="text-lg"
                   />
                 </span>
-                <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-[#2F68FE] text-white ring-[3px] ring-white flex items-center justify-center shadow-xs group-hover:bg-[#2558E6] transition-colors">
+                <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-[#2F68FE] text-white ring-[3px] ring-white flex items-center justify-center shadow-xs transition-colors">
                   <Camera className="w-3 h-3" />
                 </span>
               </button>
@@ -322,7 +322,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => setIsSupportOpen((v) => !v)}
                 aria-expanded={isSupportOpen}
                 className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors cursor-pointer ${
-                  isSupportOpen ? 'bg-linear-to-r from-[#EEF2FF] to-[#F5F3FF]' : 'hover:bg-slate-50'
+                  isSupportOpen ? 'bg-linear-to-r from-[#EEF2FF] to-[#F5F3FF]' : 'active:bg-slate-50'
                 }`}
               >
                 <span className="w-9 h-9 rounded-xl bg-white text-[#4F46E5] shadow-2xs flex items-center justify-center shrink-0">
@@ -361,7 +361,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="w-full h-12 rounded-2xl bg-white border border-rose-100 text-rose-600 text-[13px] font-bold flex items-center justify-center gap-2 shadow-2xs hover:bg-rose-50 active:bg-rose-100 transition-colors cursor-pointer"
+            className="w-full h-12 rounded-2xl bg-white border border-rose-100 text-rose-600 text-[13px] font-bold flex items-center justify-center gap-2 shadow-2xs active:bg-rose-100 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             Log out
@@ -380,7 +380,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={() => setIsPhotoSheetOpen(false)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -390,7 +390,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={pickPhoto}
-            className="w-full h-12 px-4 rounded-xl flex items-center gap-3 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            className="w-full h-12 px-4 rounded-xl flex items-center gap-3 text-[13px] font-semibold text-slate-700 active:bg-slate-50 cursor-pointer"
           >
             <ImagePlus className="w-4.5 h-4.5 text-[#2F68FE]" />
             Choose a new photo
@@ -401,7 +401,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onPhotoChange(null);
               setIsPhotoSheetOpen(false);
             }}
-            className="w-full h-12 px-4 rounded-xl flex items-center gap-3 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer"
+            className="w-full h-12 px-4 rounded-xl flex items-center gap-3 text-[13px] font-semibold text-rose-600 active:bg-rose-50 cursor-pointer"
           >
             <Trash2 className="w-4.5 h-4.5" />
             Remove photo

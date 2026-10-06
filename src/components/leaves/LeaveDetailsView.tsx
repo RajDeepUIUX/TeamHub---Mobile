@@ -77,7 +77,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
+            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-200 transition-colors cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -214,7 +214,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           <button
             type="button"
             onClick={() => onCancel(request.id)}
-            className="h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs hover:bg-rose-50 active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
             <span>Cancel Request</span>
@@ -222,7 +222,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           <button
             type="button"
             onClick={() => onEdit(request)}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <Pencil className="w-4 h-4" />
             <span>Edit Request</span>

@@ -48,7 +48,7 @@ export const SelectDurationSheet: React.FC<SelectDurationSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -67,7 +67,7 @@ export const SelectDurationSheet: React.FC<SelectDurationSheetProps> = ({
               className={`w-full h-12.5 px-4 rounded-xl flex items-center gap-3.5 transition-all text-left cursor-pointer border ${
                 isSelected
                   ? 'bg-blue-50/80 border-[#2F68FE]/30 text-[#1E293B] shadow-2xs'
-                  : 'bg-white border-transparent hover:bg-slate-50 text-slate-700'
+                  : 'bg-white border-transparent active:bg-slate-50 text-slate-700'
               }`}
             >
               {/* Radio circle */}

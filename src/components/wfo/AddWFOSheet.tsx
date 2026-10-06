@@ -115,7 +115,7 @@ export const AddWFOSheet: React.FC<AddWFOSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -199,14 +199,14 @@ export const AddWFOSheet: React.FC<AddWFOSheetProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-bold text-xs bg-white hover:bg-blue-50/50 active:bg-blue-100 transition-colors cursor-pointer"
+            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-bold text-xs bg-white active:bg-blue-100 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting || Boolean(conflict) || days === null}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
           >
             {isSubmitting ? 'Submitting...' : 'Submit'}
           </button>

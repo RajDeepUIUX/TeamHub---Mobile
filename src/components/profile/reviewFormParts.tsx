@@ -38,7 +38,7 @@ export const DateButton: React.FC<{ label: string; value: string; onClick: () =>
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`${fieldBoxClass} flex items-center gap-2.5 hover:border-slate-300 disabled:bg-slate-50 disabled:shadow-none disabled:hover:border-slate-200 cursor-pointer disabled:cursor-default`}
+      className={`${fieldBoxClass} flex items-center gap-2.5 disabled:bg-slate-50 disabled:shadow-none cursor-pointer disabled:cursor-default`}
     >
       <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
       <span className={fieldTextClass(Boolean(value))}>

@@ -31,7 +31,7 @@ export const AppBottomNav: React.FC<AppBottomNavProps> = ({ activeTab, onTabChan
             onClick={() => onTabChange(id)}
             aria-current={isActive ? 'page' : undefined}
             className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-              isActive ? 'text-[#2F68FE]' : 'text-slate-400 hover:text-slate-600'
+              isActive ? 'text-[#2F68FE]' : 'text-slate-400'
             }`}
           >
             <Icon

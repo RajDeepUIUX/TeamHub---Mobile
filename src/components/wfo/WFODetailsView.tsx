@@ -26,7 +26,7 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
+            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-200 transition-colors cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -180,7 +180,7 @@ export const WFODetailsView: React.FC<WFODetailsViewProps> = ({
           <button
             type="button"
             onClick={() => onEdit(record)}
-            className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <Pencil className="w-4 h-4" />
             <span>Edit Request</span>

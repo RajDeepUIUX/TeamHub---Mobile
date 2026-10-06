@@ -167,7 +167,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-600 active:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -216,7 +216,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsDateSheetOpen(true)}
-                  className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-medium text-slate-400 shadow-2xs hover:border-[#2F68FE] transition-colors cursor-pointer"
+                  className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-medium text-slate-400 shadow-2xs transition-colors cursor-pointer"
                 >
                   <Calendar className="w-4 h-4 text-[#2F68FE]" />
                   <span>Select date</span>
@@ -228,7 +228,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsDateSheetOpen(true)}
-                  className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-medium text-slate-400 shadow-2xs hover:border-[#2F68FE] transition-colors cursor-pointer"
+                  className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-medium text-slate-400 shadow-2xs transition-colors cursor-pointer"
                 >
                   <Calendar className="w-4 h-4 text-[#2F68FE]" />
                   <span>Select date</span>
@@ -262,7 +262,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDateSheetOpen(true)}
-                className="text-[11px] font-bold text-[#2F68FE] hover:underline cursor-pointer"
+                className="text-[11px] font-bold text-[#2F68FE] cursor-pointer"
               >
                 Change Dates
               </button>
@@ -275,7 +275,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 setEditingDayIndex(null);
                 setIsDurationSheetOpen(true);
               }}
-              className="w-full h-11 px-3.5 bg-white border border-blue-200/80 rounded-xl flex items-center justify-between text-xs font-semibold text-[#1E293B] shadow-2xs hover:border-[#2F68FE] transition-colors cursor-pointer"
+              className="w-full h-11 px-3.5 bg-white border border-blue-200/80 rounded-xl flex items-center justify-between text-xs font-semibold text-[#1E293B] shadow-2xs transition-colors cursor-pointer"
             >
               <span>{masterDuration}</span>
               <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -290,7 +290,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                     setEditingDayIndex(idx);
                     setIsDurationSheetOpen(true);
                   }}
-                  className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="px-4 py-3 flex items-center justify-between active:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <div>
                     <span className="block text-xs font-bold text-[#1E293B]">{item.date}</span>
@@ -314,7 +314,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           <button
             type="button"
             onClick={() => setIsReasonSheetOpen(true)}
-            className="w-full h-11 px-3.5 bg-white border border-slate-300 hover:border-slate-400 rounded-xl flex items-center justify-between text-xs font-medium transition-all shadow-2xs cursor-pointer"
+            className="w-full h-11 px-3.5 bg-white border border-slate-300 rounded-xl flex items-center justify-between text-xs font-medium transition-all shadow-2xs cursor-pointer"
           >
             <span className={selectedReason ? 'text-[#1E293B] font-semibold' : 'text-slate-500'}>
               {selectedReason || 'Select Reason'}
@@ -346,7 +346,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         {/* Attachment Card */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">Attachment</label>
-          <label className="border-2 border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors block">
+          <label className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors block">
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
               <Paperclip className="w-4.5 h-4.5" />
             </div>
@@ -370,7 +370,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                   e.preventDefault();
                   setAttachment(null);
                 }}
-                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -390,7 +390,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         <button
           type="button"
           onClick={handleContinueOrSubmit}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white hover:bg-[#2558E6] active:bg-[#1D4ED8] font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
+          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white active:bg-[#1D4ED8] font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
         >
           {!hasSelectedDates ? 'Continue' : isEditMode ? 'Update Request' : 'Apply for Leave'}
         </button>

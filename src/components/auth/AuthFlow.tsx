@@ -174,7 +174,7 @@ const ForgotScreen: React.FC<{
           <button
             type="button"
             onClick={onBack}
-            className="-ml-2 w-10 h-10 rounded-full flex items-center justify-center text-[#1E1B4B] hover:bg-white/70 cursor-pointer"
+            className="-ml-2 w-10 h-10 rounded-full flex items-center justify-center text-[#1E1B4B] active:bg-white/70 cursor-pointer"
             aria-label="Back to log in"
           >
             <ArrowLeft className="w-5 h-5" />

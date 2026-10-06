@@ -3,6 +3,8 @@ import {
   BarChart2,
   ChevronRight,
   Calendar,
+  Fingerprint,
+  Info,
   Filter,
   X,
   Check,
@@ -26,7 +28,7 @@ import {
 } from './TeamAttendanceFilterSheet';
 import { AttendanceReviewSheet, AttendanceDecision } from './AttendanceReviewSheet';
 import { BulkReviewSheet } from './BulkReviewSheet';
-import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote, reportingManagerOf } from '../../data/teamAttendanceData';
+import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote, reportingManagerOf, branchOf } from '../../data/teamAttendanceData';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
 type RequestState = 'Pending' | 'Approved' | 'Rejected';
@@ -214,16 +216,28 @@ const DailyRecordCard: React.FC<{ record: AttendanceRecord; dimmed: boolean; onV
           </div>
         ))}
       </div>
-      <div className="mt-3 px-3.5 py-2.5 border-t border-slate-100">
-        <button
-          type="button"
-          onClick={onViewLogs}
-          disabled={r.punches.length === 0 || dimmed}
-          className="h-9 px-3 rounded-xl text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-300 flex items-center gap-1.5 active:bg-blue-50 cursor-pointer disabled:cursor-default"
-        >
-          <List className="w-4 h-4" />
-          {r.punches.length ? `View Logs (${r.punches.length})` : 'No logs'}
-        </button>
+      {/* Same punch-log button as the staff attendance card */}
+      <div className="p-3.5 pt-3">
+        {r.punches.length > 0 ? (
+          <button
+            type="button"
+            onClick={onViewLogs}
+            disabled={dimmed}
+            className="w-full flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] active:scale-[0.99] transition-all cursor-pointer disabled:cursor-default group"
+          >
+            <span className="w-7 h-7 rounded-lg bg-white text-[#2F68FE] flex items-center justify-center shadow-2xs">
+              <Fingerprint className="w-4 h-4" />
+            </span>
+            <span className="flex-1 text-left text-xs font-semibold text-[#2F68FE]">View Punch Logs</span>
+            <span className="px-1.5 py-px rounded-md bg-white text-[10px] font-bold text-[#2F68FE]">{r.punches.length}</span>
+            <ChevronRight className="w-4 h-4 text-[#2F68FE] transition-transform" />
+          </button>
+        ) : (
+          <p className="flex items-center gap-2 text-xs font-medium text-slate-400">
+            <Info className="w-3.5 h-3.5" />
+            {r.status === 'weekly_off' ? 'Weekly Off' : 'No attendance logged'}
+          </p>
+        )}
       </div>
     </article>
   );
@@ -268,6 +282,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
   const visible = pool.filter((r) => {
     const isEdit = Boolean(r.editRequested);
     return (
+      any(filters.branches, branchOf(r.staffName)) &&
       any(filters.managers, reportingManagerOf(r.staffName)?.name) &&
       any(filters.staff, r.staffName) &&
       (!filters.from || r.date >= filters.from) &&
@@ -297,7 +312,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         <button
           type="button"
           onClick={() => setIsFilterOpen(true)}
-          className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+          className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
         >
           <span className="flex items-center gap-2 min-w-0">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
@@ -310,7 +325,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
           onClick={() => setIsFilterOpen(true)}
           aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
           className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
-            filterCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
+            filterCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
           }`}
         >
           <Filter className="w-4.5 h-4.5 stroke-[1.9]" />

@@ -84,7 +84,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           <button
             onClick={onClose}
             type="button"
-            className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 active:bg-slate-200 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             aria-label="Close sheet"
           >
             <X className="w-4 h-4" />
@@ -106,8 +106,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
                 disabled={primaryActionDisabled || primaryActionLoading}
                 className={`w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center transition-all ${
                   dangerAction
-                    ? 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 disabled:bg-rose-300'
-                    : 'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 disabled:bg-slate-300'
+                    ? 'bg-rose-600 text-white active:bg-rose-800 disabled:bg-rose-300'
+                    : 'bg-slate-900 text-white active:bg-slate-950 disabled:bg-slate-300'
                 } disabled:cursor-not-allowed shadow-sm`}
               >
                 {primaryActionLoading ? (
@@ -128,7 +128,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               <button
                 type="button"
                 onClick={onSecondaryAction || onClose}
-                className="w-full h-11 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                className="w-full h-11 rounded-xl text-sm font-semibold text-slate-700 active:bg-slate-200 transition-colors"
               >
                 {secondaryActionLabel}
               </button>

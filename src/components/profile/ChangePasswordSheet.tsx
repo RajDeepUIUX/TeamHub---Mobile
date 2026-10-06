@@ -66,14 +66,14 @@ export const ChangePasswordSheet: React.FC<ChangePasswordSheetProps> = ({ isOpen
           <button
             type="button"
             onClick={quickFill}
-            className="h-8 px-2.5 rounded-full text-[11px] font-semibold text-[#4F46E5] bg-indigo-50 hover:bg-indigo-100 cursor-pointer"
+            className="h-8 px-2.5 rounded-full text-[11px] font-semibold text-[#4F46E5] bg-indigo-50 active:bg-indigo-100 cursor-pointer"
           >
             Quick Fill
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -147,14 +147,14 @@ export const ChangePasswordSheet: React.FC<ChangePasswordSheetProps> = ({ isOpen
           <button
             type="button"
             onClick={onClose}
-            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-bold text-xs bg-white hover:bg-blue-50/50 transition-colors cursor-pointer"
+            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-bold text-xs bg-white active:bg-blue-50/50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs hover:bg-[#2558E6] disabled:opacity-60 transition-colors cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs active:bg-[#2558E6] disabled:opacity-60 transition-colors cursor-pointer"
           >
             {saving ? 'Updating…' : 'Update Password'}
           </button>

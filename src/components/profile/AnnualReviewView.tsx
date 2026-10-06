@@ -130,7 +130,7 @@ const SectionCard: React.FC<{
             <button
               type="button"
               onClick={() => setInfoOpen(true)}
-              className="w-5 h-5 -m-0.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 active:bg-slate-100 shrink-0 cursor-pointer"
+              className="w-5 h-5 -m-0.5 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 shrink-0 cursor-pointer"
               aria-label={`About ${title}`}
             >
               <Info className="w-3.5 h-3.5" />
@@ -487,7 +487,7 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
                 <button
                   type="button"
                   onClick={() => removeRow(key, r.id)}
-                  className="w-7 h-7 -m-1 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 active:bg-rose-50 cursor-pointer"
+                  className="w-7 h-7 -m-1 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 cursor-pointer"
                   aria-label={`Remove ${meta.noun.toLowerCase()} ${i + 1}`}
                 >
                   <Trash2 className="w-4 h-4" />

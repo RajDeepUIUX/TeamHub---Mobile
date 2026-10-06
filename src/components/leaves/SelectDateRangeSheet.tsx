@@ -106,7 +106,7 @@ export const SelectDateRangeSheet: React.FC<SelectDateRangeSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -119,7 +119,7 @@ export const SelectDateRangeSheet: React.FC<SelectDateRangeSheetProps> = ({
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -129,7 +129,7 @@ export const SelectDateRangeSheet: React.FC<SelectDateRangeSheetProps> = ({
           <button
             type="button"
             onClick={handleNextMonth}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -193,7 +193,7 @@ export const SelectDateRangeSheet: React.FC<SelectDateRangeSheetProps> = ({
                       ? 'bg-[#2F68FE] text-white font-bold shadow-xs'
                       : inRange
                       ? 'text-[#2F68FE] font-bold'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      : 'text-slate-700 active:bg-slate-100'
                   }`}
                 >
                   {day}
@@ -222,7 +222,7 @@ export const SelectDateRangeSheet: React.FC<SelectDateRangeSheetProps> = ({
         <button
           type="button"
           onClick={handleApply}
-          className="w-full h-12 bg-[#2F68FE] hover:bg-[#2558E6] active:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center"
+          className="w-full h-12 bg-[#2F68FE] active:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center"
         >
           Apply
         </button>

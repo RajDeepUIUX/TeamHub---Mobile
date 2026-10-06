@@ -92,10 +92,28 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
     }
   };
 
+  // Shown in both collapsed and expanded states
+  const punchLogsButton = (
+    <button
+      type="button"
+      onClick={() => onViewPunchLogs(record)}
+      className="w-full flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] active:scale-[0.99] transition-all cursor-pointer group"
+    >
+      <span className="w-7 h-7 rounded-lg bg-white text-[#2F68FE] flex items-center justify-center shadow-2xs">
+        <Fingerprint className="w-4 h-4" />
+      </span>
+      <span className="flex-1 text-left text-xs font-semibold text-[#2F68FE]">View Punch Logs</span>
+      <span className="px-1.5 py-px rounded-md bg-white text-[10px] font-bold text-[#2F68FE]">
+        {record.punches.length}
+      </span>
+      <ChevronRight className="w-4 h-4 text-[#2F68FE] transition-transform" />
+    </button>
+  );
+
   return (
     <div
       className={`bg-white border rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all ${
-        isExpanded ? 'border-[#C7D9FB] shadow-[0_4px_14px_rgba(47,104,254,0.06)]' : 'border-[#EBF0F7] hover:border-[#D9E4F5]'
+        isExpanded ? 'border-[#C7D9FB] shadow-[0_4px_14px_rgba(47,104,254,0.06)]' : 'border-[#EBF0F7]'
       }`}
     >
       {/* Header: Clickable row to toggle expand/collapse */}
@@ -114,7 +132,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-[15px] text-[#1E293B] group-hover:text-[#2F68FE] transition-colors leading-tight">
+            <h3 className="font-bold text-[15px] text-[#1E293B] transition-colors leading-tight">
               {record.dateFormatted}
             </h3>
             {isEditPending && (
@@ -144,7 +162,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
               isExpanded
                 ? 'bg-[#EFF6FF] text-[#2F68FE]'
-                : 'bg-slate-50 text-gray-400 group-hover:bg-[#EFF6FF] group-hover:text-[#2F68FE]'
+                : 'bg-slate-50 text-gray-400 '
             }`}
           >
             <ChevronDown
@@ -162,7 +180,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
           onClick={onToggleExpand}
           className="mt-3 pt-3 border-t border-[#F1F5F9] grid grid-cols-2 gap-2.5 cursor-pointer"
         >
-          <div className="flex items-center gap-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
+          <div className="flex items-center gap-2.5 bg-[#F8FAFC] active:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
             <div className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2F68FE] shrink-0">
               <Clock className="w-3.5 h-3.5" />
             </div>
@@ -176,7 +194,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
+          <div className="flex items-center gap-2.5 bg-[#F8FAFC] active:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
             <div className="w-6 h-6 rounded-lg bg-[#E8F8F0] flex items-center justify-center text-[#10B981] shrink-0">
               <BarChart2 className="w-3.5 h-3.5" />
             </div>
@@ -191,6 +209,9 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Collapsed State: punch logs shown by default */}
+      {!isExpanded && !isWeeklyOff && record.punches.length > 0 && <div className="mt-2.5">{punchLogsButton}</div>}
 
       {/* Collapsed State: Weekly Off */}
       {!isExpanded && isWeeklyOff && (
@@ -355,22 +376,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
           )}
 
           {/* Punch logs: opens the full punch log sheet */}
-          {!isWeeklyOff && record.punches.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onViewPunchLogs(record)}
-              className="w-full flex items-center gap-2.5 h-11 px-3 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] hover:bg-[#EEF4FF] active:scale-[0.99] transition-all cursor-pointer group"
-            >
-              <span className="w-7 h-7 rounded-lg bg-white text-[#2F68FE] flex items-center justify-center shadow-2xs">
-                <Fingerprint className="w-4 h-4" />
-              </span>
-              <span className="flex-1 text-left text-xs font-semibold text-[#2F68FE]">View Punch Logs</span>
-              <span className="px-1.5 py-px rounded-md bg-white text-[10px] font-bold text-[#2F68FE]">
-                {record.punches.length}
-              </span>
-              <ChevronRight className="w-4 h-4 text-[#2F68FE] group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          )}
+          {!isWeeklyOff && record.punches.length > 0 && punchLogsButton}
 
           {/* Edit request status banner */}
           {isEditPending && (
@@ -410,7 +416,7 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             <button
               type="button"
               onClick={() => onApplyLeave(record)}
-              className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-semibold shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
+              className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-semibold shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
             >
               Apply Leave
             </button>
@@ -422,14 +428,14 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
               <button
                 type="button"
                 onClick={() => onRequestEdit(record)}
-                className="h-11 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-semibold bg-white hover:bg-blue-50/50 active:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer"
+                className="h-11 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-semibold bg-white active:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer"
               >
                 Request Edit
               </button>
               <button
                 type="button"
                 onClick={() => onApplyLeave(record)}
-                className="h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-semibold shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
+                className="h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-semibold shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
               >
                 Apply Leave
               </button>

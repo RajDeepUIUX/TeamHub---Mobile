@@ -83,7 +83,7 @@ export const PunchLogsSheet: React.FC<PunchLogsSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -181,7 +181,7 @@ export const PunchLogsSheet: React.FC<PunchLogsSheetProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-full h-12 rounded-xl bg-white border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs hover:bg-blue-50/50 active:bg-blue-100 transition-colors cursor-pointer"
+          className="w-full h-12 rounded-xl bg-white border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs active:bg-blue-100 transition-colors cursor-pointer"
         >
           Close
         </button>

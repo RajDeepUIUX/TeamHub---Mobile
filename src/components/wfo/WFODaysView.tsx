@@ -63,7 +63,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
           <button
             type="button"
             onClick={() => setIsFilterOpen(true)}
-            className="flex-1 h-12 px-3.5 bg-white border border-slate-200/90 rounded-2xl flex items-center justify-between text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+            className="flex-1 h-12 px-3.5 bg-white border border-slate-200/90 rounded-2xl flex items-center justify-between text-xs font-semibold text-slate-700 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
               <Calendar className="w-4 h-4 text-slate-400" />
@@ -79,7 +79,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
             className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
               filterMonth || filterYear
                 ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
+                : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
             }`}
             aria-label="Filter WFO Days"
           >
@@ -106,7 +106,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
           return (
             <div
               key={record.id}
-              className="bg-white rounded-2xl border border-[#EBF0F7] px-4 py-3 shadow-2xs transition-all hover:border-slate-300"
+              className="bg-white rounded-2xl border border-[#EBF0F7] px-4 py-3 shadow-2xs transition-all"
             >
               {/* Row 1: month + status | allowance */}
               <div className="flex items-center justify-between gap-3">
@@ -154,7 +154,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
                         setRecordToEdit(record);
                         setIsAddOpen(true);
                       }}
-                      className="flex items-center gap-1.5 hover:text-[#204DBF] transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       <span>Edit</span>
@@ -166,7 +166,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
                 <button
                   type="button"
                   onClick={() => onViewDetails(record)}
-                  className="flex items-center gap-1.5 hover:text-[#204DBF] transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Eye className="w-4 h-4" />
                   <span>View</span>
@@ -182,7 +182,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
             <button
               type="button"
               onClick={handleClearFilter}
-              className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline cursor-pointer"
+              className="mt-2 text-xs font-semibold text-[#2F68FE] cursor-pointer"
             >
               Clear Filters
             </button>
@@ -198,7 +198,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
             setRecordToEdit(null);
             setIsAddOpen(true);
           }}
-          className="w-full h-12 bg-[#2F68FE] hover:bg-[#2558E6] active:bg-[#1D4ED8] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          className="w-full h-12 bg-[#2F68FE] active:bg-[#1D4ED8] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
           <span>Add WFO Days</span>

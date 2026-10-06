@@ -355,7 +355,7 @@ export function Dropdown<T extends string | number>({
         className={`w-full ${height} px-3.5 rounded-xl border bg-white flex items-center gap-2.5 text-xs shadow-2xs transition-all cursor-pointer focus:outline-hidden ${
           isOpen
             ? 'border-[#2F68FE] ring-4 ring-blue-50'
-            : 'border-slate-200 hover:border-slate-300 focus-visible:border-[#2F68FE] focus-visible:ring-4 focus-visible:ring-blue-50'
+            : 'border-slate-200 focus-visible:border-[#2F68FE] focus-visible:ring-4 focus-visible:ring-blue-50'
         }`}
       >
         {icon && <span className="text-slate-400 shrink-0 flex">{icon}</span>}

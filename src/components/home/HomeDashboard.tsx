@@ -53,7 +53,7 @@ const SectionCard: React.FC<{
         <button
           type="button"
           onClick={action.onClick}
-          className="text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 hover:underline cursor-pointer"
+          className="text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 cursor-pointer"
         >
           {action.label}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -89,7 +89,7 @@ const StatRow: React.FC<{
       <span className="block text-xs font-semibold text-slate-700 truncate">{title}</span>
       {subtitle && <span className="block text-[11px] text-slate-400 truncate">{subtitle}</span>}
     </span>
-    <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 group-hover:translate-x-0.5 transition-transform" />
+    <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 transition-transform" />
   </button>
 );
 
@@ -200,7 +200,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <button
             type="button"
             onClick={onViewLog}
-            className="mt-3 w-full h-10 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-[#E0E7FF] transition-colors cursor-pointer"
+            className="mt-3 w-full h-10 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#E0E7FF] transition-colors cursor-pointer"
           >
             View Log
             <ArrowRight className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => onOpenCelebrations(tab)}
-                className={`rounded-xl p-2.5 text-left cursor-pointer hover:brightness-95 transition ${tint}`}
+                className={`rounded-xl p-2.5 text-left cursor-pointer active:brightness-95 transition ${tint}`}
               >
                 <div className="flex items-center gap-1.5">
                   <Icon className="w-4 h-4" />
@@ -334,7 +334,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <span className="block text-xs font-semibold text-slate-700">Time to fill out your Staff Review</span>
               <span className="block text-[11px] text-slate-400">Form 180d open · Your action</span>
             </span>
-            <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 transition-transform" />
           </button>
         </SectionCard>
 

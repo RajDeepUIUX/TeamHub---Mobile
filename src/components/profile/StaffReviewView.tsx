@@ -82,7 +82,7 @@ const InfoButton: React.FC<{ topic: InfoTopic; onOpen: (t: InfoTopic) => void }>
   <button
     type="button"
     onClick={() => onOpen(topic)}
-    className="w-5 h-5 -m-0.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 active:bg-slate-100 shrink-0 cursor-pointer"
+    className="w-5 h-5 -m-0.5 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 shrink-0 cursor-pointer"
     aria-label={`About ${topic.title}`}
   >
     <Info className="w-3.5 h-3.5" />

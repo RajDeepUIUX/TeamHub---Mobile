@@ -661,7 +661,7 @@ export default function App() {
     ...myCycleRecords.filter((r) => !r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
     // Days of the cycle not yet in John's own records
     ...generateMemberDays(
-      { staffName: CURRENT_STAFF.staffName, staffCode: ATTENDANCE_STAFF_CODE, workMode: 'Office' },
+      { staffName: CURRENT_STAFF.staffName, staffCode: ATTENDANCE_STAFF_CODE, workMode: 'Office', branch: 'Gota - Ahmedabad' },
       0,
       new Set(myCycleRecords.map((r) => r.date))
     ),
@@ -1791,7 +1791,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => handleAppTabChange('home')}
-                        className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 transition-colors cursor-pointer"
+                        className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Back"
                       >
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -1910,7 +1910,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setIsFilterSheetOpen(true)}
-                      className="flex-1 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="flex-1 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-slate-400" />
@@ -1930,7 +1930,7 @@ export default function App() {
                       className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
                         activeFilterStatus !== 'All'
                           ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                          : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
+                          : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
                       }`}
                       aria-label="Filter Attendance"
                     >
@@ -1959,7 +1959,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={handleToggleAll}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2F68FE] bg-[#EFF6FF] hover:bg-[#DBEAFE]/80 active:bg-blue-200 transition-all cursor-pointer shadow-2xs border border-[#BFDBFE]/60"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2F68FE] bg-[#EFF6FF] active:bg-blue-200 transition-all cursor-pointer shadow-2xs border border-[#BFDBFE]/60"
                         >
                           {isAnyExpanded ? (
                             <>
@@ -1999,7 +1999,7 @@ export default function App() {
                             setActiveFilterStatus('All');
                             setAttendanceRange(currentMonth.range);
                           }}
-                          className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline"
+                          className="mt-2 text-xs font-semibold text-[#2F68FE]"
                         >
                           Clear Filter
                         </button>

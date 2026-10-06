@@ -22,7 +22,7 @@ export const ComingSoonView: React.FC<ComingSoonViewProps> = ({ title, onGoHome 
       <button
         type="button"
         onClick={onGoHome}
-        className="mt-5 h-11 px-6 rounded-xl bg-[#2F68FE] text-white text-xs font-bold hover:bg-[#2558E6] transition-colors cursor-pointer"
+        className="mt-5 h-11 px-6 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#2558E6] transition-colors cursor-pointer"
       >
         Back to Home
       </button>

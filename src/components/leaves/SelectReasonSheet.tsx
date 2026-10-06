@@ -40,7 +40,7 @@ export const SelectReasonSheet: React.FC<SelectReasonSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -62,7 +62,7 @@ export const SelectReasonSheet: React.FC<SelectReasonSheetProps> = ({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-300 absolute right-2.5 cursor-pointer"
+              className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 active:bg-slate-300 absolute right-2.5 cursor-pointer"
             >
               <X className="w-3 h-3" />
             </button>
@@ -82,7 +82,7 @@ export const SelectReasonSheet: React.FC<SelectReasonSheetProps> = ({
               className={`w-full h-12 px-4 rounded-xl flex items-center justify-between transition-all text-left cursor-pointer border ${
                 isSelected
                   ? 'bg-blue-50/80 border-[#2F68FE]/30 text-[#2F68FE] font-bold shadow-2xs'
-                  : 'bg-white border-transparent hover:bg-slate-50 text-slate-700 font-medium'
+                  : 'bg-white border-transparent active:bg-slate-50 text-slate-700 font-medium'
               }`}
             >
               <span className="text-xs">{reason}</span>

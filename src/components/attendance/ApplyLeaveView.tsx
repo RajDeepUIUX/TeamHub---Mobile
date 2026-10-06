@@ -42,7 +42,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-100 transition-colors"
+          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-slate-700 active:bg-slate-100 transition-colors"
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -163,7 +163,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 className={`h-11 rounded-xl text-xs font-semibold transition-all ${
                   session === 'First Half'
                     ? 'border-2 border-[#2F68FE] bg-[#F0F5FF] text-[#2F68FE] shadow-2xs'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
                 }`}
               >
                 First Half
@@ -174,7 +174,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 className={`h-11 rounded-xl text-xs font-semibold transition-all ${
                   session === 'Second Half'
                     ? 'border-2 border-[#2F68FE] bg-[#F0F5FF] text-[#2F68FE] shadow-2xs'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
                 }`}
               >
                 Second Half
@@ -238,7 +238,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white hover:bg-blue-50/50 active:bg-blue-100 transition-colors"
+          className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white active:bg-blue-100 transition-colors"
         >
           Cancel
         </button>
@@ -246,7 +246,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Leave Request'}
         </button>

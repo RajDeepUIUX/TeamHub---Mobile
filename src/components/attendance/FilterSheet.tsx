@@ -84,7 +84,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           className={`w-full h-11 px-3 rounded-xl border bg-white flex items-center justify-between font-medium transition-all cursor-pointer shadow-2xs ${
             isActive
               ? 'border-[#2F68FE] ring-4 ring-blue-50'
-              : 'border-slate-200 hover:border-slate-300'
+              : 'border-slate-200'
           }`}
         >
           <div className="flex items-center gap-2 min-w-0">
@@ -118,7 +118,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -166,7 +166,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                   selectedStatus === 'All'
                     ? 'bg-[#1E293B] text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    : 'bg-slate-100 text-slate-700 active:bg-slate-200'
                 }`}
               >
                 All
@@ -179,7 +179,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                 className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
                   selectedStatus === 'Full Day'
                     ? 'bg-[#10B981] text-white shadow-2xs'
-                    : 'bg-[#E8F8F0] text-[#10B981] hover:bg-[#D8F2E4]'
+                    : 'bg-[#E8F8F0] text-[#10B981] active:bg-[#D8F2E4]'
                 }`}
               >
                 Full Day
@@ -205,7 +205,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                 className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
                   selectedStatus === 'Absent'
                     ? 'bg-[#F43F5E] text-white shadow-2xs'
-                    : 'bg-[#FDECEC] text-[#F34D59] hover:bg-[#FCD8D8]'
+                    : 'bg-[#FDECEC] text-[#F34D59] active:bg-[#FCD8D8]'
                 }`}
               >
                 Absent
@@ -242,7 +242,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                     className={`flex-1 h-11 rounded-xl text-xs font-semibold transition-all ${
                       isActive
                         ? 'border-2 border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-slate-100 text-slate-600 active:bg-slate-200'
                     }`}
                   >
                     {mode}
@@ -258,14 +258,14 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           <button
             type="button"
             onClick={handleClear}
-            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white hover:bg-blue-50/50 active:bg-blue-100 transition-colors"
+            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white active:bg-blue-100 transition-colors"
           >
             Clear All
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
           >
             Apply Filters
           </button>

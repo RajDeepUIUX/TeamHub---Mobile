@@ -54,7 +54,7 @@ export const TeamFilterBar: React.FC<{ selection: FilterSelection; placeholder: 
       <button
         type="button"
         onClick={onClick}
-        className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between gap-2 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+        className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between gap-2 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
       >
         <span className="flex items-center gap-2 min-w-0">
           <Users className="w-4 h-4 text-slate-400 shrink-0" />
@@ -67,7 +67,7 @@ export const TeamFilterBar: React.FC<{ selection: FilterSelection; placeholder: 
         onClick={onClick}
         aria-label={count ? `Filters (${count} applied)` : 'Filters'}
         className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
-          count ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
+          count ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
         }`}
       >
         <Filter className="w-4.5 h-4.5 stroke-[1.9]" />

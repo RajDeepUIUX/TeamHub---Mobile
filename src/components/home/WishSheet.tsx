@@ -50,7 +50,7 @@ export const WishSheet: React.FC<WishSheetProps> = ({ person, kind, onClose, onS
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -84,7 +84,7 @@ export const WishSheet: React.FC<WishSheetProps> = ({ person, kind, onClose, onS
                 className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
                   message === wish
                     ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
                 }`}
               >
                 {wish}
@@ -111,7 +111,7 @@ export const WishSheet: React.FC<WishSheetProps> = ({ person, kind, onClose, onS
           type="button"
           disabled={!message.trim()}
           onClick={() => onSend(active, message.trim())}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#2558E6] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs flex items-center justify-center gap-2 active:bg-[#2558E6] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <Send className="w-4 h-4" />
           Send Wish

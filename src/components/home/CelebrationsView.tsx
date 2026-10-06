@@ -104,7 +104,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#2F68FE] hover:bg-slate-100 cursor-pointer"
+            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-slate-100 cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -131,7 +131,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                 className={`relative h-10 px-1.5 rounded-xl border flex items-center justify-center gap-1 text-[11px] transition-colors cursor-pointer ${
                   isActive
                     ? 'border-[#2F68FE]/30 bg-blue-50 text-[#2F68FE] font-bold'
-                    : 'border-slate-200 bg-white text-slate-600 font-semibold hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-600 font-semibold active:bg-slate-50'
                 }`}
               >
                 <span aria-hidden="true">{TAB_META[t].emoji}</span>
@@ -265,7 +265,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                 className={`w-11 h-11 rounded-xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
                   period !== 'All'
                     ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                    : 'bg-white border-slate-200 text-[#2F68FE] hover:bg-slate-50'
+                    : 'bg-white border-slate-200 text-[#2F68FE] active:bg-slate-50'
                 }`}
                 aria-label="Filter"
               >
@@ -328,7 +328,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                     setQuery('');
                     setPeriod('All');
                   }}
-                  className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline cursor-pointer"
+                  className="mt-2 text-xs font-semibold text-[#2F68FE] cursor-pointer"
                 >
                   Clear filters
                 </button>
@@ -348,7 +348,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
           <button
             type="button"
             onClick={() => setIsFilterOpen(false)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -368,7 +368,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                 className={`w-full h-12 px-4 rounded-xl flex items-center justify-between text-xs border transition-colors cursor-pointer ${
                   isSelected
                     ? 'bg-blue-50 border-[#2F68FE]/30 text-[#2F68FE] font-bold'
-                    : 'bg-white border-transparent text-slate-700 font-medium hover:bg-slate-50'
+                    : 'bg-white border-transparent text-slate-700 font-medium active:bg-slate-50'
                 }`}
               >
                 {opt}

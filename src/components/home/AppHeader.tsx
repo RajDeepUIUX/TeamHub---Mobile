@@ -29,7 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <button
         type="button"
         onClick={onOpenNotifications}
-        className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 cursor-pointer"
+        className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 active:bg-slate-100 cursor-pointer"
         aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
@@ -42,7 +42,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <button
         type="button"
         onClick={onOpenProfile}
-        className="w-8 h-8 rounded-full ring-2 ring-white shadow-xs hover:ring-[#C7D2FE] transition cursor-pointer"
+        className="w-8 h-8 rounded-full ring-2 ring-white shadow-xs active:ring-[#C7D2FE] transition cursor-pointer"
         aria-label="My profile"
       >
         <ProfileAvatar name={fullName} photoUrl={profilePhoto} className="w-8 h-8 rounded-full" textClassName="text-[11px]" />

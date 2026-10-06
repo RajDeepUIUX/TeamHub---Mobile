@@ -180,7 +180,7 @@ export const AdditionalResponsibilitiesTab: React.FC<AdditionalResponsibilitiesT
             <button
               type="button"
               onClick={() => setMultiTarget(target)}
-              className={`${fieldBoxClass} flex items-center gap-2.5 hover:border-slate-300 cursor-pointer`}
+              className={`${fieldBoxClass} flex items-center gap-2.5 cursor-pointer`}
             >
               <span className={fieldTextClass(list.length > 0)}>
                 {list.length === 0 ? 'Nothing selected' : list.length === 1 ? list[0] : `${list.length} selected`}
@@ -247,7 +247,7 @@ export const AdditionalResponsibilitiesTab: React.FC<AdditionalResponsibilitiesT
                   setInfoFor(config);
                   setInfoOpen(true);
                 }}
-                className="inline-flex align-middle ml-1 -mt-0.5 w-5 h-5 rounded-full items-center justify-center text-slate-400 hover:text-slate-600 active:bg-slate-100 cursor-pointer"
+                className="inline-flex align-middle ml-1 -mt-0.5 w-5 h-5 rounded-full items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
                 aria-label={`About ${config.title}`}
               >
                 <Info className="w-3.5 h-3.5" />
@@ -306,7 +306,7 @@ export const AdditionalResponsibilitiesTab: React.FC<AdditionalResponsibilitiesT
                               }));
                               clearError(`resp-${config.id}-${r.id}`);
                             }}
-                            className="w-7 h-7 -m-1 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 active:bg-rose-50 cursor-pointer"
+                            className="w-7 h-7 -m-1 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 cursor-pointer"
                             aria-label={`Remove entry ${i + 1}`}
                           >
                             <Trash2 className="w-4 h-4" />

@@ -98,7 +98,7 @@ const FileField: React.FC<{
               <button
                 type="button"
                 onClick={() => onChange(files.filter((f) => f !== name))}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 active:bg-rose-50 cursor-pointer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 cursor-pointer"
                 aria-label={`Remove ${name}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ const FileField: React.FC<{
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border-[1.5px] border-dashed text-left transition-colors cursor-pointer ${
               error
                 ? 'border-rose-300 bg-rose-50/40 active:bg-rose-50'
-                : 'border-indigo-200 bg-indigo-50/40 hover:border-indigo-300 active:bg-indigo-50'
+                : 'border-indigo-200 bg-indigo-50/40 active:bg-indigo-50'
             }`}
           >
             <span className="w-9 h-9 rounded-xl bg-white border border-indigo-100 text-[#4F46E5] flex items-center justify-center shrink-0 shadow-2xs">

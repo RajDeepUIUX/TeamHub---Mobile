@@ -61,7 +61,7 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
           aria-label="Previous month"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -72,7 +72,7 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
           aria-label="Next month"
         >
           <ChevronRight className="w-4 h-4" />
@@ -122,8 +122,8 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
                     : inRange
                       ? 'text-[#2F68FE] font-bold'
                       : isToday
-                        ? 'text-[#2F68FE] ring-1 ring-[#2F68FE]/40 hover:bg-slate-100'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'text-[#2F68FE] ring-1 ring-[#2F68FE]/40 active:bg-slate-100'
+                        : 'text-slate-700 active:bg-slate-100'
                 }`}
               >
                 {i + 1}
