@@ -1,4 +1,5 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
 
 export interface DropdownOption {
@@ -21,20 +22,22 @@ interface MultiSelectDropdownProps {
   disabledHint?: string;
 }
 
-/** Panel height budget (search box + list) used to decide whether it fits below the field */
 const PANEL_HEIGHT = 268;
 const GAP = 6;
+const SCREEN_MARGIN = 8;
 
-/** Nearest scrolling ancestor (the sheet body), whose edges the panel must stay inside */
-const scrollParentOf = (el: HTMLElement | null): HTMLElement | null => {
-  for (let node = el?.parentElement; node; node = node.parentElement) {
-    const { overflowY } = getComputedStyle(node);
-    if (overflowY === 'auto' || overflowY === 'scroll') return node;
-  }
-  return null;
-};
+interface PanelPosition {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+}
 
-/** Field that opens a floating checkbox list over the content (flips up near the bottom); supports select all and search */
+/**
+ * Field that opens a checkbox list floating over everything (rendered into the device's sheet portal,
+ * so it never pushes or gets clipped by the content); flips up near the bottom. Supports select all and search.
+ */
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   label,
   placeholder,
@@ -47,26 +50,50 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [placement, setPlacement] = useState<{ up: boolean; maxHeight: number }>({ up: false, maxHeight: PANEL_HEIGHT });
+  const [position, setPosition] = useState<PanelPosition | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Open downward when it fits, otherwise upward if there's more room above
+  const portal = typeof document !== 'undefined' ? document.getElementById('mobile-sheet-portal') : null;
+
+  // Open downward when it fits, otherwise toward the side with more room
+  const updatePosition = useCallback(() => {
+    const field = fieldRef.current;
+    if (!field || !portal) return;
+    const portalRect = portal.getBoundingClientRect();
+    const rect = field.getBoundingClientRect();
+    // The device frame can be CSS-scaled; convert screen px back to layout px
+    const scale = portalRect.width / portal.offsetWidth || 1;
+    const left = (rect.left - portalRect.left) / scale;
+    const width = rect.width / scale;
+    const below = (portalRect.bottom - rect.bottom) / scale - GAP - SCREEN_MARGIN;
+    const above = (rect.top - portalRect.top) / scale - GAP - SCREEN_MARGIN;
+    const needed = Math.min(PANEL_HEIGHT, panelRef.current?.scrollHeight ?? PANEL_HEIGHT);
+    if (below >= needed || below >= above) {
+      setPosition({ left, width, top: (rect.bottom - portalRect.top) / scale + GAP, maxHeight: Math.min(PANEL_HEIGHT, below) });
+    } else {
+      setPosition({ left, width, bottom: (portalRect.bottom - rect.top) / scale + GAP, maxHeight: Math.min(PANEL_HEIGHT, above) });
+    }
+  }, [portal]);
+
   useLayoutEffect(() => {
-    if (!isOpen || !fieldRef.current) return;
-    const field = fieldRef.current.getBoundingClientRect();
-    const bounds = scrollParentOf(fieldRef.current)?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight };
-    const below = bounds.bottom - field.bottom - GAP;
-    const above = field.top - bounds.top - GAP;
-    const up = below < PANEL_HEIGHT && above > below;
-    setPlacement({ up, maxHeight: Math.max(140, Math.min(PANEL_HEIGHT, up ? above : below)) });
-  }, [isOpen]);
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, updatePosition]);
 
   // Close on outside tap
   useEffect(() => {
     if (!isOpen) return;
     const onDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setIsOpen(false);
+      const target = e.target as Node;
+      if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) setIsOpen(false);
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
@@ -124,12 +151,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         )}
         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && !disabled && (
+      {isOpen && !disabled && portal &&
+        createPortal(
         <div
-          className={`absolute inset-x-0 z-30 flex flex-col rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_-8px_rgba(15,23,42,0.28)] overflow-hidden animate-in fade-in duration-150 ${
-            placement.up ? 'bottom-full mb-1.5 slide-in-from-bottom-1' : 'top-full mt-1.5 slide-in-from-top-1'
-          }`}
-          style={{ maxHeight: placement.maxHeight }}
+          ref={panelRef}
+          className={`absolute z-50 pointer-events-auto flex flex-col rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_-8px_rgba(15,23,42,0.28)] overflow-hidden animate-in fade-in duration-150 ${
+            position?.bottom !== undefined ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+          } ${position ? '' : 'invisible'}`}
+          style={position ?? { maxHeight: PANEL_HEIGHT }}
         >
           {searchable && (
             <div className="relative shrink-0 border-b border-slate-100">
@@ -174,8 +203,9 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             ))}
             {visible.length === 0 && <p className="px-3.5 py-3 text-[11px] text-slate-400">No matches</p>}
           </div>
-        </div>
-      )}
+        </div>,
+          portal
+        )}
       </div>
       {disabled && disabledHint && <p className="text-[10px] text-slate-400">{disabledHint}</p>}
     </div>

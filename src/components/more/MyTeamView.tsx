@@ -14,7 +14,6 @@ import {
   Pencil,
   ClipboardCheck,
   History,
-  BarChart2,
   ChevronRight,
   Star,
   Users,
@@ -269,7 +268,7 @@ const LeavesSheet: React.FC<{ member: TeamMemberRecord | null; onClose: () => vo
   </BottomSheet>
 );
 
-/* ------------------------------ Filter + summary sheets ------------------------------ */
+/* ------------------------------ Filter sheet ------------------------------ */
 
 const FilterSheet: React.FC<{ isOpen: boolean; filters: Filters; onClose: () => void; onApply: (f: Filters) => void }> = ({
   isOpen,
@@ -330,50 +329,6 @@ const FilterSheet: React.FC<{ isOpen: boolean; filters: Filters; onClose: () => 
   );
 };
 
-const SummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; members: TeamMemberRecord[] }> = ({ isOpen, onClose, members }) => {
-  const Section: React.FC<{ title: string; rows: [string, React.ReactNode][] }> = ({ title, rows }) => (
-    <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2">
-      <p className="font-bold text-[#1E293B]">{title}</p>
-      <div className="grid grid-cols-2 gap-2">
-        {rows.map(([k, v]) => (
-          <div key={k} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs">
-            <span className="text-slate-600 font-medium truncate">{k}</span>
-            <span className="text-sm font-bold text-slate-700 tabular-nums shrink-0">{v}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-  const count = (fn: (m: TeamMemberRecord) => boolean) => members.filter(fn).length;
-  return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
-      <SheetHeader title="Team Summary" subtitle="My Team · Complete Breakdown" onClose={onClose} />
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4 text-xs">
-        <Section
-          title="Overview"
-          rows={[
-            ['Team members', members.length],
-            ['Available FTE', members.reduce((n, m) => n + m.availableFte, 0)],
-            ['Total leaves', members.reduce((n, m) => n + totalLeavesOf(m), 0)],
-          ]}
-        />
-        <Section title="By Staff Status" rows={STAFF_STATUSES.map((s) => [s, count((m) => m.status === s)] as [string, number])} />
-        <Section title="By Branch" rows={MY_TEAM_BRANCHES.map((b) => [b, count((m) => m.branch === b)] as [string, number])} />
-        <Section title="By Reporting Manager" rows={MY_TEAM_MANAGERS.map((r) => [r, count((m) => m.reportingManager === r)] as [string, number])} />
-      </div>
-      <div className="p-4 pt-2 pb-6 border-t border-slate-100 shrink-0">
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
-        >
-          Close Summary
-        </button>
-      </div>
-    </BottomSheet>
-  );
-};
-
 /* --------------------------------- Screen --------------------------------- */
 
 interface MyTeamViewProps {
@@ -389,7 +344,6 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   // CTC: unlocked once per visit after the password check; then revealed all at once or one by one
   const [ctcUnlocked, setCtcUnlocked] = useState(false);
   const [pendingReveal, setPendingReveal] = useState<'all' | string | null>(null);
@@ -478,35 +432,6 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
               </span>
             )}
           </button>
-        </div>
-
-        {/* KPIs */}
-        <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              { label: 'Team', value: visible.length, pill: 'bg-[#EFF6FF] text-[#2F68FE]' },
-              { label: 'Active', value: visible.filter((m) => m.status === 'Active').length, pill: 'bg-[#E8F8F0] text-[#10B981]' },
-              { label: 'Available FTE', value: visible.reduce((n, m) => n + m.availableFte, 0), pill: 'bg-[#FEF8E7] text-[#D97706]' },
-            ].map(({ label, value, pill }) => (
-              <div key={label} className="flex flex-col items-center">
-                <div className={`min-w-14 h-9 px-2 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${pill}`}>{value}</div>
-                <span className="text-[11px] text-gray-500 font-medium">{label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-[#F1F5F9] mt-3.5 pt-3">
-            <button
-              type="button"
-              onClick={() => setIsSummaryOpen(true)}
-              className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-[#2F68FE]" />
-                View Full Summary
-              </span>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </button>
-          </div>
         </div>
 
         {/* List header: reveal / hide all CTC */}
@@ -678,7 +603,6 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
           setIsFilterOpen(false);
         }}
       />
-      <SummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} members={members} />
     </div>
   );
 };

@@ -25,6 +25,10 @@ import {
   Newspaper,
   Megaphone,
   UsersRound,
+  GraduationCap,
+  BookOpen,
+  ClipboardList,
+  Award,
 } from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
@@ -99,6 +103,17 @@ export const MORE_GROUPS: MoreGroup[] = [
         tint: 'bg-violet-50 text-violet-600',
         roles: ['Manager'],
       },
+    ],
+  },
+  {
+    // Learning & Development, the same for every role
+    id: 'learning-development',
+    label: 'L&D',
+    icon: GraduationCap,
+    modules: [
+      { id: 'my-learning', label: 'My Learning', hint: 'Your courses, progress & certificates', icon: BookOpen, tint: 'bg-indigo-50 text-indigo-600' },
+      { id: 'training-request', label: 'Training Request', hint: 'Request a course or training session', icon: ClipboardList, tint: 'bg-teal-50 text-teal-600' },
+      { id: 'recognitions', label: 'Recognitions', hint: 'Awards & appreciation from your team', icon: Award, tint: 'bg-amber-50 text-amber-600' },
     ],
   },
   {
