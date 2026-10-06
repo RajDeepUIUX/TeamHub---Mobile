@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Wand2, Globe, Briefcase, Users, Timer, CalendarRange, StickyNote, Info } from 'lucide-react';
+import { ArrowLeft, Wand2, Globe, Briefcase, Users, Timer, CalendarRange, StickyNote, Info, Check } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { FormSection } from './WfhRequestFields';
 import { OTClientType, OTRequest } from '../../types/overtime';
@@ -8,6 +8,7 @@ import {
   OT_COUNTRIES,
   OT_DOMAINS,
   OT_EXTRA_HOURS,
+  OT_HOURS_PER_FTE,
   otAvailabilityPeriod,
   otAvailabilityShort,
   otFte,
@@ -171,6 +172,8 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
           <label className="block text-[11px] font-semibold text-slate-600">
             How many extra hours a day can you take on? <span className="text-rose-500">*</span>
           </label>
+
+          {/* Hour cards: hours, per day, FTE */}
           <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Extra available hours">
             {OT_EXTRA_HOURS.map((h) => {
               const on = extraHours === h;
@@ -184,32 +187,63 @@ export const AddOTRequestView: React.FC<AddOTRequestViewProps> = ({ onBack, onSu
                     setExtraHours(h);
                     clearError('extraHours');
                   }}
-                  className={`relative pt-3 pb-2.5 rounded-xl border flex flex-col items-center transition-colors cursor-pointer active:scale-[0.98] ${
-                    on ? 'border-[#2F68FE] bg-blue-50/60' : errors.extraHours ? 'border-rose-300 bg-white' : 'border-slate-200 bg-white'
+                  className={`relative pt-4 pb-2.5 px-1 rounded-2xl flex flex-col items-center transition-all duration-200 cursor-pointer active:scale-95 ${
+                    on
+                      ? 'bg-linear-to-br from-[#4F7BFF] to-[#2F68FE] text-white shadow-[0_10px_20px_-10px_rgba(47,104,254,0.9)] -translate-y-0.5'
+                      : `bg-white text-[#1E293B] border shadow-2xs ${errors.extraHours ? 'border-rose-300' : 'border-slate-200/80'}`
                   }`}
                 >
+                  {/* Corner: ring → check badge */}
                   <span
-                    className={`absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
-                      on ? 'border-[#2F68FE]' : 'border-slate-300'
+                    className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
+                      on ? 'bg-white text-[#2F68FE]' : 'border-[1.5px] border-slate-200'
                     }`}
                   >
-                    {on && <span className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" />}
+                    {on && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
                   </span>
-                  <span className={`text-lg font-extrabold leading-none tabular-nums ${on ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{h}</span>
-                  <span className={`mt-0.5 text-[10px] font-semibold ${on ? 'text-[#2F68FE]' : 'text-slate-500'}`}>hrs / day</span>
-                  <span className="mt-1.5 text-[9.5px] text-slate-400 tabular-nums">{otFte(h)} FTE</span>
+                  <span className="text-[22px] font-extrabold leading-none tabular-nums">{h}</span>
+                  <span className={`mt-1 text-[10px] font-semibold ${on ? 'text-white/85' : 'text-slate-500'}`}>hrs / day</span>
+                  <span
+                    className={`mt-2 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold tabular-nums ${
+                      on ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {otFte(h)} FTE
+                  </span>
                 </button>
               );
             })}
           </div>
+
+          {/* Live preview: regular day + extra hours */}
           {errors.extraHours ? (
             <p className="px-0.5 text-[11px] font-medium text-rose-500">{errors.extraHours}</p>
+          ) : extraHours ? (
+            <div className="rounded-2xl bg-[#F5F8FF] border border-[#E0E9FF] p-3 space-y-2.5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500">Your day</span>
+                <span className="px-2 py-0.5 rounded-full bg-white text-[10.5px] font-bold text-[#2F68FE] shadow-2xs tabular-nums">
+                  {otFte(extraHours)} FTE
+                </span>
+              </div>
+              <div className="flex h-2.5 rounded-full overflow-hidden bg-white gap-0.5">
+                <span className="h-full rounded-l-full bg-slate-300" style={{ flex: OT_HOURS_PER_FTE }} />
+                <span className="h-full rounded-r-full bg-[#2F68FE] transition-all duration-300" style={{ flex: extraHours }} />
+                <span className="h-full" style={{ flex: Math.max(...OT_EXTRA_HOURS) - extraHours }} />
+              </div>
+              <div className="flex items-center gap-3 text-[10.5px] text-slate-500">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-slate-300" />
+                  {OT_HOURS_PER_FTE}h regular
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#2F68FE]" />+{extraHours}h extra
+                </span>
+                <span className="ml-auto font-bold text-[#1E293B] tabular-nums">{OT_HOURS_PER_FTE + extraHours}h / day</span>
+              </div>
+            </div>
           ) : (
-            extraHours && (
-              <p className="px-0.5 text-[11px] text-slate-500">
-                That's <strong className="font-bold text-[#1E293B]">{otFte(extraHours)} FTE</strong> on top of your regular day.
-              </p>
-            )
+            <p className="px-0.5 text-[11px] text-slate-400">Pick the extra hours you can add on top of your regular {OT_HOURS_PER_FTE}-hour day.</p>
           )}
         </FormSection>
 

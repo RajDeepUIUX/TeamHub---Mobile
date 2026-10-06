@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Timer, Plus, Globe, CalendarRange, Lock, Ticket, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, Timer, Plus, CalendarRange, Lock, Ticket, BadgeCheck } from 'lucide-react';
 import { OTRequest } from '../../types/overtime';
 import { otAvailabilityPeriod, otAvailabilityShort, otFte, otPendingHours } from '../../data/overtimeData';
 import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
@@ -74,14 +74,17 @@ export const OTRequestCard: React.FC<{
   /** Manager view: show who raised it (read-only) */
   showStaff?: boolean;
 }> = ({ request: r, showStaff }) => {
+  const extra = r.extraHours ?? 0;
+  const submitted = new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const pending = otPendingHours(r);
   const stats = [
-    { label: 'Extra hrs', value: r.extraHours ?? '—' },
-    { label: 'FTE', value: r.extraHours ? otFte(r.extraHours) : '—' },
-    { label: 'Assigned', value: r.assignedHours },
-    { label: 'Pending', value: otPendingHours(r) },
+    { label: 'Extra / day', value: `${extra}h`, sub: `${otFte(extra)} FTE`, tile: 'bg-[#EFF4FF]', tone: 'text-[#2F68FE]' },
+    { label: 'Assigned', value: `${r.assignedHours}h`, sub: `of ${extra}h offered`, tile: 'bg-[#ECFDF5]', tone: 'text-[#059669]' },
+    { label: 'Pending', value: `${pending}h`, sub: pending ? 'yet to assign' : 'all assigned', tile: 'bg-[#FFF8EB]', tone: 'text-[#D97706]' },
   ];
+
   return (
-    <article className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs space-y-3">
+    <article className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3.5">
       {showStaff && (
         <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
           <span
@@ -97,53 +100,53 @@ export const OTRequestCard: React.FC<{
           </span>
         </div>
       )}
+
+      {/* Domain + status */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h4 className="text-[14px] font-extrabold text-[#1E293B] leading-tight">{r.domain}</h4>
-          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 flex-wrap">
-            <Globe className="w-3 h-3 text-slate-400" />
-            {r.country}
-            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">{r.clientType} client</span>
+          <h4 className="text-[15px] font-bold text-[#1E293B] leading-tight truncate">{r.domain}</h4>
+          <p className="mt-0.5 text-[11.5px] text-slate-500 truncate">
+            {r.country} · {r.clientType} client
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 bg-[#E8F8F0] text-[#10B981]">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold shrink-0 bg-[#E8F8F0] text-[#059669]">
           <BadgeCheck className="w-3 h-3" />
           {r.status}
         </span>
       </div>
 
-      <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
-        <CalendarRange className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-px" />
-        <span>
-          <span className="font-bold text-[#1E293B]">{otAvailabilityShort(r.availability)}</span>
-          <span className="text-slate-500"> · {otAvailabilityPeriod(r.availability)}</span>
-        </span>
-      </div>
-
-      <div className="grid grid-cols-4 rounded-xl border border-slate-100 divide-x divide-slate-100 text-center">
-        {stats.map(({ label, value }) => (
-          <div key={label} className="py-2">
-            <span className="block text-sm font-extrabold text-[#1E293B] tabular-nums">{value}</span>
-            <span className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
+      {/* Hours */}
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map(({ label, value, sub, tile, tone }) => (
+          <div key={label} className={`rounded-xl px-2.5 py-2.5 ${tile}`}>
+            <span className={`block text-[10px] font-semibold ${tone}`}>{label}</span>
+            <span className="block mt-1 text-[18px] font-extrabold text-[#1E293B] tabular-nums leading-none">{value}</span>
+            <span className="block mt-1 text-[9.5px] text-slate-500 truncate">{sub}</span>
           </div>
         ))}
       </div>
 
-      {r.remarks && <p className="text-[11.5px] text-slate-500 leading-relaxed">“{r.remarks}”</p>}
+      {/* Availability + remarks */}
+      <div className="space-y-1.5 text-[11.5px]">
+        <p className="flex items-center gap-1.5 text-slate-600">
+          <CalendarRange className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="font-semibold text-[#1E293B]">{otAvailabilityShort(r.availability)}</span>
+          <span className="text-slate-400">·</span>
+          <span className="truncate">{otAvailabilityPeriod(r.availability)}</span>
+        </p>
+        {r.remarks && <p className="text-slate-500 leading-relaxed">{r.remarks}</p>}
+      </div>
 
-      <p className="flex items-center justify-between gap-2 text-[10.5px] text-slate-400">
-        <span>
-          Submitted {new Date(r.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-          {' · auto-approved'}
-        </span>
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 text-[10.5px] text-slate-400">
+        <span>Submitted {submitted}</span>
         {!showStaff && (
-          <span className="flex items-center gap-1 shrink-0">
+          <span className="inline-flex items-center gap-1 shrink-0">
             <Lock className="w-3 h-3" />
             Edit via ticket
           </span>
         )}
-      </p>
-
+      </div>
     </article>
   );
 };
@@ -205,29 +208,7 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
       </div>
     ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
-        {/* Totals (mirrors the web table's Total row) */}
-        <section className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              {
-                label: 'Extra Available',
-                value: requests.reduce((n, r) => n + (r.extraHours ?? 0), 0),
-                pill: 'bg-[#EFF6FF] text-[#2F68FE]',
-              },
-              { label: 'Assigned', value: requests.reduce((n, r) => n + r.assignedHours, 0), pill: 'bg-[#E8F8F0] text-[#10B981]' },
-              { label: 'Pending', value: requests.reduce((n, r) => n + otPendingHours(r), 0), pill: 'bg-[#FEF8E7] text-[#D97706]' },
-            ].map(({ label, value, pill }) => (
-              <div key={label} className="flex flex-col items-center">
-                <div className={`w-14 h-9 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${pill}`}>
-                  {value}
-                </div>
-                <span className="text-[11px] text-gray-500 font-medium">{label} hrs</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <h3 className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Your OT request</h3>
+        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Your OT request</h3>
         {requests.map((r) => (
           <OTRequestCard key={r.id} request={r} />
         ))}
