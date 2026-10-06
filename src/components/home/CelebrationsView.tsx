@@ -100,7 +100,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {/* Header */}
       <header className="shrink-0 bg-white px-4 pt-2 pb-3 border-b border-[#EBF0F7]">
-        <div className="flex items-start gap-2">
+        <div className="relative flex items-center h-12">
           <button
             type="button"
             onClick={onBack}
@@ -109,7 +109,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <div className="pt-1">
+          <div className="screen-title">
             <h1 className="text-base font-bold text-[#1E293B] leading-tight">Celebrations &amp; Holidays</h1>
             <p className="text-[11px] text-slate-400">Your team's wishes &amp; holidays</p>
           </div>

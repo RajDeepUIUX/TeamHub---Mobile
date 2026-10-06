@@ -151,6 +151,8 @@ export default function App() {
   };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
+  // Attendance & Leaves opened from the More list: Back returns there instead of Home
+  const [attendanceFromMore, setAttendanceFromMore] = useState(false);
   // Company Feed: shared by every role; read state + the user's reactions live for the session
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
   const [feedReactions, setFeedReactions] = useState<Record<string, FeedReaction>>({});
@@ -555,6 +557,7 @@ export default function App() {
     setProfileModule(null);
     setCelebrationsTab(null);
     setMoreModule(null);
+    setAttendanceFromMore(false);
     switch (n.link) {
       case 'attendance':
       case 'leaves':
@@ -612,6 +615,7 @@ export default function App() {
     setProfileModule(null);
     setMoreModule(null);
     setOpenFeedPostId(null);
+    setAttendanceFromMore(false);
     setIsNotificationsOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     // Leaves lives on the Attendance & Leaves screen
@@ -1685,6 +1689,7 @@ export default function App() {
                         setSelectedWFORecord(null);
                         setActiveModuleTab(m.id);
                         setAppTab('attendance');
+                        setAttendanceFromMore(true);
                       } else if (m.id === 'work-timing') {
                         setIsRequestingFlex(false);
                         setEditingFlex(null);
@@ -1835,7 +1840,7 @@ export default function App() {
                     <div className="flex items-center h-13 px-4">
                       <button
                         type="button"
-                        onClick={() => handleAppTabChange('home')}
+                        onClick={() => handleAppTabChange(attendanceFromMore ? 'more' : 'home')}
                         className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Back"
                       >
