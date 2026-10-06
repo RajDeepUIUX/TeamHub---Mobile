@@ -73,7 +73,7 @@ export const MORE_GROUPS: MoreGroup[] = [
     icon: UserRound,
     modules: [
       { id: 'work-timing', label: 'Work Timing', hint: 'Shift hours & flexibility requests', icon: Clock3, tint: 'bg-blue-50 text-[#2F68FE]' },
-      { id: 'ot-request', label: 'OT Request', hint: 'Log and track your overtime', icon: Timer, tint: 'bg-amber-50 text-amber-600' },
+      { id: 'ot-request', label: 'OT Availability', hint: 'Share the extra hours you can take on', icon: Timer, tint: 'bg-amber-50 text-amber-600' },
       {
         id: 'appraisal',
         label: 'Appraisal',

@@ -180,7 +180,7 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {/* Header */}
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-14 px-4 relative">
           <div className="flex items-center min-w-0">
             <button
               type="button"
@@ -190,7 +190,7 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold ml-2 truncate">Request Details</h1>
+            <h1 className="text-base font-bold screen-title screen-title-tight">Request Details</h1>
           </div>
           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${FLEX_STATUS_CHIP[r.status]}`}>{r.status}</span>
         </div>

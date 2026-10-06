@@ -253,7 +253,7 @@ export const AdvanceRequestView: React.FC<AdvanceRequestViewProps> = ({ requests
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center h-14 px-4">
+        <div className="flex items-center h-14 px-4 relative">
           <button
             type="button"
             onClick={onBack}
@@ -262,7 +262,7 @@ export const AdvanceRequestView: React.FC<AdvanceRequestViewProps> = ({ requests
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold ml-2 flex-1 truncate">{initial ? 'Edit Request' : 'Raise Request'}</h1>
+          <h1 className="text-base font-bold screen-title">{initial ? 'Edit Request' : 'Raise Request'}</h1>
           <button
             type="button"
             onClick={onOpenGuidelines}

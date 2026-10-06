@@ -48,7 +48,7 @@ const TeamOTSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; reque
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
         <div>
           <h2 className="text-lg font-bold text-[#1E293B]">Team OT Summary</h2>
-          <p className="text-xs text-slate-500 mt-0.5 font-normal">OT Requests · Complete Breakdown</p>
+          <p className="text-xs text-slate-500 mt-0.5 font-normal">OT Availability · Complete Breakdown</p>
         </div>
         <button
           onClick={onClose}
@@ -170,7 +170,7 @@ export const TeamOTRequestView: React.FC<TeamOTRequestViewProps> = ({ requests }
         {/* List header */}
         <div className="flex items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-[#1E293B]">OT Requests</span>
+            <span className="font-bold text-sm text-[#1E293B]">Team Availability</span>
             <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
           </div>
           <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-slate-400">
@@ -189,7 +189,7 @@ export const TeamOTRequestView: React.FC<TeamOTRequestViewProps> = ({ requests }
               <Inbox className="w-6 h-6" />
             </span>
             <p className="mt-3 text-sm font-bold text-[#1E293B]">
-              {filterCount ? 'No requests match your filters' : 'Your team hasn’t raised any OT requests yet'}
+              {filterCount ? 'No one matches your filters' : 'Your team hasn’t shared any OT availability yet'}
             </p>
             {filterCount > 0 && (
               <button type="button" onClick={() => setFilters({})} className="mt-1 text-xs font-semibold text-[#2F68FE] cursor-pointer">
@@ -202,7 +202,7 @@ export const TeamOTRequestView: React.FC<TeamOTRequestViewProps> = ({ requests }
 
       <TeamFilterSheet
         isOpen={isFilterOpen}
-        title="Filter Team's OT Requests"
+        title="Filter Team's OT Availability"
         sections={filterSections}
         selection={filters}
         onClose={() => setIsFilterOpen(false)}

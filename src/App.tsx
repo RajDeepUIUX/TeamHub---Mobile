@@ -1644,13 +1644,13 @@ export default function App() {
                           ]
                     );
                     setIsAddingOT(false);
-                    showToast('OT request submitted and approved.');
+                    showToast('OT availability submitted and approved.');
                     if (!isManager) {
                       // FYI only: managers can view it, there's nothing to approve
                       pushNotification('Manager', {
                         category: 'Work Timing',
-                        title: `${resignationUser.staffName} submitted an OT request`,
-                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. View it in Team's Requests.`,
+                        title: `${resignationUser.staffName} shared their OT availability`,
+                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. View it in Team's Availability.`,
                         link: 'ot-request',
                       });
                     }
@@ -1841,7 +1841,7 @@ export default function App() {
                       >
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
                       </button>
-                      <h1 className="text-base font-bold text-[#1E293B] ml-2">
+                      <h1 className="text-base font-bold text-[#1E293B] screen-title">
                         {activeModuleTab}
                       </h1>
                     </div>

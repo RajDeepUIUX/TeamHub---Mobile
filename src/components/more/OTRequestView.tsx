@@ -160,7 +160,7 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
   return (
   <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
     <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-      <div className="flex items-center h-14 px-4">
+      <div className="flex items-center h-14 px-4 relative">
         <button
           type="button"
           onClick={onBack}
@@ -169,17 +169,17 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
         </button>
-        <h1 className="text-base font-bold ml-2">OT Request</h1>
+        <h1 className="text-base font-bold screen-title">OT Availability</h1>
       </div>
       {team && (
         <div className="px-4 pb-3">
           <SegmentedTabs
-            ariaLabel="OT request view"
+            ariaLabel="OT availability view"
             value={tab}
             onChange={setTab}
             options={[
-              { id: 'mine', label: 'My OT Request' },
-              { id: 'team', label: "Team's Requests" },
+              { id: 'mine', label: 'My Availability' },
+              { id: 'team', label: "Team's Availability" },
             ]}
           />
         </div>
@@ -208,7 +208,7 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
       </div>
     ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
-        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Your OT request</h3>
+        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Your OT availability</h3>
         {requests.map((r) => (
           <OTRequestCard key={r.id} request={r} />
         ))}
@@ -223,7 +223,7 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
           <p className="flex items-start gap-2 text-[11px] text-slate-500 leading-relaxed">
             <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-px" />
             <span>
-              You've already submitted your OT request, and it can't be edited here. To change it, raise a ticket.
+              You've already submitted your OT availability, and it can't be edited here. To change it, raise a ticket.
             </span>
           </p>
           <button
@@ -242,7 +242,7 @@ export const OTRequestView: React.FC<OTRequestViewProps> = ({ firstName, request
           className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          Add OT Request
+          Add OT Availability
         </button>
       )}
     </div>

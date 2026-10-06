@@ -77,3 +77,27 @@
   .success-burst, .success-ripple { opacity: 0; }
   .success-draw { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ---------- Screen titles: always centred on the full screen width ---------- */
+/* The header row is the positioning parent; the back button / actions stay in normal flow */
+.screen-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 7.5rem); /* clears a back button on either side */
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+/* Headers with a wide action on the right (Quick Fill, Mark all read, status chip…) */
+.screen-title.screen-title-tight {
+  max-width: calc(100% - 14rem);
+}
+.screen-title > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -8,8 +8,8 @@ interface ComingSoonViewProps {
 
 export const ComingSoonView: React.FC<ComingSoonViewProps> = ({ title, onGoHome }) => (
   <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-    <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7]">
-      <h1 className="text-base font-bold">{title}</h1>
+    <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
+      <h1 className="text-base font-bold screen-title">{title}</h1>
     </header>
     <div className="flex-1 flex flex-col items-center justify-center text-center px-10">
       <div className="w-16 h-16 rounded-2xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center mb-4">

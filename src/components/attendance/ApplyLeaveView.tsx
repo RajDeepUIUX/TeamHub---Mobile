@@ -47,7 +47,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-base font-bold text-[#1E293B] ml-1">
+        <h1 className="text-base font-bold text-[#1E293B] screen-title">
           Apply Leave
         </h1>
       </header>

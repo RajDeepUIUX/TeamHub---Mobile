@@ -163,7 +163,7 @@ export const RelevantContactsView: React.FC<RelevantContactsViewProps> = ({ onBa
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center h-14 px-4">
+        <div className="flex items-center h-14 px-4 relative">
           <button
             type="button"
             onClick={onBack}
@@ -172,7 +172,7 @@ export const RelevantContactsView: React.FC<RelevantContactsViewProps> = ({ onBa
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold ml-2">Relevant Contacts</h1>
+          <h1 className="text-base font-bold screen-title">Relevant Contacts</h1>
         </div>
         <div className="px-4 pb-3 space-y-2.5">
           <div className="relative">

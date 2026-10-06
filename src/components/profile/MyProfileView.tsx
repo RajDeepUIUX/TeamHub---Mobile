@@ -1112,7 +1112,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   return (
     <div className="flex-1 flex flex-col bg-[#F5F7FB] text-[#1E293B] overflow-hidden select-none">
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-14 px-4 relative">
           <div className="flex items-center">
             <button
               type="button"
@@ -1122,7 +1122,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold ml-2">{editing ? 'Edit Profile' : 'My Profile'}</h1>
+            <h1 className="text-base font-bold screen-title screen-title-tight">{editing ? 'Edit Profile' : 'My Profile'}</h1>
           </div>
           {editing && (
             <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1">

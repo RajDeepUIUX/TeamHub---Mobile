@@ -85,7 +85,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ notificati
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {/* Header */}
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-14 px-4 relative">
           <div className="flex items-center min-w-0">
             <button
               type="button"
@@ -95,7 +95,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ notificati
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <div className="ml-2 min-w-0">
+            <div className="screen-title screen-title-tight">
               <h1 className="text-base font-bold leading-tight">Notifications</h1>
               <p className="text-[11px] text-slate-400">{unreadCount ? `${unreadCount} unread` : "You're all caught up"}</p>
             </div>

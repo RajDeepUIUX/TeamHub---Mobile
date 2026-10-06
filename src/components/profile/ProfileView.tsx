@@ -183,7 +183,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-base font-bold text-white">My Profile</h1>
+            <h1 className="text-base font-bold text-white screen-title screen-title-tight">My Profile</h1>
             <div className="relative">
               <button
                 type="button"
