@@ -94,7 +94,7 @@ import { Declarant } from './data/staffDeclaration';
 import { CompanyFeedView, FeedPostView } from './components/feed/CompanyFeedView';
 import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
 import { MyTeamView } from './components/more/MyTeamView';
-import { MY_TEAM_SEED, TeamMemberRecord } from './data/myTeamData';
+import { MY_TEAM_SEED, TeamMemberRecord, profileForMember } from './data/myTeamData';
 import type { FlexDecision } from './components/more/FlexReviewSheet';
 import { ResignationView } from './components/resignation/ResignationView';
 import { ApplyResignationView } from './components/resignation/ApplyResignationView';
@@ -162,7 +162,7 @@ export default function App() {
   const [openFeedPostId, setOpenFeedPostId] = useState<string | null>(null);
   const openFeedPost = feedPosts.find((p) => p.id === openFeedPostId) ?? null;
   // My Team (Manager only): the manager's whole hierarchy
-  const [myTeam, setMyTeam] = useState<TeamMemberRecord[]>(MY_TEAM_SEED);
+  const [myTeam] = useState<TeamMemberRecord[]>(MY_TEAM_SEED);
   // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
   const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
   const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
@@ -266,6 +266,13 @@ export default function App() {
   };
   // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
   const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
+  // My Team > Edit Details: manager edits a member's full profile (saved per staff code)
+  const [editingMemberCode, setEditingMemberCode] = useState<string | null>(null);
+  const [teamProfiles, setTeamProfiles] = useState<Record<string, MyProfileData>>({});
+  // Leaving My Team closes any open member profile
+  useEffect(() => {
+    if (appTab !== 'more' || moreModule !== 'my-team') setEditingMemberCode(null);
+  }, [appTab, moreModule]);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
   // Resignation module: no logs initially; newest first
   const [resignations, setResignations] = useState<ResignationRecord[]>([]);
@@ -1046,6 +1053,12 @@ export default function App() {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   // Which screen is showing (mirrors the render chain below) and how deep it sits, for the slide transition
+  const editingMember = moreModule === 'my-team' ? myTeam.find((m) => m.staffCode === editingMemberCode) ?? null : null;
+  // The signed-in manager is in their own team list; their edits go to My Profile
+  const isSelf = (m: TeamMemberRecord) => m.staffCode === myProfile.values.employeeId;
+  const memberProfile = (m: TeamMemberRecord) =>
+    isSelf(m) ? myProfile : teamProfiles[m.staffCode] ?? profileForMember(m, MY_PROFILE_SEED);
+
   const screen = ((): { key: string; depth: number } => {
     if (isNotificationsOpen) return { key: 'notifications', depth: 1 };
     if (isProfileOpen) {
@@ -1059,7 +1072,9 @@ export default function App() {
       return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
-    if (appTab === 'more' && moreModule === 'my-team') return { key: 'more/my-team', depth: 1 };
+    if (appTab === 'more' && moreModule === 'my-team') {
+      return { key: `more/my-team${editingMember ? '/profile' : ''}`, depth: editingMember ? 2 : 1 };
+    }
     if (appTab === 'more' && moreModule === 'company-feed') {
       return { key: `more/company-feed${openFeedPost ? '/post' : ''}`, depth: openFeedPost ? 2 : 1 };
     }
@@ -1586,13 +1601,26 @@ export default function App() {
                   }}
                 />
               ) : appTab === 'more' && moreModule === 'my-team' && isManager ? (
+                editingMember ? (
+                  <MyProfileView
+                    key={editingMember.staffCode}
+                    profile={memberProfile(editingMember)}
+                    photoUrl={isSelf(editingMember) ? profilePhoto : null}
+                    title="Staff Profile"
+                    startEditing
+                    onBack={() => setEditingMemberCode(null)}
+                    onNotify={showToast}
+                    onSave={(next) => {
+                      if (isSelf(editingMember)) setMyProfile(next);
+                      else setTeamProfiles((prev) => ({ ...prev, [editingMember.staffCode]: next }));
+                      showToast(`${editingMember.staffName}'s details updated.`);
+                    }}
+                  />
+                ) : (
                 <MyTeamView
                   members={myTeam}
                   onBack={() => setMoreModule(null)}
-                  onUpdate={(code, patch) => {
-                    setMyTeam((prev) => prev.map((m) => (m.staffCode === code ? { ...m, ...patch } : m)));
-                    showToast('Staff details updated.');
-                  }}
+                  onEditDetails={(member) => setEditingMemberCode(member.staffCode)}
                   onSubmitReview={(member) => {
                     // Opens the Staff Review flow; Back returns to My Team
                     setIsEvaluating(false);
@@ -1602,6 +1630,7 @@ export default function App() {
                     showToast(`Reviewing ${member.staffName}.`);
                   }}
                 />
+                )
               ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
                 <FeedPostView
                   post={openFeedPost}

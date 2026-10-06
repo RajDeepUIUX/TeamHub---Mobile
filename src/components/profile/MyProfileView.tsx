@@ -50,6 +50,8 @@ import {
 interface MyProfileViewProps {
   profile: MyProfileData;
   photoUrl: string | null;
+  /** Header title outside edit mode (e.g. a team member's profile opened by their manager) */
+  title?: string;
   /** Open straight into edit mode (e.g. from "Edit Profile") */
   startEditing?: boolean;
   onBack: () => void;
@@ -1005,7 +1007,7 @@ const SkillsSection: React.FC<{
 
 /* ---------------------------------- Screen ---------------------------------- */
 
-export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, startEditing, onBack, onSave, onNotify }) => {
+export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, title = 'My Profile', startEditing, onBack, onSave, onNotify }) => {
   const [tab, setTab] = useState<ProfileTabId>('personal');
   const [editing, setEditing] = useState(Boolean(startEditing));
   const [draft, setDraft] = useState<MyProfileData>(profile);
@@ -1122,7 +1124,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold screen-title screen-title-tight">{editing ? 'Edit Profile' : 'My Profile'}</h1>
+            <h1 className="text-base font-bold screen-title screen-title-tight">{editing ? 'Edit Profile' : title}</h1>
           </div>
           {editing && (
             <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1">

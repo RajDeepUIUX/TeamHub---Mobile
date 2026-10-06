@@ -25,14 +25,12 @@ import {
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { MultiSelectDropdown } from '../common/MultiSelectDropdown';
-import { Dropdown } from '../../design-system/components/Dropdown';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 import {
   MY_TEAM_BRANCHES,
   MY_TEAM_MANAGERS,
   STAFF_STATUSES,
   StaffStatus,
-  TEAM_ROLES,
   TeamMemberRecord,
   formatCtc,
   totalLeavesOf,
@@ -155,123 +153,6 @@ const PasswordSheet: React.FC<{ isOpen: boolean; onClose: () => void; onVerified
           {verifying ? 'Verifying…' : 'Verify'}
         </button>
       </div>
-    </BottomSheet>
-  );
-};
-
-/* ------------------------------ Edit details sheet ------------------------------ */
-
-type Editable = Pick<TeamMemberRecord, 'status' | 'role' | 'reportingManager' | 'branch' | 'availableFte'>;
-const FTE_OPTIONS = ['0', '0.25', '0.5', '0.75', '1'];
-
-const EditDetailsSheet: React.FC<{
-  member: TeamMemberRecord | null;
-  onClose: () => void;
-  onSave: (code: string, patch: Editable) => void;
-}> = ({ member, onClose, onSave }) => {
-  const [draft, setDraft] = useState<Editable | null>(null);
-
-  useEffect(() => {
-    if (member)
-      setDraft({
-        status: member.status,
-        role: member.role,
-        reportingManager: member.reportingManager,
-        branch: member.branch,
-        availableFte: member.availableFte,
-      });
-  }, [member]);
-
-  const field = (label: string, control: React.ReactNode) => (
-    <div className="space-y-1.5">
-      <span className="block text-xs font-bold text-[#1E293B]">{label}</span>
-      {control}
-    </div>
-  );
-
-  return (
-    <BottomSheet isOpen={Boolean(member)} onClose={onClose} maxHeight="max-h-[88%]">
-      {member && draft && (
-        <>
-          <SheetHeader title="Edit Details" subtitle={`${member.staffName} (${member.staffCode})`} onClose={onClose} />
-          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
-            {field(
-              'Staff Status',
-              <div className="flex flex-wrap gap-2">
-                {STAFF_STATUSES.map((s) => {
-                  const on = draft.status === s;
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setDraft({ ...draft, status: s })}
-                      className={`h-9 px-3 rounded-xl border text-[11.5px] font-semibold cursor-pointer active:scale-95 transition-all ${
-                        on ? 'border-[#2F68FE] bg-[#2F68FE] text-white' : 'border-slate-200 bg-white text-slate-600'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {field(
-              'Role',
-              <Dropdown size="md" ariaLabel="Role" value={draft.role} options={TEAM_ROLES} onChange={(v) => setDraft({ ...draft, role: v })} />
-            )}
-            {field(
-              'Reporting Manager',
-              <Dropdown
-                size="md"
-                ariaLabel="Reporting manager"
-                value={draft.reportingManager}
-                options={MY_TEAM_MANAGERS}
-                onChange={(v) => setDraft({ ...draft, reportingManager: v })}
-              />
-            )}
-            {field(
-              'Branch',
-              <Dropdown size="md" ariaLabel="Branch" value={draft.branch} options={MY_TEAM_BRANCHES} onChange={(v) => setDraft({ ...draft, branch: v })} />
-            )}
-            {field(
-              'Available FTE',
-              <div className="grid grid-cols-5 gap-1.5">
-                {FTE_OPTIONS.map((f) => {
-                  const on = draft.availableFte === Number(f);
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setDraft({ ...draft, availableFte: Number(f) })}
-                      className={`h-10 rounded-xl border text-xs font-bold tabular-nums cursor-pointer active:scale-95 transition-all ${
-                        on ? 'border-[#2F68FE] bg-[#2F68FE] text-white' : 'border-slate-200 bg-white text-slate-600'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => onSave(member.staffCode, draft)}
-              className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
-            >
-              Save Changes
-            </button>
-          </div>
-        </>
-      )}
     </BottomSheet>
   );
 };
@@ -498,12 +379,13 @@ const SummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; members: Te
 interface MyTeamViewProps {
   members: TeamMemberRecord[];
   onBack: () => void;
-  onUpdate: (staffCode: string, patch: Editable) => void;
+  /** Opens the member's full profile in edit mode */
+  onEditDetails: (member: TeamMemberRecord) => void;
   onSubmitReview: (member: TeamMemberRecord) => void;
 }
 
 /** Manager-only: everyone in the hierarchy, with password-protected CTC and per-member actions */
-export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onUpdate, onSubmitReview }) => {
+export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditDetails, onSubmitReview }) => {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -513,7 +395,6 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onUpdat
   const [pendingReveal, setPendingReveal] = useState<'all' | string | null>(null);
   const [revealAll, setRevealAll] = useState(false);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
-  const [editing, setEditing] = useState<TeamMemberRecord | null>(null);
   const [reviewsOf, setReviewsOf] = useState<TeamMemberRecord | null>(null);
   const [leavesOf, setLeavesOf] = useState<TeamMemberRecord | null>(null);
 
@@ -731,7 +612,7 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onUpdat
               {/* Actions */}
               <div className="grid grid-cols-3 border-t border-slate-100 divide-x divide-slate-100">
                 {[
-                  { label: 'Edit Details', icon: Pencil, onClick: () => setEditing(m) },
+                  { label: 'Edit Details', icon: Pencil, onClick: () => onEditDetails(m) },
                   { label: 'Submit Review', icon: ClipboardCheck, onClick: () => onSubmitReview(m) },
                   { label: 'Past Reviews', icon: History, onClick: () => setReviewsOf(m) },
                 ].map(({ label, icon: Icon, onClick }) => (
@@ -784,14 +665,6 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onUpdat
           setCtcUnlocked(true);
           if (pendingReveal) applyReveal(pendingReveal);
           setPendingReveal(null);
-        }}
-      />
-      <EditDetailsSheet
-        member={editing}
-        onClose={() => setEditing(null)}
-        onSave={(code, patch) => {
-          onUpdate(code, patch);
-          setEditing(null);
         }}
       />
       <PastReviewsSheet member={reviewsOf} onClose={() => setReviewsOf(null)} />

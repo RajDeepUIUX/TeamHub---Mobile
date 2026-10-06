@@ -1,4 +1,5 @@
 import { BRANCHES, TEAM_REPORTING_MANAGERS } from './teamAttendanceData';
+import type { MyProfileData } from './profileData';
 
 /** My Team (Manager only): everyone in the manager's hierarchy */
 
@@ -137,3 +138,42 @@ export const MY_TEAM_MANAGERS = ['Naveen Das', ...TEAM_REPORTING_MANAGERS.map((m
 
 /** ₹ 11,40,000 */
 export const formatCtc = (n: number) => `₹ ${n.toLocaleString('en-IN')}`;
+
+/**
+ * Profile the manager edits from "Edit Details". HR fields come from the team record;
+ * the signed-in user's own details are never copied onto someone else.
+ */
+export const profileForMember = (m: TeamMemberRecord, base: MyProfileData): MyProfileData => {
+  const city = m.branch.split(' - ').pop() ?? '';
+  const mobile = `98${m.staffCode.replace(/\D/g, '').padStart(8, '0')}`.slice(0, 10);
+  return {
+    values: {
+      ...base.values,
+      employeeId: m.staffCode,
+      fullName: m.staffName,
+      officialEmail: m.email,
+      designation: m.role,
+      reportingManager: m.reportingManager,
+      joiningDate: m.joiningDate,
+      location: city ? `${city}, India` : '',
+      mobile,
+      personalEmail: '',
+      dob: '',
+      guardianInstead: 'No',
+      fatherName: '',
+      fatherDob: '',
+      fatherPhone: '',
+      fatherInsurance: false,
+      motherName: '',
+      motherDob: '',
+      motherPhone: '',
+      motherInsurance: false,
+      maritalStatus: '',
+      introVideoType: '',
+      introVideoName: '',
+      introVideoUrl: '',
+      introVideoAddedOn: '',
+    },
+    lists: { software: [], technicalSkills: [], familyMembers: [], qualifications: [], experiences: [] },
+  };
+};
