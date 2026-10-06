@@ -93,6 +93,8 @@ import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
 import { Declarant } from './data/staffDeclaration';
 import { CompanyFeedView, FeedPostView } from './components/feed/CompanyFeedView';
 import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
+import { MyTeamView } from './components/more/MyTeamView';
+import { MY_TEAM_SEED, TeamMemberRecord } from './data/myTeamData';
 import type { FlexDecision } from './components/more/FlexReviewSheet';
 import { ResignationView } from './components/resignation/ResignationView';
 import { ApplyResignationView } from './components/resignation/ApplyResignationView';
@@ -159,6 +161,8 @@ export default function App() {
   const [feedCategory, setFeedCategory] = useState<FeedCategory>('General');
   const [openFeedPostId, setOpenFeedPostId] = useState<string | null>(null);
   const openFeedPost = feedPosts.find((p) => p.id === openFeedPostId) ?? null;
+  // My Team (Manager only): the manager's whole hierarchy
+  const [myTeam, setMyTeam] = useState<TeamMemberRecord[]>(MY_TEAM_SEED);
   // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
   const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
   const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
@@ -1055,6 +1059,7 @@ export default function App() {
       return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
+    if (appTab === 'more' && moreModule === 'my-team') return { key: 'more/my-team', depth: 1 };
     if (appTab === 'more' && moreModule === 'company-feed') {
       return { key: `more/company-feed${openFeedPost ? '/post' : ''}`, depth: openFeedPost ? 2 : 1 };
     }
@@ -1580,6 +1585,23 @@ export default function App() {
                     }
                   }}
                 />
+              ) : appTab === 'more' && moreModule === 'my-team' && isManager ? (
+                <MyTeamView
+                  members={myTeam}
+                  onBack={() => setMoreModule(null)}
+                  onUpdate={(code, patch) => {
+                    setMyTeam((prev) => prev.map((m) => (m.staffCode === code ? { ...m, ...patch } : m)));
+                    showToast('Staff details updated.');
+                  }}
+                  onSubmitReview={(member) => {
+                    // Opens the Staff Review flow; Back returns to My Team
+                    setIsEvaluating(false);
+                    setProfileModuleFromApp(true);
+                    setProfileModule('Staff Review');
+                    setIsProfileOpen(true);
+                    showToast(`Reviewing ${member.staffName}.`);
+                  }}
+                />
               ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
                 <FeedPostView
                   post={openFeedPost}
@@ -1682,7 +1704,9 @@ export default function App() {
                   <MoreView
                     role={userRole}
                     onOpenModule={(m) => {
-                      if (m.id === 'company-feed') {
+                      if (m.id === 'my-team') {
+                        setMoreModule(m.id);
+                      } else if (m.id === 'company-feed') {
                         setOpenFeedPostId(null);
                         setMoreModule(m.id);
                       } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {

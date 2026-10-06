@@ -404,7 +404,7 @@ export const StaffReviewView: React.FC<StaffReviewViewProps> = ({ onBack, onStar
           <button
             type="button"
             onClick={() => setInstructionsOpen(true)}
-            className="h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-[#2F68FE] text-[11.5px] font-bold active:bg-blue-50 cursor-pointer"
+            className="ml-auto -mr-1 h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-[#2F68FE] text-[11.5px] font-bold active:bg-blue-50 cursor-pointer"
           >
             <BookOpen className="w-4 h-4" />
             Instructions

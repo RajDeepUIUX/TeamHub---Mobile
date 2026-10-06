@@ -24,6 +24,7 @@ import {
   Building2,
   Newspaper,
   Megaphone,
+  UsersRound,
 } from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
@@ -72,6 +73,14 @@ export const MORE_GROUPS: MoreGroup[] = [
     label: 'Staff',
     icon: UserRound,
     modules: [
+      {
+        id: 'my-team',
+        label: 'My Team',
+        hint: 'Team members, CTC & reviews',
+        icon: UsersRound,
+        tint: 'bg-sky-50 text-sky-600',
+        roles: ['Manager'],
+      },
       { id: 'work-timing', label: 'Work Timing', hint: 'Shift hours & flexibility requests', icon: Clock3, tint: 'bg-blue-50 text-[#2F68FE]' },
       { id: 'ot-request', label: 'OT Availability', hint: 'Share the extra hours you can take on', icon: Timer, tint: 'bg-amber-50 text-amber-600' },
       {
