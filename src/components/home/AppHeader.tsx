@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { BrandLogoHorizontal } from '../auth/BrandLogo';
 import { ProfileAvatar } from '../profile/ProfileAvatar';
 
@@ -10,6 +10,7 @@ interface AppHeaderProps {
   onOpenNotifications: () => void;
   onOpenProfile: () => void;
   onGoHome: () => void;
+  onOpenMenu: () => void;
 }
 
 /** Brand bar pinned to the top of every signed-in screen */
@@ -20,11 +21,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenNotifications,
   onOpenProfile,
   onGoHome,
+  onOpenMenu,
 }) => (
   <header className="shrink-0 bg-white/95 backdrop-blur-md px-4 h-14 flex items-center justify-between border-b border-[#EBF0F7] z-10">
-    <button type="button" onClick={onGoHome} className="flex items-center cursor-pointer" aria-label="Go to dashboard">
-      <BrandLogoHorizontal className="h-5" />
-    </button>
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center text-slate-700 active:bg-slate-100 cursor-pointer"
+        aria-label="Open menu"
+      >
+        <Menu className="w-5.5 h-5.5 stroke-[2]" />
+      </button>
+      <button type="button" onClick={onGoHome} className="flex items-center cursor-pointer" aria-label="Go to dashboard">
+        <BrandLogoHorizontal className="h-5" />
+      </button>
+    </div>
     <div className="flex items-center gap-3">
       <button
         type="button"

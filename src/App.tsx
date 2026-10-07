@@ -73,7 +73,7 @@ import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
 import { WishSheet } from './components/home/WishSheet';
 import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
 import { HOLIDAYS_DATA } from './data/holidayData';
-import { AuthFlow } from './components/auth/AuthFlow';
+import { AuthFlow, APP_VERSION } from './components/auth/AuthFlow';
 import { ProfileView } from './components/profile/ProfileView';
 import { NotificationsView } from './components/notifications/NotificationsView';
 import {
@@ -81,7 +81,8 @@ import {
   STAFF_NOTIFICATIONS_SEED,
   MANAGER_NOTIFICATIONS_SEED,
 } from './data/notificationsData';
-import { MoreView } from './components/more/MoreView';
+import { MoreView, MoreModule } from './components/more/MoreView';
+import { SideDrawer } from './components/home/SideDrawer';
 import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
 import { AddOTRequestView } from './components/more/AddOTRequestView';
@@ -158,8 +159,9 @@ export default function App() {
   };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
-  // Attendance & Leaves opened from the More list: Back returns there instead of Home
-  const [attendanceFromMore, setAttendanceFromMore] = useState(false);
+  // Side drawer (replaces the More tab). Modules opened from it return to the tab they were opened on
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
   // Company Feed: shared by every role; read state + the user's reactions live for the session
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
   const [feedReactions, setFeedReactions] = useState<Record<string, FeedReaction>>({});
@@ -578,7 +580,6 @@ export default function App() {
     setProfileModule(null);
     setCelebrationsTab(null);
     setMoreModule(null);
-    setAttendanceFromMore(false);
     switch (n.link) {
       case 'attendance':
       case 'leaves':
@@ -636,13 +637,78 @@ export default function App() {
     }
   };
 
+  const openMoreModule = (m: MoreModule) => {
+    if (m.id === 'my-team' || m.id === 'recognitions') {
+      setMoreModule(m.id);
+    } else if (m.id === 'training-request') {
+      setTrainingForm(null);
+      setTrainingScope('my');
+      setMoreModule(m.id);
+    } else if (m.id === 'company-feed') {
+      setOpenFeedPostId(null);
+      setMoreModule(m.id);
+    } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
+      setSelectedWFORecord(null);
+      setActiveModuleTab(m.id);
+      setAppTab('attendance');
+    } else if (m.id === 'work-timing') {
+      setIsRequestingFlex(false);
+      setEditingFlex(null);
+      setMoreModule(m.id);
+    } else if (m.id === 'ot-request') {
+      setIsAddingOT(false);
+      setMoreModule(m.id);
+    } else if (
+      m.id === 'Resignation' ||
+      m.id === 'Tickets' ||
+      m.id === 'Relevant Contacts' ||
+      m.id === 'Asset' ||
+      m.id === 'VOIP Directory' ||
+      m.id === 'Adv. Salary & EV Loan' ||
+      m.id === 'Cab Request'
+    ) {
+      // Support modules live in the profile flow; Back returns to the screen underneath
+      setIsApplyingResignation(false);
+      setIsCreatingTicket(false);
+      setAdvanceFormFor(null);
+      setCabFormFor(null);
+      setProfileModuleFromApp(true);
+      setProfileModule(m.id);
+      setIsProfileOpen(true);
+    } else {
+      showToast(`${m.label} is coming soon.`);
+    }
+  };
+
+  // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'work-timing', 'ot-request'];
+  const openFromDrawer = (m: MoreModule) => {
+    setIsMenuOpen(false);
+    setIsNotificationsOpen(false);
+    setCelebrationsTab(null);
+    if (MORE_SCREENS.includes(m.id)) {
+      setIsProfileOpen(false);
+      setProfileModule(null);
+      if (appTab !== 'more') setMoreReturnTab(appTab);
+      setAppTab('more');
+    } else if (['Attendance', 'Leaves', 'Holidays', 'WFO Days'].includes(m.id)) {
+      setIsProfileOpen(false);
+      setProfileModule(null);
+    }
+    // Support modules open in the profile flow over the current screen
+    openMoreModule(m);
+  };
+  const closeMoreModule = () => {
+    setMoreModule(null);
+    setAppTab(moreReturnTab === 'more' ? 'home' : moreReturnTab);
+  };
+
   const handleAppTabChange = (tab: AppTab) => {
     setCelebrationsTab(null);
     setIsProfileOpen(false);
     setProfileModule(null);
     setMoreModule(null);
     setOpenFeedPostId(null);
-    setAttendanceFromMore(false);
     setIsNotificationsOpen(false);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     // Leaves lives on the Attendance & Leaves screen
@@ -1275,11 +1341,42 @@ export default function App() {
                     profilePhoto={profilePhoto}
                     unreadNotifications={unreadNotifications}
                     onOpenNotifications={() => setIsNotificationsOpen(true)}
+                    onOpenMenu={() => setIsMenuOpen(true)}
                     onGoHome={() => handleAppTabChange('home')}
                     onOpenProfile={() => {
                       setIsNotificationsOpen(false);
                       setProfileModule(null);
                       setIsProfileOpen(true);
+                    }}
+                  />
+                  <SideDrawer
+                    isOpen={isMenuOpen}
+                    onClose={() => setIsMenuOpen(false)}
+                    role={userRole}
+                    fullName={resignationUser.staffName}
+                    subtitle={`${resignationUser.designation} · ${resignationUser.staffCode}`}
+                    profilePhoto={isManager ? null : profilePhoto}
+                    activeModuleId={
+                      appTab === 'more' && moreModule
+                        ? moreModule
+                        : isProfileOpen && profileModule
+                          ? profileModule
+                          : appTab === 'attendance'
+                            ? activeModuleTab
+                            : null
+                    }
+                    version={APP_VERSION}
+                    onOpenModule={openFromDrawer}
+                    onOpenProfile={() => {
+                      setIsMenuOpen(false);
+                      setIsNotificationsOpen(false);
+                      setProfileModule(null);
+                      setIsProfileOpen(true);
+                    }}
+                    onLogout={() => {
+                      setIsMenuOpen(false);
+                      setIsProfileOpen(false);
+                      setIsLoggedIn(false);
                     }}
                   />
               <ScreenTransition screenKey={screen.key} depth={screen.depth}>
@@ -1646,7 +1743,7 @@ export default function App() {
                 ) : (
                 <MyTeamView
                   members={myTeam}
-                  onBack={() => setMoreModule(null)}
+                  onBack={closeMoreModule}
                   onEditDetails={(member) => setEditingMemberCode(member.staffCode)}
                   onSubmitReview={(member) => {
                     // Opens the Staff Review flow; Back returns to My Team
@@ -1724,7 +1821,7 @@ export default function App() {
                   isManager={isManager}
                   scope={trainingTab}
                   onScopeChange={setTrainingScope}
-                  onBack={() => setMoreModule(null)}
+                  onBack={closeMoreModule}
                   onAdd={(scope) => setTrainingForm({ scope })}
                   onEdit={(r) => setTrainingForm({ scope: trainingTab, editId: r.id })}
                   onWithdraw={(r) => {
@@ -1739,7 +1836,7 @@ export default function App() {
                   recognitions={RECOGNITIONS_SEED}
                   myCode={resignationUser.staffCode}
                   isManager={isManager}
-                  onBack={() => setMoreModule(null)}
+                  onBack={closeMoreModule}
                 />
               ) : appTab === 'more' && moreModule === 'company-feed' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -1748,7 +1845,7 @@ export default function App() {
                     reactions={feedReactions}
                     category={feedCategory}
                     onCategoryChange={setFeedCategory}
-                    onBack={() => setMoreModule(null)}
+                    onBack={closeMoreModule}
                     onOpenPost={(post) => {
                       // Opening a post marks it read
                       setFeedPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, unread: false } : p)));
@@ -1763,7 +1860,7 @@ export default function App() {
                   key={userRole}
                   firstName={resignationUser.staffName.split(' ')[0]}
                   requests={myFlexRequests}
-                  onBack={() => setMoreModule(null)}
+                  onBack={closeMoreModule}
                   onRequestFlexibility={() => {
                     setEditingFlex(null);
                     setIsRequestingFlex(true);
@@ -1815,7 +1912,7 @@ export default function App() {
                   firstName={resignationUser.staffName.split(' ')[0]}
                   requests={myOTRequests}
                   otHours={myLeaveBalance.otHours}
-                  onBack={() => setMoreModule(null)}
+                  onBack={closeMoreModule}
                   onAddRequest={() => setIsAddingOT(true)}
                   onRaiseTicket={() => {
                     // Edits to a submitted OT request go through Tickets; Back returns here
@@ -1830,49 +1927,7 @@ export default function App() {
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <MoreView
                     role={userRole}
-                    onOpenModule={(m) => {
-                      if (m.id === 'my-team' || m.id === 'recognitions') {
-                        setMoreModule(m.id);
-                      } else if (m.id === 'training-request') {
-                        setTrainingForm(null);
-                        setTrainingScope('my');
-                        setMoreModule(m.id);
-                      } else if (m.id === 'company-feed') {
-                        setOpenFeedPostId(null);
-                        setMoreModule(m.id);
-                      } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
-                        setSelectedWFORecord(null);
-                        setActiveModuleTab(m.id);
-                        setAppTab('attendance');
-                        setAttendanceFromMore(true);
-                      } else if (m.id === 'work-timing') {
-                        setIsRequestingFlex(false);
-                        setEditingFlex(null);
-                        setMoreModule(m.id);
-                      } else if (m.id === 'ot-request') {
-                        setIsAddingOT(false);
-                        setMoreModule(m.id);
-                      } else if (
-                        m.id === 'Resignation' ||
-                        m.id === 'Tickets' ||
-                        m.id === 'Relevant Contacts' ||
-                        m.id === 'Asset' ||
-                        m.id === 'VOIP Directory' ||
-                        m.id === 'Adv. Salary & EV Loan' ||
-                        m.id === 'Cab Request'
-                      ) {
-                        // Support modules live in the profile flow; Back returns to More
-                        setIsApplyingResignation(false);
-                        setIsCreatingTicket(false);
-                        setAdvanceFormFor(null);
-                        setCabFormFor(null);
-                        setProfileModuleFromApp(true);
-                        setProfileModule(m.id);
-                        setIsProfileOpen(true);
-                      } else {
-                        showToast(`${m.label} is coming soon.`);
-                      }
-                    }}
+                    onOpenModule={openMoreModule}
                   />
                   <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
@@ -1995,7 +2050,7 @@ export default function App() {
                     <div className="flex items-center h-13 px-4">
                       <button
                         type="button"
-                        onClick={() => handleAppTabChange(attendanceFromMore ? 'more' : 'home')}
+                        onClick={() => handleAppTabChange('home')}
                         className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Back"
                       >
