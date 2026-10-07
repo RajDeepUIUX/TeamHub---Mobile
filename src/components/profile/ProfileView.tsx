@@ -5,18 +5,7 @@ import {
   Pencil,
   User,
   Settings,
-  Headphones,
-  ChevronDown,
   ChevronRight,
-  FileText,
-  Ticket,
-  MessageCircle,
-  UtensilsCrossed,
-  Coins,
-  Phone,
-  Laptop,
-  Users,
-  Car,
   LogOut,
   MapPin,
   BadgeCheck,
@@ -76,18 +65,6 @@ const HELP_ITEMS: MenuItem[] = [
   { label: 'Account Settings', icon: Settings, tint: 'bg-slate-100 text-slate-600', hint: 'Notifications, preferences' },
 ];
 
-const SUPPORT_ITEMS: MenuItem[] = [
-  { label: 'Resignation', icon: FileText, tint: 'bg-rose-50 text-rose-500' },
-  { label: 'Tickets', icon: Ticket, tint: 'bg-violet-50 text-violet-600' },
-  { label: 'Feedback', icon: MessageCircle, tint: 'bg-sky-50 text-sky-600' },
-  { label: 'Dinner', icon: UtensilsCrossed, tint: 'bg-orange-50 text-orange-500' },
-  { label: 'Adv. Salary & EV Loan', icon: Coins, tint: 'bg-amber-50 text-amber-600' },
-  { label: 'Relevant Contacts', icon: Phone, tint: 'bg-emerald-50 text-emerald-600' },
-  { label: 'Asset', icon: Laptop, tint: 'bg-indigo-50 text-indigo-600' },
-  { label: 'VOIP Directory', icon: Users, tint: 'bg-teal-50 text-teal-600' },
-  { label: 'Cab Request', icon: Car, tint: 'bg-cyan-50 text-cyan-600' },
-];
-
 const MenuRow: React.FC<{ item: MenuItem; onClick: () => void; last?: boolean }> = ({ item, onClick, last }) => {
   const Icon = item.icon;
   return (
@@ -131,7 +108,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   photoUrl,
   onPhotoChange,
 }) => {
-  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPhotoSheetOpen, setIsPhotoSheetOpen] = useState(false);
@@ -310,50 +286,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </section>
 
-          {/* Support (collapsible) */}
+          {/* Help (Support modules live in the hamburger menu) */}
           <section>
             <h3 className="px-1 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Help</h3>
             <div className="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
-              {HELP_ITEMS.map((item) => (
-                <MenuRow key={item.label} item={item} onClick={() => openItem(item.label)} />
+              {HELP_ITEMS.map((item, idx) => (
+                <MenuRow key={item.label} item={item} onClick={() => openItem(item.label)} last={idx === HELP_ITEMS.length - 1} />
               ))}
-              <button
-                type="button"
-                onClick={() => setIsSupportOpen((v) => !v)}
-                aria-expanded={isSupportOpen}
-                className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors cursor-pointer ${
-                  isSupportOpen ? 'bg-linear-to-r from-[#EEF2FF] to-[#F5F3FF]' : 'active:bg-slate-50'
-                }`}
-              >
-                <span className="w-9 h-9 rounded-xl bg-white text-[#4F46E5] shadow-2xs flex items-center justify-center shrink-0">
-                  <Headphones className="w-4.5 h-4.5" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[13px] font-bold text-[#1E293B]">Support</span>
-                  <span className="block text-[11px] text-slate-500 truncate">Get help, raise requests and find resources.</span>
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-white/80 text-[10px] font-bold text-[#4F46E5] shrink-0">
-                  {SUPPORT_ITEMS.length}
-                </span>
-                <ChevronDown
-                  className={`w-4.5 h-4.5 text-[#4F46E5] shrink-0 transition-transform duration-200 ${
-                    isSupportOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {isSupportOpen && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                  {SUPPORT_ITEMS.map((item, idx) => (
-                    <MenuRow
-                      key={item.label}
-                      item={item}
-                      onClick={() => onOpenItem(item.label)}
-                      last={idx === SUPPORT_ITEMS.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </section>
 

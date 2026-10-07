@@ -10,12 +10,12 @@ import {
   MessageSquare,
   Pencil,
   Plus,
-  SlidersHorizontal,
   Wallet,
   X,
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { CommentThreadSheet } from '../common/CommentThreadSheet';
+import { FilterIconButton } from '../common/TeamFilterSheet';
 import { todayIso } from '../common/DateWheelSheet';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
@@ -145,10 +145,11 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
           <button
             type="button"
             onClick={onOpenGuidelines}
-            className="h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-[#2F68FE] text-[11.5px] font-bold active:bg-blue-50 cursor-pointer"
+            className="ml-auto w-9 h-9 -mr-1 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+            aria-label="Guidelines"
+            title="Guidelines"
           >
-            <BookOpen className="w-4 h-4" />
-            Guidelines
+            <BookOpen className="w-5 h-5" />
           </button>
         </div>
         {team && (
@@ -208,24 +209,14 @@ export const AdvanceSalaryView: React.FC<AdvanceSalaryViewProps> = ({
           <div className="flex items-center justify-between px-1">
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">My Requests ({shown.length})</h3>
             {requests.length > 0 && (
-              <button
-                type="button"
+              <FilterIconButton
+                count={activeFilters}
                 onClick={() => {
                   setDraftStatus(statusFilter);
                   setDraftRc(rcFilter);
                   setFilterOpen(true);
                 }}
-                className="relative h-8 px-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:bg-slate-50"
-                aria-label="Filter requests"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                Filter
-                {activeFilters > 0 && (
-                  <span className="min-w-4 h-4 px-1 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center">
-                    {activeFilters}
-                  </span>
-                )}
-              </button>
+              />
             )}
           </div>
 

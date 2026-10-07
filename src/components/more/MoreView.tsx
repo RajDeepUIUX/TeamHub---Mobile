@@ -12,7 +12,6 @@ import {
   FileText,
   Ticket,
   MessageCircle,
-  UtensilsCrossed,
   Coins,
   Phone,
   Laptop,
@@ -125,7 +124,6 @@ export const MORE_GROUPS: MoreGroup[] = [
       { id: 'Resignation', label: 'Resignation', hint: 'Apply for or track your resignation', icon: FileText, tint: 'bg-rose-50 text-rose-500' },
       { id: 'Tickets', label: 'Tickets', hint: 'Raise and track support tickets', icon: Ticket, tint: 'bg-violet-50 text-violet-600' },
       { id: 'Feedback', label: 'Feedback', hint: 'Share feedback with the team', icon: MessageCircle, tint: 'bg-sky-50 text-sky-600' },
-      { id: 'Dinner', label: 'Dinner', hint: 'Late-shift dinner requests', icon: UtensilsCrossed, tint: 'bg-orange-50 text-orange-500' },
       {
         id: 'Adv. Salary & EV Loan',
         label: 'Adv. Salary & EV Loan',

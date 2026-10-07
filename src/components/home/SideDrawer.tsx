@@ -40,12 +40,14 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [query, setQuery] = useState('');
-  // All groups start collapsed; the user opens the ones they need
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Accordion: only one section open at a time; the current screen's section opens with the menu
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   // Mount → slide in; slide out → unmount
   useEffect(() => {
     if (isOpen) {
+      // Open the section holding the current screen (all collapsed when nothing is active)
+      setExpanded(MORE_GROUPS.find((g) => g.modules.some((m) => m.id === activeModuleId))?.id ?? null);
       setMounted(true);
       const frame = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
       return () => cancelAnimationFrame(frame);
@@ -54,10 +56,10 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
     const t = setTimeout(() => {
       setMounted(false);
       setQuery('');
-      setExpanded(new Set());
+      setExpanded(null);
     }, SLIDE_MS);
     return () => clearTimeout(t);
-  }, [isOpen]);
+  }, [isOpen, activeModuleId]);
 
   const portal = typeof document !== 'undefined' ? document.getElementById('mobile-sheet-portal') : null;
   if (!mounted || !portal) return null;
@@ -70,13 +72,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
     ),
   })).filter((g) => g.modules.length > 0);
 
-  const toggleGroup = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleGroup = (id: string) => setExpanded((prev) => (prev === id ? null : id));
 
   return createPortal(
     <div className="absolute inset-0 z-50 pointer-events-auto select-none" role="dialog" aria-modal="true" aria-label="Main menu">
@@ -155,29 +151,53 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           </div>
         </div>
 
-        {/* Modules */}
-        <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 py-3 space-y-2" aria-label="Modules">
+        {/* Modules: large, readable rows (list style); sections expand in place */}
+        <nav className="flex-1 min-h-0 overflow-y-auto no-scrollbar bg-white py-2" aria-label="Modules">
           {groups.map((g) => {
             const GroupIcon = g.icon;
             // Searching always shows matches
-            const open = Boolean(q) || expanded.has(g.id);
+            const open = Boolean(q) || expanded === g.id;
+            const hasActive = g.modules.some((m) => m.id === activeModuleId);
+            // A section with a single module (e.g. Company → Company Feed) is shown as that module directly
+            if (g.modules.length === 1) {
+              const m = g.modules[0];
+              const Icon = m.icon;
+              const active = m.id === activeModuleId;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => onOpenModule(m)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`w-[calc(100%-1rem)] mx-2 h-12 flex items-center gap-4 px-3 rounded-xl text-left transition-colors cursor-pointer ${
+                    active ? 'bg-[#EAF0FF] ring-1 ring-inset ring-[#D6E2FF]' : 'active:bg-slate-50'
+                  }`}
+                >
+                  <Icon className={`w-5.5 h-5.5 stroke-[1.8] shrink-0 ${active ? 'text-[#2F68FE]' : 'text-slate-700'}`} />
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-[15px] truncate ${active ? 'font-bold text-[#2F68FE]' : 'font-medium text-[#1E293B]'}`}>{m.label}</span>
+                    {q && <span className="block text-[11px] text-slate-400 truncate">{m.hint}</span>}
+                  </span>
+                </button>
+              );
+            }
             return (
               <section key={g.id}>
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.id)}
                   aria-expanded={open}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[10.5px] font-bold uppercase tracking-wider text-slate-400 active:bg-slate-100 cursor-pointer"
+                  className="w-[calc(100%-1rem)] mx-2 h-12 flex items-center gap-4 px-3 rounded-xl text-left active:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  <GroupIcon className="w-3.5 h-3.5" />
-                  <span className="flex-1 text-left">{g.label}</span>
-                  <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-slate-200/70 text-slate-500 text-[9.5px] font-bold flex items-center justify-center normal-case tracking-normal">
-                    {g.modules.length}
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} />
+                  <GroupIcon className={`w-5.5 h-5.5 stroke-[1.8] shrink-0 ${hasActive ? 'text-[#2F68FE]' : 'text-slate-700'}`} />
+                  {/* Section holding the current screen: blue icon + bold blue name, no fill */}
+                  <span className={`flex-1 text-[15px] ${hasActive ? 'font-bold text-[#2F68FE]' : 'font-medium text-[#1E293B]'}`}>{g.label}</span>
+                  <ChevronDown
+                    className={`w-4.5 h-4.5 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${hasActive ? 'text-[#2F68FE]' : 'text-slate-400'}`}
+                  />
                 </button>
                 {open && (
-                  <div className="mt-1 space-y-0.5">
+                  <div className="pb-2 animate-in fade-in slide-in-from-top-1 duration-150">
                     {g.modules.map((m) => {
                       const Icon = m.icon;
                       const active = m.id === activeModuleId;
@@ -187,19 +207,17 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
                           type="button"
                           onClick={() => onOpenModule(m)}
                           aria-current={active ? 'page' : undefined}
-                          className={`relative w-full flex items-center gap-3 pl-2 pr-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                            active ? 'bg-white shadow-[0_4px_14px_-8px_rgba(47,104,254,0.55)]' : 'active:bg-white'
+                          className={`w-[calc(100%-3.25rem)] ml-11 mr-2 mt-0.5 h-11 flex items-center gap-3 pl-3 pr-3 rounded-xl text-left transition-colors cursor-pointer ${
+                            active ? 'bg-[#EAF0FF] ring-1 ring-inset ring-[#D6E2FF]' : 'active:bg-slate-50'
                           }`}
                         >
-                          {active && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#2F68FE]" />}
-                          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${m.tint}`}>
-                            <Icon className="w-4.5 h-4.5" />
-                          </span>
+                          {/* Current screen: soft tinted pill (the parent section stays unfilled) */}
+                          <Icon className={`w-4.5 h-4.5 stroke-[1.8] shrink-0 ${active ? 'text-[#2F68FE]' : 'text-slate-500'}`} />
                           <span className="flex-1 min-w-0">
-                            <span className={`block text-[12.5px] truncate ${active ? 'font-bold text-[#2F68FE]' : 'font-semibold text-[#1E293B]'}`}>
+                            <span className={`block text-[14px] truncate ${active ? 'font-semibold text-[#2F68FE]' : 'text-slate-600'}`}>
                               {m.label}
                             </span>
-                            {q && <span className="block text-[10.5px] text-slate-400 truncate">{m.hint}</span>}
+                            {q && <span className={`block text-[11px] truncate ${active ? 'text-[#2F68FE]/70' : 'text-slate-400'}`}>{m.hint}</span>}
                           </span>
                         </button>
                       );
@@ -210,7 +228,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
             );
           })}
           {groups.length === 0 && (
-            <p className="py-10 text-center text-xs text-slate-400">No module matches “{query.trim()}”.</p>
+            <p className="py-10 text-center text-sm text-slate-400">No module matches “{query.trim()}”.</p>
           )}
         </nav>
 
@@ -219,9 +237,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="h-9 px-3 -ml-1 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-500 active:bg-rose-50 cursor-pointer"
+            className="h-10 px-3 -ml-1 rounded-xl flex items-center gap-3 text-[15px] font-medium text-rose-500 active:bg-rose-50 cursor-pointer"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5 stroke-[1.8]" />
             Log out
           </button>
           <span className="text-[10.5px] font-medium text-slate-400">Version {version}</span>

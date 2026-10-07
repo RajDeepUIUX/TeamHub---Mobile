@@ -5,7 +5,6 @@ import {
   Calendar,
   Fingerprint,
   Info,
-  Filter,
   X,
   Check,
   List,
@@ -31,6 +30,7 @@ import { BulkReviewSheet } from './BulkReviewSheet';
 import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote, reportingManagerOf, branchOf } from '../../data/teamAttendanceData';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
+import { FilterIconButton } from '../common/TeamFilterSheet';
 type RequestState = 'Pending' | 'Approved' | 'Rejected';
 
 const stateOf = (r: AttendanceRecord): RequestState =>
@@ -312,7 +312,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         <button
           type="button"
           onClick={() => setIsFilterOpen(true)}
-          className="flex-1 min-w-0 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
+          className="flex-1 min-w-0 h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
         >
           <span className="flex items-center gap-2 min-w-0">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
@@ -320,21 +320,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
           </span>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
         </button>
-        <button
-          type="button"
-          onClick={() => setIsFilterOpen(true)}
-          aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-          className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
-            filterCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
-          }`}
-        >
-          <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-          {filterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F8FAFC]">
-              {filterCount}
-            </span>
-          )}
-        </button>
+        <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
       </div>
 
       {/* KPI card (same pattern as the Attendance summary) */}

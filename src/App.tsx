@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Filter,
   CheckCircle2,
   RotateCcw,
   LogOut,
@@ -120,6 +119,7 @@ import type { NewTicketData } from './components/tickets/CreateTicketView';
 import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
 import { SegmentedTabs } from './design-system/components/SegmentedTabs';
 import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
+import { FilterIconButton } from './components/common/TeamFilterSheet';
 import {
   TEAM_ATTENDANCE_REQUESTS_SEED,
   TEAM_DAILY_ATTENDANCE_SEED,
@@ -2170,7 +2170,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setIsFilterSheetOpen(true)}
-                      className="flex-1 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
+                      className="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-slate-400" />
@@ -2184,18 +2184,7 @@ export default function App() {
                     </button>
 
                     {/* Filter Button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsFilterSheetOpen(true)}
-                      className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-                        activeFilterStatus !== 'All'
-                          ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                          : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
-                      }`}
-                      aria-label="Filter Attendance"
-                    >
-                      <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-                    </button>
+                    <FilterIconButton count={activeFilterStatus !== 'All' ? 1 : 0} onClick={() => setIsFilterSheetOpen(true)} label="Filter attendance" />
                   </div>
 
                   {/* 4. 3-KPI Card Container */}

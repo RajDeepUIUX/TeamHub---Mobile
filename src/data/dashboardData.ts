@@ -10,14 +10,12 @@ export interface TeamCelebration {
 
 // Totals across the whole year (shown on the tab badges and dashboard tiles)
 export const CELEBRATION_TOTALS = {
-  birthdays: 87,
+  birthdays: 85,
   anniversaries: 59,
 };
 
 export const BIRTHDAYS: TeamCelebration[] = [
   { id: 'b-1', name: 'Raj Kamal', department: 'Engineering', inDays: 0 },
-  { id: 'b-2', name: 'Arpan Shah', department: 'Product Design', inDays: 0 },
-  { id: 'b-3', name: 'Jhanvi Motwani', department: 'Human Resources', inDays: 0 },
   { id: 'b-4', name: 'Husain Rasiwala', department: 'Finance', inDays: 1 },
   { id: 'b-5', name: 'Ayushi Vashita', department: 'Marketing', inDays: 1 },
   { id: 'b-6', name: 'Nidhi Purohit', department: 'Engineering', inDays: 1 },

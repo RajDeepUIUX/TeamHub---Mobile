@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Search,
   X,
-  Filter,
   Eye,
   EyeOff,
   Lock,
@@ -25,6 +24,7 @@ import {
 import { BottomSheet } from '../common/BottomSheet';
 import { MultiSelectDropdown } from '../common/MultiSelectDropdown';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
+import { FilterIconButton } from '../common/TeamFilterSheet';
 import {
   MY_TEAM_BRANCHES,
   MY_TEAM_MANAGERS,
@@ -404,7 +404,7 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search name, email or code..."
-              className="w-full h-12 pl-10 pr-9 bg-white border border-slate-200/90 rounded-2xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 shadow-2xs focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text"
+              className="w-full h-11 pl-10 pr-9 bg-white border border-slate-200 rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 shadow-2xs focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text"
             />
             {query && (
               <button
@@ -417,21 +417,7 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
               </button>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(true)}
-            aria-label={fCount ? `Filters (${fCount} applied)` : 'Filters'}
-            className={`relative w-12 h-12 rounded-2xl border flex items-center justify-center shadow-2xs cursor-pointer ${
-              fCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
-            }`}
-          >
-            <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-            {fCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F8FAFC]">
-                {fCount}
-              </span>
-            )}
-          </button>
+          <FilterIconButton count={fCount} onClick={() => setIsFilterOpen(true)} />
         </div>
 
         {/* List header: reveal / hide all CTC */}

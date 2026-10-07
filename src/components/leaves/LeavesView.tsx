@@ -9,13 +9,13 @@ import {
   Info,
   Plus,
   User,
-  Filter,
   Eye,
   Pencil,
 } from 'lucide-react';
 import { LeaveRequest, LeaveBalance } from '../../types/leaves';
 import { FilterLeavesSheet } from './FilterLeavesSheet';
 
+import { FilterIconButton } from '../common/TeamFilterSheet';
 interface LeavesViewProps {
   balance: LeaveBalance;
   requests: LeaveRequest[];
@@ -157,18 +157,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
           <h2 className="text-sm font-bold text-[#1E293B]">Leave Requests</h2>
 
           {/* Only Filter Icon matching WFO Days tab */}
-          <button
-            type="button"
-            onClick={() => setIsFilterSheetOpen(true)}
-            className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-              filterStatus !== 'All' || dateRangeFilter
-                ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
-            }`}
-            aria-label="Filter Leaves"
-          >
-            <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-          </button>
+          <FilterIconButton count={(filterStatus !== 'All' ? 1 : 0) + (dateRangeFilter ? 1 : 0)} onClick={() => setIsFilterSheetOpen(true)} label="Filter leaves" />
         </div>
 
         {/* 3. Leave Requests Cards matching Image 1 */}

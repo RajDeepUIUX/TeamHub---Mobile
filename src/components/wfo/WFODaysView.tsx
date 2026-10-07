@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Calendar,
   ChevronDown,
-  Filter,
   Plus,
   Pencil,
   Eye,
@@ -18,6 +17,7 @@ import {
 import { FilterWFOSheet } from './FilterWFOSheet';
 import { AddWFOSheet } from './AddWFOSheet';
 
+import { FilterIconButton } from '../common/TeamFilterSheet';
 interface WFODaysViewProps {
   /** The signed-in user's own requests */
   records: WFORecord[];
@@ -63,7 +63,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
           <button
             type="button"
             onClick={() => setIsFilterOpen(true)}
-            className="flex-1 h-12 px-3.5 bg-white border border-slate-200/90 rounded-2xl flex items-center justify-between text-xs font-semibold text-slate-700 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
+            className="flex-1 h-11 px-3.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between text-xs font-semibold text-slate-700 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
               <Calendar className="w-4 h-4 text-slate-400" />
@@ -73,18 +73,7 @@ export const WFODaysView: React.FC<WFODaysViewProps> = ({ records, onViewDetails
           </button>
 
           {/* Filter Modal Trigger Button */}
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(true)}
-            className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-              filterMonth || filterYear
-                ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                : 'bg-white border-slate-200/90 text-[#2F68FE] active:bg-slate-50'
-            }`}
-            aria-label="Filter WFO Days"
-          >
-            <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-          </button>
+          <FilterIconButton count={(filterMonth ? 1 : 0) + (filterYear ? 1 : 0)} onClick={() => setIsFilterOpen(true)} label="Filter WFO days" />
         </div>
       </div>
 

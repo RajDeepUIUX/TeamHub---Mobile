@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Search, SlidersHorizontal, X, Check, Users } from 'lucide-react';
+import { ArrowLeft, Search, X, Check, Users } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { TeamCelebration, CELEBRATION_TOTALS } from '../../data/dashboardData';
 import { Holiday } from '../../data/holidayData';
 import { avatarTint, initialsOf, addDays, formatDayLabel } from './celebrationUtils';
 
+import { FilterIconButton } from '../common/TeamFilterSheet';
 export type CelebrationTab = 'Birthdays' | 'Anniversaries' | 'Holidays';
 type PeriodFilter = 'All' | 'Today' | 'Tomorrow' | 'Coming Up';
 
@@ -104,7 +105,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-slate-100 cursor-pointer"
+            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
@@ -259,18 +260,7 @@ export const CelebrationsView: React.FC<CelebrationsViewProps> = ({
                   </button>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(true)}
-                className={`w-11 h-11 rounded-xl border flex items-center justify-center shadow-2xs transition-colors cursor-pointer ${
-                  period !== 'All'
-                    ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                    : 'bg-white border-slate-200 text-[#2F68FE] active:bg-slate-50'
-                }`}
-                aria-label="Filter"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
+              <FilterIconButton count={period !== 'All' ? 1 : 0} onClick={() => setIsFilterOpen(true)} />
             </div>
 
             {/* Grouped lists */}
