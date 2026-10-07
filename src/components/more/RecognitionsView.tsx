@@ -1,11 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  X,
-  BarChart2,
-  ChevronRight,
-  LayoutGrid,
-  Tag,
   UserRound,
   Briefcase,
   Clock3,
@@ -17,11 +12,9 @@ import {
   Lightbulb,
   BookOpenCheck,
 } from 'lucide-react';
-import { BottomSheet } from '../common/BottomSheet';
-import { FilterSelection, TeamFilterBar, TeamFilterSheet, matchesFilters } from '../common/TeamFilterSheet';
 import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
-import { RECOGNITION_TAGS, Recognition, RecognitionTag } from '../../data/recognitionsData';
+import { Recognition, RecognitionTag } from '../../data/recognitionsData';
 
 const TAG_META: Record<RecognitionTag, { icon: React.ElementType; chip: string }> = {
   'Content Developers': { icon: PenTool, chip: 'bg-indigo-50 text-indigo-600' },
@@ -35,8 +28,6 @@ const TAG_META: Record<RecognitionTag, { icon: React.ElementType; chip: string }
 const formatDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
-const totalHours = (list: Recognition[]) => list.reduce((n, r) => n + (r.hours ?? 0), 0);
-const uniq = (values: string[]) => Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 
 type Scope = 'my' | 'team';
 
@@ -74,115 +65,6 @@ const TrophyIllustration: React.FC = () => (
   </svg>
 );
 
-/* ------------------------------ Summary sheet ------------------------------ */
-
-const SummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; list: Recognition[]; scopeLabel: string }> = ({
-  isOpen,
-  onClose,
-  list,
-  scopeLabel,
-}) => {
-  const byTag = RECOGNITION_TAGS.map((t) => ({ tag: t, items: list.filter((r) => r.tag === t) }));
-  const managers = uniq(list.map((r) => r.reportingManager));
-  const overview = [
-    { label: 'Recognitions', value: list.length, color: 'text-[#1E293B]' },
-    { label: 'People', value: new Set(list.map((r) => r.staffCode)).size, color: 'text-[#7C3AED]' },
-    { label: 'Hours', value: totalHours(list), color: 'text-[#D97706]' },
-  ];
-
-  return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
-      <div className="pt-3 pb-1 flex justify-center shrink-0">
-        <div className="w-10 h-1 bg-slate-300 rounded-full" />
-      </div>
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-[#1E293B]">Recognitions Summary</h2>
-          <p className="text-xs text-slate-500 mt-0.5">{scopeLabel} · Complete Breakdown</p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4 text-xs">
-        <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
-          <div className="flex items-center gap-2 font-bold text-[#1E293B]">
-            <LayoutGrid className="w-4 h-4 text-[#2F68FE]" />
-            Overview
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center pt-1">
-            {overview.map(({ label, value, color }) => (
-              <div key={label} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs">
-                <span className="text-[11px] text-slate-500 block mb-0.5">{label}</span>
-                <span className={`text-base font-bold tabular-nums ${color}`}>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
-          <div className="flex items-center gap-2 font-bold text-[#1E293B]">
-            <Tag className="w-4 h-4 text-[#7C3AED]" />
-            By Recognized Tag
-          </div>
-          <div className="space-y-2 pt-1">
-            {byTag.map(({ tag, items }) => {
-              const { icon: Icon, chip } = TAG_META[tag];
-              return (
-                <div key={tag} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs flex items-center gap-2.5">
-                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${chip}`}>
-                    <Icon className="w-3.5 h-3.5" />
-                  </span>
-                  <span className="flex-1 min-w-0 text-slate-600 font-medium truncate">{tag}</span>
-                  <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{totalHours(items)} hrs</span>
-                  <span className={`w-6 text-right text-sm font-bold tabular-nums ${items.length ? 'text-[#1E293B]' : 'text-slate-300'}`}>
-                    {items.length}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {managers.length > 0 && (
-          <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
-            <div className="flex items-center gap-2 font-bold text-[#1E293B]">
-              <UserRound className="w-4 h-4 text-[#10B981]" />
-              By Reporting Manager
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {managers.map((m) => (
-                <div key={m} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs flex items-center justify-between gap-2">
-                  <span className="text-slate-600 font-medium truncate">{m}</span>
-                  <span className="text-sm font-bold text-[#1E293B] tabular-nums shrink-0">
-                    {list.filter((r) => r.reportingManager === m).length}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 pt-2 pb-8 border-t border-slate-100 shrink-0">
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-sm active:bg-[#1D4ED8] cursor-pointer"
-        >
-          Close Summary
-        </button>
-      </div>
-    </BottomSheet>
-  );
-};
-
 /* --------------------------------- Screen --------------------------------- */
 
 interface RecognitionsViewProps {
@@ -199,39 +81,11 @@ interface RecognitionsViewProps {
 export const RecognitionsView: React.FC<RecognitionsViewProps> = ({ firstName, recognitions, myCode, isManager, onBack }) => {
   const [tab, setTab] = useState<Scope>('my');
   const scope: Scope = isManager ? tab : 'my';
-  const [filters, setFilters] = useState<Record<Scope, FilterSelection>>({ my: {}, team: {} });
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
   const scoped = useMemo(
     () => recognitions.filter((r) => (scope === 'my' ? r.staffCode === myCode : r.staffCode !== myCode)),
     [recognitions, scope, myCode]
   );
-  const selection = filters[scope];
-  const visible = scoped.filter((r) =>
-    matchesFilters(selection, { branch: r.branch, manager: r.reportingManager, staff: r.staffName, tag: r.tag })
-  );
-  const scopeLabel = scope === 'my' ? 'My Recognitions' : "Team's Recognitions";
-
-  const sections = [
-    ...(scope === 'team'
-      ? [
-          { id: 'branch', label: 'Branch', options: uniq(scoped.map((r) => r.branch)) },
-          { id: 'manager', label: 'Reporting Manager', options: uniq(scoped.map((r) => r.reportingManager)) },
-          { id: 'staff', label: 'Staff Name', options: uniq(scoped.map((r) => r.staffName)) },
-        ]
-      : []),
-    { id: 'tag', label: 'Recognized Tags', options: RECOGNITION_TAGS.filter((t) => scoped.some((r) => r.tag === t)) },
-  ];
-
-  const headline = [
-    { label: 'Recognitions', value: visible.length, pill: 'bg-[#EFF6FF] text-[#2F68FE]' },
-    scope === 'my'
-      ? { label: 'Tags', value: new Set(visible.map((r) => r.tag)).size, pill: 'bg-[#F5F3FF] text-[#7C3AED]' }
-      : { label: 'People', value: new Set(visible.map((r) => r.staffCode)).size, pill: 'bg-[#F5F3FF] text-[#7C3AED]' },
-    { label: 'Hours', value: totalHours(visible), pill: 'bg-[#FEF8E7] text-[#D97706]' },
-  ];
-
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <header className="shrink-0 bg-white border-b border-[#EBF0F7]">
@@ -272,56 +126,8 @@ export const RecognitionsView: React.FC<RecognitionsViewProps> = ({ firstName, r
             </p>
           </div>
         ) : (
-          <>
-            <TeamFilterBar selection={selection} placeholder={scope === 'my' ? 'All recognized tags' : 'All branches, managers, staff & tags'} onClick={() => setIsFilterOpen(true)} />
-
-            {/* KPIs */}
-            <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {headline.map(({ label, value, pill }) => (
-                  <div key={label} className="flex flex-col items-center">
-                    <div className={`min-w-14 h-9 px-2 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${pill}`}>
-                      {value}
-                    </div>
-                    <span className="text-[11px] text-gray-500 font-medium">{label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-[#F1F5F9] mt-3.5 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsSummaryOpen(true)}
-                  className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <BarChart2 className="w-4 h-4 text-[#2F68FE]" />
-                    View Full Summary
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-1">
-              <h2 className="text-sm font-bold">Recognitions</h2>
-              <span className="px-1.5 py-px rounded-md bg-blue-50 text-[10.5px] font-bold text-[#2F68FE] tabular-nums">{visible.length}</span>
-            </div>
-
-            {visible.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-2xs py-8 px-6 flex flex-col items-center text-center">
-                <p className="text-sm font-bold text-[#1E293B]">Nothing matches those filters</p>
-                <p className="mt-1 text-[11.5px] text-slate-400">Try a different manager, person or tag.</p>
-                <button
-                  type="button"
-                  onClick={() => setFilters((f) => ({ ...f, [scope]: {} }))}
-                  className="mt-4 h-9 px-4 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
-                >
-                  Clear filters
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {visible.map((r) => {
+          <div className="space-y-2.5">
+                {scoped.map((r) => {
                   const { icon: TagIcon, chip } = TAG_META[r.tag];
                   const avatarIdx = r.staffName.length + r.staffCode.charCodeAt(r.staffCode.length - 1);
                   return (
@@ -379,24 +185,10 @@ export const RecognitionsView: React.FC<RecognitionsViewProps> = ({ firstName, r
                     </article>
                   );
                 })}
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
 
-      <TeamFilterSheet
-        isOpen={isFilterOpen}
-        title={`Filter ${scopeLabel}`}
-        sections={sections}
-        selection={selection}
-        onClose={() => setIsFilterOpen(false)}
-        onApply={(next) => {
-          setFilters((f) => ({ ...f, [scope]: next }));
-          setIsFilterOpen(false);
-        }}
-      />
-      <SummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} list={visible} scopeLabel={scopeLabel} />
     </div>
   );
 };
