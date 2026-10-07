@@ -1190,11 +1190,11 @@ export default function App() {
       <header className="h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-[#2F68FE] flex items-center justify-center text-white font-bold text-xs shadow-xs">
-            TH
+            HR
           </div>
           <div>
             <span className="font-semibold text-xs tracking-tight text-white">
-              Team Hub Mobile
+              MYCPE ONE HRMS 247
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               Attendance &amp; Leaves

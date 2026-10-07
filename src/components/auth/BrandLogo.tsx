@@ -34,7 +34,7 @@ const SIZES = {
   lg: { width: 'w-[208px]', tag: 'text-[13px] tracking-[0.35em] mt-4' },
 };
 
-/** Stacked lockup for splash + auth screens, with the "Team Hub Mobile" tagline */
+/** Stacked lockup for splash + auth screens: MYCPE ONE + the "HRMS 247" product name */
 export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 'md', showTagline = true }) => {
   const s = SIZES[size];
   return (
@@ -45,7 +45,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ size = 'md', showTagline =
         className={`${s.width} h-auto aspect-[1077/896] object-contain drop-shadow-[0_12px_20px_rgba(99,102,241,0.18)] select-none`}
         draggable={false}
       />
-      {showTagline && <p className={`text-slate-600 font-medium ${s.tag}`}>Team Hub Mobile</p>}
+      {showTagline && (
+        <p className={`font-extrabold bg-linear-to-r from-[#2F68FE] to-[#7C3AED] bg-clip-text text-transparent ${s.tag}`}>HRMS 247</p>
+      )}
     </div>
   );
 };

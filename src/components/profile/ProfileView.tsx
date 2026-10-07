@@ -367,7 +367,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             Log out
           </button>
 
-          <p className="text-center text-[11px] text-slate-400">MYCPE ONE · Team Hub Mobile · v{APP_VERSION}</p>
+          <p className="text-center text-[11px] text-slate-400">MYCPE ONE HRMS 247 · v{APP_VERSION}</p>
         </div>
       </div>
 

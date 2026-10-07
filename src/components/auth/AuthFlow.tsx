@@ -49,7 +49,7 @@ const SplashScreen: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     >
       <AuthBackground />
       <div className="relative z-10 animate-in fade-in zoom-in-95 duration-700">
-        <BrandLogo size="lg" showTagline={false} />
+        <BrandLogo size="lg" />
       </div>
       <div className="absolute bottom-8 inset-x-0 z-10 flex flex-col items-center gap-3">
         <div className="flex gap-1.5" aria-hidden="true">
@@ -102,16 +102,16 @@ const LoginScreen: React.FC<{
     <AuthScreen className="flex flex-col">
       <AuthTopBar onQuickFill={quickFill} />
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center pb-8" noValidate>
-        <BrandLogo size="sm" showTagline={false} />
+        <BrandLogo size="sm" />
         <div className="mt-8">
-          <AuthHeading title="Welcome back" subtitle="Sign in to continue to Team Hub Mobile." />
+          <AuthHeading title="Welcome back" subtitle="Sign in to continue to MYCPE ONE HRMS 247." />
         </div>
 
         <div className="mt-7 space-y-3.5">
           <AuthInput
             icon={<Mail className="w-5 h-5" />}
             type="email"
-            placeholder="Company Email"
+            placeholder="Email"
             autoComplete="email"
             value={email}
             error={errors.email}
@@ -186,7 +186,7 @@ const ForgotScreen: React.FC<{
         }}
       />
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center pb-16" noValidate>
-        <BrandLogo size="sm" showTagline={false} />
+        <BrandLogo size="sm" />
         <div className="mt-8">
           <AuthHeading
             title="Forgot Password?"
@@ -197,7 +197,7 @@ const ForgotScreen: React.FC<{
           className="mt-7"
           icon={<Mail className="w-5 h-5" />}
           type="email"
-          placeholder="Company Email"
+          placeholder="Email"
           autoComplete="email"
           value={email}
           error={error}
@@ -300,7 +300,7 @@ const VerifyScreen: React.FC<{
     <AuthScreen className="flex flex-col">
       <AuthTopBar onQuickFill={quickFill} />
       <form onSubmit={handleVerify} className="flex-1 flex flex-col justify-center pb-8" noValidate>
-        <BrandLogo size="sm" showTagline={false} />
+        <BrandLogo size="sm" />
         <div className="mt-8">
           <AuthHeading title="Verify Code" subtitle="Enter the 6-digit code sent to your company email." />
         </div>
@@ -404,7 +404,7 @@ const ResetScreen: React.FC<{ onUpdated: () => void; onBack: () => void }> = ({ 
     <AuthScreen className="flex flex-col">
       <AuthTopBar onQuickFill={quickFill} />
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center pb-8" noValidate>
-        <BrandLogo size="sm" showTagline={false} />
+        <BrandLogo size="sm" />
         <div className="mt-8">
           <AuthHeading title="Reset Password" subtitle="Create a new password for your account." />
         </div>
@@ -483,7 +483,7 @@ const SUCCESS_BURST: [number, number, string, string][] = [
 const UpdatedScreen: React.FC<{ onBackToLogin: () => void }> = ({ onBackToLogin }) => (
   <AuthScreen className="flex flex-col">
     <div className="flex-1 flex flex-col justify-center py-8">
-      <BrandLogo size="sm" showTagline={false} />
+      <BrandLogo size="sm" />
       <div className="mt-8 bg-white/90 backdrop-blur-sm border border-slate-100 rounded-3xl px-6 py-8 shadow-[0_20px_40px_-20px_rgba(79,70,229,0.25)] text-center animate-in fade-in zoom-in-95 duration-300">
         <div className="success-float relative mx-auto w-28 h-28 flex items-center justify-center">
           <span className="success-pop absolute inset-0 rounded-full bg-emerald-50" style={{ animationDelay: '0.05s' }} />
