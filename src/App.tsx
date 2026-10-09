@@ -42,6 +42,7 @@ import { TeamLeavesView } from './components/leaves/TeamLeavesView';
 import type { LeaveDecision } from './components/leaves/LeaveReviewSheet';
 import { LeaveRequest, LeaveBalance } from './types/leaves';
 import { UserRole, USER_ROLES } from './types/user';
+import { ClientApp } from './components/client/ClientApp';
 import { HomeDashboard } from './components/home/HomeDashboard';
 import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
 import { ComingSoonView } from './components/home/ComingSoonView';
@@ -1324,8 +1325,10 @@ export default function App() {
               showThumbZoneOverlay={showThumbZones}
               showTouchHitboxOverlay={showHitboxes}
             >
-              {/* Dedicated Apply for Leave View for Leaves Tab (Images 4, 5, 6, 7) */}
-              {!isLoggedIn ? (
+              {/* Client (HRMS) is its own app — no link to the Staff / Manager flows */}
+              {userRole === 'Client' ? (
+                <ClientApp />
+              ) : !isLoggedIn ? (
                 <AuthFlow
                   onAuthenticated={() => {
                     setIsLoggedIn(true);
