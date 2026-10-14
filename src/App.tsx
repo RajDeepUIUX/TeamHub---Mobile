@@ -38,7 +38,7 @@ import { LeaveDetailsView } from './components/leaves/LeaveDetailsView';
 import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS, TEAM_LEAVE_REQUESTS_SEED } from './data/leavesData';
 import { TeamLeavesView } from './components/leaves/TeamLeavesView';
 import type { LeaveDecision } from './components/leaves/LeaveReviewSheet';
-import { LeaveRequest, LeaveBalance } from './types/leaves';
+import { LeaveRequest, LeaveBalance, LeaveDurationType } from './types/leaves';
 import { UserRole, USER_ROLES } from './types/user';
 import { ClientApp } from './components/client/ClientApp';
 import { HomeDashboard } from './components/home/HomeDashboard';
@@ -1075,23 +1075,11 @@ export default function App() {
   // Submit Apply Leave
   const handleSubmitLeave = (
     recordId: string,
-    leaveType: string,
-    session: string,
-    reason: string
+    data: { reason: string; duration: LeaveDurationType; description: string; attachmentName?: string }
   ) => {
-    setRecords((prev) =>
-      prev.map((rec) => {
-        if (rec.id === recordId) {
-          return {
-            ...rec,
-            leaveApplied: true,
-            leaveType: `${leaveType} (${session})`,
-          };
-        }
-        return rec;
-      })
-    );
-    showToast(`Leave request for ${leaveType} (${session}) submitted.`);
+    const label = `${data.reason} · ${data.duration}`;
+    setRecords((prev) => prev.map((rec) => (rec.id === recordId ? { ...rec, leaveApplied: true, leaveType: label } : rec)));
+    showToast(`Leave request submitted: ${label}.`);
   };
 
   // Filter records
