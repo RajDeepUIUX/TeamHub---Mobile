@@ -82,7 +82,7 @@ import {
 import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
 import { PoliciesView } from './components/more/PoliciesView';
 import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
-import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees } from './data/reimbursementData';
+import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees, makeTrackingNo } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
 import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
@@ -1823,28 +1823,43 @@ export default function App() {
                   myRequests={expenseRequests
                     .filter((r) => r.staffName === resignationUser.staffName)
                     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))}
-                  onSubmit={(kind, items, total) => {
+                  onSubmit={(kind, items, total, meta) => {
+                    if (meta.editId) {
+                      // Edit a pending request in place (it stays pending)
+                      setExpenseRequests((prev) => prev.map((r) => (r.id === meta.editId ? { ...r, items, total } : r)));
+                      showToast('Request updated.');
+                      return;
+                    }
+                    const now = new Date();
+                    const todayKey = now.toISOString().slice(0, 10);
+                    const seq = expenseRequests.filter((r) => r.staffName === resignationUser.staffName && r.submittedAt.slice(0, 10) === todayKey).length + 1;
                     const req: ExpenseRequest = {
                       id: `exp-${Date.now()}`,
+                      trackingNo: makeTrackingNo(items[0]?.branch ?? null, now, seq),
                       kind,
                       staffName: resignationUser.staffName,
                       staffCode: resignationUser.staffCode,
                       items,
                       total,
                       status: 'Pending',
-                      submittedAt: new Date().toISOString(),
+                      submittedAt: now.toISOString(),
+                      advanceId: meta.advanceId,
                     };
                     setExpenseRequests((prev) => [req, ...prev]);
-                    showToast(`${EXPENSE_KIND_LABEL[kind]} request for ${formatRupees(total)} sent for approval.`);
+                    showToast(`${EXPENSE_KIND_LABEL[kind]} request ${req.trackingNo} sent for approval.`);
                     if (!isManager) {
                       pushNotification('Manager', {
                         category: 'Reimbursement',
                         title: `New ${EXPENSE_KIND_LABEL[kind].toLowerCase()} request from ${resignationUser.staffName}`,
-                        body: `${formatRupees(total)} · ${items.length} ${items.length === 1 ? 'item' : 'items'}. Review it in Team's Requests.`,
+                        body: `${req.trackingNo} · ${formatRupees(total)} · ${items.length} ${items.length === 1 ? 'item' : 'items'}. Review it in Team's Requests.`,
                         link: 'reimbursement',
                         actionRequired: true,
                       });
                     }
+                  }}
+                  onDelete={(id) => {
+                    setExpenseRequests((prev) => prev.filter((r) => r.id !== id));
+                    showToast('Request deleted.');
                   }}
                   team={
                     isManager
@@ -1856,7 +1871,14 @@ export default function App() {
                             setExpenseRequests((prev) =>
                               prev.map((r) =>
                                 r.id === id
-                                  ? { ...r, status: decision, reviewedBy: resignationUser.staffName, reviewedAt, managerComment: comment || undefined }
+                                  ? {
+                                      ...r,
+                                      status: decision,
+                                      reviewedBy: resignationUser.staffName,
+                                      reviewedAt,
+                                      managerComment: comment || undefined,
+                                      approvedAmount: decision === 'Approved' ? r.total : undefined,
+                                    }
                                   : r
                               )
                             );
@@ -1866,7 +1888,7 @@ export default function App() {
                               pushNotification('Staff', {
                                 category: 'Reimbursement',
                                 title: `Your ${EXPENSE_KIND_LABEL[target.kind].toLowerCase()} request was ${verb}`,
-                                body: `${formatRupees(target.total)} · by ${resignationUser.staffName}${comment ? ` — “${comment}”` : '.'}`,
+                                body: `${target.trackingNo} · ${formatRupees(target.total)} · by ${resignationUser.staffName}${comment ? ` — “${comment}”` : '.'}`,
                                 link: 'reimbursement',
                               });
                             }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
+import { Dropdown } from '../../design-system/components/Dropdown';
 
 interface FilterLeavesSheetProps {
   isOpen: boolean;
@@ -136,28 +137,10 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
 
       {/* Sheet Content */}
       <div className="p-5 space-y-5 overflow-y-auto no-scrollbar">
-        {/* Status Chips matching Image 2 */}
+        {/* Status */}
         <div className="space-y-2">
           <label className="block text-xs font-bold text-[#1E293B]">Status</label>
-          <div className="grid grid-cols-4 gap-2">
-            {statusOptions.map((opt) => {
-              const isSelected = status === opt;
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setStatus(opt)}
-                  className={`h-11 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'border-[#2F68FE] bg-blue-50/80 text-[#2F68FE] shadow-2xs font-bold'
-                      : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
+          <Dropdown size="md" ariaLabel="Status" value={status} options={statusOptions} onChange={setStatus} />
         </div>
 
         {/* 2 Different Text Fields Aligned Horizontally: Start Date | End Date */}

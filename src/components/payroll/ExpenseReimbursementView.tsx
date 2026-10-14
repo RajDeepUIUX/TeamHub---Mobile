@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Wand2, ArrowLeft, ArrowRight, Check, Inbox, BarChart2, ChevronRight, MessageSquareQuote, Plus, Trash2, Upload, X, FileText, CalendarDays, ChevronDown, ClipboardList, ShieldCheck, Wallet } from 'lucide-react';
+import { Wand2, ArrowLeft, ArrowRight, Check, Inbox, BarChart2, ChevronRight, MessageSquareQuote, Plus, Trash2, Upload, X, FileText, CalendarDays, ChevronDown, ClipboardList, ShieldCheck, Wallet, Eye, Pencil } from 'lucide-react';
 import { DatePickerSheet } from '../common/DatePickerSheet';
 import { BottomSheet } from '../common/BottomSheet';
 import { FilterSelection, TeamFilterBar, TeamFilterSheet, matchesFilters } from '../common/TeamFilterSheet';
@@ -11,6 +11,7 @@ import {
   EXPENSE_BRANCHES,
   EXPENSE_CATEGORIES,
   EXPENSE_KIND_LABEL,
+  expenseStatusLabel,
   ExpenseDecision,
   ExpenseItem,
   ExpenseRequest,
@@ -93,7 +94,7 @@ const Header: React.FC<{ title: string; onBack: () => void; onQuickFill?: () => 
 
 /* ------------------------------ One expense row ------------------------------ */
 
-type ItemErrors = Partial<Record<'category' | 'expenseDate' | 'branch' | 'quantity' | 'amount', string>>;
+type ItemErrors = Partial<Record<'category' | 'expenseDate' | 'branch' | 'quantity' | 'amount' | 'receiptName', string>>;
 type FormMode = 'advance' | 'reimbursement';
 
 const formatExpenseDate = (iso: string) =>
@@ -245,7 +246,7 @@ const ExpenseItemCard: React.FC<{
       </div>
 
       <div>
-        {label('Receipt')}
+        {label('Receipt', withDate)}
         {item.receiptName ? (
           <div className="flex items-center gap-2.5 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50">
             <FileText className="w-4 h-4 text-[#2F68FE] shrink-0" />
@@ -263,7 +264,9 @@ const ExpenseItemCard: React.FC<{
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-full h-11 px-3.5 rounded-xl border border-dashed border-blue-200 bg-blue-50/30 flex items-center justify-center gap-2 text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+            className={`w-full h-11 px-3.5 rounded-xl border border-dashed flex items-center justify-center gap-2 text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${
+              errors.receiptName ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-blue-50/30'
+            }`}
           >
             <Upload className="w-4 h-4" />
             Upload receipt
@@ -280,6 +283,7 @@ const ExpenseItemCard: React.FC<{
             e.target.value = '';
           }}
         />
+        {err(errors.receiptName)}
       </div>
     </section>
   );
@@ -287,13 +291,21 @@ const ExpenseItemCard: React.FC<{
 
 /* ------------------------------ Advance form ------------------------------ */
 
-const ExpenseForm: React.FC<{ mode: FormMode; onBack: () => void; onSubmit: (items: ExpenseItem[], total: number) => void }> = ({
-  mode,
-  onBack,
-  onSubmit,
-}) => {
+const ExpenseForm: React.FC<{
+  mode: FormMode;
+  /** Pre-filled items (editing a pending request) */
+  initialItems?: ExpenseItem[];
+  /** Overrides the header title (e.g. "Edit Request") */
+  title?: string;
+  /** Shown under the header, e.g. which advance these expenses settle */
+  note?: string;
+  onBack: () => void;
+  onSubmit: (items: ExpenseItem[], total: number) => void;
+}> = ({ mode, initialItems, title, note, onBack, onSubmit }) => {
   const isClaim = mode === 'reimbursement';
-  const [items, setItems] = useState<ExpenseItem[]>(() => [emptyExpenseItem()]);
+  const [items, setItems] = useState<ExpenseItem[]>(() =>
+    initialItems?.length ? initialItems.map((it) => ({ ...it })) : [emptyExpenseItem()]
+  );
   const [errors, setErrors] = useState<Record<string, ItemErrors>>({});
   const [submitting, setSubmitting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -345,6 +357,8 @@ const ExpenseForm: React.FC<{ mode: FormMode; onBack: () => void; onSubmit: (ite
       if (!it.branch) e.branch = 'Select a branch.';
       if (!it.quantity || Number(it.quantity) < 1) e.quantity = 'Enter the quantity.';
       if (!(parseFloat(it.amount) > 0)) e.amount = 'Enter the amount.';
+      // Receipts are mandatory for reimbursement claims (optional for advances)
+      if (isClaim && !it.receiptName) e.receiptName = 'Upload the receipt.';
       if (Object.keys(e).length) found[it.id] = e;
     });
     setErrors(found);
@@ -361,9 +375,12 @@ const ExpenseForm: React.FC<{ mode: FormMode; onBack: () => void; onSubmit: (ite
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <Header title={isClaim ? 'Add Expenses' : 'Request Advance'} onBack={onBack} onQuickFill={quickFill} />
+      <Header title={title ?? (isClaim ? 'Add Expenses' : 'Request Advance')} onBack={onBack} onQuickFill={quickFill} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
+        {note && (
+          <p className="px-3.5 py-2.5 rounded-xl bg-orange-50 border border-orange-100 text-[11.5px] text-orange-800 leading-relaxed">{note}</p>
+        )}
         {items.map((it, idx) => (
           <ExpenseItemCard
             key={it.id}
@@ -422,23 +439,33 @@ const STATUS_CHIP: Record<ExpenseRequest['status'], string> = {
   Approved: 'bg-[#E8F8F0] text-[#059669]',
   Rejected: 'bg-[#FEF2F2] text-[#DC2626]',
 };
-const KIND_CHIP: Record<ExpenseRequestKind, string> = {
-  advance: 'bg-orange-50 text-orange-600',
-  reimbursement: 'bg-indigo-50 text-indigo-600',
-};
 const submittedOn = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
-/** One submitted request; the manager view adds the person and Approve / Decline */
+/** One submitted request (mirrors a row of the web table) */
 const RequestCard: React.FC<{
   request: ExpenseRequest;
+  /** Manager view: show who raised it */
   showStaff?: boolean;
-  onOpen: () => void;
+  /** e.g. "Against AH/14102026/1" for claims that settle an advance */
+  linkedNote?: string;
+  onView: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onAddExpenses?: () => void;
   onDecide?: (decision: ExpenseDecision) => void;
-}> = ({ request: r, showStaff, onOpen, onDecide }) => {
+}> = ({ request: r, showStaff, linkedNote, onView, onEdit, onDelete, onAddExpenses, onDecide }) => {
   const categories = Array.from(new Set(r.items.map((it) => it.category).filter(Boolean))).join(', ');
+  const isPending = r.status === 'Pending';
+  const actions: { label: string; icon: React.ElementType; onClick: () => void; tone?: string }[] = [
+    { label: 'View', icon: Eye, onClick: onView },
+    ...(isPending && onEdit ? [{ label: 'Edit', icon: Pencil, onClick: onEdit }] : []),
+    ...(r.kind === 'advance' && r.status === 'Approved' && onAddExpenses ? [{ label: 'Add Expenses', icon: Plus, onClick: onAddExpenses }] : []),
+    ...(isPending && onDelete ? [{ label: 'Delete', icon: Trash2, onClick: onDelete, tone: 'text-rose-500 active:bg-rose-50' }] : []),
+  ];
+
   return (
     <article className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-      <button type="button" onClick={onOpen} className="w-full p-3.5 text-left active:bg-slate-50 cursor-pointer space-y-2.5">
+      <div className="p-3.5 space-y-2.5">
         {showStaff && (
           <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
             <span
@@ -454,16 +481,30 @@ const RequestCard: React.FC<{
             </span>
           </div>
         )}
+
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${KIND_CHIP[r.kind]}`}>{EXPENSE_KIND_LABEL[r.kind]}</span>
-            <p className="mt-1.5 text-lg font-extrabold text-[#1E293B] tabular-nums leading-none">{formatRupees(r.total)}</p>
-            <p className="mt-1 text-[11px] text-slate-500 truncate">
-              {r.items.length} {r.items.length === 1 ? 'item' : 'items'} · {categories}
-            </p>
+            <p className="text-[13px] font-bold text-[#1E293B] tabular-nums">{r.trackingNo}</p>
+            <p className="mt-0.5 text-[11.5px] text-slate-500 truncate">{categories}</p>
           </div>
-          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${STATUS_CHIP[r.status]}`}>{r.status}</span>
+          <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold shrink-0 ${STATUS_CHIP[r.status]}`}>{expenseStatusLabel(r)}</span>
         </div>
+
+        {linkedNote && <p className="text-[10.5px] font-semibold text-orange-700">{linkedNote}</p>}
+
+        <div className="grid grid-cols-3 rounded-xl border border-slate-100 divide-x divide-slate-100 text-center">
+          {[
+            { label: 'Amount', value: formatRupees(r.total) },
+            { label: 'Approved', value: r.approvedAmount !== undefined ? formatRupees(r.approvedAmount) : '—' },
+            { label: 'Paid On', value: r.paidOn ?? submittedOn(r.submittedAt) },
+          ].map(({ label, value }) => (
+            <div key={label} className="py-2 px-1 min-w-0">
+              <span className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+              <span className="block mt-0.5 text-[11.5px] font-bold text-[#1E293B] tabular-nums truncate">{value}</span>
+            </div>
+          ))}
+        </div>
+
         {r.status !== 'Pending' && r.reviewedBy && (
           <p
             className={`flex items-start gap-2 px-3 py-2 rounded-xl text-[11px] ${
@@ -480,32 +521,58 @@ const RequestCard: React.FC<{
             </span>
           </p>
         )}
-        <p className="flex items-center justify-between text-[10.5px] text-slate-400">
-          <span>Submitted {submittedOn(r.submittedAt)}</span>
-          <span className="inline-flex items-center gap-0.5 font-semibold text-[#2F68FE]">
-            Details
-            <ChevronRight className="w-3.5 h-3.5" />
-          </span>
-        </p>
-      </button>
-      {onDecide && r.status === 'Pending' && (
+      </div>
+
+      {/* Staff actions */}
+      {!onDecide && (
+        <div className="flex items-center border-t border-slate-100 divide-x divide-slate-100">
+          {actions.map(({ label, icon: Icon, onClick, tone }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={onClick}
+              className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-[11px] font-semibold cursor-pointer ${
+                tone ?? 'text-[#2F68FE] active:bg-blue-50'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Manager actions */}
+      {onDecide && (
         <div className="flex items-center gap-2 px-3.5 py-2.5 border-t border-slate-100">
           <button
             type="button"
-            onClick={() => onDecide('Rejected')}
-            className="flex-1 h-9 rounded-xl border border-rose-200 text-rose-600 text-[11px] font-bold flex items-center justify-center gap-1 active:bg-rose-50 cursor-pointer"
+            onClick={onView}
+            className="h-9 px-3 rounded-xl text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
           >
-            <X className="w-3.5 h-3.5" />
-            Decline
+            <Eye className="w-3.5 h-3.5" />
+            View
           </button>
-          <button
-            type="button"
-            onClick={() => onDecide('Approved')}
-            className="flex-1 h-9 rounded-xl bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center gap-1 active:bg-emerald-700 cursor-pointer"
-          >
-            <Check className="w-3.5 h-3.5" />
-            Approve
-          </button>
+          {isPending && (
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onDecide('Rejected')}
+                className="h-9 px-3.5 rounded-xl border border-rose-200 text-rose-600 text-[11px] font-bold flex items-center gap-1 active:bg-rose-50 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={() => onDecide('Approved')}
+                className="h-9 px-3.5 rounded-xl bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 active:bg-emerald-700 cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Approve
+              </button>
+            </div>
+          )}
         </div>
       )}
     </article>
@@ -539,11 +606,7 @@ const RequestDetailSheet: React.FC<{ request: ExpenseRequest | null; onClose: ()
   <BottomSheet isOpen={Boolean(r)} onClose={onClose} maxHeight="max-h-[88%]">
     {r && (
       <>
-        <SheetTop
-          title={`${EXPENSE_KIND_LABEL[r.kind]} Request`}
-          subtitle={`${r.staffName} · Submitted ${submittedOn(r.submittedAt)}`}
-          onClose={onClose}
-        />
+        <SheetTop title={r.trackingNo} subtitle={`${EXPENSE_KIND_LABEL[r.kind]} · ${r.staffName} · ${submittedOn(r.submittedAt)}`} onClose={onClose} />
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-2.5">
           {r.items.map((it, i) => (
             <div key={it.id + i} className="rounded-2xl border border-[#EBF0F7] p-3.5 space-y-1.5">
@@ -600,7 +663,7 @@ const ReviewSheet: React.FC<{
         <>
           <SheetTop
             title={isDecline ? 'Decline request?' : 'Approve request?'}
-            subtitle={`${r.staffName} · ${EXPENSE_KIND_LABEL[r.kind]} · ${formatRupees(r.total)}`}
+            subtitle={`${r.trackingNo} · ${r.staffName} · ${formatRupees(r.total)}`}
             onClose={onClose}
           />
           <div className="px-5 py-4 space-y-1.5">
@@ -650,7 +713,111 @@ const ReviewSheet: React.FC<{
   );
 };
 
-/* ------------------------------ Team's requests (manager) ------------------------------ */
+/** Delete a pending request */
+const DeleteSheet: React.FC<{ request: ExpenseRequest | null; onClose: () => void; onConfirm: () => void }> = ({
+  request: r,
+  onClose,
+  onConfirm,
+}) => (
+  <BottomSheet isOpen={Boolean(r)} onClose={onClose} maxHeight="max-h-[60%]">
+    {r && (
+      <>
+        <SheetTop title="Delete request?" subtitle={`${r.trackingNo} · ${formatRupees(r.total)}`} onClose={onClose} />
+        <p className="px-5 py-4 text-xs text-slate-600 leading-relaxed">
+          This removes the request and your manager won't see it any more. This can't be undone.
+        </p>
+        <div className="grid grid-cols-2 gap-3 p-4 pt-1 pb-6 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+          >
+            Keep it
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-12 rounded-xl bg-rose-600 text-white text-xs font-bold active:bg-rose-700 cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      </>
+    )}
+  </BottomSheet>
+);
+
+/* ------------------------------ Lists ------------------------------ */
+
+const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected'] as const;
+
+/** Date + status filter row (like the web toolbar) */
+const ListFilters: React.FC<{
+  date: string | null;
+  status: string | null;
+  onDate: (d: string | null) => void;
+  onStatus: (s: string | null) => void;
+}> = ({ date, status, onDate, onStatus }) => {
+  const [isDateOpen, setIsDateOpen] = useState(false);
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsDateOpen(true)}
+          className="w-full h-11 pl-3 pr-8 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs shadow-2xs cursor-pointer"
+        >
+          <CalendarDays className={`w-4 h-4 shrink-0 ${date ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
+          <span className={`truncate ${date ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-400'}`}>
+            {date ? formatExpenseDate(date) : 'Select Date'}
+          </span>
+        </button>
+        {date && (
+          <button
+            type="button"
+            onClick={() => onDate(null)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+            aria-label="Clear date"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      <Dropdown
+        size="md"
+        ariaLabel="Status"
+        value={status}
+        placeholder="All Status"
+        options={['All Status', ...STATUS_OPTIONS]}
+        onChange={(v) => onStatus(v === 'All Status' ? null : v)}
+      />
+      <DatePickerSheet
+        isOpen={isDateOpen}
+        mode="single"
+        title="Submitted on"
+        start={date}
+        maxDate={toDateKey(new Date())}
+        onClose={() => setIsDateOpen(false)}
+        onApply={(d) => {
+          onDate(d);
+          setIsDateOpen(false);
+        }}
+      />
+    </div>
+  );
+};
+
+const applyFilters = (list: ExpenseRequest[], date: string | null, status: string | null) =>
+  list.filter((r) => (!date || r.submittedAt.slice(0, 10) === date) && (!status || r.status === status));
+
+const EmptyList: React.FC<{ text: string }> = ({ text }) => (
+  <div className="py-10 flex flex-col items-center text-center">
+    <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
+      <Inbox className="w-6 h-6" />
+    </span>
+    <p className="mt-3 text-sm font-bold text-[#1E293B]">{text}</p>
+  </div>
+);
 
 const TeamRequests: React.FC<{
   requests: ExpenseRequest[];
@@ -662,15 +829,14 @@ const TeamRequests: React.FC<{
   const [detail, setDetail] = useState<ExpenseRequest | null>(null);
   const [review, setReview] = useState<{ request: ExpenseRequest; decision: ExpenseDecision } | null>(null);
 
+  const ofKind = requests;
   // Pending first, then newest
-  const sorted = [...requests].sort(
+  const sorted = [...ofKind].sort(
     (a, b) => Number(b.status === 'Pending') - Number(a.status === 'Pending') || b.submittedAt.localeCompare(a.submittedAt)
   );
-  const visible = sorted.filter((r) =>
-    matchesFilters(filters, { member: r.staffName, type: EXPENSE_KIND_LABEL[r.kind], status: r.status })
-  );
-  const count = (st: ExpenseRequest['status']) => requests.filter((r) => r.status === st).length;
-  const amount = (st: ExpenseRequest['status']) => requests.filter((r) => r.status === st).reduce((n, r) => n + r.total, 0);
+  const visible = sorted.filter((r) => matchesFilters(filters, { member: r.staffName, type: EXPENSE_KIND_LABEL[r.kind], status: r.status }));
+  const count = (st: ExpenseRequest['status']) => ofKind.filter((r) => r.status === st).length;
+  const amount = (st: ExpenseRequest['status']) => ofKind.filter((r) => r.status === st).reduce((n, r) => n + r.total, 0);
 
   return (
     <div className="space-y-3.5">
@@ -710,27 +876,19 @@ const TeamRequests: React.FC<{
       </div>
 
       {visible.map((r) => (
-        <RequestCard key={r.id} request={r} showStaff onOpen={() => setDetail(r)} onDecide={(decision) => setReview({ request: r, decision })} />
+        <RequestCard key={r.id} request={r} showStaff onView={() => setDetail(r)} onDecide={(decision) => setReview({ request: r, decision })} />
       ))}
-
       {visible.length === 0 && (
-        <div className="py-12 flex flex-col items-center text-center">
-          <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
-            <Inbox className="w-6 h-6" />
-          </span>
-          <p className="mt-3 text-sm font-bold text-[#1E293B]">
-            {Object.values(filters).flat().length ? 'No requests match your filters' : 'Your team hasn\u2019t raised any requests yet'}
-          </p>
-        </div>
+        <EmptyList text={Object.values(filters).flat().length ? 'No requests match your filters' : 'Your team hasn\u2019t raised any requests yet'} />
       )}
 
       <TeamFilterSheet
         isOpen={isFilterOpen}
         title="Filter Team's Requests"
         sections={[
-          { id: 'member', label: 'Team Member', options: Array.from(new Set(requests.map((r) => r.staffName))).sort() },
+          { id: 'member', label: 'Team Member', options: Array.from(new Set(ofKind.map((r) => r.staffName))).sort() },
           { id: 'type', label: 'Type', options: ['Advance', 'Reimbursement'] },
-          { id: 'status', label: 'Status', options: ['Pending', 'Approved', 'Rejected'] },
+          { id: 'status', label: 'Status', options: [...STATUS_OPTIONS] },
         ]}
         selection={filters}
         onClose={() => setIsFilterOpen(false)}
@@ -743,7 +901,7 @@ const TeamRequests: React.FC<{
       <BottomSheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} maxHeight="max-h-[85%]">
         <SheetTop title="Team Requests Summary" subtitle="Advances & reimbursements" onClose={() => setIsSummaryOpen(false)} />
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3 text-xs">
-          {(['Pending', 'Approved', 'Rejected'] as const).map((st) => (
+          {STATUS_OPTIONS.map((st) => (
             <div key={st} className="flex items-center justify-between bg-[#F8FAFC] border border-[#EBF0F7] rounded-xl px-3.5 py-3">
               <span className="font-semibold text-slate-600">
                 {st} <span className="text-slate-400 font-medium">({count(st)})</span>
@@ -754,7 +912,7 @@ const TeamRequests: React.FC<{
           {(['advance', 'reimbursement'] as const).map((k) => (
             <div key={k} className="flex items-center justify-between bg-white border border-[#EBF0F7] rounded-xl px-3.5 py-3">
               <span className="font-semibold text-slate-600">{EXPENSE_KIND_LABEL[k]} requests</span>
-              <span className="font-extrabold text-[#1E293B] tabular-nums">{requests.filter((r) => r.kind === k).length}</span>
+              <span className="font-extrabold text-[#1E293B] tabular-nums">{ofKind.filter((r) => r.kind === k).length}</span>
             </div>
           ))}
         </div>
@@ -783,13 +941,21 @@ const TeamRequests: React.FC<{
   );
 };
 
-/* ------------------------------ Landing + routing ------------------------------ */
+/* ------------------------------ Screen ------------------------------ */
+
+export interface ExpenseSubmitMeta {
+  /** Replace this pending request instead of creating a new one */
+  editId?: string;
+  /** Claim that settles this approved advance */
+  advanceId?: string;
+}
 
 interface ExpenseReimbursementViewProps {
   onBack: () => void;
   /** The signed-in user's own requests (newest first) */
   myRequests: ExpenseRequest[];
-  onSubmit: (kind: ExpenseRequestKind, items: ExpenseItem[], total: number) => void;
+  onSubmit: (kind: ExpenseRequestKind, items: ExpenseItem[], total: number, meta: ExpenseSubmitMeta) => void;
+  onDelete: (id: string) => void;
   /** Present for managers: enables the "Team's Requests" tab with Approve / Decline */
   team?: {
     requests: ExpenseRequest[];
@@ -797,32 +963,44 @@ interface ExpenseReimbursementViewProps {
   };
 }
 
-/** Payroll › Expense Reimbursement: request an advance or claim a reimbursement; managers review their team's */
-export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> = ({ onBack, myRequests, onSubmit, team }) => {
-  const [screen, setScreen] = useState<'home' | FormMode>('home');
-  const [tab, setTab] = useState<'mine' | 'team'>(team ? 'team' : 'mine');
+type FormState = { mode: FormMode; editing?: ExpenseRequest; advance?: ExpenseRequest };
+
+/** Payroll › Expense Reimbursement: Advance and Reimbursement tabs; managers also review their team's */
+export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> = ({ onBack, myRequests, onSubmit, onDelete, team }) => {
+  const [form, setForm] = useState<FormState | null>(null);
+  const [scope, setScope] = useState<'mine' | 'team'>(team ? 'team' : 'mine');
+  const [date, setDate] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [detail, setDetail] = useState<ExpenseRequest | null>(null);
-  const showTeam = Boolean(team) && tab === 'team';
+  const [deleting, setDeleting] = useState<ExpenseRequest | null>(null);
+  const showTeam = Boolean(team) && scope === 'team';
   const pendingTeam = team ? team.requests.filter((r) => r.status === 'Pending').length : 0;
 
-  if (screen !== 'home') {
+  if (form) {
+    const { mode, editing, advance } = form;
     return (
       <ExpenseForm
-        key={screen}
-        mode={screen}
-        onBack={() => setScreen('home')}
+        key={`${mode}-${editing?.id ?? advance?.id ?? 'new'}`}
+        mode={mode}
+        initialItems={editing?.items}
+        title={editing ? `Edit ${editing.trackingNo}` : undefined}
+        note={advance ? `Add the expenses you paid using advance ${advance.trackingNo} (${formatRupees(advance.approvedAmount ?? advance.total)}).` : undefined}
+        onBack={() => setForm(null)}
         onSubmit={(items, total) => {
-          setScreen('home');
-          setTab('mine');
-          onSubmit(screen, items, total);
+          setForm(null);
+          setScope('mine');
+          onSubmit(mode, items, total, { editId: editing?.id, advanceId: advance?.id ?? editing?.advanceId });
         }}
       />
     );
   }
 
+  const visible = applyFilters(myRequests, date, status);
+  const byId = (id?: string) => myRequests.find((r) => r.id === id);
+
   const options = [
     {
-      key: 'advance',
+      key: 'advance' as const,
       art: <MoneyBagArt className="w-28 h-auto" />,
       when: 'Before you spend',
       title: 'Request an Advance',
@@ -831,10 +1009,9 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
       card: 'bg-linear-to-br from-[#FFF4E6] to-[#FFFBF5] border-[#FDE3C3]',
       tag: 'bg-white text-[#C2410C]',
       button: 'bg-[#F97316] active:bg-[#EA580C]',
-      onClick: () => setScreen('advance' as const),
     },
     {
-      key: 'reimbursement',
+      key: 'reimbursement' as const,
       art: <ReceiptArt className="w-28 h-auto" />,
       when: 'After you spend',
       title: 'Claim a Reimbursement',
@@ -843,14 +1020,7 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
       card: 'bg-linear-to-br from-[#EEF2FF] to-[#F7F5FF] border-[#DDE3FB]',
       tag: 'bg-white text-[#4F46E5]',
       button: 'bg-[#2F68FE] active:bg-[#1D4ED8]',
-      onClick: () => setScreen('reimbursement' as const),
     },
-  ];
-
-  const steps = [
-    { icon: ClipboardList, label: 'Add expenses & receipts' },
-    { icon: ShieldCheck, label: 'Manager reviews & approves' },
-    { icon: Wallet, label: 'Amount is paid to you' },
   ];
 
   return (
@@ -870,9 +1040,9 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
         {team && (
           <div className="px-4 pb-3">
             <SegmentedTabs
-              ariaLabel="Reimbursement view"
-              value={tab}
-              onChange={setTab}
+              ariaLabel="Whose requests"
+              value={scope}
+              onChange={setScope}
               options={[
                 { id: 'mine', label: 'My Requests' },
                 { id: 'team', label: "Team's Requests", badge: pendingTeam },
@@ -885,68 +1055,113 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3.5">
         {showTeam && team ? (
           <TeamRequests requests={team.requests} onReview={team.onReview} />
-        ) : (
+        ) : myRequests.length === 0 ? (
           <>
+            {/* First visit: explain both options */}
             <div className="px-1">
               <h2 className="text-[15px] font-bold text-[#1E293B]">How would you like to be paid?</h2>
               <p className="text-xs text-slate-500">Pick one to get started.</p>
             </div>
-
-            {options.map(({ key, art, when, title, text, cta, card, tag, button, onClick }) => (
+            {options.map((o) => (
               <button
-                key={key}
+                key={o.key}
                 type="button"
-                onClick={onClick}
-                className={`relative w-full overflow-hidden rounded-3xl border p-4 pr-3 text-left active:scale-[0.99] transition-transform cursor-pointer ${card}`}
+                onClick={() => setForm({ mode: o.key })}
+                className={`relative w-full overflow-hidden rounded-3xl border p-4 pr-3 text-left active:scale-[0.99] transition-transform cursor-pointer ${o.card}`}
               >
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold shadow-2xs ${tag}`}>{when}</span>
-                    <h3 className="mt-2 text-base font-extrabold text-[#1E293B] leading-tight">{title}</h3>
-                    <p className="mt-1 text-[11.5px] text-slate-600 leading-relaxed">{text}</p>
-                    <span className={`mt-3 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-white text-[11.5px] font-bold shadow-xs ${button}`}>
-                      {cta}
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold shadow-2xs ${o.tag}`}>{o.when}</span>
+                    <h3 className="mt-2 text-base font-extrabold text-[#1E293B] leading-tight">{o.title}</h3>
+                    <p className="mt-1 text-[11.5px] text-slate-600 leading-relaxed">{o.text}</p>
+                    <span className={`mt-3 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-white text-[11.5px] font-bold shadow-xs ${o.button}`}>
+                      {o.cta}
                       <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
-                  <div className="shrink-0 -mr-1">{art}</div>
+                  <div className="shrink-0 -mr-1">{o.art}</div>
                 </div>
               </button>
             ))}
-
-            {myRequests.length > 0 ? (
-              <>
-                <div className="flex items-center gap-2 px-1 pt-1">
-                  <span className="font-bold text-sm text-[#1E293B]">My Requests</span>
-                  <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{myRequests.length}</span>
-                </div>
-                {myRequests.map((r) => (
-                  <RequestCard key={r.id} request={r} onOpen={() => setDetail(r)} />
+            <section className="rounded-2xl bg-white border border-[#EBF0F7] p-4 shadow-2xs">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">How it works</p>
+              <ol className="mt-3 grid grid-cols-3 gap-2">
+                {[
+                  { icon: ClipboardList, label: 'Add expenses & receipts' },
+                  { icon: ShieldCheck, label: 'Manager reviews & approves' },
+                  { icon: Wallet, label: 'Amount is paid to you' },
+                ].map(({ icon: Icon, label }, i, arr) => (
+                  <li key={label} className="relative flex flex-col items-center text-center">
+                    {i < arr.length - 1 && (
+                      <span className="absolute top-4.5 left-[calc(50%+22px)] right-[calc(-50%+22px)] h-px border-t border-dashed border-slate-300" aria-hidden="true" />
+                    )}
+                    <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center">
+                      <Icon className="w-4.5 h-4.5" />
+                    </span>
+                    <span className="mt-1.5 text-[10.5px] font-semibold text-slate-600 leading-snug">{label}</span>
+                  </li>
                 ))}
-              </>
-            ) : (
-              <section className="rounded-2xl bg-white border border-[#EBF0F7] p-4 shadow-2xs">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">How it works</p>
-                <ol className="mt-3 grid grid-cols-3 gap-2">
-                  {steps.map(({ icon: Icon, label }, i) => (
-                    <li key={label} className="relative flex flex-col items-center text-center">
-                      {i < steps.length - 1 && (
-                        <span className="absolute top-4.5 left-[calc(50%+22px)] right-[calc(-50%+22px)] h-px border-t border-dashed border-slate-300" aria-hidden="true" />
-                      )}
-                      <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center">
-                        <Icon className="w-4.5 h-4.5" />
-                      </span>
-                      <span className="mt-1.5 text-[10.5px] font-semibold text-slate-600 leading-snug">{label}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+              </ol>
+            </section>
+          </>
+        ) : (
+          <>
+            <ListFilters date={date} status={status} onDate={setDate} onStatus={setStatus} />
+
+            <div className="flex items-center gap-2 px-1">
+              <span className="font-bold text-sm text-[#1E293B]">My Requests</span>
+              <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{visible.length}</span>
+            </div>
+
+            {visible.map((r) => (
+              <RequestCard
+                key={r.id}
+                request={r}
+                linkedNote={r.advanceId && byId(r.advanceId) ? `Against advance ${byId(r.advanceId)!.trackingNo}` : undefined}
+                onView={() => setDetail(r)}
+                onEdit={() => setForm({ mode: r.kind, editing: r })}
+                onDelete={() => setDeleting(r)}
+                onAddExpenses={() => setForm({ mode: 'reimbursement', advance: r })}
+              />
+            ))}
+            {visible.length === 0 && <EmptyList text="No requests match your filters" />}
           </>
         )}
       </div>
 
+      {/* Request buttons pinned to the bottom (list view) */}
+      {!showTeam && myRequests.length > 0 && (
+        <div className="shrink-0 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-4 pt-3 pb-5">
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setForm({ mode: 'advance' })}
+            className="h-12 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 cursor-pointer"
+          >
+            <span className="text-sm leading-none">₹</span>
+            Req. Advance
+          </button>
+          <button
+            type="button"
+            onClick={() => setForm({ mode: 'reimbursement' })}
+            className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            Req. Reimbursement
+          </button>
+        </div>
+        </div>
+      )}
+
       <RequestDetailSheet request={detail} onClose={() => setDetail(null)} />
+      <DeleteSheet
+        request={deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={() => {
+          if (deleting) onDelete(deleting.id);
+          setDeleting(null);
+        }}
+      />
     </div>
   );
 };

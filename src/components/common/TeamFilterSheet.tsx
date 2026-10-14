@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { X, Check, Filter, Users, ChevronRight } from 'lucide-react';
+import { X, Filter, Users, ChevronRight } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
+import { MultiSelectDropdown } from './MultiSelectDropdown';
+import { ChoiceTiles } from './ChoiceTiles';
 
 export interface FilterSection {
   id: string;
@@ -87,15 +89,6 @@ export const TeamFilterSheet: React.FC<TeamFilterSheetProps> = ({ isOpen, title,
     if (isOpen) setDraft(selection);
   }, [isOpen, selection]);
 
-  const toggle = (sectionId: string, value: string) =>
-    setDraft((prev) => {
-      const current = prev[sectionId] ?? [];
-      return {
-        ...prev,
-        [sectionId]: current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
-      };
-    });
-
   const draftCount = activeFilterCount(draft);
 
   return (
@@ -106,7 +99,7 @@ export const TeamFilterSheet: React.FC<TeamFilterSheetProps> = ({ isOpen, title,
       <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
         <div>
           <h2 className="text-base font-bold text-[#1E293B]">{title}</h2>
-          <p className="text-[11px] text-slate-400">Select one or more options in each section</p>
+          <p className="text-[11px] text-slate-400">Pick one or more options in each filter</p>
         </div>
         <button
           type="button"
@@ -121,40 +114,30 @@ export const TeamFilterSheet: React.FC<TeamFilterSheetProps> = ({ isOpen, title,
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-5">
         {sections.map((section) => {
           const selected = draft[section.id] ?? [];
-          return (
+          const setSelected = (next: string[]) => setDraft((prev) => ({ ...prev, [section.id]: next }));
+          // Two options: side-by-side tiles; more: a multi-select dropdown (no chips)
+          return section.options.length <= 2 ? (
             <div key={section.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#1E293B]">{section.label}</span>
                 {selected.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setDraft((prev) => ({ ...prev, [section.id]: [] }))}
-                    className="text-[11px] font-semibold text-[#2F68FE] cursor-pointer"
-                  >
+                  <button type="button" onClick={() => setSelected([])} className="text-[11px] font-semibold text-[#2F68FE] cursor-pointer">
                     Clear
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {section.options.map((option) => {
-                  const isOn = selected.includes(option);
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => toggle(section.id, option)}
-                      aria-pressed={isOn}
-                      className={`h-9 px-3 rounded-xl border text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        isOn ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600'
-                      }`}
-                    >
-                      {isOn && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+              <ChoiceTiles options={section.options} selected={selected} onChange={setSelected} />
             </div>
+          ) : (
+            <MultiSelectDropdown
+              key={section.id}
+              label={section.label}
+              placeholder={`All ${section.label.toLowerCase()}`}
+              options={section.options.map((o) => ({ value: o, label: o }))}
+              selected={selected}
+              onChange={setSelected}
+              searchable={section.options.length > 6}
+            />
           );
         })}
       </div>

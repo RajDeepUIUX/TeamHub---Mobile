@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
+import { Dropdown } from '../../design-system/components/Dropdown';
 import { RangeCalendar, formatShortDate } from '../../design-system/components/RangeCalendar';
 import { currentAttendanceCycle } from '../../data/attendanceMonths';
 
@@ -154,102 +155,27 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           </div>
 
           {/* Section 2: Status */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-bold text-[#1E293B]">
-              Status
-            </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* All */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('All')}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'All'
-                    ? 'bg-[#1E293B] text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-700 active:bg-slate-200'
-                }`}
-              >
-                All
-              </button>
-
-              {/* Full Day */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Full Day')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Full Day'
-                    ? 'bg-[#10B981] text-white shadow-2xs'
-                    : 'bg-[#E8F8F0] text-[#10B981] active:bg-[#D8F2E4]'
-                }`}
-              >
-                Full Day
-              </button>
-
-              {/* Half Day */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Half Day')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Half Day'
-                    ? 'border-2 border-[#F59E0B] bg-[#FFF9EC] text-[#D97706] shadow-2xs'
-                    : 'border border-[#F59E0B]/40 bg-[#FFF9EC] text-[#D97706]'
-                }`}
-              >
-                Half Day
-              </button>
-
-              {/* Absent */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Absent')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Absent'
-                    ? 'bg-[#F43F5E] text-white shadow-2xs'
-                    : 'bg-[#FDECEC] text-[#F34D59] active:bg-[#FCD8D8]'
-                }`}
-              >
-                Absent
-              </button>
-
-              {/* WO */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('WO')}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'WO'
-                    ? 'bg-[#D97706] text-white shadow-2xs'
-                    : 'bg-[#FEF8E7] text-[#D97706]'
-                }`}
-              >
-                WO
-              </button>
-            </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-[#1E293B]">Status</h3>
+            <Dropdown
+              size="md"
+              ariaLabel="Status"
+              value={selectedStatus}
+              options={['All', 'Full Day', 'Half Day', 'Absent', 'WO']}
+              onChange={setSelectedStatus}
+            />
           </div>
 
           {/* Section 3: Work Mode */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-bold text-[#1E293B]">
-              Work Mode
-            </h3>
-            <div className="flex items-center gap-2">
-              {['Office', 'WFH', 'Hybrid'].map((mode) => {
-                const isActive = selectedWorkMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setSelectedWorkMode(mode)}
-                    className={`flex-1 h-11 rounded-xl text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'border-2 border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-[#1E293B]">Work Mode</h3>
+            <Dropdown
+              size="md"
+              ariaLabel="Work mode"
+              value={selectedWorkMode}
+              options={['Office', 'WFH', 'Hybrid']}
+              onChange={setSelectedWorkMode}
+            />
           </div>
         </div>
 

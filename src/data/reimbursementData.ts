@@ -79,6 +79,8 @@ export type ExpenseDecision = 'Approved' | 'Rejected';
 
 export interface ExpenseRequest {
   id: string;
+  /** e.g. AH/14102026/2 — branch code / submission date / running number that day */
+  trackingNo: string;
   kind: ExpenseRequestKind;
   staffName: string;
   staffCode: string;
@@ -90,7 +92,26 @@ export interface ExpenseRequest {
   reviewedBy?: string;
   reviewedAt?: string;
   managerComment?: string;
+  /** Set when approved (may differ from the total in future) */
+  approvedAmount?: number;
+  /** Set once the payout is made */
+  paidOn?: string;
+  /** Reimbursement claimed against an approved advance */
+  advanceId?: string;
 }
+
+/** Branch code used in tracking numbers: first two letters, e.g. Ahmedabad → AH */
+export const branchCode = (branch: string | null) => (branch ?? 'HQ').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase();
+
+/** AH/14102026/2 */
+export const makeTrackingNo = (branch: string | null, date: Date, seq: number) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${branchCode(branch)}/${pad(date.getDate())}${pad(date.getMonth() + 1)}${date.getFullYear()}/${seq}`;
+};
+
+/** Status as shown in the list (pending advances read "Advance Pending", like the web app) */
+export const expenseStatusLabel = (r: Pick<ExpenseRequest, 'kind' | 'status'>) =>
+  r.kind === 'advance' && r.status !== 'Rejected' ? `Advance ${r.status}` : r.status;
 
 export const EXPENSE_KIND_LABEL: Record<ExpenseRequestKind, string> = {
   advance: 'Advance',
@@ -115,6 +136,7 @@ export const TEAM_EXPENSE_REQUESTS_SEED: ExpenseRequest[] = (
   [
     {
       id: 'exp-team-1',
+      trackingNo: 'AH/10102026/1',
       kind: 'reimbursement',
       staffName: 'Ananya Kulkarni',
       staffCode: 'A03515',
@@ -127,6 +149,7 @@ export const TEAM_EXPENSE_REQUESTS_SEED: ExpenseRequest[] = (
     },
     {
       id: 'exp-team-2',
+      trackingNo: 'BA/12102026/1',
       kind: 'advance',
       staffName: 'Kunal Desai',
       staffCode: 'A02988',
@@ -136,6 +159,7 @@ export const TEAM_EXPENSE_REQUESTS_SEED: ExpenseRequest[] = (
     },
     {
       id: 'exp-team-3',
+      trackingNo: 'AH/29092026/1',
       kind: 'reimbursement',
       staffName: 'Nidhi Purohit',
       staffCode: 'A03211',
@@ -144,9 +168,12 @@ export const TEAM_EXPENSE_REQUESTS_SEED: ExpenseRequest[] = (
       submittedAt: '2026-09-29T11:10:00.000Z',
       reviewedBy: 'Naveen Das',
       reviewedAt: 'Sep 30, 2026',
+      approvedAmount: 3400,
+      paidOn: 'Oct 07, 2026',
     },
     {
       id: 'exp-team-4',
+      trackingNo: 'AH/22092026/1',
       kind: 'reimbursement',
       staffName: 'Kunal Desai',
       staffCode: 'A02988',

@@ -20,7 +20,6 @@ import {
   CalendarCheck,
   CalendarDays,
   Luggage,
-  Building2,
   Newspaper,
   Megaphone,
   UsersRound,
@@ -75,7 +74,6 @@ export const MORE_GROUPS: MoreGroup[] = [
       { id: 'Attendance', label: 'Attendance', hint: 'Daily punches & regularization', icon: CalendarCheck, tint: 'bg-blue-50 text-[#2F68FE]' },
       { id: 'Leaves', label: 'Leaves', hint: 'Apply for leave & check balances', icon: Luggage, tint: 'bg-rose-50 text-rose-500' },
       { id: 'Holidays', label: 'Holidays', hint: 'Company holiday calendar', icon: CalendarDays, tint: 'bg-amber-50 text-amber-600' },
-      { id: 'WFO Days', label: 'WFO Days', hint: 'Work-from-office days & requests', icon: Building2, tint: 'bg-emerald-50 text-emerald-600' },
     ],
   },
   {

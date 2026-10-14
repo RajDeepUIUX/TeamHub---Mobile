@@ -61,11 +61,19 @@ interface TeamAttendanceViewProps {
 
 /* ------------------------------ Summary sheet ------------------------------ */
 
-const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests: AttendanceRecord[] }> = ({
-  isOpen,
-  onClose,
-  requests,
-}) => {
+/** What a summary tile filters the list by */
+type SummaryPick = { status?: RequestState; staff?: string };
+
+const TeamAttendanceSummarySheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  requests: AttendanceRecord[];
+  /** Tapping a tile closes the sheet and filters the list */
+  onPick: (pick: SummaryPick) => void;
+}> = ({ isOpen, onClose, requests, onPick }) => {
+  /** Tappable tile: same look plus a small arrow so it reads as a link */
+  const tileCls =
+    'bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs text-left active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer';
   const count = (fn: (r: AttendanceRecord) => boolean) => requests.filter(fn).length;
   const members = Array.from(new Set(requests.map((r) => r.staffName))).sort();
 
@@ -96,19 +104,21 @@ const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => voi
             <span>Requests Overview</span>
           </div>
           <div className="grid grid-cols-2 gap-2 pt-1">
-            {[
-              { label: 'Total Requests', value: requests.length, color: 'text-[#1E293B]' },
-              { label: 'Pending', value: count((r) => stateOf(r) === 'Pending'), color: 'text-[#7C3AED]' },
-              { label: 'Approved', value: count((r) => stateOf(r) === 'Approved'), color: 'text-[#10B981]' },
-              { label: 'Rejected', value: count((r) => stateOf(r) === 'Rejected'), color: 'text-[#F43F5E]' },
-            ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs"
-              >
-                <span className="text-slate-600 font-medium">{label}</span>
-                <span className={`text-sm font-bold tabular-nums ${color}`}>{value}</span>
-              </div>
+            {(
+              [
+                { label: 'Total Requests', value: requests.length, color: 'text-[#1E293B]', pick: {} },
+                { label: 'Pending', value: count((r) => stateOf(r) === 'Pending'), color: 'text-[#7C3AED]', pick: { status: 'Pending' } },
+                { label: 'Approved', value: count((r) => stateOf(r) === 'Approved'), color: 'text-[#10B981]', pick: { status: 'Approved' } },
+                { label: 'Rejected', value: count((r) => stateOf(r) === 'Rejected'), color: 'text-[#F43F5E]', pick: { status: 'Rejected' } },
+              ] as { label: string; value: number; color: string; pick: SummaryPick }[]
+            ).map(({ label, value, color, pick }) => (
+              <button key={label} type="button" onClick={() => onPick(pick)} className={tileCls} aria-label={`Show ${label.toLowerCase()}`}>
+                <span className="text-slate-600 font-medium truncate">{label}</span>
+                <span className="flex items-center gap-1 shrink-0">
+                  <span className={`text-sm font-bold tabular-nums ${color}`}>{value}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+                </span>
+              </button>
             ))}
           </div>
         </div>
@@ -143,9 +153,12 @@ const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => voi
               const mine = requests.filter((r) => r.staffName === name);
               const pending = mine.filter((r) => stateOf(r) === 'Pending').length;
               return (
-                <div
+                <button
                   key={name}
-                  className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs"
+                  type="button"
+                  onClick={() => onPick({ staff: name })}
+                  className={`w-full ${tileCls}`}
+                  aria-label={`Show ${name}'s requests`}
                 >
                   <span className="text-slate-700 font-semibold truncate">{name}</span>
                   <span className="flex items-center gap-2 text-[11px] shrink-0">
@@ -153,8 +166,9 @@ const TeamAttendanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => voi
                       <span className="px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 font-bold">{pending} pending</span>
                     )}
                     <span className="font-bold text-slate-700 tabular-nums">{mine.length}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -635,7 +649,23 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
           setIsFilterOpen(false);
         }}
       />
-      <TeamAttendanceSummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} requests={requests} />
+      <TeamAttendanceSummarySheet
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        requests={requests}
+        onPick={(pick) => {
+          // The summary covers every request, so widen the dates to include them all
+          const earliest = requests.reduce((min, r) => (r.date < min ? r.date : min), DEFAULT_TEAM_ATTENDANCE_FILTERS.from);
+          applyFilters({
+            ...DEFAULT_TEAM_ATTENDANCE_FILTERS,
+            from: earliest,
+            editOnly: true,
+            status: pick.status ? [pick.status] : [],
+            staff: pick.staff ? [pick.staff] : [],
+          });
+          setIsSummaryOpen(false);
+        }}
+      />
       <AttendanceReviewSheet
         record={review?.record ?? null}
         decision={review?.decision ?? null}

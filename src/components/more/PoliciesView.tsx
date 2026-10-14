@@ -44,23 +44,13 @@ const PolicyFilterSheet: React.FC<{ isOpen: boolean; filters: Filters; onClose: 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-5">
         <div className="space-y-2">
           <span className="block text-xs font-bold text-[#1E293B]">Year</span>
-          <div className="flex flex-wrap gap-2">
-            {[null, ...POLICY_YEARS].map((y) => {
-              const on = draft.year === y;
-              return (
-                <button
-                  key={y ?? 'all'}
-                  type="button"
-                  onClick={() => setDraft({ ...draft, year: y })}
-                  className={`h-9 px-4 rounded-xl border text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
-                    on ? 'border-[#2F68FE] bg-[#2F68FE] text-white' : 'border-slate-200 bg-white text-slate-600'
-                  }`}
-                >
-                  {y ?? 'All years'}
-                </button>
-              );
-            })}
-          </div>
+          <Dropdown
+            size="md"
+            ariaLabel="Year"
+            value={draft.year === null ? 'All years' : String(draft.year)}
+            options={['All years', ...POLICY_YEARS.map(String)]}
+            onChange={(v) => setDraft({ ...draft, year: v === 'All years' ? null : Number(v) })}
+          />
         </div>
         <div className="space-y-2">
           <span className="block text-xs font-bold text-[#1E293B]">Category</span>
