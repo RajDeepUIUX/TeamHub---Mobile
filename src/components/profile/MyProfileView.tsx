@@ -1015,6 +1015,18 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Tabs are transparent at rest; once pinned to the top they get a backdrop so content doesn't show through
+  const tabsSentinelRef = useRef<HTMLDivElement>(null);
+  const [tabsStuck, setTabsStuck] = useState(false);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = tabsSentinelRef.current;
+    if (!root || !sentinel) return;
+    const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const v = profile.values;
   const current = PROFILE_TABS.find((t) => t.id === tab)!;
@@ -1165,7 +1177,13 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
 
         {/* Tabs (sticky) */}
         {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
-        <nav className="sticky top-0 z-10 bg-transparent border-b border-slate-200/80 mb-3" aria-label="Profile sections">
+        <div ref={tabsSentinelRef} className="h-px -mb-px" aria-hidden="true" />
+        <nav
+          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 transition-colors duration-200 ${
+            tabsStuck ? 'bg-[#F5F7FB]/95 backdrop-blur-md' : 'bg-transparent'
+          }`}
+          aria-label="Profile sections"
+        >
           <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
             {PROFILE_TABS.map((t) => {
               const Icon = TAB_ICONS[t.id];
@@ -1184,11 +1202,11 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     if (editing) return setLockedTabHint(true);
                     setTab(t.id);
                   }}
-                  className={`relative h-12 px-3 flex items-center gap-2 text-[13px] whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on ? 'text-[#2F68FE] font-bold' : `text-slate-600 font-semibold active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
+                  className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE]' : `text-slate-500 active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
                   }`}
                 >
-                  <Icon className="w-4.5 h-4.5" />
+                  <Icon className="w-4 h-4" />
                   {PROFILE_TAB_SHORT[t.id]}
                   <span
                     className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
