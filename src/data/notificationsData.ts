@@ -10,7 +10,8 @@ export type NotificationCategory =
   | 'WFO Days'
   | 'Celebrations'
   | 'Announcements'
-  | 'Training';
+  | 'Training'
+  | 'Reimbursement';
 
 /** Where tapping the notification takes the user */
 export type NotificationLink =
@@ -25,7 +26,8 @@ export type NotificationLink =
   | 'advance-salary'
   | 'wfo'
   | 'celebrations'
-  | 'training-request';
+  | 'training-request'
+  | 'reimbursement';
 
 export interface AppNotification {
   id: string;

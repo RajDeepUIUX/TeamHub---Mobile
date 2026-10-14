@@ -28,6 +28,13 @@ import {
   BookOpen,
   ClipboardList,
   Award,
+  ScrollText,
+  Wallet,
+  ReceiptText,
+  FileCheck2,
+  Receipt,
+  CreditCard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import type { UserRole } from '../../types/user';
 
@@ -72,6 +79,19 @@ export const MORE_GROUPS: MoreGroup[] = [
     ],
   },
   {
+    // Payroll (screens to follow; tapping shows "coming soon" for now)
+    id: 'payroll',
+    label: 'Payroll',
+    icon: Wallet,
+    modules: [
+      { id: 'salary-slip', label: 'Salary Slip', hint: 'View and download your monthly payslips', icon: ReceiptText, tint: 'bg-emerald-50 text-emerald-600' },
+      { id: 'investment-declaration', label: 'Investment Declaration', hint: 'Declare tax-saving investments', icon: FileCheck2, tint: 'bg-blue-50 text-[#2F68FE]' },
+      { id: 'expense-reimbursement', label: 'Expense Reimbursement', hint: 'Claim work expenses', icon: Receipt, tint: 'bg-amber-50 text-amber-600' },
+      { id: 'flexi-expense-allowance', label: 'Flexi Expense Allowance', hint: 'Use your flexi benefits', icon: CreditCard, tint: 'bg-violet-50 text-violet-600' },
+      { id: 'salary-structure-declaration', label: 'Salary Structure Declaration', hint: 'Choose your salary components', icon: FileSpreadsheet, tint: 'bg-sky-50 text-sky-600' },
+    ],
+  },
+  {
     id: 'staff',
     label: 'Staff',
     icon: UserRound,
@@ -110,6 +130,7 @@ export const MORE_GROUPS: MoreGroup[] = [
     label: 'L&D',
     icon: GraduationCap,
     modules: [
+      { id: 'policies', label: 'Policies & Guidelines', hint: 'Company policies & documents', icon: ScrollText, tint: 'bg-blue-50 text-[#2F68FE]' },
       { id: 'my-learning', label: 'My Learning', hint: 'Your courses, progress & certificates', icon: BookOpen, tint: 'bg-indigo-50 text-indigo-600' },
       { id: 'training-request', label: 'Training Request', hint: 'Request a course or training session', icon: ClipboardList, tint: 'bg-teal-50 text-teal-600' },
       { id: 'recognitions', label: 'Recognitions', hint: 'Awards & appreciation from your team', icon: Award, tint: 'bg-amber-50 text-amber-600' },

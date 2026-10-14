@@ -17,6 +17,7 @@ import {
   Coins,
   Building2,
   GraduationCap,
+  Receipt,
 } from 'lucide-react';
 import { AppNotification, NotificationCategory, NOTIFICATION_CATEGORIES } from '../../data/notificationsData';
 
@@ -35,6 +36,7 @@ const CATEGORY_META: Record<NotificationCategory, { icon: React.ElementType; tin
   Celebrations: { icon: Cake, tint: 'bg-pink-50 text-pink-500' },
   Announcements: { icon: Megaphone, tint: 'bg-sky-50 text-sky-600' },
   Training: { icon: GraduationCap, tint: 'bg-indigo-50 text-indigo-600' },
+  Reimbursement: { icon: Receipt, tint: 'bg-amber-50 text-amber-600' },
 };
 
 const relativeTime = (iso: string) => {

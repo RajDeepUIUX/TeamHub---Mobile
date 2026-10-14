@@ -23,6 +23,8 @@ interface RangeCalendarProps {
   onSelect: (day: Date) => void;
   /** Month shown first; defaults to the active field's date */
   initialMonth?: Date;
+  /** Latest selectable day (e.g. today); later days are greyed out */
+  maxDate?: Date;
 }
 
 /** Month-by-month range calendar that supports ranges spanning multiple months. */
@@ -32,6 +34,7 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
   activeField,
   onSelect,
   initialMonth,
+  maxDate,
 }) => {
   const seed = initialMonth ?? (activeField === 'end' ? end ?? start : start) ?? new Date();
   const [viewYear, setViewYear] = useState(seed.getFullYear());
@@ -53,6 +56,7 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
   const endKey = end ? toDateKey(end) : null;
   const hasRange = !!startKey && !!endKey && endKey > startKey;
   const todayKey = toDateKey(new Date());
+  const maxKey = maxDate ? toDateKey(maxDate) : null;
 
   return (
     <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-3.5">
@@ -103,21 +107,34 @@ export const RangeCalendar: React.FC<RangeCalendarProps> = ({
           const isEnd = sameDay(end, date);
           const inRange = hasRange && key > startKey! && key < endKey!;
           const isToday = key === todayKey;
+          const isDisabled = maxKey !== null && key > maxKey;
+          // Where the band breaks onto a new row: round its ends there (Mon / 1st on the left, Sun / last day on the right)
+          const isRowStart = date.getDay() === 1 || i === 0;
+          const isRowEnd = date.getDay() === 0 || i === totalDays - 1;
 
           return (
             <div key={key} className="relative flex items-center justify-center h-8">
-              {inRange && <div className="absolute inset-0 bg-blue-100/80 pointer-events-none" />}
-              {isStart && hasRange && (
+              {inRange && (
+                <div
+                  className={`absolute inset-0 bg-blue-100/80 pointer-events-none ${isRowStart ? 'rounded-l-full' : ''} ${
+                    isRowEnd ? 'rounded-r-full' : ''
+                  }`}
+                />
+              )}
+              {isStart && hasRange && !isRowEnd && (
                 <div className="absolute inset-y-0 right-0 w-1/2 bg-blue-100/80 pointer-events-none" />
               )}
-              {isEnd && hasRange && (
+              {isEnd && hasRange && !isRowStart && (
                 <div className="absolute inset-y-0 left-0 w-1/2 bg-blue-100/80 pointer-events-none" />
               )}
               <button
                 type="button"
                 onClick={() => onSelect(date)}
-                className={`relative z-10 w-7.5 h-7.5 rounded-full flex items-center justify-center text-[11px] transition-all cursor-pointer ${
-                  isStart || isEnd
+                disabled={isDisabled}
+                className={`relative z-10 w-7.5 h-7.5 rounded-full flex items-center justify-center text-[11px] transition-all cursor-pointer disabled:cursor-not-allowed ${
+                  isDisabled
+                    ? 'text-slate-300 font-medium'
+                    : isStart || isEnd
                     ? 'bg-[#2F68FE] text-white font-bold shadow-xs'
                     : inRange
                       ? 'text-[#2F68FE] font-bold'

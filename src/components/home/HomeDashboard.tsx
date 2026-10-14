@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Cake,
   ChevronRight,
@@ -10,13 +10,12 @@ import {
   CalendarDays,
   AlertTriangle,
   CheckSquare,
-  MessageSquare,
   Monitor,
   Sparkles,
   CalendarCheck,
 } from 'lucide-react';
 import { RECENT_ATTENDANCE, CELEBRATION_TOTALS, TeamCelebration } from '../../data/dashboardData';
-import { OverviewTasks } from './OverviewTasks';
+import { OverviewLayout, OverviewTasks } from './OverviewTasks';
 
 interface HomeDashboardProps {
   userName: string;
@@ -69,15 +68,17 @@ const StatRow: React.FC<{
   value: React.ReactNode;
   title: string;
   subtitle?: string;
-  onClick: () => void;
+  /** Omit when there's no screen yet: the row shows, but isn't tappable */
+  onClick?: () => void;
   last?: boolean;
   /** Low-opacity badge colour behind the number */
   tint?: string;
-}> = ({ value, title, subtitle, onClick, last, tint = 'bg-slate-500/8 text-[#1E293B]' }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 py-2.5 text-left cursor-pointer group ${last ? '' : 'border-b border-slate-100'}`}
+}> = ({ value, title, subtitle, onClick, last, tint = 'bg-slate-500/8 text-[#1E293B]' }) => {
+  const Row = onClick ? 'button' : 'div';
+  return (
+  <Row
+    {...(onClick ? { type: 'button' as const, onClick } : {})}
+    className={`w-full flex items-center gap-3 py-2.5 text-left ${onClick ? 'cursor-pointer group' : ''} ${last ? '' : 'border-b border-slate-100'}`}
   >
     {/* Same 32px width as the section icon so numbers line up under it */}
     <span
@@ -89,9 +90,10 @@ const StatRow: React.FC<{
       <span className="block text-xs font-semibold text-slate-700 truncate">{title}</span>
       {subtitle && <span className="block text-[11px] text-slate-400 truncate">{subtitle}</span>}
     </span>
-    <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 transition-transform" />
-  </button>
-);
+    {onClick && <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 transition-transform" />}
+  </Row>
+  );
+};
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   userName,
@@ -103,6 +105,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onWish,
   onComingSoon,
 }) => {
+  // Overview & Tasks layout; "Scroll" turns it into the Action Queue list (and hides the card below)
+  const [overviewLayout, setOverviewLayout] = useState<OverviewLayout>('scroll');
   const now = new Date();
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
   const timeLabel = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -144,7 +148,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         )}
 
         {/* Overview & Tasks (switchable layout) */}
-        <OverviewTasks onSelect={onComingSoon} />
+        <OverviewTasks onSelect={onComingSoon} layout={overviewLayout} onLayoutChange={setOverviewLayout} />
 
         {/* Today's Office Time */}
         <section className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs">
@@ -316,7 +320,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           />
         </SectionCard>
 
-        {/* Action Queue */}
+        {/* Action Queue (hidden while "Scroll" shows it at the top) */}
+        {overviewLayout !== 'scroll' && (
         <SectionCard
           icon={<CheckSquare className="w-4 h-4" />}
           title="Action Queue"
@@ -337,29 +342,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0 transition-transform" />
           </button>
         </SectionCard>
-
-        {/* Feedback Received (empty state) */}
-        <SectionCard icon={<MessageSquare className="w-4 h-4" />} title="Feedback Received">
-          <div className="flex items-center gap-3.5">
-            <div className="w-16 h-14 rounded-xl bg-slate-100 p-2.5 space-y-1.5 shrink-0" aria-hidden="true">
-              <div className="h-1.5 rounded-full bg-slate-300 w-full" />
-              <div className="h-1.5 rounded-full bg-slate-300 w-4/5" />
-              <div className="h-1.5 rounded-full bg-slate-300 w-full" />
-              <div className="h-1.5 rounded-full bg-slate-300 w-3/5" />
-            </div>
-            <div>
-              <span className="block text-xs font-bold text-slate-700">No feedback yet</span>
-              <span className="block text-[11px] text-slate-400 leading-snug">
-                Submit your first self-review to start the loop.
-              </span>
-            </div>
-          </div>
-        </SectionCard>
+        )}
 
         {/* IT & Systems */}
         <SectionCard icon={<Monitor className="w-4 h-4" />} title="IT & Systems">
           <StatRow value={5} title="Assets Assigned" subtitle="Hardware on your name" onClick={() => onComingSoon('Assets')} />
-          <StatRow value={2} title="Software Subscriptions" subtitle="Active licences" onClick={() => onComingSoon('Software')} last />
+          <StatRow value={2} title="Software Subscriptions" subtitle="Active licences" last />
         </SectionCard>
       </div>
     </div>

@@ -12,6 +12,8 @@ interface DatePickerSheetProps {
   end?: string | null;
   /** Earliest selectable date (YYYY-MM-DD); earlier taps are ignored */
   minDate?: string;
+  /** Latest selectable date (YYYY-MM-DD); later days are greyed out */
+  maxDate?: string;
   onClose: () => void;
   onApply: (start: string, end: string | null) => void;
 }
@@ -25,6 +27,7 @@ export const DatePickerSheet: React.FC<DatePickerSheetProps> = ({
   start,
   end = null,
   minDate,
+  maxDate,
   onClose,
   onApply,
 }) => {
@@ -42,6 +45,7 @@ export const DatePickerSheet: React.FC<DatePickerSheetProps> = ({
 
   const handleSelect = (day: Date) => {
     if (minDate && toDateKey(day) < minDate) return;
+    if (maxDate && toDateKey(day) > maxDate) return;
     if (mode === 'single') {
       setDraftStart(day);
       return;
@@ -91,8 +95,10 @@ export const DatePickerSheet: React.FC<DatePickerSheetProps> = ({
           end={mode === 'single' ? null : draftEnd}
           activeField={picking}
           onSelect={handleSelect}
+          maxDate={maxDate ? new Date(`${maxDate}T00:00:00`) : undefined}
         />
         {minDate && <p className="mt-2 px-1 text-[11px] text-slate-400">Dates before today can't be selected.</p>}
+        {maxDate && <p className="mt-2 px-1 text-[11px] text-slate-400">Future dates can't be selected.</p>}
       </div>
       <div className="p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
         <button

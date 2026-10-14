@@ -287,8 +287,22 @@ export const reportingManagerOf = (staffName: string) =>
 export const branchOf = (staffName: string) =>
   TEAM_REPORTING_MANAGERS.flatMap((m) => m.members).find((x) => x.staffName === staffName)?.branch;
 
-/** Current attendance cycle (26th → 25th) */
-export const TEAM_CYCLE = { from: '2026-08-26', to: '2026-09-25' };
+const pad0 = (n: number) => String(n).padStart(2, '0');
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad0(d.getMonth() + 1)}-${pad0(d.getDate())}`;
+
+/** Default filter range: same rule as the staff side — the 26th → today (from the real date) */
+export const TEAM_CYCLE = (() => {
+  const t = new Date();
+  const from = t.getDate() >= 26 ? new Date(t.getFullYear(), t.getMonth(), 26) : new Date(t.getFullYear(), t.getMonth() - 1, 26);
+  return { from: dayKey(from), to: dayKey(t) };
+})();
+
+/** Days that have generated logs: from Aug 26 up to yesterday (today isn't final yet) */
+export const TEAM_HISTORY = (() => {
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  return { from: '2026-08-26', to: dayKey(y) };
+})();
 
 // [start, end] per working day; '' = absent. Each member starts at a different offset for variety
 const DAY_PATTERNS: [string, string][] = [
@@ -324,10 +338,10 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 /** One record per day of the cycle (weekends as weekly off), skipping dates in `skip` */
 export const generateMemberDays = (member: TeamMember, offset: number, skip: Set<string>): AttendanceRecord[] => {
   const out: AttendanceRecord[] = [];
-  const end = new Date(`${TEAM_CYCLE.to}T00:00:00`);
+  const end = new Date(`${TEAM_HISTORY.to}T00:00:00`);
   const punchLocation = member.workMode === 'Remote' ? 'Remote (VPN)' : 'Gota Main Entrance';
   let i = offset;
-  for (let d = new Date(`${TEAM_CYCLE.from}T00:00:00`); d <= end; d.setDate(d.getDate() + 1)) {
+  for (let d = new Date(`${TEAM_HISTORY.from}T00:00:00`); d <= end; d.setDate(d.getDate() + 1)) {
     const date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
     if (skip.has(date)) continue;
     const weekday = d.getDay();

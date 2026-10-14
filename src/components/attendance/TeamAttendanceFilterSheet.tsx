@@ -231,6 +231,7 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
                 end={toDate}
                 activeField={activeDateField}
                 onSelect={handleDaySelect}
+                maxDate={new Date()}
               />
             </div>
           )}

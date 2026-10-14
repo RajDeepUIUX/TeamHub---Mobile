@@ -81,17 +81,19 @@ const REGULAR_TIMES: [string, string][] = [
   ['12:31', '21:48'],
 ];
 
-const buildAugustRecords = (): AttendanceRecord[] => {
+/** Day-by-day records for [start, end], skipping dates in `skip`; `overrides` change specific days */
+const buildRecords = (start: Date, end: Date, overrides: Record<string, DayPlan>, skip: Set<string> = new Set()): AttendanceRecord[] => {
   const records: AttendanceRecord[] = [];
-  const start = new Date(2026, 6, 26);
-  const end = new Date(2026, 7, 25);
 
   for (let d = new Date(start), i = 0; d <= end; d.setDate(d.getDate() + 1), i++) {
     const dateKey = key(d);
+    if (skip.has(dateKey)) continue;
     const weekday = d.getDay();
-    const plan = AUGUST_OVERRIDES[dateKey] ?? {};
+    // Generated days: every ~9th working day a half day, every ~17th an absence, for some variety
+    const generated: DayPlan = i % 17 === 11 ? { status: 'absent' } : i % 9 === 4 ? { status: 'half_day', start: '14:05', end: '19:10' } : {};
+    const plan = overrides[dateKey] ?? (overrides === AUGUST_OVERRIDES ? {} : generated);
     const isWeekend = weekday === 0 || weekday === 6;
-    const status = plan.status ?? (isWeekend ? 'weekly_off' : 'full_day');
+    const status = isWeekend ? 'weekly_off' : plan.status ?? 'full_day';
 
     const [defStart, defEnd] = REGULAR_TIMES[i % REGULAR_TIMES.length];
     const hasPunches = status === 'full_day' || status === 'half_day';
@@ -136,9 +138,9 @@ const buildAugustRecords = (): AttendanceRecord[] => {
   return records;
 };
 
-export const AUGUST_ATTENDANCE_RECORDS = buildAugustRecords();
+export const AUGUST_ATTENDANCE_RECORDS = buildRecords(new Date(2026, 6, 26), new Date(2026, 7, 25), AUGUST_OVERRIDES);
 
-const kpisFrom = (records: AttendanceRecord[]): AttendanceKPIs => {
+export const kpisFrom = (records: AttendanceRecord[]): AttendanceKPIs => {
   const count = (fn: (r: AttendanceRecord) => boolean) => records.filter(fn).length;
   const weeklyOff = count((r) => r.status === 'weekly_off');
   const holidays = count((r) => r.status === 'holiday');
@@ -149,7 +151,7 @@ const kpisFrom = (records: AttendanceRecord[]): AttendanceKPIs => {
     workingDays: totalDays - weeklyOff - holidays,
     presentDays: present,
     absentDays: absent,
-    leaveDays: 0,
+    leaveDays: count((r) => Boolean(r.leaveApplied)),
     holidays,
     lwpDays: 0,
     deductionDays: absent,
@@ -181,5 +183,30 @@ export const ATTENDANCE_MONTHS: AttendanceMonth[] = [
   },
 ];
 
-/** Every record across all cycles (newest cycle first) */
-export const ALL_ATTENDANCE_RECORDS: AttendanceRecord[] = [...INITIAL_ATTENDANCE_RECORDS, ...AUGUST_ATTENDANCE_RECORDS];
+/* ------------------------------------------------------------------------- */
+/* Real-date cycle: the 26th → today                                         */
+/* ------------------------------------------------------------------------- */
+
+const atMidnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/**
+ * Attendance cycle for the given day: from the 26th (this month once today is the 26th or later,
+ * otherwise last month) up to today. E.g. Oct 14 → Sep 26 – Oct 14; Oct 27 → Oct 26 – Oct 27.
+ */
+export const currentAttendanceCycle = (today: Date = new Date()) => {
+  const t = atMidnight(today);
+  const from = t.getDate() >= 26 ? new Date(t.getFullYear(), t.getMonth(), 26) : new Date(t.getFullYear(), t.getMonth() - 1, 26);
+  return { from, to: t };
+};
+
+/** Hand-made + August records, then generated days for every remaining date up to yesterday (today isn't final yet) */
+const HANDMADE = [...INITIAL_ATTENDANCE_RECORDS, ...AUGUST_ATTENDANCE_RECORDS];
+const yesterday = (() => {
+  const d = atMidnight(new Date());
+  d.setDate(d.getDate() - 1);
+  return d;
+})();
+const FILLED = buildRecords(new Date(2026, 6, 26), yesterday, {}, new Set(HANDMADE.map((r) => r.date)));
+
+/** Every record (newest first) */
+export const ALL_ATTENDANCE_RECORDS: AttendanceRecord[] = [...HANDMADE, ...FILLED].sort((a, b) => b.date.localeCompare(a.date));

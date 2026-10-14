@@ -14,7 +14,7 @@ import {
 import { MobileDeviceFrame, DeviceModel } from './design-system/components/MobileDeviceFrame';
 import { ScreenTransition } from './design-system/components/ScreenTransition';
 import { AttendanceRecord, AttendanceKPIs as AttendanceKPIsType } from './types/attendance';
-import { ATTENDANCE_MONTHS, ALL_ATTENDANCE_RECORDS } from './data/attendanceMonths';
+import { ALL_ATTENDANCE_RECORDS, currentAttendanceCycle, kpisFrom } from './data/attendanceMonths';
 import { AttendanceKPIs } from './components/attendance/AttendanceKPIs';
 import { AttendanceCard } from './components/attendance/AttendanceCard';
 import { PunchLogsSheet } from './components/attendance/PunchLogsSheet';
@@ -79,7 +79,10 @@ import {
   STAFF_NOTIFICATIONS_SEED,
   MANAGER_NOTIFICATIONS_SEED,
 } from './data/notificationsData';
-import { MoreView, MoreModule } from './components/more/MoreView';
+import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
+import { PoliciesView } from './components/more/PoliciesView';
+import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
+import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
 import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
@@ -122,7 +125,7 @@ import { FilterIconButton } from './components/common/TeamFilterSheet';
 import {
   TEAM_ATTENDANCE_REQUESTS_SEED,
   TEAM_DAILY_ATTENDANCE_SEED,
-  TEAM_CYCLE,
+  TEAM_HISTORY,
   generateMemberDays,
   ATTENDANCE_REVIEWER,
   ATTENDANCE_STAFF_CODE,
@@ -167,6 +170,8 @@ export default function App() {
   const [feedCategory, setFeedCategory] = useState<FeedCategory>('General');
   const [openFeedPostId, setOpenFeedPostId] = useState<string | null>(null);
   const openFeedPost = feedPosts.find((p) => p.id === openFeedPostId) ?? null;
+  // Expense Reimbursement: one shared list so the manager's decisions show on the staff side
+  const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>(TEAM_EXPENSE_REQUESTS_SEED);
   // My Team (Manager only): the manager's whole hierarchy
   const [myTeam] = useState<TeamMemberRecord[]>(MY_TEAM_SEED);
   // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
@@ -627,6 +632,10 @@ export default function App() {
         setAppTab('home');
         setCelebrationsTab('Birthdays');
         break;
+      case 'reimbursement':
+        setAppTab('more');
+        setMoreModule('expense-reimbursement');
+        break;
       case 'training-request':
         setTrainingForm(null);
         setTrainingScope(isManager ? 'team' : 'my');
@@ -645,6 +654,8 @@ export default function App() {
       setMoreModule(m.id);
     } else if (m.id === 'company-feed') {
       setOpenFeedPostId(null);
+      setMoreModule(m.id);
+    } else if (m.id === 'policies' || m.id === 'expense-reimbursement') {
       setMoreModule(m.id);
     } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
       setSelectedWFORecord(null);
@@ -680,7 +691,7 @@ export default function App() {
   };
 
   // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
-  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'work-timing', 'ot-request'];
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
   const openFromDrawer = (m: MoreModule) => {
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
@@ -763,11 +774,6 @@ export default function App() {
     setActiveModuleTab('Leaves');
   }, []);
 
-  // Month cycle
-  // Attendance month cycle (26th of previous month → 25th); latest cycle selected by default
-  const [monthIndex, setMonthIndex] = useState(ATTENDANCE_MONTHS.length - 1);
-  const currentMonth = ATTENDANCE_MONTHS[monthIndex];
-
   // Attendance Data
   const [records, setRecords] = useState<AttendanceRecord[]>(ALL_ATTENDANCE_RECORDS);
   // Manager's "Team's Attendance": other team members' edit requests (the staff member's own come from `records`)
@@ -780,7 +786,7 @@ export default function App() {
     ...teamAttendanceRequests,
   ].sort((a, b) => b.date.localeCompare(a.date));
   // Regular (non-edit) days for the team: John's own recent days + the rest of the team
-  const myCycleRecords = records.filter((r) => r.date >= TEAM_CYCLE.from && r.date <= TEAM_CYCLE.to);
+  const myCycleRecords = records.filter((r) => r.date >= TEAM_HISTORY.from && r.date <= TEAM_HISTORY.to);
   const teamDailyAttendance = [
     ...myCycleRecords.filter((r) => !r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
     // Days of the cycle not yet in John's own records
@@ -791,7 +797,6 @@ export default function App() {
     ),
     ...TEAM_DAILY_ATTENDANCE_SEED,
   ];
-  const kpis: AttendanceKPIsType = currentMonth.kpis;
 
   // Active Sheets & Dedicated Views
   const [selectedPunchRecord, setSelectedPunchRecord] = useState<AttendanceRecord | null>(null);
@@ -855,15 +860,17 @@ export default function App() {
   // Filter criteria
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('All');
   const [activeWorkMode, setActiveWorkMode] = useState<string>('Office');
-  const [attendanceRange, setAttendanceRange] = useState(currentMonth.range);
-
-  const changeMonth = (index: number) => {
-    const month = ATTENDANCE_MONTHS[index];
-    if (!month) return;
-    setMonthIndex(index);
-    setAttendanceRange(month.range);
+  // Default range follows the real date: the 26th → today
+  const [attendanceRange, setAttendanceRange] = useState(() => currentAttendanceCycle());
+  const resetAttendanceRange = () => {
+    setAttendanceRange(currentAttendanceCycle());
     setActiveFilterStatus('All');
   };
+  // KPIs count the days inside the selected range
+  const kpis: AttendanceKPIsType = kpisFrom(
+    records.filter((r) => r.date >= toDateKey(attendanceRange.from) && r.date <= toDateKey(attendanceRange.to))
+  );
+  const rangeLabel = `${attendanceRange.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${attendanceRange.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1123,6 +1130,8 @@ export default function App() {
     }
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
     if (appTab === 'more' && moreModule === 'recognitions') return { key: 'more/recognitions', depth: 1 };
+    if (appTab === 'more' && moreModule === 'policies') return { key: 'more/policies', depth: 1 };
+    if (appTab === 'more' && moreModule === 'expense-reimbursement') return { key: 'more/expense-reimbursement', depth: 1 };
     if (appTab === 'more' && moreModule === 'training-request') {
       return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
     }
@@ -1229,7 +1238,7 @@ export default function App() {
           <button
             onClick={() => {
               setRecords(ALL_ATTENDANCE_RECORDS);
-              changeMonth(ATTENDANCE_MONTHS.length - 1);
+              resetAttendanceRange();
               setActiveFilterStatus('All');
               showToast('Demo data reset to initial screenshot state.');
             }}
@@ -1617,11 +1626,29 @@ export default function App() {
                     onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
                     onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
                     onComingSoon={(feature) => {
+                      // Dashboard tiles / Action Queue rows → their module (Back returns to Home)
+                      const moduleById = (id: string) => MORE_GROUPS.flatMap((g) => g.modules).find((m) => m.id === id);
                       if (feature === 'Staff Review') {
                         setProfileModuleFromApp(true);
                         setIsEvaluating(false);
                         setProfileModule('Staff Review');
                         setIsProfileOpen(true);
+                      } else if (feature === 'Open Tickets' || feature === 'IT Tickets') {
+                        const tickets = moduleById('Tickets');
+                        if (tickets) openFromDrawer(tickets);
+                      } else if (feature === 'Pending Approval') {
+                        setSelectedLeave(null);
+                        setActiveModuleTab('Leaves');
+                        setAppTab('attendance');
+                      } else if (feature === 'Assets') {
+                        const asset = moduleById('Asset');
+                        if (asset) openFromDrawer(asset);
+                      } else if (feature === 'Reimbursements') {
+                        const reimbursement = moduleById('expense-reimbursement');
+                        if (reimbursement) openFromDrawer(reimbursement);
+                      } else if (feature === 'Policies Updated') {
+                        const policies = moduleById('policies');
+                        if (policies) openFromDrawer(policies);
                       } else {
                         showToast(`${feature} is coming soon.`);
                       }
@@ -1789,6 +1816,67 @@ export default function App() {
                     showToast('Training request withdrawn.');
                   }}
                 />
+              ) : appTab === 'more' && moreModule === 'expense-reimbursement' ? (
+                <ExpenseReimbursementView
+                  key={userRole}
+                  onBack={closeMoreModule}
+                  myRequests={expenseRequests
+                    .filter((r) => r.staffName === resignationUser.staffName)
+                    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))}
+                  onSubmit={(kind, items, total) => {
+                    const req: ExpenseRequest = {
+                      id: `exp-${Date.now()}`,
+                      kind,
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
+                      items,
+                      total,
+                      status: 'Pending',
+                      submittedAt: new Date().toISOString(),
+                    };
+                    setExpenseRequests((prev) => [req, ...prev]);
+                    showToast(`${EXPENSE_KIND_LABEL[kind]} request for ${formatRupees(total)} sent for approval.`);
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Reimbursement',
+                        title: `New ${EXPENSE_KIND_LABEL[kind].toLowerCase()} request from ${resignationUser.staffName}`,
+                        body: `${formatRupees(total)} · ${items.length} ${items.length === 1 ? 'item' : 'items'}. Review it in Team's Requests.`,
+                        link: 'reimbursement',
+                        actionRequired: true,
+                      });
+                    }
+                  }}
+                  team={
+                    isManager
+                      ? {
+                          requests: expenseRequests.filter((r) => r.staffName !== resignationUser.staffName),
+                          onReview: (id, decision, comment) => {
+                            const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                            const target = expenseRequests.find((r) => r.id === id);
+                            setExpenseRequests((prev) =>
+                              prev.map((r) =>
+                                r.id === id
+                                  ? { ...r, status: decision, reviewedBy: resignationUser.staffName, reviewedAt, managerComment: comment || undefined }
+                                  : r
+                              )
+                            );
+                            showToast(decision === 'Approved' ? 'Request approved.' : 'Request declined.');
+                            if (target?.staffName === CURRENT_STAFF.staffName) {
+                              const verb = decision === 'Approved' ? 'approved' : 'declined';
+                              pushNotification('Staff', {
+                                category: 'Reimbursement',
+                                title: `Your ${EXPENSE_KIND_LABEL[target.kind].toLowerCase()} request was ${verb}`,
+                                body: `${formatRupees(target.total)} · by ${resignationUser.staffName}${comment ? ` — “${comment}”` : '.'}`,
+                                link: 'reimbursement',
+                              });
+                            }
+                          },
+                        }
+                      : undefined
+                  }
+                />
+              ) : appTab === 'more' && moreModule === 'policies' ? (
+                <PoliciesView onBack={closeMoreModule} />
               ) : appTab === 'more' && moreModule === 'recognitions' ? (
                 <RecognitionsView
                   key={userRole}
@@ -2184,8 +2272,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveFilterStatus('All');
-                            setAttendanceRange(currentMonth.range);
+                            resetAttendanceRange();
                           }}
                           className="mt-2 text-xs font-semibold text-[#2F68FE]"
                         >
@@ -2229,14 +2316,11 @@ export default function App() {
               currentStatus={activeFilterStatus}
               currentFrom={attendanceRange.from}
               currentTo={attendanceRange.to}
-              defaultRange={currentMonth.range}
+              defaultRange={currentAttendanceCycle()}
               onApply={(status, workMode, from, to) => {
                 setActiveFilterStatus(status);
                 setActiveWorkMode(workMode);
                 setAttendanceRange({ from, to });
-                // KPIs follow the attendance cycle the selected range ends in
-                const cycle = ATTENDANCE_MONTHS.findIndex((m) => to >= m.range.from && to <= m.range.to);
-                if (cycle !== -1) setMonthIndex(cycle);
                 showToast(`Filter applied: ${status}`);
               }}
             />
@@ -2246,7 +2330,7 @@ export default function App() {
               isOpen={isKPISummaryOpen}
               onClose={() => setIsKPISummaryOpen(false)}
               kpis={kpis}
-              monthTitle={currentMonth.label}
+              monthTitle={rangeLabel}
             />
 
             {/* Bottom Sheet: Edit WFO Days from Details view */}

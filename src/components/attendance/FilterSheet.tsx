@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { RangeCalendar, formatShortDate } from '../../design-system/components/RangeCalendar';
+import { currentAttendanceCycle } from '../../data/attendanceMonths';
 
-export const DEFAULT_ATTENDANCE_RANGE = {
-  from: new Date(2026, 7, 26),
-  to: new Date(2026, 8, 23),
-};
+/** The 26th → today (recomputed each time it's used) */
+export const DEFAULT_ATTENDANCE_RANGE = currentAttendanceCycle();
 
 interface FilterSheetProps {
   isOpen: boolean;
@@ -148,6 +147,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                   end={toDate}
                   activeField={activeDateField}
                   onSelect={handleDaySelect}
+                  maxDate={new Date()}
                 />
               </div>
             )}
