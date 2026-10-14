@@ -206,7 +206,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#1E293B]">{initialRequest?.type ?? 'PTO'}</h2>
+              <h2 className="text-base font-bold text-[#1E293B]">Leave Request</h2>
               {hasSelectedDates && (
                 <p className="text-xs text-slate-500 font-medium">
                   {startDate} – {endDate}

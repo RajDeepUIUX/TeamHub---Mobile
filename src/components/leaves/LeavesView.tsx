@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  Calendar,
-  FileText,
+  Paperclip,
   Clock,
   CheckCircle2,
   XCircle,
@@ -10,10 +9,13 @@ import {
   Plus,
   User,
   Eye,
-  Pencil,
+  MessageSquare,
+  Upload,
 } from 'lucide-react';
 import { LeaveRequest, LeaveBalance } from '../../types/leaves';
 import { FilterLeavesSheet } from './FilterLeavesSheet';
+import { LeaveCommentsSheet } from './LeaveCommentsSheet';
+import { LeaveDateBadge } from './LeaveDateBadge';
 
 import { FilterIconButton } from '../common/TeamFilterSheet';
 interface LeavesViewProps {
@@ -22,7 +24,8 @@ interface LeavesViewProps {
   onApplyLeaveClick: () => void;
   onCancelRequest?: (id: string) => void;
   onViewDetails?: (request: LeaveRequest) => void;
-  onEditRequest?: (request: LeaveRequest) => void;
+  /** Attach a supporting document the staff member skipped while applying */
+  onUploadDocument?: (id: string, fileName: string) => void;
   onShowBalanceInfo?: () => void;
 }
 
@@ -32,13 +35,16 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
   onApplyLeaveClick,
   onCancelRequest,
   onViewDetails,
-  onEditRequest,
+  onUploadDocument,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [dateRangeFilter, setDateRangeFilter] = useState<string>('');
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showBalanceInfo, setShowBalanceInfo] = useState(false);
+  const [commentsFor, setCommentsFor] = useState<LeaveRequest | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetId = useRef<string | null>(null);
 
   // Filtered requests
   const filteredRequests = requests.filter((req) => {
@@ -75,21 +81,6 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
           </span>
         );
     }
-  };
-
-  const getTypeIcon = (type: LeaveRequest['type']) => {
-    if (type === 'Additional Leave') {
-      return (
-        <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-          <FileText className="w-5 h-5" />
-        </div>
-      );
-    }
-    return (
-      <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-        <Calendar className="w-5 h-5" />
-      </div>
-    );
   };
 
   return (
@@ -170,21 +161,21 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                 activeMenuId === req.id ? 'z-30' : ''
               }`}
             >
-              {/* Top Row: Icon + Title/Dates + Status Badge + Menu */}
+              {/* Top Row: Date tile + Dates/Days + Status Badge + Menu */}
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  {getTypeIcon(req.type)}
-                  <div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <LeaveDateBadge startDate={req.startDate} />
+                  <div className="min-w-0">
                     <h3 className="text-sm font-bold text-[#1E293B] leading-snug">
-                      {req.type}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-normal mt-0.5">
                       {req.dateRange}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      {req.daysCount} {req.daysCount > 1 ? 'days' : 'day'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {getStatusBadge(req.status)}
                   <button
                     type="button"
@@ -232,18 +223,34 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                       <Eye className="w-4 h-4 text-slate-400" />
                       <span>View Details</span>
                     </button>
-                    {req.status === 'Pending' && onEditRequest && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setActiveMenuId(null);
+                        setCommentsFor(req);
+                      }}
+                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 active:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-slate-400" />
+                      <span className="flex-1">View Comments</span>
+                      {req.managerComment && req.status !== 'Pending' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" aria-label="Has a comment" />
+                      )}
+                    </button>
+                    {!req.attachmentName && req.status !== 'Rejected' && onUploadDocument && (
                       <button
                         type="button"
                         role="menuitem"
                         onClick={() => {
                           setActiveMenuId(null);
-                          onEditRequest(req);
+                          uploadTargetId.current = req.id;
+                          fileInputRef.current?.click();
                         }}
                         className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 active:bg-slate-50 transition-colors cursor-pointer"
                       >
-                        <Pencil className="w-4 h-4 text-slate-400" />
-                        <span>Edit Request</span>
+                        <Upload className="w-4 h-4 text-slate-400" />
+                        <span>Upload Document</span>
                       </button>
                     )}
                     {req.status === 'Pending' && onCancelRequest && (
@@ -270,14 +277,16 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
               {/* Divider */}
               <div className="border-t border-slate-100" />
 
-              {/* Middle Row: Duration & Reason */}
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="font-bold text-[#1E293B]">
-                  {req.daysCount} {req.daysCount > 1 ? 'days' : 'day'}
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-500 truncate">{req.reason}</span>
+              {/* Middle Row: Reason & Attachment */}
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="text-slate-500 font-medium shrink-0">Reason</span>
+                <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#2F68FE] font-semibold truncate">{req.reason}</span>
+                {req.attachmentName && (
+                  <span className="ml-auto flex items-center gap-1 text-slate-400 min-w-0">
+                    <Paperclip className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{req.attachmentName}</span>
+                  </span>
+                )}
               </div>
 
               {/* Bottom Row: Manager & Applied Date */}
@@ -330,6 +339,20 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
           <span>Apply for Leave</span>
         </button>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && uploadTargetId.current) onUploadDocument?.(uploadTargetId.current, file.name);
+          uploadTargetId.current = null;
+          e.target.value = '';
+        }}
+      />
+      <LeaveCommentsSheet request={commentsFor} onClose={() => setCommentsFor(null)} />
 
       {/* Filter Leaves Bottom Sheet matching Image 2 & Image 3 */}
       <FilterLeavesSheet

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -7,20 +7,32 @@ import {
   FileText,
   Info,
   Paperclip,
-  Pencil,
+  Upload,
   User,
   XCircle,
   MessageSquare,
-  Hash,
+  Check,
+  X,
 } from 'lucide-react';
 import { LeaveRequest } from '../../types/leaves';
+import { LeaveReviewSheet, LeaveDecision } from './LeaveReviewSheet';
+import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
 interface LeaveDetailsViewProps {
   request: LeaveRequest;
   onBack: () => void;
-  onEdit: (request: LeaveRequest) => void;
-  onCancel: (id: string) => void;
+  /** Attach a supporting document the staff member skipped while applying */
+  onUploadDocument?: (id: string, fileName: string) => void;
+  onCancel?: (id: string) => void;
+  /** Manager reviewing a team member's request: shows the applicant and Approve / Reject instead of Edit / Cancel */
+  onReview?: (ids: string[], decision: LeaveDecision, comment: string) => void;
 }
+
+const MANAGER_NOTES: Record<LeaveRequest['status'], string> = {
+  Pending: 'This request is waiting for your review. The team member is notified once you approve or reject it.',
+  Approved: 'You approved this request. It is locked for edits.',
+  Rejected: 'You rejected this request. The team member can apply for a new leave instead.',
+};
 
 const STATUS_STYLES: Record<
   LeaveRequest['status'],
@@ -31,7 +43,7 @@ const STATUS_STYLES: Record<
     iconBox: 'bg-[#FDE9C0]/60 text-[#D97706]',
     badge: 'bg-[#FEF3C7] text-[#D97706]',
     icon: <Clock className="w-3 h-3" />,
-    note: 'This request is pending approval. You can edit or cancel it while it is pending.',
+    note: 'This request is pending approval. You can cancel it while it is pending.',
   },
   Approved: {
     card: 'bg-[#F0FDF4] border-[#BBF7D0]',
@@ -64,10 +76,11 @@ const DetailRow: React.FC<{ icon: React.ReactNode; label: string; value: React.R
   </div>
 );
 
-export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onBack, onEdit, onCancel }) => {
+export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onBack, onUploadDocument, onCancel, onReview }) => {
+  const [decision, setDecision] = useState<LeaveDecision | null>(null);
   const isPending = request.status === 'Pending';
+  const isReviewer = Boolean(onReview);
   const style = STATUS_STYLES[request.status];
-  const TypeIcon = request.type === 'Additional Leave' ? FileText : Calendar;
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -88,14 +101,32 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
 
       {/* Body Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 no-scrollbar">
+        {/* Applicant (manager review) */}
+        {isReviewer && request.staffName && (
+          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs flex items-center gap-3">
+            <span
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(
+                Number((request.staffCode ?? '').replace(/\D/g, '')) || 0
+              )}`}
+            >
+              {initialsOf(request.staffName)}
+            </span>
+            <div className="min-w-0">
+              <span className="block text-sm font-bold text-[#1E293B] truncate">{request.staffName}</span>
+              <span className="block text-[11px] text-slate-400">
+                {request.staffCode ? `${request.staffCode} · ` : ''}Applied on {request.appliedOn}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Summary Card */}
         <div className={`rounded-2xl p-4.5 flex items-center gap-3.5 border ${style.card}`}>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${style.iconBox}`}>
-            <TypeIcon className="w-6 h-6 stroke-[2]" />
+            <Calendar className="w-6 h-6 stroke-[2]" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-base text-[#1E293B] leading-tight">{request.type}</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">{request.dateRange}</p>
+            <h2 className="font-bold text-base text-[#1E293B] leading-tight">{request.dateRange}</h2>
             <div className="mt-1.5 flex items-center gap-2">
               <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${style.badge}`}>
                 {style.icon}
@@ -112,16 +143,22 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs">
           <h3 className="text-sm font-bold text-[#1E293B] mb-1.5">Request Details</h3>
           <div className="text-xs">
-            <DetailRow icon={<Hash className="w-4 h-4" />} label="Request ID" value={request.id.toUpperCase()} />
-            <DetailRow icon={<Calendar className="w-4 h-4" />} label="Leave Type" value={request.type} />
             <DetailRow icon={<Clock className="w-4 h-4" />} label="Applied On" value={request.appliedOn} />
             <DetailRow icon={<MessageSquare className="w-4 h-4" />} label="Reason" value={request.reason} />
-            <DetailRow
-              icon={<FileText className="w-4 h-4" />}
-              label="Description"
-              value={request.description || <span className="text-slate-400 font-medium">—</span>}
-              last
-            />
+            {/* Description sits below its label so long text stays readable */}
+            <div className="pt-2.5">
+              <div className="flex items-center gap-2 text-slate-500 font-medium">
+                <FileText className="w-4 h-4 text-slate-400" />
+                <span>Description</span>
+              </div>
+              {request.description ? (
+                <p className="mt-2 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[#334155] font-medium leading-relaxed whitespace-pre-line break-words">
+                  {request.description}
+                </p>
+              ) : (
+                <p className="mt-1.5 text-slate-400 font-medium">No description added</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -145,7 +182,8 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           </div>
         )}
 
-        {/* Approver */}
+        {/* Approver (the manager is the approver in review mode) */}
+        {!isReviewer && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs space-y-3">
           <h3 className="text-sm font-bold text-[#1E293B]">Approver</h3>
           <div className="flex items-center gap-3">
@@ -158,6 +196,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
             </div>
           </div>
         </div>
+        )}
 
         {/* Attachment */}
         {request.attachmentName && (
@@ -170,6 +209,28 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
               <span className="block text-xs font-bold text-[#1E293B] truncate">{request.attachmentName}</span>
             </div>
           </div>
+        )}
+        {/* Upload a document skipped while applying */}
+        {!request.attachmentName && !isReviewer && request.status !== 'Rejected' && onUploadDocument && (
+          <label className="bg-white rounded-2xl border border-dashed border-blue-200 p-4 flex items-center gap-3 active:bg-blue-50/50 transition-colors cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
+              <Upload className="w-4.5 h-4.5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="block text-xs font-bold text-[#2F68FE]">Upload Document</span>
+              <span className="block text-[11px] text-slate-400">Add a supporting file · PDF, JPG or PNG</span>
+            </div>
+            <input
+              type="file"
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onUploadDocument(request.id, file.name);
+                e.target.value = '';
+              }}
+            />
+          </label>
         )}
 
         {/* Manager decision (synced from the manager's Team's Leaves view) */}
@@ -188,7 +249,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
                 <XCircle className="w-4 h-4 shrink-0 mt-px" />
               )}
               <span>
-                {request.status} by {request.managerName}
+                {request.status} by {isReviewer ? 'you' : request.managerName}
                 {request.reviewedAt ? ` on ${request.reviewedAt}` : ''}
               </span>
             </p>
@@ -204,30 +265,54 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
         {/* Info Banner */}
         <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
-          <span>{style.note}</span>
+          <span>{isReviewer ? MANAGER_NOTES[request.status] : style.note}</span>
         </div>
       </div>
 
       {/* Bottom CTA Bar (only when Pending) */}
-      {isPending && (
+      {isPending && isReviewer && (
         <div className="sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20 shrink-0 grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => onCancel(request.id)}
+            onClick={() => setDecision('Rejected')}
             className="h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+            <span>Reject</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDecision('Approved')}
+            className="h-12 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-xs active:bg-emerald-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Check className="w-4 h-4" />
+            <span>Approve</span>
+          </button>
+        </div>
+      )}
+      {isPending && !isReviewer && onCancel && (
+        <div className="sticky bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20 shrink-0">
+          <button
+            type="button"
+            onClick={() => onCancel(request.id)}
+            className="w-full h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
             <span>Cancel Request</span>
           </button>
-          <button
-            type="button"
-            onClick={() => onEdit(request)}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Pencil className="w-4 h-4" />
-            <span>Edit Request</span>
-          </button>
         </div>
+      )}
+
+      {isReviewer && (
+        <LeaveReviewSheet
+          requests={[request]}
+          decision={decision}
+          onClose={() => setDecision(null)}
+          onConfirm={(ids, d, comment) => {
+            setDecision(null);
+            onReview?.(ids, d, comment);
+          }}
+        />
       )}
     </div>
   );

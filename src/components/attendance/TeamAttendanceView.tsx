@@ -14,8 +14,6 @@ import {
   Users,
   Inbox,
   CalendarDays,
-  CheckCheck,
-  ListChecks,
   ChevronLeft,
   ChevronDown,
 } from 'lucide-react';
@@ -32,6 +30,7 @@ import {
 } from './TeamAttendanceFilterSheet';
 import { AttendanceReviewSheet, AttendanceDecision } from './AttendanceReviewSheet';
 import { BulkReviewSheet } from './BulkReviewSheet';
+import { PendingApprovalsBanner, BulkReviewList, BulkActionBar } from './TeamBulkReview';
 import { ATTENDANCE_EDIT_REASONS, reasonAllowsNote, reportingManagerOf, branchOf } from '../../data/teamAttendanceData';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
@@ -323,20 +322,29 @@ const MemberHeader: React.FC<{
 /* --------------------------------- Screen --------------------------------- */
 
 export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version = 'V1', requests, dailyRecords, onReview, onBulkReview, onViewLogs }) => {
-  // Bulk selection mode: only pending requests can be picked
-  const [selectMode, setSelectMode] = useState(false);
+  // Bulk review: a focused screen of pending requests (whole team, or one member), all pre-selected
+  const [bulk, setBulk] = useState<{ scope: string | null } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDecision, setBulkDecision] = useState<AttendanceDecision | null>(null);
 
-  const exitSelectMode = () => {
-    setSelectMode(false);
+  const pendingAll = requests
+    .filter((r) => stateOf(r) === 'Pending')
+    .sort((a, b) => a.staffName.localeCompare(b.staffName) || b.date.localeCompare(a.date));
+  const pendingFor = (scope: string | null) => (scope ? pendingAll.filter((r) => r.staffName === scope) : pendingAll);
+  const bulkRecords = bulk ? pendingFor(bulk.scope) : [];
+  const selectedRecords = bulkRecords.filter((r) => selectedIds.has(r.id));
+  const openBulk = (scope: string | null) => {
+    setSelectedIds(new Set(pendingFor(scope).map((r) => r.id)));
+    setBulk({ scope });
+  };
+  const closeBulk = () => {
+    setBulk(null);
     setSelectedIds(new Set());
   };
-  const toggleSelected = (id: string) =>
+  const setSelected = (ids: string[], on: boolean) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      ids.forEach((id) => (on ? next.add(id) : next.delete(id)));
       return next;
     });
   const [filters, setFilters] = useState<TeamAttendanceFilters>(DEFAULT_TEAM_ATTENDANCE_FILTERS);
@@ -356,6 +364,8 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
   const [isStaffPickerOpen, setIsStaffPickerOpen] = useState(false);
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const scoped = version !== 'V1';
+  // Banner covers the member on screen (V2 detail, V3) or the whole team
+  const bannerScope = scoped && focusStaff ? focusStaff : null;
   const showMemberList = version === 'V2' && !focusStaff;
   // V2 member detail: their name is already in the header, so cards lead with the date
   const hideStaff = version === 'V2' && Boolean(focusStaff);
@@ -384,10 +394,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
   const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   // Date range shown in the top row (same as the staff view)
   const dateRangeLabel = `${shortDate(filters.from)} - ${shortDate(filters.to)}`;
-  const selectablePending = visible.filter((r) => r.editRequested && stateOf(r) === 'Pending');
-  const selectedRecords = requests.filter((r) => selectedIds.has(r.id));
-  const allPendingSelected =
-    selectablePending.length > 0 && selectablePending.every((r) => selectedIds.has(r.id));
   const countState = (s: RequestState) => requests.filter((r) => stateOf(r) === s).length;
 
   const staffNames = allStaff;
@@ -416,6 +422,16 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
     <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-8 space-y-3.5 no-scrollbar">
+      {bulk ? (
+        <BulkReviewList
+          records={bulkRecords}
+          selectedIds={selectedIds}
+          staffName={bulk.scope}
+          onSetSelected={setSelected}
+          onExit={closeBulk}
+        />
+      ) : (
+      <>
       {/* Filters on top (V3: date | staff member in one split field) */}
       {version === 'V3' ? (
         <div className="flex items-center gap-2.5">
@@ -466,7 +482,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
             onChoose={(opt) => {
               setFocusStaff(opt.value);
               setShownCount(PAGE_SIZE);
-              exitSelectMode();
               setIsStaffPickerOpen(false);
             }}
           />
@@ -492,10 +507,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       {version === 'V2' && focusStaff && (
         <button
           type="button"
-          onClick={() => {
-            setFocusStaff(null);
-            exitSelectMode();
-          }}
+          onClick={() => setFocusStaff(null)}
           className="flex items-center gap-1 px-1 text-xs font-semibold text-[#2F68FE] cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -504,6 +516,15 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       )}
 
       {scoped && focusStaff && <MemberHeader name={focusStaff} code={staffCodes[focusStaff]} stats={memberStats(focusStaff)} />}
+
+      {/* Pending approvals: the way into bulk Approve / Reject */}
+      <PendingApprovalsBanner
+        records={pendingFor(bannerScope)}
+        staffName={bannerScope}
+        onReview={() => openBulk(bannerScope)}
+        teamCount={bannerScope ? pendingAll.length : undefined}
+        onReviewTeam={bannerScope ? () => openBulk(null) : undefined}
+      />
 
       {/* V2: the team as a list; tap a member to see only their records */}
       {showMemberList && (
@@ -595,7 +616,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
         </div>
         <div className="flex items-center gap-2">
           {/* V2 member detail: quick toggle to only this member's pending edit requests (approved/rejected stay in Records) */}
-          {hideStaff && !selectMode && (
+          {hideStaff && (
             <button
               type="button"
               role="checkbox"
@@ -615,78 +636,24 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
               Pending Edit Requests ({focusStaff ? memberStats(focusStaff).pending : 0})
             </button>
           )}
-          {selectMode ? (
-            <button
-              type="button"
-              onClick={exitSelectMode}
-              className="h-9 px-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 active:bg-slate-200 cursor-pointer"
-            >
-              Cancel
-            </button>
-          ) : (
-            selectablePending.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectMode(true)}
-                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center gap-1.5 shadow-2xs active:bg-slate-50 cursor-pointer"
-              >
-                <ListChecks className="w-4 h-4" />
-                Select
-              </button>
-            )
-          )}
         </div>
       </div>
 
-      {/* Bulk hint */}
-      {selectMode && (
-        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] text-[#1E40AF]">
-          <span>Tap pending requests to select them</span>
-          <button
-            type="button"
-            onClick={() =>
-              setSelectedIds(allPendingSelected ? new Set() : new Set(selectablePending.map((r) => r.id)))
-            }
-            className="font-bold text-[#2F68FE] shrink-0 cursor-pointer"
-          >
-            {allPendingSelected ? 'Deselect all' : `Select all pending (${selectablePending.length})`}
-          </button>
-        </div>
-      )}
-
       {visible.slice(0, shownCount).map((r) => {
         if (!r.editRequested) {
-          return <DailyRecordCard key={r.id} record={r} dimmed={selectMode} onViewLogs={() => onViewLogs(r)} hideStaff={hideStaff} />;
+          return <DailyRecordCard key={r.id} record={r} dimmed={false} onViewLogs={() => onViewLogs(r)} hideStaff={hideStaff} />;
         }
         const state = stateOf(r);
         const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
-        const selectable = selectMode && state === 'Pending';
-        const isSelected = selectedIds.has(r.id);
         return (
           <article
             key={r.id}
-            onClick={selectable ? () => toggleSelected(r.id) : undefined}
-            aria-selected={selectable ? isSelected : undefined}
-            className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden transition-all ${
-              isSelected
-                ? 'border-[#2F68FE] ring-2 ring-[#2F68FE]/20'
-                : state === 'Pending'
-                  ? 'border-violet-200'
-                  : 'border-[#EBF0F7]'
-            } ${selectMode && !selectable ? 'opacity-45' : ''} ${selectable ? 'cursor-pointer' : ''}`}
+            className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden ${
+              state === 'Pending' ? 'border-violet-200' : 'border-[#EBF0F7]'
+            }`}
           >
             {/* Staff + request state */}
             <div className="p-3.5 pb-3 flex items-start gap-3">
-              {selectable && (
-                <span
-                  className={`mt-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    isSelected ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
-                  }`}
-                  aria-hidden="true"
-                >
-                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                </span>
-              )}
               {!hideStaff && (
                 <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
                   {initialsOf(r.staffName)}
@@ -771,7 +738,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
                 <List className="w-4 h-4" />
                 {r.punches.length ? `View Logs (${r.punches.length})` : 'No logs'}
               </button>
-              {state === 'Pending' && !selectMode && (
+              {state === 'Pending' && (
                 <div className="ml-auto flex items-center gap-2">
                   <button
                     type="button"
@@ -828,48 +795,12 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       </>
       )}
 
+      </>
+      )}
     </div>
 
       {/* Bulk action bar */}
-      {selectMode && (
-        <div className="shrink-0 px-4 pt-3 pb-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] animate-in slide-in-from-bottom-2 fade-in duration-200">
-          <div className="flex items-center justify-between mb-2.5 px-0.5">
-            <span className="text-xs font-bold text-[#1E293B]">
-              {selectedIds.size} selected
-              <span className="font-medium text-slate-400"> of {selectablePending.length} pending</span>
-            </span>
-            {selectedIds.size > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="text-[11px] font-semibold text-slate-500 cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-[1fr_2fr] gap-2.5">
-            <button
-              type="button"
-              disabled={selectedIds.size === 0}
-              onClick={() => setBulkDecision('rejected')}
-              className="h-12 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-40 active:bg-rose-50 cursor-pointer disabled:cursor-not-allowed"
-            >
-              <X className="w-4 h-4" />
-              Reject
-            </button>
-            <button
-              type="button"
-              disabled={selectedIds.size === 0}
-              onClick={() => setBulkDecision('approved')}
-              className="h-12 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 active:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed"
-            >
-              <CheckCheck className="w-4 h-4" />
-              {selectedIds.size ? `Approve ${selectedIds.size} ${selectedIds.size === 1 ? 'request' : 'requests'}` : 'Approve'}
-            </button>
-          </div>
-        </div>
-      )}
+      {bulk && <BulkActionBar selected={selectedRecords} onDecide={setBulkDecision} />}
 
       <BulkReviewSheet
         records={selectedRecords}
@@ -877,7 +808,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
         onClose={() => setBulkDecision(null)}
         onConfirm={(ids, decision, comment) => {
           setBulkDecision(null);
-          exitSelectMode();
+          closeBulk();
           onBulkReview(ids, decision, comment);
         }}
       />

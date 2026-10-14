@@ -720,6 +720,7 @@ export default function App() {
     setMoreModule(null);
     setOpenFeedPostId(null);
     setIsNotificationsOpen(false);
+    setReviewingLeaveId(null);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     // Leaves lives on the Attendance & Leaves screen
     if (tab === 'leaves') {
@@ -750,6 +751,8 @@ export default function App() {
   const myLeaveBalance = isManager ? managerLeaveBalance : leaveBalance;
   const setMyLeaveBalance = isManager ? setManagerLeaveBalance : setLeaveBalance;
   // Staff member's requests + the rest of the team's: pending first, then most recent
+  // Manager reviewing a team member's leave; looked up by id so the screen reflects the decision
+  const [reviewingLeaveId, setReviewingLeaveId] = useState<string | null>(null);
   const teamLeaveList = [...leaveRequests, ...teamLeaveRequests].sort((a, b) =>
     a.status === 'Pending' && b.status !== 'Pending'
       ? -1
@@ -757,6 +760,7 @@ export default function App() {
         ? 1
         : b.startDate.localeCompare(a.startDate)
   );
+  const reviewingLeave = reviewingLeaveId ? teamLeaveList.find((r) => r.id === reviewingLeaveId) ?? null : null;
   const [isApplyingLeaveOpen, setIsApplyingLeaveOpen] = useState(false);
   const [submittedLeave, setSubmittedLeave] = useState<{
     request: LeaveRequest;
@@ -882,6 +886,12 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleUploadLeaveDocument = (id: string, fileName: string) => {
+    setMyLeaveRequests((prev) => prev.map((r) => (r.id === id ? { ...r, attachmentName: fileName } : r)));
+    setSelectedLeave((prev) => (prev?.id === id ? { ...prev, attachmentName: fileName } : prev));
+    showToast('Document uploaded.');
+  };
+
   const handleCancelLeave = (id: string) => {
     setMyLeaveRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const } : r))
@@ -911,7 +921,7 @@ export default function App() {
         pushNotification('Staff', {
           category: 'Leaves',
           title: `Leave ${verb}`,
-          body: `Your ${x.type} for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
+          body: `Your leave for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
           link: 'leaves',
         })
       );
@@ -1150,6 +1160,7 @@ export default function App() {
     if (appTab !== 'attendance') return { key: appTab, depth: 0 };
     if (editingLeave) return { key: 'attendance/edit-leave', depth: 2 };
     if (isApplyingLeaveOpen) return { key: 'attendance/apply-leave', depth: 2 };
+    if (reviewingLeave) return { key: 'attendance/team-leave', depth: 1 };
     if (selectedLeave) return { key: 'attendance/leave', depth: 1 };
     if (applyingLeaveRecord) return { key: 'attendance/apply-for-day', depth: 1 };
     if (selectedWFORecord) return { key: 'attendance/wfo', depth: 1 };
@@ -1639,6 +1650,7 @@ export default function App() {
                         if (tickets) openFromDrawer(tickets);
                       } else if (feature === 'Pending Approval') {
                         setSelectedLeave(null);
+                        setReviewingLeaveId(null);
                         setActiveModuleTab('Leaves');
                         setAppTab('attendance');
                       } else if (feature === 'Assets') {
@@ -1733,14 +1745,6 @@ export default function App() {
                   members={myTeam}
                   onBack={closeMoreModule}
                   onEditDetails={(member) => setEditingMemberCode(member.staffCode)}
-                  onSubmitReview={(member) => {
-                    // Opens the Staff Review flow; Back returns to My Team
-                    setIsEvaluating(false);
-                    setProfileModuleFromApp(true);
-                    setProfileModule('Staff Review');
-                    setIsProfileOpen(true);
-                    showToast(`Reviewing ${member.staffName}.`);
-                  }}
                 />
                 )
               ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
@@ -2078,7 +2082,7 @@ export default function App() {
                       pushNotification('Manager', {
                         category: 'Leaves',
                         title: `Leave request from ${resignationUser.staffName}`,
-                        body: `${newReq.type} · ${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
+                        body: `${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
                         link: 'leaves',
                         actionRequired: true,
                       });
@@ -2090,11 +2094,17 @@ export default function App() {
                     });
                   }}
                 />
+              ) : reviewingLeave ? (
+                <LeaveDetailsView
+                  request={reviewingLeave}
+                  onBack={() => setReviewingLeaveId(null)}
+                  onReview={reviewLeaves}
+                />
               ) : selectedLeave ? (
                 <LeaveDetailsView
                   request={selectedLeave}
                   onBack={() => setSelectedLeave(null)}
-                  onEdit={(req) => setEditingLeave(req)}
+                  onUploadDocument={handleUploadLeaveDocument}
                   onCancel={handleCancelLeave}
                 />
               ) : applyingLeaveRecord ? (
@@ -2176,7 +2186,11 @@ export default function App() {
                         </div>
                       )}
                       {isManager && leavesTab === 'team' ? (
-                        <TeamLeavesView requests={teamLeaveList} onReview={reviewLeaves} />
+                        <TeamLeavesView
+                          requests={teamLeaveList}
+                          onReview={reviewLeaves}
+                          onViewDetails={(req) => setReviewingLeaveId(req.id)}
+                        />
                       ) : (
                         <LeavesView
                           balance={myLeaveBalance}
@@ -2184,7 +2198,7 @@ export default function App() {
                           onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
                           onCancelRequest={handleCancelLeave}
                           onViewDetails={(req) => setSelectedLeave(req)}
-                          onEditRequest={(req) => setEditingLeave(req)}
+                          onUploadDocument={handleUploadLeaveDocument}
                         />
                       )}
                     </div>
@@ -2405,7 +2419,6 @@ export default function App() {
             {/* Leave Submitted Success Popup (auto-returns to Leaves listing) */}
             <LeaveSubmittedModal
               request={submittedLeave?.request ?? null}
-              requestCode={submittedLeave?.code ?? ''}
               appliedAt={submittedLeave?.appliedAt ?? ''}
               onDone={handleLeaveSubmittedDone}
             />
