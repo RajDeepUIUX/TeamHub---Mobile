@@ -5,12 +5,10 @@ import {
   MapPin,
   Clock3,
   Phone,
-  UserRound,
   User,
   BriefcaseBusiness,
   Sparkles,
   GraduationCap,
-  Handshake,
   CalendarClock,
   Video,
   Pencil,
@@ -65,7 +63,6 @@ const TAB_ICONS: Record<ProfileTabId, React.ElementType> = {
   professional: BriefcaseBusiness,
   skills: Sparkles,
   learning: GraduationCap,
-  clients: Handshake,
   availability: CalendarClock,
   video: Video,
 };
@@ -1137,7 +1134,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
         {/* Identity card */}
-        <section className="m-4 mb-3 bg-white rounded-3xl p-4 border border-white shadow-[0_12px_32px_-16px_rgba(79,70,229,0.3)]">
+        <section className="m-4 mb-3 bg-white rounded-3xl p-4 border border-[#EBF0F7]">
           <div className="flex items-center gap-3.5">
             <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5 shrink-0">
               <ProfileAvatar name={v.fullName as string} photoUrl={photoUrl} className="w-full h-full rounded-[14px]" textClassName="text-lg" />
@@ -1157,7 +1154,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               { icon: MapPin, text: v.location as string },
               { icon: Clock3, text: `Tenure: ${tenureFrom(v.joiningDate as string)}` },
               { icon: Phone, text: v.mobile as string },
-              { icon: UserRound, text: `Reports to ${v.reportingManager as string}` },
             ].map(({ icon: Icon, text }) => (
               <span key={text} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/80 text-[11px] font-medium text-slate-600">
                 <Icon className="w-3 h-3 text-slate-400" />
@@ -1168,8 +1164,9 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         </section>
 
         {/* Tabs (sticky) */}
-        <nav className="sticky top-0 z-10 bg-[#F5F7FB]/95 backdrop-blur-md pt-1 pb-2" aria-label="Profile sections">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4" role="tablist">
+        {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
+        <nav className="sticky top-0 z-10 bg-transparent border-b border-slate-200/80 mb-3" aria-label="Profile sections">
+          <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
             {PROFILE_TABS.map((t) => {
               const Icon = TAB_ICONS[t.id];
               const on = t.id === tab;
@@ -1187,20 +1184,23 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     if (editing) return setLockedTabHint(true);
                     setTab(t.id);
                   }}
-                  className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on
-                      ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]'
-                      : `bg-white border border-slate-200 text-slate-600 ${editing ? 'opacity-45' : ''}`
+                  className={`relative h-12 px-3 flex items-center gap-2 text-[13px] whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE] font-bold' : `text-slate-600 font-semibold active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4.5 h-4.5" />
                   {PROFILE_TAB_SHORT[t.id]}
+                  <span
+                    className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
+                      on ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                 </button>
               );
             })}
           </div>
           {lockedTabHint && (
-            <p className="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
+            <p className="mx-4 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
               Save or cancel your changes before switching tabs.
             </p>
           )}
