@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, CalendarClock, CalendarRange, Check, Info, MapPin, Repeat, Infinity as InfinityIcon } from 'lucide-react';
+import { ArrowLeft, CalendarClock, CalendarRange, Check, Info, MapPin, Repeat, Infinity as InfinityIcon, Wand2 } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { DatePickerSheet } from '../common/DatePickerSheet';
 import { todayIso } from '../common/DateWheelSheet';
@@ -220,6 +220,28 @@ export const CabRequestFormView: React.FC<CabRequestFormViewProps> = ({ requests
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [failedSubmits]);
 
+  // Demo helper: a one-time evening drop on the first date that doesn't clash with an existing request
+  const quickFill = () => {
+    const base = new Date(`${today}T00:00:00`);
+    let date = today;
+    for (let n = 1; n <= 60; n++) {
+      const d = new Date(base);
+      d.setDate(d.getDate() + n);
+      date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const draft: CabDraft = { cabFor: 'One Time', fromDate: date, toDate: date, pickupTime: '07:30 PM', days: [], city: 'Ahmedabad', dropArea: 'GOTA' };
+      if (!findClash(draft, requests, today, initial?.id)) break;
+    }
+    setCabFor('One Time');
+    setRequestType(null);
+    setFromDate(date);
+    setToDate('');
+    setDays([]);
+    setPickupTime('07:30 PM');
+    setCity('Ahmedabad');
+    setDropArea('GOTA');
+    setErrors({});
+  };
+
   // A clash isn't tied to one field, so it gets its own message instead of the field count
   const errorCount = Object.keys(errors).filter((k) => k !== 'clash').length;
   return (
@@ -234,7 +256,11 @@ export const CabRequestFormView: React.FC<CabRequestFormViewProps> = ({ requests
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold screen-title">{initial ? 'Edit Cab Request' : 'Request a Cab'}</h1>
+          <h1 className="text-base font-bold screen-title screen-title-tight">{initial ? 'Edit Cab Request' : 'Request a Cab'}</h1>
+          <button type="button" onClick={quickFill} className="ml-auto h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
         </div>
       </header>
 

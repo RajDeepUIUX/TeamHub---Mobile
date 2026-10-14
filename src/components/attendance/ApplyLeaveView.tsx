@@ -3,7 +3,7 @@ import { AttendanceRecord } from '../../types/attendance';
 import { LeaveDurationType } from '../../types/leaves';
 import { SelectReasonSheet } from '../leaves/SelectReasonSheet';
 import { SelectDurationSheet } from '../leaves/SelectDurationSheet';
-import { ArrowLeft, PieChart, ChevronDown, Paperclip, X } from 'lucide-react';
+import { ArrowLeft, PieChart, ChevronDown, Paperclip, X, Wand2 } from 'lucide-react';
 
 interface ApplyLeaveViewProps {
   record: AttendanceRecord;
@@ -28,6 +28,14 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
   const [isDurationSheetOpen, setIsDurationSheetOpen] = useState(false);
   const [errors, setErrors] = useState<{ reason?: string; description?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Demo helper: fills every field with realistic sample data
+  const quickFill = () => {
+    setReason('Medical (Personal)');
+    setDescription('Was unwell with fever and could not log in. Doctor visit receipt attached.');
+    setAttachment('medical-note.pdf');
+    setErrors({});
+  };
 
   const handleSubmit = () => {
     const found: typeof errors = {};
@@ -55,9 +63,13 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-base font-bold text-[#1E293B] screen-title">
+        <h1 className="text-base font-bold text-[#1E293B] screen-title screen-title-tight">
           Apply Leave
         </h1>
+        <button type="button" onClick={quickFill} className="ml-auto h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+          <Wand2 className="w-3.5 h-3.5" />
+          Quick Fill
+        </button>
       </header>
 
       {/* Scrollable Content Body matching Screenshot 5 */}

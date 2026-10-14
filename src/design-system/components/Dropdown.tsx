@@ -44,7 +44,7 @@ const normalize = <T extends string | number>(opt: T | DropdownOption<T>): Dropd
 
 /* ------------------------- Search sheet (long lists) ------------------------ */
 
-function SearchSelectSheet<T extends string | number>({
+export function SearchSelectSheet<T extends string | number>({
   isOpen,
   title,
   items,

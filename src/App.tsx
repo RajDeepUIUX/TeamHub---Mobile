@@ -118,7 +118,7 @@ import { CreateTicketView } from './components/tickets/CreateTicketView';
 import { Ticket } from './types/tickets';
 import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
 import type { NewTicketData } from './components/tickets/CreateTicketView';
-import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
+import { TeamAttendanceView, TeamAttendanceVersion } from './components/attendance/TeamAttendanceView';
 import { SegmentedTabs } from './design-system/components/SegmentedTabs';
 import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
 import { FilterIconButton } from './components/common/TeamFilterSheet';
@@ -779,6 +779,8 @@ export default function App() {
   // Manager's "Team's Attendance": other team members' edit requests (the staff member's own come from `records`)
   const [teamAttendanceRequests, setTeamAttendanceRequests] = useState<AttendanceRecord[]>(TEAM_ATTENDANCE_REQUESTS_SEED);
   const [attendanceTab, setAttendanceTab] = useState<'mine' | 'team'>('team');
+  // Design exploration for Team's Attendance: V1 = single list, V2 = member list → member, V3 = staff picker
+  const [teamAttendanceVersion, setTeamAttendanceVersion] = useState<TeamAttendanceVersion>('V1');
 
   // Staff member's own edit requests + the rest of the team's, newest first
   const teamAttendanceList = [
@@ -1613,7 +1615,6 @@ export default function App() {
                     holidaysNext30Days={holidaysNext30Days}
                     onBack={() => setCelebrationsTab(null)}
                   />
-                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab === 'home' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -1923,7 +1924,6 @@ export default function App() {
                     }}
                     onReact={(id, r) => setFeedReactions((prev) => ({ ...prev, [id]: r }))}
                   />
-                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab === 'more' && moreModule === 'work-timing' ? (
                 <WorkTimingView
@@ -1999,7 +1999,6 @@ export default function App() {
                     role={userRole}
                     onOpenModule={openMoreModule}
                   />
-                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab !== 'attendance' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -2126,9 +2125,30 @@ export default function App() {
                       >
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
                       </button>
-                      <h1 className="text-base font-bold text-[#1E293B] screen-title">
-                        {activeModuleTab}
-                      </h1>
+                      {isManager && activeModuleTab === 'Attendance' && attendanceTab === 'team' ? (
+                        <div className="screen-title flex items-center gap-2">
+                          <h1 className="text-base font-bold text-[#1E293B]">{activeModuleTab}</h1>
+                          {/* Design versions (V1 current, V2 member list, V3 staff picker) */}
+                          <div className="pointer-events-auto flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/70" role="tablist" aria-label="Design version">
+                            {(['V1', 'V2', 'V3'] as const).map((v) => (
+                              <button
+                                key={v}
+                                type="button"
+                                role="tab"
+                                aria-selected={teamAttendanceVersion === v}
+                                onClick={() => setTeamAttendanceVersion(v)}
+                                className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold cursor-pointer ${
+                                  teamAttendanceVersion === v ? 'bg-white text-[#2F68FE] shadow-2xs' : 'text-slate-500'
+                                }`}
+                              >
+                                {v}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <h1 className="text-base font-bold text-[#1E293B] screen-title">{activeModuleTab}</h1>
+                      )}
                     </div>
 
                   </header>
@@ -2225,6 +2245,8 @@ export default function App() {
                   )}
                   {isManager && attendanceTab === 'team' ? (
                     <TeamAttendanceView
+                      key={teamAttendanceVersion}
+                      version={teamAttendanceVersion}
                       requests={teamAttendanceList}
                       dailyRecords={teamDailyAttendance}
                       onReview={reviewAttendance}
@@ -2307,7 +2329,9 @@ export default function App() {
                   )}
                   </div>
                 )}
-                  <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
+                  {(activeModuleTab === 'Attendance' || activeModuleTab === 'Leaves') && (
+                    <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
+                  )}
               </div>
             )}
               </ScreenTransition>

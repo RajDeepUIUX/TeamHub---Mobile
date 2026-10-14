@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AttendanceRecord } from '../../types/attendance';
 import { Dropdown } from '../../design-system/components/Dropdown';
-import { X, Calendar, Building, BarChart2, Clock, Info } from 'lucide-react';
+import { X, Calendar, Building, BarChart2, Clock, Info, Wand2 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 
 interface RequestEditSheetProps {
@@ -47,6 +47,15 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
 
   const requiresNote = reason === 'Others' || reason === 'Hybrid';
 
+  // Demo helper: fills every field with realistic sample data
+  const quickFill = () => {
+    setOfficeTime('09 : 00');
+    setWorkingTime('08 : 15');
+    setReason('Hybrid');
+    setNote('Worked from the Gota office in the morning and from home after 2 PM, approved by Naveen Das.');
+    setNoteError('');
+  };
+
   const handleSubmit = () => {
     if (requiresNote && !note.trim()) {
       setNoteError(`Please provide a note for ${reason}.`);
@@ -74,6 +83,11 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
         <h2 className="text-lg font-bold text-[#1E293B]">
           Request Attendance Edit
         </h2>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={quickFill} className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
         <button
           onClick={onClose}
           type="button"
@@ -82,6 +96,7 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </div>
 
       {/* Scrollable Form Body */}

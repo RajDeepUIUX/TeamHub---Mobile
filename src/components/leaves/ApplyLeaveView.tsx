@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Wand2,
 } from 'lucide-react';
 import { LeaveDurationType, LeaveDayItem, LeaveRequest } from '../../types/leaves';
 import { SelectDateRangeSheet } from './SelectDateRangeSheet';
@@ -137,6 +138,14 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
     }
   };
 
+  // Demo helper: fills every field with realistic sample data (same as the Reimbursement form)
+  const handleQuickFill = () => {
+    handleApplyDateRange('20 Oct 2026', '23 Oct 2026', 4);
+    setSelectedReason('Travel/Vacation');
+    setDescription('Family trip to Goa, planned in advance. Work is handed over to Naveen Das.');
+    setAttachment('travel-itinerary.pdf');
+  };
+
   const handleContinueOrSubmit = () => {
     if (!hasSelectedDates) {
       setIsDateSheetOpen(true);
@@ -172,10 +181,20 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold text-[#1E293B] screen-title">
+          <h1 className={`text-base font-bold text-[#1E293B] screen-title ${isEditMode ? '' : 'screen-title-tight'}`}>
             {isEditMode ? 'Edit Leave Request' : 'Apply for Leave'}
           </h1>
         </div>
+        {!isEditMode && (
+          <button
+            type="button"
+            onClick={handleQuickFill}
+            className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
+        )}
       </div>
 
       {/* Form Body */}

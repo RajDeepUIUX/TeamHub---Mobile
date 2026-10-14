@@ -16,9 +16,14 @@ import {
   CalendarDays,
   CheckCheck,
   ListChecks,
+  ChevronLeft,
+  ChevronDown,
 } from 'lucide-react';
 import { AttendanceRecord } from '../../types/attendance';
 import { BottomSheet } from '../common/BottomSheet';
+import { SearchSelectSheet } from '../../design-system/components/Dropdown';
+import { DatePickerSheet } from '../common/DatePickerSheet';
+import { toDateKey } from '../../design-system/components/RangeCalendar';
 import {
   TeamAttendanceFilterSheet,
   TeamAttendanceFilters,
@@ -50,7 +55,11 @@ const DAY_STATUS_CHIP: Record<string, string> = {
   holiday: 'bg-slate-100 text-slate-500',
 };
 
+export type TeamAttendanceVersion = 'V1' | 'V2' | 'V3';
+
 interface TeamAttendanceViewProps {
+  /** V1 single list · V2 member list → member detail · V3 staff picker up top */
+  version?: TeamAttendanceVersion;
   requests: AttendanceRecord[];
   /** Regular (non-edit) attendance for the team; listed when "Only see Edit Requests" is off */
   dailyRecords: AttendanceRecord[];
@@ -190,11 +199,13 @@ const TeamAttendanceSummarySheet: React.FC<{
 
 /* --------------------------- Regular attendance card --------------------------- */
 
-const DailyRecordCard: React.FC<{ record: AttendanceRecord; dimmed: boolean; onViewLogs: () => void }> = ({
-  record: r,
-  dimmed,
-  onViewLogs,
-}) => {
+const DailyRecordCard: React.FC<{
+  record: AttendanceRecord;
+  dimmed: boolean;
+  onViewLogs: () => void;
+  /** V2 member detail: the date leads instead of the name */
+  hideStaff?: boolean;
+}> = ({ record: r, dimmed, onViewLogs, hideStaff }) => {
   const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
   return (
     <article
@@ -203,18 +214,29 @@ const DailyRecordCard: React.FC<{ record: AttendanceRecord; dimmed: boolean; onV
       }`}
     >
       <div className="p-3.5 pb-3 flex items-start gap-3">
-        <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
-          {initialsOf(r.staffName)}
-        </span>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-[#1E293B] truncate">{r.staffName}</h3>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap">
-            <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
-            {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
-            <span className="text-slate-300">·</span>
-            {r.workMode}
-          </p>
-        </div>
+        {hideStaff ? (
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-[#1E293B]">{r.dateFormatted}</h3>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              {r.dayOfWeek} <span className="text-slate-300">·</span> {r.workMode}
+            </p>
+          </div>
+        ) : (
+          <>
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
+              {initialsOf(r.staffName)}
+            </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-[#1E293B] truncate">{r.staffName}</h3>
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+                <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+                {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
+                <span className="text-slate-300">·</span>
+                {r.workMode}
+              </p>
+            </div>
+          </>
+        )}
         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${DAY_STATUS_CHIP[r.status] ?? DAY_STATUS_CHIP.holiday}`}>
           {r.statusLabel}
         </span>
@@ -257,9 +279,50 @@ const DailyRecordCard: React.FC<{ record: AttendanceRecord; dimmed: boolean; onV
   );
 };
 
+/* ------------------------------ Member summary (V2 / V3) ------------------------------ */
+
+const MemberStatsRow: React.FC<{ stats: { present: number; half: number; absent: number; pending: number } }> = ({ stats }) => (
+  <div className="grid grid-cols-4 gap-1.5 text-center">
+    {[
+      { label: 'Present', value: stats.present, tone: 'bg-[#E8F8F0] text-[#059669]' },
+      { label: 'Half Day', value: stats.half, tone: 'bg-[#FEF8E7] text-[#D97706]' },
+      { label: 'Absent', value: stats.absent, tone: 'bg-[#FDECEC] text-[#E11D48]' },
+      { label: 'Pending', value: stats.pending, tone: 'bg-[#F5F3FF] text-[#7C3AED]' },
+    ].map(({ label, value, tone }) => (
+      <div key={label} className={`rounded-xl py-1.5 ${tone}`}>
+        <span className="block text-sm font-extrabold tabular-nums leading-tight">{value}</span>
+        <span className="block text-[9.5px] font-semibold opacity-80">{label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const MemberHeader: React.FC<{
+  name: string;
+  code?: string;
+  stats: { present: number; half: number; absent: number; pending: number };
+}> = ({ name, code, stats }) => (
+  <div className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs space-y-3">
+    <div className="flex items-center gap-3">
+      <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(Number((code ?? '').replace(/\D/g, '')) || 0)}`}>
+        {initialsOf(name)}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-[#1E293B] truncate">
+          {name}
+        </p>
+        <p className="text-[11px] text-slate-500 truncate">
+          Reports to {reportingManagerOf(name)?.name ?? '—'} · {branchOf(name) ?? '—'}
+        </p>
+      </div>
+    </div>
+    <MemberStatsRow stats={stats} />
+  </div>
+);
+
 /* --------------------------------- Screen --------------------------------- */
 
-export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests, dailyRecords, onReview, onBulkReview, onViewLogs }) => {
+export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version = 'V1', requests, dailyRecords, onReview, onBulkReview, onViewLogs }) => {
   // Bulk selection mode: only pending requests can be picked
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -288,9 +351,21 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [review, setReview] = useState<{ record: AttendanceRecord; decision: AttendanceDecision } | null>(null);
 
-  const pool = filters.editOnly
+  const allStaff = Array.from(new Set([...requests, ...dailyRecords].map((r) => r.staffName))).sort();
+  const [focusStaff, setFocusStaff] = useState<string | null>(version === 'V3' ? allStaff[0] ?? null : null);
+  const [isStaffPickerOpen, setIsStaffPickerOpen] = useState(false);
+  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
+  const scoped = version !== 'V1';
+  const showMemberList = version === 'V2' && !focusStaff;
+  // V2 member detail: their name is already in the header, so cards lead with the date
+  const hideStaff = version === 'V2' && Boolean(focusStaff);
+  // V2 member detail checkbox: only pending edit requests
+  const pendingOnly = filters.editOnly && filters.status.length === 1 && filters.status[0] === 'Pending';
+
+  const pool = (filters.editOnly
     ? requests
-    : [...requests, ...dailyRecords].sort((a, b) => b.date.localeCompare(a.date) || a.staffName.localeCompare(b.staffName));
+    : [...requests, ...dailyRecords].sort((a, b) => b.date.localeCompare(a.date) || a.staffName.localeCompare(b.staffName))
+  ).filter((r) => !scoped || !focusStaff || r.staffName === focusStaff);
   const any = (selected: string[], value: string | undefined) =>
     selected.length === 0 || (value !== undefined && selected.includes(value));
   const visible = pool.filter((r) => {
@@ -315,13 +390,88 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
     selectablePending.length > 0 && selectablePending.every((r) => selectedIds.has(r.id));
   const countState = (s: RequestState) => requests.filter((r) => stateOf(r) === s).length;
 
-  const staffNames = Array.from(new Set([...requests, ...dailyRecords].map((r) => r.staffName))).sort();
+  const staffNames = allStaff;
+  const inRange = (r: AttendanceRecord) => (!filters.from || r.date >= filters.from) && (!filters.to || r.date <= filters.to);
+  const memberStats = (name: string) => {
+    const days = [...dailyRecords, ...requests].filter((r) => r.staffName === name && inRange(r));
+    return {
+      present: days.filter((r) => r.status === 'full_day').length,
+      half: days.filter((r) => r.status === 'half_day').length,
+      absent: days.filter((r) => r.status === 'absent').length,
+      pending: requests.filter((r) => r.staffName === name && inRange(r) && stateOf(r) === 'Pending').length,
+    };
+  };
+  const members = allStaff
+    .filter((name) =>
+      [...requests, ...dailyRecords].some(
+        (r) =>
+          r.staffName === name &&
+          (filters.branches.length === 0 || filters.branches.includes(branchOf(name) ?? '')) &&
+          (filters.managers.length === 0 || filters.managers.includes(reportingManagerOf(name)?.name ?? ''))
+      )
+    )
+    .sort((a, b) => memberStats(b).pending - memberStats(a).pending || a.localeCompare(b));
   const staffCodes = Object.fromEntries([...requests, ...dailyRecords].filter((r) => r.staffCode).map((r) => [r.staffName, r.staffCode as string]));
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
     <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-8 space-y-3.5 no-scrollbar">
-      {/* Filters on top */}
+      {/* Filters on top (V3: date | staff member in one split field) */}
+      {version === 'V3' ? (
+        <div className="flex items-center gap-2.5">
+          <div className="flex-1 min-w-0 h-11 grid grid-cols-2 rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden divide-x divide-slate-200">
+            <button
+              type="button"
+              onClick={() => setIsDateRangeOpen(true)}
+              className="min-w-0 px-3 flex items-center gap-2 text-left active:bg-slate-50 cursor-pointer"
+              aria-label="Change date range"
+            >
+              <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="truncate text-xs font-semibold text-slate-700">{dateRangeLabel}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsStaffPickerOpen(true)}
+              className="min-w-0 px-3 flex items-center gap-1.5 text-left active:bg-slate-50 cursor-pointer"
+              aria-label="Change staff member"
+            >
+              <Users className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className={`flex-1 truncate text-xs ${focusStaff ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-400'}`}>
+                {focusStaff ?? 'Staff member'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+          </div>
+          <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
+          {/* Date half: just the range calendar (no future dates) */}
+          <DatePickerSheet
+            isOpen={isDateRangeOpen}
+            mode="range"
+            title="Select date range"
+            start={filters.from}
+            end={filters.to}
+            maxDate={toDateKey(new Date())}
+            onClose={() => setIsDateRangeOpen(false)}
+            onApply={(from, to) => {
+              applyFilters({ ...filters, from, to: to ?? from });
+              setIsDateRangeOpen(false);
+            }}
+          />
+          <SearchSelectSheet<string>
+            isOpen={isStaffPickerOpen}
+            title="Select staff member"
+            items={members.map((n) => ({ value: n, label: n }))}
+            value={focusStaff}
+            onClose={() => setIsStaffPickerOpen(false)}
+            onChoose={(opt) => {
+              setFocusStaff(opt.value);
+              setShownCount(PAGE_SIZE);
+              exitSelectMode();
+              setIsStaffPickerOpen(false);
+            }}
+          />
+        </div>
+      ) : (
       <div className="flex items-center gap-2.5">
         <button
           type="button"
@@ -336,8 +486,73 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         </button>
         <FilterIconButton count={filterCount} onClick={() => setIsFilterOpen(true)} />
       </div>
+      )}
 
-      {/* KPI card (same pattern as the Attendance summary) */}
+      {/* V2: back to the member list */}
+      {version === 'V2' && focusStaff && (
+        <button
+          type="button"
+          onClick={() => {
+            setFocusStaff(null);
+            exitSelectMode();
+          }}
+          className="flex items-center gap-1 px-1 text-xs font-semibold text-[#2F68FE] cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          All team members
+        </button>
+      )}
+
+      {scoped && focusStaff && <MemberHeader name={focusStaff} code={staffCodes[focusStaff]} stats={memberStats(focusStaff)} />}
+
+      {/* V2: the team as a list; tap a member to see only their records */}
+      {showMemberList && (
+        <>
+          <div className="flex items-center gap-2 px-1">
+            <span className="font-bold text-sm text-[#1E293B]">Team Members</span>
+            <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{members.length}</span>
+          </div>
+          {members.map((name) => {
+            const st = memberStats(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => {
+                  setFocusStaff(name);
+                  setShownCount(PAGE_SIZE);
+                }}
+                className="w-full bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs text-left space-y-3 active:bg-slate-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(Number((staffCodes[name] ?? '').replace(/\D/g, '')) || 0)}`}>
+                    {initialsOf(name)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[#1E293B] truncate">
+                      {name}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {reportingManagerOf(name)?.name ?? '—'} · {branchOf(name) ?? '—'}
+                    </p>
+                  </div>
+                  {st.pending > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 text-[10.5px] font-bold shrink-0">{st.pending} pending</span>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                </div>
+                <MemberStatsRow stats={st} />
+              </button>
+            );
+          })}
+          {members.length === 0 && (
+            <p className="py-10 text-center text-sm font-bold text-[#1E293B]">No team members match your filters</p>
+          )}
+        </>
+      )}
+
+      {/* KPI card (same pattern as the Attendance summary) — V1 only */}
+      {version === 'V1' && (
       <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
@@ -368,13 +583,38 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
         </div>
       </div>
 
+      )}
+
+      {!showMemberList && (
+      <>
       {/* List header + select */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-[#1E293B]">{filters.editOnly ? 'Edit Requests' : 'Attendance Records'}</span>
+          <span className="font-bold text-sm text-[#1E293B]">{scoped && focusStaff ? 'Records' : filters.editOnly ? 'Edit Requests' : 'Attendance Records'}</span>
           <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full">{visible.length}</span>
         </div>
         <div className="flex items-center gap-2">
+          {/* V2 member detail: quick toggle to only this member's pending edit requests (approved/rejected stay in Records) */}
+          {hideStaff && !selectMode && (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={pendingOnly}
+              onClick={() =>
+                applyFilters({ ...filters, editOnly: !pendingOnly, status: pendingOnly ? [] : ['Pending'] })
+              }
+              className="h-9 flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer"
+            >
+              <span
+                className={`w-4 h-4 rounded-[5px] border flex items-center justify-center shrink-0 ${
+                  pendingOnly ? 'bg-[#2F68FE] border-[#2F68FE]' : 'bg-white border-slate-300'
+                }`}
+              >
+                {pendingOnly && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              </span>
+              Pending Edit Requests ({focusStaff ? memberStats(focusStaff).pending : 0})
+            </button>
+          )}
           {selectMode ? (
             <button
               type="button"
@@ -416,7 +656,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
 
       {visible.slice(0, shownCount).map((r) => {
         if (!r.editRequested) {
-          return <DailyRecordCard key={r.id} record={r} dimmed={selectMode} onViewLogs={() => onViewLogs(r)} />;
+          return <DailyRecordCard key={r.id} record={r} dimmed={selectMode} onViewLogs={() => onViewLogs(r)} hideStaff={hideStaff} />;
         }
         const state = stateOf(r);
         const avatarIdx = Number((r.staffCode ?? '').replace(/\D/g, '')) || 0;
@@ -447,18 +687,19 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
                   {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                 </span>
               )}
-              <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
-                {initialsOf(r.staffName)}
-              </span>
+              {!hideStaff && (
+                <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
+                  {initialsOf(r.staffName)}
+                </span>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-bold text-[#1E293B] truncate">{r.staffName}</h3>
+                  {/* One person's records: the date leads instead of the name */}
+                  <h3 className="text-sm font-bold text-[#1E293B] truncate">{hideStaff ? r.dateFormatted : r.staffName}</h3>
                 </div>
                 <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap min-w-0">
-                  <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span className="shrink-0">
-                    {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
-                  </span>
+                  {!hideStaff && <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />}
+                  <span className="shrink-0">{hideStaff ? r.dayOfWeek : `${r.dayOfWeek.slice(0, 3)}, ${r.dateFormatted}`}</span>
                   <span
                     className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate ${DAY_STATUS_CHIP[r.status] ?? DAY_STATUS_CHIP.holiday}`}
                   >
@@ -583,6 +824,8 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ requests
             </button>
           )}
         </div>
+      )}
+      </>
       )}
 
     </div>
