@@ -9,13 +9,13 @@ import {
   Info,
   Plus,
   User,
-  Filter,
   Eye,
   Pencil,
 } from 'lucide-react';
 import { LeaveRequest, LeaveBalance } from '../../types/leaves';
 import { FilterLeavesSheet } from './FilterLeavesSheet';
 
+import { FilterIconButton } from '../common/TeamFilterSheet';
 interface LeavesViewProps {
   balance: LeaveBalance;
   requests: LeaveRequest[];
@@ -104,7 +104,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowBalanceInfo(!showBalanceInfo)}
-                className="w-4 h-4 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                className="w-4 h-4 rounded-full text-slate-400 transition-colors"
                 aria-label="Info"
               >
                 <Info className="w-3.5 h-3.5" />
@@ -157,18 +157,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
           <h2 className="text-sm font-bold text-[#1E293B]">Leave Requests</h2>
 
           {/* Only Filter Icon matching WFO Days tab */}
-          <button
-            type="button"
-            onClick={() => setIsFilterSheetOpen(true)}
-            className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-              filterStatus !== 'All' || dateRangeFilter
-                ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
-            }`}
-            aria-label="Filter Leaves"
-          >
-            <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-          </button>
+          <FilterIconButton count={(filterStatus !== 'All' ? 1 : 0) + (dateRangeFilter ? 1 : 0)} onClick={() => setIsFilterSheetOpen(true)} label="Filter leaves" />
         </div>
 
         {/* 3. Leave Requests Cards matching Image 1 */}
@@ -177,7 +166,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
             <div
               key={req.id}
               onClick={() => onViewDetails?.(req)}
-              className={`bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3 relative hover:border-slate-300 transition-colors cursor-pointer ${
+              className={`bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3 relative transition-colors cursor-pointer ${
                 activeMenuId === req.id ? 'z-30' : ''
               }`}
             >
@@ -206,7 +195,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                       activeMenuId === req.id
                         ? 'bg-blue-50 text-[#2F68FE]'
-                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                        : 'text-slate-400 active:bg-slate-100'
                     }`}
                     aria-label="Options"
                   >
@@ -238,7 +227,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                         setActiveMenuId(null);
                         onViewDetails?.(req);
                       }}
-                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 active:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <Eye className="w-4 h-4 text-slate-400" />
                       <span>View Details</span>
@@ -251,7 +240,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                           setActiveMenuId(null);
                           onEditRequest(req);
                         }}
-                        className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-slate-700 active:bg-slate-50 transition-colors cursor-pointer"
                       >
                         <Pencil className="w-4 h-4 text-slate-400" />
                         <span>Edit Request</span>
@@ -267,7 +256,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                             onCancelRequest(req.id);
                             setActiveMenuId(null);
                           }}
-                          className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          className="w-full h-10 px-3 rounded-xl flex items-center gap-2.5 text-left text-rose-600 active:bg-rose-50 transition-colors cursor-pointer"
                         >
                           <XCircle className="w-4 h-4" />
                           <span>Cancel Request</span>
@@ -320,7 +309,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
               <button
                 type="button"
                 onClick={() => setFilterStatus('All')}
-                className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline cursor-pointer"
+                className="mt-2 text-xs font-semibold text-[#2F68FE] cursor-pointer"
               >
                 Clear Filter
               </button>
@@ -335,7 +324,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
         <button
           type="button"
           onClick={onApplyLeaveClick}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] hover:bg-[#2558E6] active:bg-[#1D4ED8] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          className="w-full h-12 rounded-xl bg-[#2F68FE] active:bg-[#1D4ED8] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
           <span>Apply for Leave</span>

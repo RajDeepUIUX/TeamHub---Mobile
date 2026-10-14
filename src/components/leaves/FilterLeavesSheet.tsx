@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
+import { Dropdown } from '../../design-system/components/Dropdown';
 
 interface FilterLeavesSheetProps {
   isOpen: boolean;
@@ -18,7 +19,12 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
   onClear,
 }) => {
   const [status, setStatus] = useState<string>(currentStatus || 'All');
-  const [isCalendarExpanded, setIsCalendarExpanded] = useState(true);
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+
+  // Calendar starts collapsed each time the sheet opens
+  useEffect(() => {
+    if (isOpen) setIsCalendarExpanded(false);
+  }, [isOpen]);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(8); // September = 8
   const [currentYear, setCurrentYear] = useState(2026);
   const [selectedStartDay, setSelectedStartDay] = useState<number | null>(21);
@@ -122,7 +128,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -131,28 +137,10 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
 
       {/* Sheet Content */}
       <div className="p-5 space-y-5 overflow-y-auto no-scrollbar">
-        {/* Status Chips matching Image 2 */}
+        {/* Status */}
         <div className="space-y-2">
           <label className="block text-xs font-bold text-[#1E293B]">Status</label>
-          <div className="grid grid-cols-4 gap-2">
-            {statusOptions.map((opt) => {
-              const isSelected = status === opt;
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setStatus(opt)}
-                  className={`h-11 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'border-[#2F68FE] bg-blue-50/80 text-[#2F68FE] shadow-2xs font-bold'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
+          <Dropdown size="md" ariaLabel="Status" value={status} options={statusOptions} onChange={setStatus} />
         </div>
 
         {/* 2 Different Text Fields Aligned Horizontally: Start Date | End Date */}
@@ -162,7 +150,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
             <button
               type="button"
               onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-              className="text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 hover:underline cursor-pointer"
+              className="text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 cursor-pointer"
             >
               <span>{isCalendarExpanded ? 'Hide Calendar' : 'Show Calendar'}</span>
               {isCalendarExpanded ? (
@@ -187,7 +175,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
                 className={`w-full h-11 px-3 bg-white border rounded-xl flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
                   isCalendarExpanded && activeDateField === 'start'
                     ? 'border-[#2F68FE] ring-1 ring-[#2F68FE] bg-blue-50/30'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -216,7 +204,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
                 className={`w-full h-11 px-3 bg-white border rounded-xl flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
                   isCalendarExpanded && activeDateField === 'end'
                     ? 'border-[#2F68FE] ring-1 ring-[#2F68FE] bg-blue-50/30'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -242,7 +230,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -252,7 +240,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -312,7 +300,7 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
                             ? 'bg-[#2F68FE] text-white font-bold shadow-xs'
                             : inRange
                             ? 'text-[#2F68FE] font-bold'
-                            : 'text-slate-700 hover:bg-slate-100'
+                            : 'text-slate-700 active:bg-slate-100'
                         }`}
                       >
                         {day}
@@ -338,14 +326,14 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
         <button
           type="button"
           onClick={handleClearAll}
-          className="h-12 rounded-xl text-[#2F68FE] font-bold text-xs bg-white hover:bg-blue-50/50 transition-colors cursor-pointer flex items-center justify-center"
+          className="h-12 rounded-xl text-[#2F68FE] font-bold text-xs bg-white active:bg-blue-50/50 transition-colors cursor-pointer flex items-center justify-center"
         >
           Clear filters
         </button>
         <button
           type="button"
           onClick={handleApply}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors cursor-pointer flex items-center justify-center"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer flex items-center justify-center"
         >
           Apply Filters
         </button>

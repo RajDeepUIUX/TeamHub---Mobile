@@ -51,13 +51,13 @@ export const AttendanceKPIs: React.FC<AttendanceKPIsProps> = ({
         <button
           type="button"
           onClick={onOpenSummarySheet}
-          className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] hover:text-[#2F68FE] transition-colors group"
+          className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] transition-colors group"
         >
           <div className="flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-[#2F68FE]" />
             <span>View Full Summary</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-4 h-4 text-gray-400 transition-transform" />
         </button>
       </div>
     </div>

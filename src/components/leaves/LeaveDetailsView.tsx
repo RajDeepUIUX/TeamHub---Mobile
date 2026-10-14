@@ -73,16 +73,16 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {/* Top Header */}
       <header className="sticky top-0 z-20 bg-white border-b border-[#EBF0F7]">
-        <div className="flex items-center h-14 px-4">
+        <div className="flex items-center h-14 px-4 relative">
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
+            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-200 transition-colors cursor-pointer"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold text-[#1E293B] ml-2">Leave Details</h1>
+          <h1 className="text-base font-bold text-[#1E293B] screen-title">Leave Details</h1>
         </div>
       </header>
 
@@ -172,6 +172,35 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           </div>
         )}
 
+        {/* Manager decision (synced from the manager's Team's Leaves view) */}
+        {request.status !== 'Pending' && (
+          <div
+            className={`rounded-2xl p-4 border text-xs leading-relaxed space-y-1.5 ${
+              request.status === 'Approved'
+                ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+            }`}
+          >
+            <p className="flex items-start gap-2 font-semibold">
+              {request.status === 'Approved' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-px" />
+              ) : (
+                <XCircle className="w-4 h-4 shrink-0 mt-px" />
+              )}
+              <span>
+                {request.status} by {request.managerName}
+                {request.reviewedAt ? ` on ${request.reviewedAt}` : ''}
+              </span>
+            </p>
+            {request.managerComment && (
+              <p className="ml-6 font-normal">
+                <span className="font-semibold">{request.status === 'Approved' ? 'Note' : 'Reason'}: </span>“
+                {request.managerComment}”
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Info Banner */}
         <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
           <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
@@ -185,7 +214,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           <button
             type="button"
             onClick={() => onCancel(request.id)}
-            className="h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs hover:bg-rose-50 active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="h-12 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold text-xs active:bg-rose-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <XCircle className="w-4 h-4" />
             <span>Cancel Request</span>
@@ -193,7 +222,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           <button
             type="button"
             onClick={() => onEdit(request)}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-bold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <Pencil className="w-4 h-4" />
             <span>Edit Request</span>

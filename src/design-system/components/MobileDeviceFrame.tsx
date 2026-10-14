@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Wifi, Battery } from 'lucide-react';
-import { useBottomSheetContext } from '../../context/BottomSheetContext';
 
 export type DeviceModel = 'iphone16' | 'pixel8' | 'iphonese';
 
@@ -21,7 +20,6 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   showTouchHitboxOverlay = false,
 }) => {
   const [currentTime] = useState('9:41');
-  const { isAnySheetOpen, closeActiveSheet } = useBottomSheetContext();
 
   // Device dimensions
   const deviceSpecs = {
@@ -61,18 +59,12 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
       >
         {/* iOS Status Bar */}
         <div
-          className={`absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-7 pt-3.5 pb-2 text-xs font-semibold select-none pointer-events-none transition-colors duration-300 ${
-            isAnySheetOpen ? 'bg-transparent text-slate-300/60' : 'bg-white text-[#1E293B]'
-          }`}
+          className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-7 pt-3.5 pb-2 text-xs font-semibold select-none pointer-events-none bg-white text-[#1E293B]"
         >
           <span className="tracking-tight text-[13px] font-bold">{currentTime}</span>
 
           {current.island && (
-            <div
-              className={`w-24 h-5.5 rounded-full flex items-center justify-between px-2 mx-auto transition-colors duration-300 ${
-                isAnySheetOpen ? 'bg-black/50' : 'bg-black'
-              }`}
-            >
+            <div className="w-24 h-5.5 rounded-full flex items-center justify-between px-2 mx-auto bg-black">
               <div className="w-2 h-2 rounded-full bg-slate-900" />
               <div className="w-2 h-2 rounded-full bg-slate-900" />
             </div>
@@ -93,14 +85,6 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
             <Battery className="w-4 h-4 fill-current text-current" />
           </div>
         </div>
-
-        {/* Top Notch Backdrop Blur Overlay when a bottom sheet is open */}
-        <div
-          className={`absolute top-0 left-0 right-0 h-12 z-35 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 cursor-pointer ${
-            isAnySheetOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-          onClick={closeActiveSheet}
-        />
 
         {/* Screen Canvas Viewport */}
         <div className="relative flex-1 bg-[#F8FAFC] overflow-hidden flex flex-col pt-10">

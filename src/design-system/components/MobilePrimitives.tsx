@@ -37,7 +37,7 @@ export const StickyBottomAction: React.FC<StickyBottomActionProps> = ({
           <button
             type="button"
             onClick={onSecondary}
-            className="flex-1 h-12 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="flex-1 h-12 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 active:bg-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
           >
             {secondaryLabel}
           </button>
@@ -46,7 +46,7 @@ export const StickyBottomAction: React.FC<StickyBottomActionProps> = ({
           type="button"
           onClick={onPrimary}
           disabled={primaryDisabled || primaryLoading}
-          className="flex-1 h-12 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          className="flex-1 h-12 rounded-xl text-sm font-semibold text-white bg-slate-900 active:bg-slate-950 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         >
           {primaryLoading && (
             <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@ export function SegmentedControl<T extends string = string>({
             className={`flex-1 min-h-[36px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 focus-visible:outline-none ${
               isActive
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/50'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-600'
             }`}
           >
             <span className="truncate">{option.label}</span>
@@ -146,7 +146,7 @@ export const ListRowItem: React.FC<ListRowItemProps> = ({
       onClick={onClick}
       className={`w-full min-h-[64px] px-4 py-3 bg-white border border-slate-200/70 rounded-2xl flex items-center justify-between gap-3 text-left transition-all ${
         onClick
-          ? 'hover:border-slate-300 active:bg-slate-50 cursor-pointer shadow-2xs'
+          ? 'active:bg-slate-50 cursor-pointer shadow-2xs'
           : 'shadow-2xs'
       }`}
     >
@@ -223,7 +223,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <button
           type="button"
           onClick={onAction}
-          className="h-10 px-4 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors"
+          className="h-10 px-4 rounded-xl text-xs font-semibold text-white bg-slate-900 active:bg-slate-800 transition-colors"
         >
           {actionLabel}
         </button>

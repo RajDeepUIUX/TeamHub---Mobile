@@ -84,7 +84,7 @@ export const ApplyLeaveSheet: React.FC<ApplyLeaveSheetProps> = ({
                 className={`h-10 rounded-xl font-semibold transition-all text-xs border ${
                   halfType === half
                     ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-2xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
                 }`}
               >
                 {half}

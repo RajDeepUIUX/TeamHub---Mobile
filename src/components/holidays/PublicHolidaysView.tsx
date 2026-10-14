@@ -32,16 +32,16 @@ export const PublicHolidaysView: React.FC<PublicHolidaysViewProps> = ({
       {/* Optional Top Header if used standalone */}
       {showHeader && (
         <header className="sticky top-0 z-20 bg-white border-b border-[#EBF0F7]">
-          <div className="flex items-center h-14 px-4">
+          <div className="flex items-center h-14 px-4 relative">
             <button
               type="button"
               onClick={onBack}
-              className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
+              className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-200 transition-colors cursor-pointer"
               aria-label="Back to attendance"
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold text-[#1E293B] ml-2">
+            <h1 className="text-base font-bold text-[#1E293B] screen-title">
               Public Holidays
             </h1>
           </div>
@@ -115,7 +115,7 @@ export const PublicHolidaysView: React.FC<PublicHolidaysViewProps> = ({
                 {holidays.map((holiday) => (
                   <div
                     key={holiday.id}
-                    className="p-3.5 flex items-center gap-3.5 hover:bg-slate-50/50 transition-colors"
+                    className="p-3.5 flex items-center gap-3.5 active:bg-slate-50/50 transition-colors"
                   >
                     {/* Left Date Block */}
                     <div className="w-9 text-center shrink-0">

@@ -1,27 +1,25 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   Calendar,
-  Filter,
   CheckCircle2,
   RotateCcw,
+  LogOut,
   Smartphone,
   Eye,
   Hand,
   Maximize2,
 } from 'lucide-react';
 import { MobileDeviceFrame, DeviceModel } from './design-system/components/MobileDeviceFrame';
+import { ScreenTransition } from './design-system/components/ScreenTransition';
 import { AttendanceRecord, AttendanceKPIs as AttendanceKPIsType } from './types/attendance';
-import { INITIAL_ATTENDANCE_RECORDS, INITIAL_KPIS } from './data/attendanceData';
+import { ALL_ATTENDANCE_RECORDS, currentAttendanceCycle, kpisFrom } from './data/attendanceMonths';
 import { AttendanceKPIs } from './components/attendance/AttendanceKPIs';
 import { AttendanceCard } from './components/attendance/AttendanceCard';
 import { PunchLogsSheet } from './components/attendance/PunchLogsSheet';
 import { RequestEditSheet } from './components/attendance/RequestEditSheet';
-import { FilterSheet, DEFAULT_ATTENDANCE_RANGE } from './components/attendance/FilterSheet';
+import { FilterSheet } from './components/attendance/FilterSheet';
 import { toDateKey } from './design-system/components/RangeCalendar';
 import { KPISummarySheet } from './components/attendance/KPISummarySheet';
 import { ApplyLeaveView } from './components/attendance/ApplyLeaveView';
@@ -30,17 +28,707 @@ import { WFORecord } from './types/wfo';
 import { WFODaysView } from './components/wfo/WFODaysView';
 import { WFODetailsView } from './components/wfo/WFODetailsView';
 import { AddWFOSheet } from './components/wfo/AddWFOSheet';
+import { INITIAL_WFO_RECORDS, TEAM_WFO_RECORDS_SEED, WFO_MANAGER, WFO_TEAM, formatINR as formatWFOINR, wfoAllowanceFor } from './data/wfoData';
+import { TeamWFOView, WFODecision } from './components/wfo/TeamWFOView';
 import { BottomSheetProvider } from './context/BottomSheetContext';
 import { LeavesView } from './components/leaves/LeavesView';
 import { ApplyLeaveView as LeavesApplyView } from './components/leaves/ApplyLeaveView';
 import { LeaveSubmittedModal } from './components/leaves/LeaveSubmittedModal';
 import { LeaveDetailsView } from './components/leaves/LeaveDetailsView';
-import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS } from './data/leavesData';
-import { LeaveRequest, LeaveBalance } from './types/leaves';
+import { INITIAL_LEAVE_BALANCE, INITIAL_LEAVE_REQUESTS, TEAM_LEAVE_REQUESTS_SEED } from './data/leavesData';
+import { TeamLeavesView } from './components/leaves/TeamLeavesView';
+import type { LeaveDecision } from './components/leaves/LeaveReviewSheet';
+import { LeaveRequest, LeaveBalance, LeaveDurationType } from './types/leaves';
+import { UserRole, USER_ROLES } from './types/user';
+import { ClientApp } from './components/client/ClientApp';
+import { HomeDashboard } from './components/home/HomeDashboard';
+import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
+import { ComingSoonView } from './components/home/ComingSoonView';
+import { AppBottomNav, AppTab } from './components/home/AppBottomNav';
+import { AppHeader } from './components/home/AppHeader';
+import { MyProfileView } from './components/profile/MyProfileView';
+import { StaffReviewView } from './components/profile/StaffReviewView';
+import { AnnualReviewView } from './components/profile/AnnualReviewView';
+import { AdvanceSalaryView } from './components/support/AdvanceSalaryView';
+import { AdvanceDraft, AdvanceRequestView } from './components/support/AdvanceRequestView';
+import { AdvanceGuidelineSheet } from './components/support/AdvanceGuidelineSheet';
+import { CabDecision, CabRequestView } from './components/support/CabRequestView';
+import { CabRequestFormView } from './components/support/CabRequestFormView';
+import { CAB_MANAGER, CAB_REQUESTS_SEED, CAB_TEAM, CabDraft, CabRequest, cabTitle } from './data/cabRequestData';
+import {
+  ADVANCE_MANAGER,
+  ADVANCE_REQUESTS_SEED,
+  ADVANCE_TEAM,
+  AdvanceRequest,
+  AdvanceRequestType,
+  TEAM_ADVANCE_REQUESTS_SEED,
+  formatINR as formatAdvanceINR,
+  isEvLoan,
+} from './data/advanceSalaryData';
+import type { AdvanceDecision } from './components/support/TeamAdvanceList';
+import { REVIEW_CYCLES_SEED, ReviewCycle } from './data/annualReviewData';
+import { MY_PROFILE_SEED, MyProfileData } from './data/profileData';
+import { WishSheet } from './components/home/WishSheet';
+import { BIRTHDAYS, ANNIVERSARIES, TeamCelebration } from './data/dashboardData';
+import { HOLIDAYS_DATA } from './data/holidayData';
+import { AuthFlow, APP_VERSION } from './components/auth/AuthFlow';
+import { ProfileView } from './components/profile/ProfileView';
+import { NotificationsView } from './components/notifications/NotificationsView';
+import {
+  AppNotification,
+  STAFF_NOTIFICATIONS_SEED,
+  MANAGER_NOTIFICATIONS_SEED,
+} from './data/notificationsData';
+import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
+import { PoliciesView } from './components/more/PoliciesView';
+import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
+import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees, makeTrackingNo } from './data/reimbursementData';
+import { SideDrawer } from './components/home/SideDrawer';
+import { WorkTimingView } from './components/more/WorkTimingView';
+import { OTRequestView } from './components/more/OTRequestView';
+import { AddOTRequestView } from './components/more/AddOTRequestView';
+import { OTRequest } from './types/overtime';
+import { TEAM_OT_REQUESTS_SEED } from './data/overtimeData';
+import { RequestFlexibilityView } from './components/more/RequestFlexibilityView';
+import { FlexRequest } from './types/workTiming';
+import { TEAM_FLEX_REQUESTS_SEED } from './data/workTimingData';
+import { Declarant } from './data/staffDeclaration';
+import { CompanyFeedView, FeedPostView } from './components/feed/CompanyFeedView';
+import { RecognitionsView } from './components/more/RecognitionsView';
+import { TrainingRequestView, TrainingScope } from './components/more/TrainingRequestView';
+import { AddTrainingRequestView } from './components/more/AddTrainingRequestView';
+import { TRAINING_BRANCH, TRAINING_REQUESTS_SEED, TRAINING_TEAM, TrainingPerson, TrainingRequest } from './data/trainingRequestData';
+import { RECOGNITIONS_SEED } from './data/recognitionsData';
+import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
+import { MyTeamView } from './components/more/MyTeamView';
+import { MY_TEAM_SEED, TeamMemberRecord, profileForMember } from './data/myTeamData';
+import type { FlexDecision } from './components/more/FlexReviewSheet';
+import { ResignationView } from './components/resignation/ResignationView';
+import { ApplyResignationView } from './components/resignation/ApplyResignationView';
+import { ResignationRecord, ReviewDecision } from './types/resignation';
+import { REPORTING_MANAGER, CURRENT_STAFF, TEAM_RESIGNATIONS_SEED, toISODate } from './data/resignationData';
+import type { ResignationFormData } from './components/resignation/ApplyResignationView';
+import { TicketsView } from './components/tickets/TicketsView';
+import { RelevantContactsView } from './components/more/RelevantContactsView';
+import { VoipDirectoryView } from './components/more/VoipDirectoryView';
+import { AssetsView } from './components/assets/AssetsView';
+import { ASSETS_SEED, TEAM_ASSET_MEMBERS } from './data/assetsData';
+import type { AssetRecord } from './types/assets';
+import { CreateTicketView } from './components/tickets/CreateTicketView';
+import { Ticket } from './types/tickets';
+import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
+import type { NewTicketData } from './components/tickets/CreateTicketView';
+import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
+import { SegmentedTabs } from './design-system/components/SegmentedTabs';
+import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
+import { FilterIconButton } from './components/common/TeamFilterSheet';
+import {
+  TEAM_ATTENDANCE_REQUESTS_SEED,
+  TEAM_DAILY_ATTENDANCE_SEED,
+  TEAM_HISTORY,
+  generateMemberDays,
+  ATTENDANCE_REVIEWER,
+  ATTENDANCE_STAFF_CODE,
+} from './data/teamAttendanceData';
 
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
   const [device, setDevice] = useState<DeviceModel>('pixel8');
+
+  // Logged-in user role (Staff by default); Manager review screens come later
+  const [userRole, setUserRole] = useState<UserRole>('Staff');
+
+  // Auth: splash -> login (or forgot-password flow) -> app
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Main app navigation (bottom nav). Home dashboard is the first screen after login.
+  const [appTab, setAppTab] = useState<AppTab>('home');
+  const [celebrationsTab, setCelebrationsTab] = useState<CelebrationTab | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Notifications per role; events (approvals, new requests, IT review) add to the right inbox
+  const [staffNotifications, setStaffNotifications] = useState<AppNotification[]>(STAFF_NOTIFICATIONS_SEED);
+  const [managerNotifications, setManagerNotifications] = useState<AppNotification[]>(MANAGER_NOTIFICATIONS_SEED);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const pushNotification = (to: 'Staff' | 'Manager', n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
+    const item: AppNotification = {
+      ...n,
+      id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    (to === 'Staff' ? setStaffNotifications : setManagerNotifications)((prev) => [item, ...prev]);
+  };
+  // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
+  const [moreModule, setMoreModule] = useState<string | null>(null);
+  // Side drawer (replaces the More tab). Modules opened from it return to the tab they were opened on
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
+  // Company Feed: shared by every role; read state + the user's reactions live for the session
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
+  const [feedReactions, setFeedReactions] = useState<Record<string, FeedReaction>>({});
+  const [feedCategory, setFeedCategory] = useState<FeedCategory>('General');
+  const [openFeedPostId, setOpenFeedPostId] = useState<string | null>(null);
+  const openFeedPost = feedPosts.find((p) => p.id === openFeedPostId) ?? null;
+  // Expense Reimbursement: one shared list so the manager's decisions show on the staff side
+  const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>(TEAM_EXPENSE_REQUESTS_SEED);
+  // My Team (Manager only): the manager's whole hierarchy
+  const [myTeam] = useState<TeamMemberRecord[]>(MY_TEAM_SEED);
+  // OT requests (staff & manager keep their own lists): one per person, auto-approved, changes only via a ticket
+  const [staffOTRequests, setStaffOTRequests] = useState<OTRequest[]>([]);
+  const [managerOTRequests, setManagerOTRequests] = useState<OTRequest[]>([]);
+  // Manager: the rest of the team's OT requests (the staff member's own come from staffOTRequests)
+  const [teamOTRequests, setTeamOTRequests] = useState<OTRequest[]>(TEAM_OT_REQUESTS_SEED);
+  const [isAddingOT, setIsAddingOT] = useState(false);
+  // Work Timing: flexibility requests (empty initially) and the request flow
+  const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
+  // Manager: the rest of the team's requests, and their own ("My Work Timing")
+  const [teamFlexRequests, setTeamFlexRequests] = useState<FlexRequest[]>(TEAM_FLEX_REQUESTS_SEED);
+  const [managerFlexRequests, setManagerFlexRequests] = useState<FlexRequest[]>([]);
+  const [isRequestingFlex, setIsRequestingFlex] = useState(false);
+  // Pending request being edited (null = creating a new one)
+  const [editingFlex, setEditingFlex] = useState<FlexRequest | null>(null);
+  // Module opened from the profile menu (e.g. 'Resignation'); null shows the profile itself
+  const [profileModule, setProfileModule] = useState<string | null>(null);
+  // Profile modules can also be opened from Home (Staff Review) or More (Support);
+  // when true, Back from the module returns there instead of the Profile menu
+  const [profileModuleFromApp, setProfileModuleFromApp] = useState(false);
+  const closeProfileModule = () => {
+    setProfileModule(null);
+    if (profileModuleFromApp) setIsProfileOpen(false);
+  };
+  // Staff Review › Start Evaluation (Team Member Annual Review)
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [reviewCycles, setReviewCycles] = useState<ReviewCycle[]>(REVIEW_CYCLES_SEED);
+  // Support › Adv. Salary & EV Loan: one shared list so manager decisions reflect on the staff side
+  const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>([...ADVANCE_REQUESTS_SEED, ...TEAM_ADVANCE_REQUESTS_SEED]);
+  /** 'new' = raising a request, an id = editing it, null = list */
+  const [advanceFormFor, setAdvanceFormFor] = useState<string | null>(null);
+  const [advanceSubmittedType, setAdvanceSubmittedType] = useState<AdvanceRequestType | null>(null);
+  const [advanceGuideOpen, setAdvanceGuideOpen] = useState(false);
+  const submitAdvance = (draft: AdvanceDraft) => {
+    if (advanceFormFor && advanceFormFor !== 'new') {
+      setAdvanceRequests((prev) => prev.map((r) => (r.id === advanceFormFor ? { ...r, ...draft } : r)));
+      showToast('Request updated.');
+    } else {
+      setAdvanceRequests((prev) => [
+        {
+          ...draft,
+          id: `adv-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
+          // EV loans go straight to the CTM (Employee > CTM > HR > Finance)
+          status: isEvLoan(draft.type) ? 'CTM Review Pending' : 'Manager Review Pending',
+          submittedOn: toISODate(new Date()),
+          rcUploaded: isEvLoan(draft.type) ? false : undefined,
+          comments: [],
+        },
+        ...prev,
+      ]);
+      setAdvanceSubmittedType(draft.type);
+      if (!isManager && !isEvLoan(draft.type)) {
+        pushNotification('Manager', {
+          category: 'Adv. Salary',
+          title: `Advance salary request from ${resignationUser.staffName}`,
+          body: `${formatAdvanceINR(draft.amount)} over ${draft.months} months. Review it in Team's Requests.`,
+          link: 'advance-salary',
+          actionRequired: true,
+        });
+      }
+    }
+    setAdvanceFormFor(null);
+  };
+  // Reporting manager's decision: approved requests move on to the CTM
+  const reviewAdvance = (id: string, decision: AdvanceDecision, comment: string) => {
+    const req = advanceRequests.find((r) => r.id === id);
+    const now = new Date().toISOString();
+    setAdvanceRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: decision === 'Approved' ? 'Manager Approved' : 'Manager Rejected',
+              comments: [
+                ...r.comments,
+                ...(comment ? [{ id: `c-${Date.now()}`, author: ADVANCE_MANAGER, role: 'Manager' as const, text: comment, createdAt: now }] : []),
+                {
+                  id: `c-${Date.now()}-s`,
+                  author: 'System',
+                  role: 'System' as const,
+                  text: `${decision === 'Approved' ? 'Approved' : 'Rejected'} by ${ADVANCE_MANAGER}.${
+                    decision === 'Approved' ? ' Sent to the CTM for review.' : ''
+                  }`,
+                  createdAt: now,
+                },
+              ],
+            }
+          : r
+      )
+    );
+    showToast(decision === 'Approved' ? 'Request approved and sent to the CTM.' : 'Request rejected.');
+    if (req?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'Adv. Salary',
+        title: `Your advance salary request was ${decision.toLowerCase()}`,
+        body: `${formatAdvanceINR(req.amount)} over ${req.months} months${comment ? ` — "${comment}"` : ''}`,
+        link: 'advance-salary',
+      });
+    }
+  };
+  // My Profile details (view mode by default; "Edit Profile" opens it straight in edit mode)
+  const [myProfile, setMyProfile] = useState<MyProfileData>(MY_PROFILE_SEED);
+  // My Team > Edit Details: manager edits a member's full profile (saved per staff code)
+  const [editingMemberCode, setEditingMemberCode] = useState<string | null>(null);
+  const [teamProfiles, setTeamProfiles] = useState<Record<string, MyProfileData>>({});
+  // L&D › Training Request: one list shared by staff and manager logins
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(TRAINING_REQUESTS_SEED);
+  const [trainingScope, setTrainingScope] = useState<TrainingScope>('my');
+  const [trainingForm, setTrainingForm] = useState<null | { scope: TrainingScope; editId?: string }>(null);
+  // Leaving My Team closes any open member profile
+  useEffect(() => {
+    if (appTab !== 'more' || moreModule !== 'my-team') setEditingMemberCode(null);
+    if (appTab !== 'more' || moreModule !== 'training-request') setTrainingForm(null);
+  }, [appTab, moreModule]);
+  const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
+  // Resignation module: no logs initially; newest first
+  const [resignations, setResignations] = useState<ResignationRecord[]>([]);
+  // Other team members' resignations (seen by the reporting manager)
+  const [teamResignations, setTeamResignations] = useState<ResignationRecord[]>(TEAM_RESIGNATIONS_SEED);
+  // The manager's own resignations ("My Resignation" tab in Manager role)
+  const [managerResignations, setManagerResignations] = useState<ResignationRecord[]>([]);
+  const [isApplyingResignation, setIsApplyingResignation] = useState(false);
+  // Tickets module: staff member's tickets, the rest of the team's, and the manager's own
+  const [staffTickets, setStaffTickets] = useState<Ticket[]>(STAFF_TICKETS_SEED);
+  const [teamTickets, setTeamTickets] = useState<Ticket[]>(TEAM_TICKETS_SEED);
+  const [managerTickets, setManagerTickets] = useState<Ticket[]>([]);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+
+  // Assets module: one shared list so a staff member's return request shows on the manager's Team tab
+  const [assets, setAssets] = useState<AssetRecord[]>(ASSETS_SEED);
+
+  // Support › Cab Request: one shared list so manager decisions reflect on the staff side
+  const [cabRequests, setCabRequests] = useState<CabRequest[]>(CAB_REQUESTS_SEED);
+  /** 'new' = raising a request, an id = editing it, null = list */
+  const [cabFormFor, setCabFormFor] = useState<string | null>(null);
+  const [cabSubmitted, setCabSubmitted] = useState(false);
+
+  const isManager = userRole === 'Manager';
+  const myOTRequests = isManager ? managerOTRequests : staffOTRequests;
+  // Identity used for the resignation module: staff = John, manager = his reporting manager
+  const resignationUser = isManager
+    ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', designation: 'Design Manager', department: 'Product Design' }
+    : CURRENT_STAFF;
+  const myResignations = isManager ? managerResignations : resignations;
+  // Fills the WFH/Hybrid Staff Declaration
+  const declarant: Declarant = isManager
+    ? {
+        name: resignationUser.staffName,
+        staffCode: resignationUser.staffCode,
+        designation: resignationUser.designation,
+        department: resignationUser.department,
+        personalEmail: 'naveendas.home@gmail.com',
+        officialEmail: 'naveen.das@my-cpe.com',
+      }
+    : {
+        name: resignationUser.staffName,
+        staffCode: resignationUser.staffCode,
+        designation: resignationUser.designation,
+        department: resignationUser.department,
+        personalEmail: String(myProfile.values.personalEmail ?? ''),
+        officialEmail: String(myProfile.values.officialEmail ?? ''),
+      };
+  const myAdvanceRequests = advanceRequests.filter((r) => r.staffName === resignationUser.staffName);
+
+  const requestAssetReturn = (ids: string[]) => {
+    const today = toISODate(new Date());
+    setAssets((prev) =>
+      prev.map((a) => (ids.includes(a.id) && a.status === 'Assigned' ? { ...a, status: 'Return Requested', returnRequestedOn: today } : a))
+    );
+    showToast(ids.length === 1 ? 'Return requested. IT will collect it from your desk.' : `Return requested for ${ids.length} assets.`);
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'Assets',
+        title: `Asset return requested by ${resignationUser.staffName}`,
+        body: `${ids.length} ${ids.length === 1 ? 'asset is' : 'assets are'} being handed back to IT. See Team's Assets.`,
+        link: 'assets',
+      });
+    }
+  };
+  const setMyResignations = isManager ? setManagerResignations : setResignations;
+
+  const submitCabRequest = (draft: CabDraft) => {
+    if (cabFormFor && cabFormFor !== 'new') {
+      setCabRequests((prev) => prev.map((r) => (r.id === cabFormFor ? { ...r, ...draft } : r)));
+      showToast('Cab request updated.');
+    } else {
+      setCabRequests((prev) => [
+        {
+          ...draft,
+          id: `cab-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
+          status: 'Pending',
+          submittedOn: toISODate(new Date()),
+        },
+        ...prev,
+      ]);
+      setCabSubmitted(true);
+      if (!isManager) {
+        pushNotification('Manager', {
+          category: 'Cab Request',
+          title: `Cab request from ${resignationUser.staffName}`,
+          body: `${cabTitle(draft)} · pickup at ${draft.pickupTime}. Review it in Team's Requests.`,
+          link: 'cab-request',
+          actionRequired: true,
+        });
+      }
+    }
+    setCabFormFor(null);
+  };
+  const closeCabRequest = (id: string, how: 'cancel' | 'stop') => {
+    const today = toISODate(new Date());
+    setCabRequests((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, status: how === 'stop' ? 'Terminated' : 'Cancelled', terminatedOn: how === 'stop' ? today : r.terminatedOn } : r
+      )
+    );
+    showToast(how === 'stop' ? 'Daily cab stopped from today.' : 'Cab request cancelled.');
+  };
+  const reviewCabRequest = (id: string, decision: CabDecision, comment: string) => {
+    const req = cabRequests.find((r) => r.id === id);
+    setCabRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: decision, review: { by: CAB_MANAGER, comment, on: toISODate(new Date()) } } : r))
+    );
+    showToast(decision === 'Approved' ? 'Cab request approved.' : 'Cab request rejected.');
+    if (req?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'Cab Request',
+        title: `Your cab request was ${decision.toLowerCase()}`,
+        body: `${cabTitle(req)} · ${req.pickupTime}${comment ? ` — "${comment}"` : ''}`,
+        link: 'cab-request',
+      });
+    }
+  };
+
+  const submitResignation = (data: ResignationFormData) => {
+    setMyResignations((prev) => [
+      {
+        id: `resig-${Date.now()}`,
+        ...resignationUser,
+        ...data,
+        status: 'Notice',
+        // A manager's own resignation goes to their manager
+        reportingManager: isManager ? 'Priya Nair' : REPORTING_MANAGER,
+        managerApproval: 'Pending',
+        ctmApproval: 'Pending',
+      },
+      ...prev,
+    ]);
+    setIsApplyingResignation(false);
+    showToast('Resignation submitted to your reporting manager.');
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'Resignation',
+        title: `Resignation submitted by ${resignationUser.staffName}`,
+        body: `Last working day would be ${data.lastWorkingDate}. Review it in Team Resignations.`,
+        link: 'resignation',
+        actionRequired: true,
+      });
+    }
+  };
+
+  // Manager decision → updates the shared record, so the staff side reflects it instantly
+  const reviewResignation = (id: string, decision: ReviewDecision, comment: string) => {
+    const apply = (list: ResignationRecord[]) =>
+      list.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              managerApproval: decision,
+              managerComment: comment || undefined,
+              managerReviewedAt: toISODate(new Date()),
+              status: decision === 'Rejected' ? ('Rejected' as const) : r.status,
+            }
+          : r
+      );
+    setResignations(apply);
+    setTeamResignations(apply);
+    showToast(`Resignation ${decision === 'Approved' ? 'approved' : 'rejected'}.`);
+    if (resignations.some((x) => x.id === id)) {
+      pushNotification('Staff', {
+        category: 'Resignation',
+        title: `Your resignation was ${decision.toLowerCase()}`,
+        body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+        link: 'resignation',
+      });
+    }
+  };
+
+  const byNewest = (list: Ticket[]) => [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const myTickets = byNewest(isManager ? managerTickets : staffTickets);
+  const teamTicketList = byNewest([...staffTickets, ...teamTickets]);
+
+  // Applies a change to whichever list holds the ticket, so staff and manager views stay in sync
+  const updateTicket = (id: string, change: (t: Ticket) => Ticket) => {
+    const apply = (list: Ticket[]) => list.map((t) => (t.id === id ? change(t) : t));
+    setStaffTickets(apply);
+    setTeamTickets(apply);
+    setManagerTickets(apply);
+  };
+
+  const createTicket = (data: NewTicketData) => {
+    const all = [...staffTickets, ...teamTickets, ...managerTickets];
+    const nextId = String(Math.max(93400, ...all.map((t) => Number(t.id) || 0)) + 1);
+    const ticket: Ticket = {
+      id: nextId,
+      staffName: resignationUser.staffName,
+      staffCode: resignationUser.staffCode,
+      ...data,
+      status: 'Open',
+      createdAt: new Date().toISOString(),
+      comments: [],
+    };
+    (isManager ? setManagerTickets : setStaffTickets)((prev) => [ticket, ...prev]);
+    setIsCreatingTicket(false);
+    showToast(`Ticket #${nextId} created. The team will get back to you soon.`);
+  };
+
+  const commentOnTicket = (id: string, text: string) =>
+    updateTicket(id, (t) => ({
+      ...t,
+      comments: [
+        ...t.comments,
+        {
+          id: `c-${Date.now()}`,
+          author: resignationUser.staffName,
+          role: isManager ? 'Manager' : 'Staff',
+          text,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+
+  const reopenTicket = (id: string, reason: string) => {
+    updateTicket(id, (t) => ({
+      ...t,
+      status: 'Open',
+      comments: [
+        ...t.comments,
+        {
+          id: `c-${Date.now()}`,
+          author: 'System',
+          role: 'System',
+          text: `Reopened by ${resignationUser.staffName}: “${reason}”`,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+    showToast(`Ticket #${id} reopened.`);
+  };
+
+  // Manager decision on an attendance edit request → reflected on the staff member's card
+  const reviewAttendanceMany = (ids: string[], decision: AttendanceDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: AttendanceRecord[]) =>
+      list.map((r) =>
+        idSet.has(r.id)
+          ? {
+              ...r,
+              editStatus: decision,
+              editReviewedBy: ATTENDANCE_REVIEWER,
+              editReviewedAt: reviewedAt,
+              managerRemark: comment || undefined,
+              ...(decision === 'approved'
+                ? { status: 'full_day' as const, statusLabel: 'Full Day (Approved)' }
+                : { statusLabel: 'Rejected' }),
+            }
+          : r
+      );
+    setRecords(apply);
+    setTeamAttendanceRequests(apply);
+    const verb = decision === 'approved' ? 'approved' : 'rejected';
+    records
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Attendance',
+          title: `Attendance edit ${verb} for ${x.dateFormatted}`,
+          body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+          link: 'attendance',
+        })
+      );
+    showToast(ids.length === 1 ? `Edit request ${verb}.` : `${ids.length} edit requests ${verb}.`);
+  };
+  const reviewAttendance = (id: string, decision: AttendanceDecision, comment: string) =>
+    reviewAttendanceMany([id], decision, comment);
+  // Profile photo (data URL); null shows first + last name initials
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [wishTarget, setWishTarget] = useState<{ person: TeamCelebration; kind: 'birthday' | 'anniversary' } | null>(null);
+
+  const todayKey = toDateKey(new Date());
+  const upcomingHolidays = HOLIDAYS_DATA.filter((h) => h.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date));
+  const holidaysNext30Days = upcomingHolidays.filter(
+    (h) => new Date(`${h.date}T00:00:00`).getTime() - Date.now() <= 30 * 86400000
+  ).length;
+
+  const myNotifications = isManager ? managerNotifications : staffNotifications;
+  const setMyNotifications = isManager ? setManagerNotifications : setStaffNotifications;
+  const unreadNotifications = myNotifications.filter((n) => !n.read).length;
+
+  const openNotification = (n: AppNotification) => {
+    setMyNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    if (!n.link) return;
+    setIsNotificationsOpen(false);
+    setIsProfileOpen(false);
+    setProfileModule(null);
+    setCelebrationsTab(null);
+    setMoreModule(null);
+    switch (n.link) {
+      case 'attendance':
+      case 'leaves':
+        setActiveModuleTab(n.link === 'leaves' ? 'Leaves' : 'Attendance');
+        setAppTab('attendance');
+        break;
+      case 'work-timing':
+        setIsRequestingFlex(false);
+        setEditingFlex(null);
+        setAppTab('more');
+        setMoreModule('work-timing');
+        break;
+      case 'ot-request':
+        setIsAddingOT(false);
+        setAppTab('more');
+        setMoreModule('ot-request');
+        break;
+      case 'cab-request':
+        setAppTab('home');
+        setProfileModuleFromApp(false);
+        setIsProfileOpen(true);
+        setCabFormFor(null);
+        setProfileModule('Cab Request');
+        break;
+      case 'wfo':
+        setSelectedWFORecord(null);
+        setActiveModuleTab('WFO Days');
+        setAppTab('attendance');
+        break;
+      case 'advance-salary':
+        setAppTab('home');
+        setProfileModuleFromApp(false);
+        setIsProfileOpen(true);
+        setAdvanceFormFor(null);
+        setProfileModule('Adv. Salary & EV Loan');
+        break;
+      case 'tickets':
+      case 'resignation':
+      case 'assets':
+        setAppTab('home');
+        setProfileModuleFromApp(false);
+        setIsProfileOpen(true);
+        setProfileModule(n.link === 'tickets' ? 'Tickets' : n.link === 'assets' ? 'Asset' : 'Resignation');
+        break;
+      case 'celebrations':
+        setAppTab('home');
+        setCelebrationsTab('Birthdays');
+        break;
+      case 'reimbursement':
+        setAppTab('more');
+        setMoreModule('expense-reimbursement');
+        break;
+      case 'training-request':
+        setTrainingForm(null);
+        setTrainingScope(isManager ? 'team' : 'my');
+        setAppTab('more');
+        setMoreModule('training-request');
+        break;
+    }
+  };
+
+  const openMoreModule = (m: MoreModule) => {
+    if (m.id === 'my-team' || m.id === 'recognitions') {
+      setMoreModule(m.id);
+    } else if (m.id === 'training-request') {
+      setTrainingForm(null);
+      setTrainingScope('my');
+      setMoreModule(m.id);
+    } else if (m.id === 'company-feed') {
+      setOpenFeedPostId(null);
+      setMoreModule(m.id);
+    } else if (m.id === 'policies' || m.id === 'expense-reimbursement') {
+      setMoreModule(m.id);
+    } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
+      setSelectedWFORecord(null);
+      setActiveModuleTab(m.id);
+      setAppTab('attendance');
+    } else if (m.id === 'work-timing') {
+      setIsRequestingFlex(false);
+      setEditingFlex(null);
+      setMoreModule(m.id);
+    } else if (m.id === 'ot-request') {
+      setIsAddingOT(false);
+      setMoreModule(m.id);
+    } else if (
+      m.id === 'Resignation' ||
+      m.id === 'Tickets' ||
+      m.id === 'Relevant Contacts' ||
+      m.id === 'Asset' ||
+      m.id === 'VOIP Directory' ||
+      m.id === 'Adv. Salary & EV Loan' ||
+      m.id === 'Cab Request'
+    ) {
+      // Support modules live in the profile flow; Back returns to the screen underneath
+      setIsApplyingResignation(false);
+      setIsCreatingTicket(false);
+      setAdvanceFormFor(null);
+      setCabFormFor(null);
+      setProfileModuleFromApp(true);
+      setProfileModule(m.id);
+      setIsProfileOpen(true);
+    } else {
+      showToast(`${m.label} is coming soon.`);
+    }
+  };
+
+  // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
+  const openFromDrawer = (m: MoreModule) => {
+    setIsMenuOpen(false);
+    setIsNotificationsOpen(false);
+    setCelebrationsTab(null);
+    if (MORE_SCREENS.includes(m.id)) {
+      setIsProfileOpen(false);
+      setProfileModule(null);
+      if (appTab !== 'more') setMoreReturnTab(appTab);
+      setAppTab('more');
+    } else if (['Attendance', 'Leaves', 'Holidays', 'WFO Days'].includes(m.id)) {
+      setIsProfileOpen(false);
+      setProfileModule(null);
+    }
+    // Support modules open in the profile flow over the current screen
+    openMoreModule(m);
+  };
+  const closeMoreModule = () => {
+    setMoreModule(null);
+    setAppTab(moreReturnTab === 'more' ? 'home' : moreReturnTab);
+  };
+
+  const handleAppTabChange = (tab: AppTab) => {
+    setCelebrationsTab(null);
+    setIsProfileOpen(false);
+    setProfileModule(null);
+    setMoreModule(null);
+    setOpenFeedPostId(null);
+    setIsNotificationsOpen(false);
+    if (tab === 'attendance') setActiveModuleTab('Attendance');
+    // Leaves lives on the Attendance & Leaves screen
+    if (tab === 'leaves') {
+      setActiveModuleTab('Leaves');
+      setAppTab('attendance');
+      return;
+    }
+    setAppTab(tab);
+  };
   const [scale, setScale] = useState<number>(100);
   const [showThumbZones, setShowThumbZones] = useState(false);
   const [showHitboxes, setShowHitboxes] = useState(false);
@@ -52,6 +740,23 @@ export default function App() {
   // Leaves Module State
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance>(INITIAL_LEAVE_BALANCE);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(INITIAL_LEAVE_REQUESTS);
+  // Manager's own leaves ("My Leaves") and the rest of the team's requests ("Team's Leaves")
+  const [managerLeaveBalance, setManagerLeaveBalance] = useState<LeaveBalance>(INITIAL_LEAVE_BALANCE);
+  const [managerLeaveRequests, setManagerLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [teamLeaveRequests, setTeamLeaveRequests] = useState<LeaveRequest[]>(TEAM_LEAVE_REQUESTS_SEED);
+  const [leavesTab, setLeavesTab] = useState<'mine' | 'team'>('team');
+  const myLeaveRequests = isManager ? managerLeaveRequests : leaveRequests;
+  const setMyLeaveRequests = isManager ? setManagerLeaveRequests : setLeaveRequests;
+  const myLeaveBalance = isManager ? managerLeaveBalance : leaveBalance;
+  const setMyLeaveBalance = isManager ? setManagerLeaveBalance : setLeaveBalance;
+  // Staff member's requests + the rest of the team's: pending first, then most recent
+  const teamLeaveList = [...leaveRequests, ...teamLeaveRequests].sort((a, b) =>
+    a.status === 'Pending' && b.status !== 'Pending'
+      ? -1
+      : b.status === 'Pending' && a.status !== 'Pending'
+        ? 1
+        : b.startDate.localeCompare(a.startDate)
+  );
   const [isApplyingLeaveOpen, setIsApplyingLeaveOpen] = useState(false);
   const [submittedLeave, setSubmittedLeave] = useState<{
     request: LeaveRequest;
@@ -69,12 +774,29 @@ export default function App() {
     setActiveModuleTab('Leaves');
   }, []);
 
-  // Month cycle
-  const [currentMonth, setCurrentMonth] = useState('September 2026');
-
   // Attendance Data
-  const [records, setRecords] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE_RECORDS);
-  const [kpis, setKpis] = useState<AttendanceKPIsType>(INITIAL_KPIS);
+  const [records, setRecords] = useState<AttendanceRecord[]>(ALL_ATTENDANCE_RECORDS);
+  // Manager's "Team's Attendance": other team members' edit requests (the staff member's own come from `records`)
+  const [teamAttendanceRequests, setTeamAttendanceRequests] = useState<AttendanceRecord[]>(TEAM_ATTENDANCE_REQUESTS_SEED);
+  const [attendanceTab, setAttendanceTab] = useState<'mine' | 'team'>('team');
+
+  // Staff member's own edit requests + the rest of the team's, newest first
+  const teamAttendanceList = [
+    ...records.filter((r) => r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
+    ...teamAttendanceRequests,
+  ].sort((a, b) => b.date.localeCompare(a.date));
+  // Regular (non-edit) days for the team: John's own recent days + the rest of the team
+  const myCycleRecords = records.filter((r) => r.date >= TEAM_HISTORY.from && r.date <= TEAM_HISTORY.to);
+  const teamDailyAttendance = [
+    ...myCycleRecords.filter((r) => !r.editRequested).map((r) => ({ ...r, staffCode: r.staffCode ?? ATTENDANCE_STAFF_CODE })),
+    // Days of the cycle not yet in John's own records
+    ...generateMemberDays(
+      { staffName: CURRENT_STAFF.staffName, staffCode: ATTENDANCE_STAFF_CODE, workMode: 'Office', branch: 'Gota - Ahmedabad' },
+      0,
+      new Set(myCycleRecords.map((r) => r.date))
+    ),
+    ...TEAM_DAILY_ATTENDANCE_SEED,
+  ];
 
   // Active Sheets & Dedicated Views
   const [selectedPunchRecord, setSelectedPunchRecord] = useState<AttendanceRecord | null>(null);
@@ -82,38 +804,73 @@ export default function App() {
   const [applyingLeaveRecord, setApplyingLeaveRecord] = useState<AttendanceRecord | null>(null);
   const [selectedWFORecord, setSelectedWFORecord] = useState<WFORecord | null>(null);
   const [editingWFORecordFromDetails, setEditingWFORecordFromDetails] = useState<WFORecord | null>(null);
+  // WFO Days: one shared list so the manager's decisions reflect on the staff side
+  const [wfoRecords, setWfoRecords] = useState<WFORecord[]>([...INITIAL_WFO_RECORDS, ...TEAM_WFO_RECORDS_SEED]);
+  const [wfoTab, setWfoTab] = useState<'mine' | 'team'>('team');
+  const myWFORecords = wfoRecords.filter((r) => r.staffName === resignationUser.staffName);
+  const teamWFOList = wfoRecords.filter((r) => WFO_TEAM.includes(r.staffName));
+  const submitWFO = (month: string, year: number, days: number, idToEdit?: string) => {
+    // Guard: never create a second request for a month that already has one
+    const duplicate = myWFORecords.some((r) => r.month === month && r.year === year && r.id !== idToEdit && r.status !== 'Rejected');
+    if (duplicate) return;
+    const fields = { month, year, days, monthYear: `${month} ${year}`, status: 'Pending' as const, review: undefined };
+    if (idToEdit) {
+      setWfoRecords((prev) => prev.map((r) => (r.id === idToEdit ? { ...r, ...fields } : r)));
+      setSelectedWFORecord((sel) => (sel?.id === idToEdit ? { ...sel, ...fields } : sel));
+    } else {
+      setWfoRecords((prev) => [
+        {
+          ...fields,
+          id: `wfo-${year}-${month.toLowerCase().slice(0, 3)}-${Date.now()}`,
+          staffName: resignationUser.staffName,
+          staffCode: resignationUser.staffCode,
+          submittedAt: 'Just now',
+        },
+        ...prev,
+      ]);
+    }
+    if (!isManager) {
+      pushNotification('Manager', {
+        category: 'WFO Days',
+        title: `WFO days ${idToEdit ? 'updated' : 'submitted'} by ${resignationUser.staffName}`,
+        body: `${month} ${year} · ${days} days (${formatWFOINR(wfoAllowanceFor(days))}). Review it in Team's WFO Days.`,
+        link: 'wfo',
+        actionRequired: true,
+      });
+    }
+  };
+  const reviewWFO = (id: string, decision: WFODecision, comment: string) => {
+    const rec = wfoRecords.find((r) => r.id === id);
+    setWfoRecords((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: decision, review: { by: WFO_MANAGER, comment, on: toISODate(new Date()) } } : r))
+    );
+    showToast(decision === 'Approved' ? 'WFO days approved.' : 'WFO days rejected.');
+    if (rec?.staffName === CURRENT_STAFF.staffName) {
+      pushNotification('Staff', {
+        category: 'WFO Days',
+        title: `Your WFO days for ${rec.monthYear} were ${decision.toLowerCase()}`,
+        body: comment ? `${WFO_MANAGER}: “${comment}”` : `${rec.days} days · reviewed by ${WFO_MANAGER}.`,
+        link: 'wfo',
+      });
+    }
+  };
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [isKPISummaryOpen, setIsKPISummaryOpen] = useState(false);
 
   // Filter criteria
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('All');
   const [activeWorkMode, setActiveWorkMode] = useState<string>('Office');
-  const [attendanceRange, setAttendanceRange] = useState(DEFAULT_ATTENDANCE_RANGE);
-
-  // Expand/Collapse state: Default is all collapsed (empty set)
-  const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
-
-  const toggleCardExpand = (id: string) => {
-    setExpandedCardIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  // Default range follows the real date: the 26th → today
+  const [attendanceRange, setAttendanceRange] = useState(() => currentAttendanceCycle());
+  const resetAttendanceRange = () => {
+    setAttendanceRange(currentAttendanceCycle());
+    setActiveFilterStatus('All');
   };
-
-  const isAnyExpanded = expandedCardIds.size > 0;
-
-  const handleToggleAll = () => {
-    if (isAnyExpanded) {
-      setExpandedCardIds(new Set());
-    } else {
-      setExpandedCardIds(new Set(filteredRecords.map((r) => r.id)));
-    }
-  };
+  // KPIs count the days inside the selected range
+  const kpis: AttendanceKPIsType = kpisFrom(
+    records.filter((r) => r.date >= toDateKey(attendanceRange.from) && r.date <= toDateKey(attendanceRange.to))
+  );
+  const rangeLabel = `${attendanceRange.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${attendanceRange.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -124,12 +881,166 @@ export default function App() {
   };
 
   const handleCancelLeave = (id: string) => {
-    setLeaveRequests((prev) =>
+    setMyLeaveRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const } : r))
     );
     setSelectedLeave((prev) => (prev?.id === id ? null : prev));
     showToast('Leave request cancelled.');
   };
+
+  const reviewLeaves = (ids: string[], decision: LeaveDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: LeaveRequest[]) =>
+      list.map((r) =>
+        idSet.has(r.id) ? { ...r, status: decision, managerComment: comment || undefined, reviewedAt } : r
+      );
+    // Rejected PTO goes back to the staff member's balance
+    const refunded = leaveRequests
+      .filter((r) => idSet.has(r.id) && decision === 'Rejected' && r.type === 'PTO')
+      .reduce((n, r) => n + r.daysCount, 0);
+    if (refunded) setLeaveBalance((b) => ({ ...b, ptoAvailable: Math.min(b.ptoTotal, b.ptoAvailable + refunded) }));
+    setLeaveRequests(apply);
+    setTeamLeaveRequests(apply);
+    const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    leaveRequests
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Leaves',
+          title: `Leave ${verb}`,
+          body: `Your ${x.type} for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
+          link: 'leaves',
+        })
+      );
+    showToast(ids.length === 1 ? `Leave request ${verb}.` : `${ids.length} leave requests ${verb}.`);
+  };
+
+  const myFlexRequests = isManager ? managerFlexRequests : flexRequests;
+  const setMyFlexRequests = isManager ? setManagerFlexRequests : setFlexRequests;
+  // Staff member's requests + the rest of the team's: pending first, then newest
+  const teamFlexList = [...flexRequests, ...teamFlexRequests].sort((a, b) =>
+    a.status === 'Pending' && b.status !== 'Pending'
+      ? -1
+      : b.status === 'Pending' && a.status !== 'Pending'
+        ? 1
+        : b.submittedAt.localeCompare(a.submittedAt)
+  );
+
+  const threadNote = (author: string, role: 'Staff' | 'Manager' | 'System', text: string) => ({
+    id: `fc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    author,
+    role,
+    text,
+    createdAt: new Date().toISOString(),
+  });
+
+  // Applies a change to whichever list holds the request (staff, team or manager's own)
+  const updateFlex = (id: string, change: (r: FlexRequest) => FlexRequest) => {
+    const apply = (list: FlexRequest[]) => list.map((r) => (r.id === id ? change(r) : r));
+    setFlexRequests(apply);
+    setTeamFlexRequests(apply);
+    setManagerFlexRequests(apply);
+  };
+
+  // Prototype stand-in for the IT team: ~3.5s after a request is approved, IT marks its review done
+  const IT_REVIEW_DELAY_MS = 3500;
+  const itReviewTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => {
+    const approved = [...flexRequests, ...teamFlexRequests, ...managerFlexRequests].filter((r) => r.status === 'Approved');
+    approved.forEach((req) => {
+      if (itReviewTimers.current.has(req.id)) return;
+      const timer = setTimeout(() => {
+        itReviewTimers.current.delete(req.id);
+        const itReviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        updateFlex(req.id, (r) =>
+          r.status !== 'Approved'
+            ? r
+            : {
+                ...r,
+                status: 'IT Review Done',
+                itReviewedBy: 'IT Support',
+                itReviewedAt,
+                comments: [
+                  ...(r.comments ?? []),
+                  threadNote(
+                    'System',
+                    'System',
+                    r.wfh && Object.keys(r.wfh.assets).length ? 'IT review done — assets will be dispatched to the delivery address' : 'IT review done'
+                  ),
+                ],
+              }
+        );
+        showToast(`IT review done for ${req.staffName.split(' ')[0]}'s ${req.type} request.`);
+        if (req.staffName === CURRENT_STAFF.staffName) {
+          pushNotification('Staff', {
+            category: 'Work Timing',
+            title: `IT review done for your ${req.type} request`,
+            body: req.wfh && Object.keys(req.wfh.assets).length
+              ? 'Your assets will be dispatched to the delivery address. The signed agreement is ready to view.'
+              : 'Everything is set up. The arrangement is now active.',
+            link: 'work-timing',
+          });
+        }
+      }, IT_REVIEW_DELAY_MS);
+      itReviewTimers.current.set(req.id, timer);
+    });
+    // updateFlex / threadNote / showToast are stable enough for this demo timer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flexRequests, teamFlexRequests, managerFlexRequests]);
+  useEffect(() => {
+    const timers = itReviewTimers.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      // Forget them too, so a remount (e.g. React StrictMode in dev) schedules them again
+      timers.clear();
+    };
+  }, []);
+
+  const commentOnFlex = (id: string, text: string) =>
+    updateFlex(id, (r) => ({
+      ...r,
+      comments: [...(r.comments ?? []), threadNote(resignationUser.staffName, isManager ? 'Manager' : 'Staff', text)],
+    }));
+
+  // Manager decision on flexibility requests → reflected on the staff member's list
+  const reviewFlex = (ids: string[], decision: FlexDecision, comment: string) => {
+    const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const idSet = new Set(ids);
+    const apply = (list: FlexRequest[]) =>
+      list.map((r) =>
+        idSet.has(r.id)
+          ? {
+              ...r,
+              status: decision,
+              managerComment: comment || undefined,
+              reviewedBy: ATTENDANCE_REVIEWER,
+              reviewedAt,
+              comments: [
+                ...(r.comments ?? []),
+                threadNote('System', 'System', `${decision} by ${ATTENDANCE_REVIEWER}${comment ? `: “${comment}”` : ''}`),
+              ],
+            }
+          : r
+      );
+    setFlexRequests(apply);
+    setTeamFlexRequests(apply);
+    const verb = decision === 'Approved' ? 'approved' : 'rejected';
+    flexRequests
+      .filter((x) => idSet.has(x.id))
+      .forEach((x) =>
+        pushNotification('Staff', {
+          category: 'Work Timing',
+          title: `${x.type} request ${verb}`,
+          body: comment ? `${ATTENDANCE_REVIEWER}: “${comment}”` : `Reviewed by ${ATTENDANCE_REVIEWER}.`,
+          link: 'work-timing',
+        })
+      );
+    showToast(ids.length === 1 ? `Request ${verb}.` : `${ids.length} requests ${verb}.`);
+  };
+
+  // Staff member's OT request + the rest of the team's (view-only for the manager), newest first
+  const teamOTList = [...staffOTRequests, ...teamOTRequests].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 
   // Submit Request Edit
   const handleSubmitEdit = (
@@ -147,49 +1058,101 @@ export default function App() {
             reqOfficeHrs: officeTime,
             reqWorkHrs: workingTime,
             editRequested: true,
+            editStatus: 'pending' as const,
             editReason: reason,
             editNote: note,
-            editRequestedAt: 'Just now',
+            editRequestedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            staffCode: ATTENDANCE_STAFF_CODE,
           };
         }
         return rec;
       })
     );
     showToast('Attendance edit request submitted successfully.');
+    const rec = records.find((x) => x.id === recordId);
+    pushNotification('Manager', {
+      category: 'Attendance',
+      title: `Attendance edit request from ${CURRENT_STAFF.staffName}`,
+      body: `${rec?.dateFormatted ?? ''} · ${reason}${note ? ` — “${note}”` : ''}`,
+      link: 'attendance',
+      actionRequired: true,
+    });
   };
 
   // Submit Apply Leave
   const handleSubmitLeave = (
     recordId: string,
-    leaveType: string,
-    session: string,
-    reason: string
+    data: { reason: string; duration: LeaveDurationType; description: string; attachmentName?: string }
   ) => {
-    setRecords((prev) =>
-      prev.map((rec) => {
-        if (rec.id === recordId) {
-          return {
-            ...rec,
-            leaveApplied: true,
-            leaveType: `${leaveType} (${session})`,
-          };
-        }
-        return rec;
-      })
-    );
-    showToast(`Leave request for ${leaveType} (${session}) submitted.`);
+    const label = `${data.reason} · ${data.duration}`;
+    setRecords((prev) => prev.map((rec) => (rec.id === recordId ? { ...rec, leaveApplied: true, leaveType: label } : rec)));
+    showToast(`Leave request submitted: ${label}.`);
   };
 
   // Filter records
-  const filteredRecords = records.filter((rec) => {
-    if (rec.date < toDateKey(attendanceRange.from) || rec.date > toDateKey(attendanceRange.to)) return false;
-    if (activeFilterStatus === 'All') return true;
-    if (activeFilterStatus === 'Full Day' && rec.status === 'full_day') return true;
-    if (activeFilterStatus === 'Half Day' && rec.status === 'half_day') return true;
-    if (activeFilterStatus === 'Absent' && rec.status === 'absent') return true;
-    if (activeFilterStatus === 'WO' && rec.status === 'weekly_off') return true;
-    return false;
-  });
+  const filteredRecords = records
+    .filter((rec) => {
+      if (rec.date < toDateKey(attendanceRange.from) || rec.date > toDateKey(attendanceRange.to)) return false;
+      if (activeFilterStatus === 'All') return true;
+      if (activeFilterStatus === 'Full Day' && rec.status === 'full_day') return true;
+      if (activeFilterStatus === 'Half Day' && rec.status === 'half_day') return true;
+      if (activeFilterStatus === 'Absent' && rec.status === 'absent') return true;
+      if (activeFilterStatus === 'WO' && rec.status === 'weekly_off') return true;
+      return false;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Which screen is showing (mirrors the render chain below) and how deep it sits, for the slide transition
+  const trainingMe: TrainingPerson = isManager
+    ? { staffName: REPORTING_MANAGER, staffCode: 'A01120', reportingManager: 'Priya Nair', branch: TRAINING_BRANCH }
+    : { staffName: CURRENT_STAFF.staffName, staffCode: CURRENT_STAFF.staffCode, reportingManager: REPORTING_MANAGER, branch: TRAINING_BRANCH };
+  // Staff logins have no Team tab
+  const trainingTab: TrainingScope = !isManager && trainingScope === 'team' ? 'my' : trainingScope;
+  const editingTraining = trainingForm?.editId ? trainingRequests.find((r) => r.id === trainingForm.editId) : undefined;
+
+  const editingMember = moreModule === 'my-team' ? myTeam.find((m) => m.staffCode === editingMemberCode) ?? null : null;
+  // The signed-in manager is in their own team list; their edits go to My Profile
+  const isSelf = (m: TeamMemberRecord) => m.staffCode === myProfile.values.employeeId;
+  const memberProfile = (m: TeamMemberRecord) =>
+    isSelf(m) ? myProfile : teamProfiles[m.staffCode] ?? profileForMember(m, MY_PROFILE_SEED);
+
+  const screen = ((): { key: string; depth: number } => {
+    if (isNotificationsOpen) return { key: 'notifications', depth: 1 };
+    if (isProfileOpen) {
+      if (!profileModule) return { key: 'profile', depth: 1 };
+      const inForm =
+        (profileModule === 'Staff Review' && isEvaluating) ||
+        (profileModule === 'Tickets' && isCreatingTicket) ||
+        (profileModule === 'Resignation' && isApplyingResignation) ||
+        (profileModule === 'Adv. Salary & EV Loan' && Boolean(advanceFormFor)) ||
+        (profileModule === 'Cab Request' && Boolean(cabFormFor));
+      return { key: `profile/${profileModule}${inForm ? '/form' : ''}`, depth: inForm ? 3 : 2 };
+    }
+    if (celebrationsTab) return { key: 'celebrations', depth: 1 };
+    if (appTab === 'more' && moreModule === 'recognitions') return { key: 'more/recognitions', depth: 1 };
+    if (appTab === 'more' && moreModule === 'policies') return { key: 'more/policies', depth: 1 };
+    if (appTab === 'more' && moreModule === 'expense-reimbursement') return { key: 'more/expense-reimbursement', depth: 1 };
+    if (appTab === 'more' && moreModule === 'training-request') {
+      return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
+    }
+    if (appTab === 'more' && moreModule === 'my-team') {
+      return { key: `more/my-team${editingMember ? '/profile' : ''}`, depth: editingMember ? 2 : 1 };
+    }
+    if (appTab === 'more' && moreModule === 'company-feed') {
+      return { key: `more/company-feed${openFeedPost ? '/post' : ''}`, depth: openFeedPost ? 2 : 1 };
+    }
+    if (appTab === 'more' && (moreModule === 'work-timing' || moreModule === 'ot-request')) {
+      const inForm = moreModule === 'work-timing' ? isRequestingFlex || Boolean(editingFlex) : isAddingOT;
+      return { key: `more/${moreModule}${inForm ? '/form' : ''}`, depth: inForm ? 2 : 1 };
+    }
+    if (appTab !== 'attendance') return { key: appTab, depth: 0 };
+    if (editingLeave) return { key: 'attendance/edit-leave', depth: 2 };
+    if (isApplyingLeaveOpen) return { key: 'attendance/apply-leave', depth: 2 };
+    if (selectedLeave) return { key: 'attendance/leave', depth: 1 };
+    if (applyingLeaveRecord) return { key: 'attendance/apply-for-day', depth: 1 };
+    if (selectedWFORecord) return { key: 'attendance/wfo', depth: 1 };
+    return { key: 'attendance', depth: 0 };
+  })();
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased">
@@ -197,11 +1160,11 @@ export default function App() {
       <header className="h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-[#2F68FE] flex items-center justify-center text-white font-bold text-xs shadow-xs">
-            TH
+            HR
           </div>
           <div>
             <span className="font-semibold text-xs tracking-tight text-white">
-              Team Hub Mobile
+              MYCPE ONE HRMS 24*7
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               Attendance &amp; Leaves
@@ -211,6 +1174,27 @@ export default function App() {
 
         {/* Device Controls */}
         <div className="flex items-center gap-2">
+          {/* User Role Selector */}
+          <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+            {USER_ROLES.map((role) => (
+              <button
+                key={role}
+                onClick={() => {
+                  if (role === userRole) return;
+                  setUserRole(role);
+                  showToast(`Logged in as ${role}`);
+                }}
+                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                  userRole === role
+                    ? 'bg-[#2F68FE] text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+
           {/* Device Model Selector */}
           <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
             <button
@@ -235,10 +1219,26 @@ export default function App() {
             </button>
           </div>
 
+          {/* Log out: replays splash + login flow */}
+          {isLoggedIn && (
+            <button
+              onClick={() => {
+                setIsProfileOpen(false);
+                setIsLoggedIn(false);
+              }}
+              className="h-7 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 text-xs font-medium transition-colors"
+              title="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Log out
+            </button>
+          )}
+
           {/* Reset Demo Data Button */}
           <button
             onClick={() => {
-              setRecords(INITIAL_ATTENDANCE_RECORDS);
+              setRecords(ALL_ATTENDANCE_RECORDS);
+              resetAttendanceRange();
               setActiveFilterStatus('All');
               showToast('Demo data reset to initial screenshot state.');
             }}
@@ -260,7 +1260,7 @@ export default function App() {
               {scale}%
             </span>
             <button
-              onClick={() => setScale(Math.min(100, scale + 10))}
+              onClick={() => setScale(Math.min(200, scale + 10))}
               className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs font-mono"
             >
               +
@@ -270,38 +1270,752 @@ export default function App() {
       </header>
 
       {/* Main Workspace Canvas */}
-      <main className="flex-1 flex items-center justify-center p-4 overflow-auto bg-slate-900 relative">
+      <main className="flex-1 flex p-4 overflow-auto bg-slate-900 relative">
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="absolute top-6 z-50 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="absolute inset-x-0 top-6 z-50 flex justify-center pointer-events-none">
+          <div className="animate-in fade-in slide-in-from-top-3 duration-300">
             <div className="bg-[#1E293B] text-white px-4 py-2.5 rounded-xl border border-slate-700 shadow-xl flex items-center gap-2 text-xs">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{toastMessage}</span>
             </div>
           </div>
+          </div>
         )}
 
-        <div
-          style={{
-            transform: `scale(${scale / 100})`,
-            transformOrigin: 'center center',
-            transition: 'transform 0.2s ease',
-          }}
-        >
+        {/* zoom (not transform) so the enlarged device takes real space and the canvas can scroll to all of it */}
+        <div className="m-auto shrink-0" style={{ zoom: scale / 100 }}>
           <BottomSheetProvider>
             <MobileDeviceFrame
               activeDevice={device}
               showThumbZoneOverlay={showThumbZones}
               showTouchHitboxOverlay={showHitboxes}
             >
-              {/* Dedicated Apply for Leave View for Leaves Tab (Images 4, 5, 6, 7) */}
-              {editingLeave ? (
+              {/* Client (HRMS) is its own app — no link to the Staff / Manager flows */}
+              {userRole === 'Client' ? (
+                <ClientApp />
+              ) : !isLoggedIn ? (
+                <AuthFlow
+                  onAuthenticated={() => {
+                    setIsLoggedIn(true);
+                    setAppTab('home');
+                    setCelebrationsTab(null);
+                    showToast(`Signed in as ${userRole}`);
+                  }}
+                />
+              ) : (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <AppHeader
+                    fullName="John Smith"
+                    profilePhoto={profilePhoto}
+                    unreadNotifications={unreadNotifications}
+                    onOpenNotifications={() => setIsNotificationsOpen(true)}
+                    onOpenMenu={() => setIsMenuOpen(true)}
+                    onGoHome={() => handleAppTabChange('home')}
+                    onOpenProfile={() => {
+                      setIsNotificationsOpen(false);
+                      setProfileModule(null);
+                      setIsProfileOpen(true);
+                    }}
+                  />
+                  <SideDrawer
+                    isOpen={isMenuOpen}
+                    onClose={() => setIsMenuOpen(false)}
+                    role={userRole}
+                    fullName={resignationUser.staffName}
+                    subtitle={`${resignationUser.designation} · ${resignationUser.staffCode}`}
+                    profilePhoto={isManager ? null : profilePhoto}
+                    activeModuleId={
+                      appTab === 'more' && moreModule
+                        ? moreModule
+                        : isProfileOpen && profileModule
+                          ? profileModule
+                          : appTab === 'attendance'
+                            ? activeModuleTab
+                            : null
+                    }
+                    version={APP_VERSION}
+                    onOpenModule={openFromDrawer}
+                    onOpenProfile={() => {
+                      setIsMenuOpen(false);
+                      setIsNotificationsOpen(false);
+                      setProfileModule(null);
+                      setIsProfileOpen(true);
+                    }}
+                    onLogout={() => {
+                      setIsMenuOpen(false);
+                      setIsProfileOpen(false);
+                      setIsLoggedIn(false);
+                    }}
+                  />
+              <ScreenTransition screenKey={screen.key} depth={screen.depth}>
+              {isNotificationsOpen ? (
+                <NotificationsView
+                  notifications={myNotifications}
+                  onBack={() => setIsNotificationsOpen(false)}
+                  onOpen={openNotification}
+                  onMarkAllRead={() => setMyNotifications((prev) => prev.map((n) => ({ ...n, read: true })))}
+                />
+              ) : isProfileOpen && profileModule === 'My Profile' ? (
+                <MyProfileView
+                  profile={myProfile}
+                  photoUrl={profilePhoto}
+                  startEditing={myProfileStartEditing}
+                  onBack={() => setProfileModule(null)}
+                  onNotify={showToast}
+                  onSave={(next) => {
+                    setMyProfile(next);
+                    showToast('Profile updated.');
+                  }}
+                />
+              ) : isProfileOpen && profileModule === 'Staff Review' && isEvaluating ? (
+                <AnnualReviewView
+                  cycles={reviewCycles}
+                  onBack={() => setIsEvaluating(false)}
+                  onSaveDraft={(id, form) => {
+                    setReviewCycles((prev) => prev.map((c) => (c.id === id ? { ...c, form } : c)));
+                    showToast('Draft saved. You can finish it later.');
+                  }}
+                  onSubmit={(id, form) => {
+                    setReviewCycles((prev) =>
+                      prev.map((c) => (c.id === id ? { ...c, form, status: 'Submitted', submittedOn: toISODate(new Date()) } : c))
+                    );
+                    setIsEvaluating(false);
+                    showToast('Annual review submitted.');
+                  }}
+                />
+              ) : isProfileOpen && profileModule === 'Staff Review' ? (
+                <StaffReviewView
+                  onBack={closeProfileModule}
+                  onStartEvaluation={() => setIsEvaluating(true)}
+                  evaluationSubmitted={!reviewCycles.some((c) => c.status === 'Open')}
+                />
+              ) : isProfileOpen && profileModule === 'Relevant Contacts' ? (
+                <RelevantContactsView onBack={closeProfileModule} onToast={showToast} />
+              ) : isProfileOpen && profileModule === 'VOIP Directory' ? (
+                <VoipDirectoryView
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  onBack={closeProfileModule}
+                  onToast={showToast}
+                />
+              ) : isProfileOpen && profileModule === 'Asset' ? (
+                <AssetsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  assets={assets.filter((a) => a.staffName === resignationUser.staffName)}
+                  onBack={closeProfileModule}
+                  onRequestReturn={requestAssetReturn}
+                  team={isManager ? { assets: assets.filter((a) => TEAM_ASSET_MEMBERS.includes(a.staffName)) } : undefined}
+                />
+              ) : isProfileOpen && profileModule === 'Cab Request' && cabFormFor ? (
+                <CabRequestFormView
+                  key={cabFormFor}
+                  requests={cabRequests.filter((r) => r.staffName === resignationUser.staffName)}
+                  initial={cabRequests.find((r) => r.id === cabFormFor)}
+                  onBack={() => setCabFormFor(null)}
+                  onSubmit={submitCabRequest}
+                />
+              ) : isProfileOpen && profileModule === 'Cab Request' ? (
+                <CabRequestView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={cabRequests.filter((r) => r.staffName === resignationUser.staffName)}
+                  onBack={closeProfileModule}
+                  onNew={() => setCabFormFor('new')}
+                  onEdit={(id) => setCabFormFor(id)}
+                  onCancel={(id) => closeCabRequest(id, 'cancel')}
+                  onStop={(id) => closeCabRequest(id, 'stop')}
+                  submitted={cabSubmitted}
+                  onDismissSubmitted={() => setCabSubmitted(false)}
+                  team={
+                    isManager
+                      ? { requests: cabRequests.filter((r) => CAB_TEAM.includes(r.staffName)), onReview: reviewCabRequest }
+                      : undefined
+                  }
+                />
+              ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' && advanceFormFor ? (
+                <AdvanceRequestView
+                  key={advanceFormFor}
+                  requests={myAdvanceRequests}
+                  initial={advanceRequests.find((r) => r.id === advanceFormFor)}
+                  onBack={() => setAdvanceFormFor(null)}
+                  onOpenGuidelines={() => setAdvanceGuideOpen(true)}
+                  onSubmit={submitAdvance}
+                />
+              ) : isProfileOpen && profileModule === 'Adv. Salary & EV Loan' ? (
+                <AdvanceSalaryView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  currentUser={resignationUser.staffName}
+                  requests={myAdvanceRequests}
+                  onBack={closeProfileModule}
+                  onOpenGuidelines={() => setAdvanceGuideOpen(true)}
+                  onRaise={() => setAdvanceFormFor('new')}
+                  onEdit={(id) => setAdvanceFormFor(id)}
+                  onWithdraw={(id) => {
+                    setAdvanceRequests((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? {
+                              ...r,
+                              status: 'Withdrawn',
+                              comments: [
+                                ...r.comments,
+                                {
+                                  id: `c-${Date.now()}`,
+                                  author: 'System',
+                                  role: 'System',
+                                  text: `Request withdrawn by ${resignationUser.staffName}.`,
+                                  createdAt: new Date().toISOString(),
+                                },
+                              ],
+                            }
+                          : r
+                      )
+                    );
+                    showToast('Request withdrawn.');
+                  }}
+                  onComment={(id, text) =>
+                    setAdvanceRequests((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? {
+                              ...r,
+                              comments: [
+                                ...r.comments,
+                                {
+                                  id: `c-${Date.now()}`,
+                                  author: resignationUser.staffName,
+                                  // A manager commenting on a team member's request speaks as the manager
+                                  role: isManager ? 'Manager' : 'Staff',
+                                  text,
+                                  createdAt: new Date().toISOString(),
+                                },
+                              ],
+                            }
+                          : r
+                      )
+                    )
+                  }
+                  submittedType={advanceSubmittedType}
+                  onDismissSubmitted={() => setAdvanceSubmittedType(null)}
+                  team={
+                    isManager
+                      ? { requests: advanceRequests.filter((r) => ADVANCE_TEAM.includes(r.staffName)), onReview: reviewAdvance }
+                      : undefined
+                  }
+                />
+              ) : isProfileOpen && profileModule === 'Tickets' && isCreatingTicket ? (
+                <CreateTicketView onBack={() => setIsCreatingTicket(false)} onSubmit={createTicket} />
+              ) : isProfileOpen && profileModule === 'Tickets' ? (
+                <TicketsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  currentUser={resignationUser.staffName}
+                  tickets={myTickets}
+                  teamTickets={isManager ? teamTicketList : undefined}
+                  onBack={closeProfileModule}
+                  onCreate={() => setIsCreatingTicket(true)}
+                  onComment={commentOnTicket}
+                  onReopen={reopenTicket}
+                />
+              ) : isProfileOpen && profileModule === 'Resignation' && isApplyingResignation ? (
+                <ApplyResignationView
+                  employeeName={resignationUser.staffName}
+                  onBack={() => setIsApplyingResignation(false)}
+                  onSubmit={submitResignation}
+                />
+              ) : isProfileOpen && profileModule === 'Resignation' ? (
+                <ResignationView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  records={myResignations}
+                  onBack={closeProfileModule}
+                  onApply={() => setIsApplyingResignation(true)}
+                  team={
+                    isManager
+                      ? {
+                          // Staff member's own submissions + the rest of the team, newest first
+                          records: [...resignations, ...teamResignations].sort((a, b) =>
+                            b.resignationDate.localeCompare(a.resignationDate)
+                          ),
+                          onReview: reviewResignation,
+                        }
+                      : undefined
+                  }
+                  onWithdraw={(id, reason) => {
+                    setMyResignations((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? { ...r, status: 'Withdrawn', withdrawReason: reason, withdrawnAt: toISODate(new Date()) }
+                          : r
+                      )
+                    );
+                    showToast('Resignation withdrawn.');
+                  }}
+                />
+              ) : isProfileOpen ? (
+                <ProfileView
+                  name="John Smith"
+                  email="john.smith@my-cpe.com"
+                  role="Lead Designer"
+                  branch="Ahmedabad - Gota Branch"
+                  employeeId="A03780"
+                  onBack={() => setIsProfileOpen(false)}
+                  onLogout={() => {
+                    setIsProfileOpen(false);
+                    setProfileModule(null);
+                    setIsLoggedIn(false);
+                  }}
+                  onOpenItem={(label) => {
+                    setProfileModuleFromApp(false);
+                    if (label === 'My Profile' || label === 'Edit Profile') {
+                      setMyProfileStartEditing(label === 'Edit Profile');
+                      setProfileModule('My Profile');
+                    } else if (label === 'Staff Review') {
+                      setIsEvaluating(false);
+                      setProfileModule('Staff Review');
+                    } else if (label === 'Adv. Salary & EV Loan') {
+                      setAdvanceFormFor(null);
+                      setProfileModule(label);
+                    } else if (label === 'Cab Request') {
+                      setCabFormFor(null);
+                      setProfileModule(label);
+                    } else if (
+                      label === 'Resignation' ||
+                      label === 'Tickets' ||
+                      label === 'Relevant Contacts' ||
+                      label === 'Asset' ||
+                      label === 'VOIP Directory'
+                    ) {
+                      setIsApplyingResignation(false);
+                      setIsCreatingTicket(false);
+                      setProfileModule(label);
+                    } else {
+                      showToast(`${label} is coming soon.`);
+                    }
+                  }}
+                  onPasswordChanged={() => showToast('Password updated successfully.')}
+                  photoUrl={profilePhoto}
+                  onPhotoChange={(url) => {
+                    setProfilePhoto(url);
+                    showToast(url ? 'Profile photo updated.' : 'Profile photo removed.');
+                  }}
+                />
+              ) : celebrationsTab ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <CelebrationsView
+                    key={celebrationsTab}
+                    initialTab={celebrationsTab}
+                    birthdays={BIRTHDAYS}
+                    anniversaries={ANNIVERSARIES}
+                    upcomingHolidays={upcomingHolidays}
+                    holidaysNext30Days={holidaysNext30Days}
+                    onBack={() => setCelebrationsTab(null)}
+                  />
+                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab === 'home' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <HomeDashboard
+                    userName="John"
+                    todaysBirthdays={BIRTHDAYS.filter((b) => b.inDays === 0)}
+                    upcomingHolidayCount={holidaysNext30Days}
+                    onOpenAttendance={() => handleAppTabChange('attendance')}
+                    onOpenCelebrations={(tab) => setCelebrationsTab(tab)}
+                    onViewLog={() => setSelectedPunchRecord(records[0] ?? null)}
+                    onWish={(person) => setWishTarget({ person, kind: 'birthday' })}
+                    onComingSoon={(feature) => {
+                      // Dashboard tiles / Action Queue rows → their module (Back returns to Home)
+                      const moduleById = (id: string) => MORE_GROUPS.flatMap((g) => g.modules).find((m) => m.id === id);
+                      if (feature === 'Staff Review') {
+                        setProfileModuleFromApp(true);
+                        setIsEvaluating(false);
+                        setProfileModule('Staff Review');
+                        setIsProfileOpen(true);
+                      } else if (feature === 'Open Tickets' || feature === 'IT Tickets') {
+                        const tickets = moduleById('Tickets');
+                        if (tickets) openFromDrawer(tickets);
+                      } else if (feature === 'Pending Approval') {
+                        setSelectedLeave(null);
+                        setActiveModuleTab('Leaves');
+                        setAppTab('attendance');
+                      } else if (feature === 'Assets') {
+                        const asset = moduleById('Asset');
+                        if (asset) openFromDrawer(asset);
+                      } else if (feature === 'Reimbursements') {
+                        const reimbursement = moduleById('expense-reimbursement');
+                        if (reimbursement) openFromDrawer(reimbursement);
+                      } else if (feature === 'Policies Updated') {
+                        const policies = moduleById('policies');
+                        if (policies) openFromDrawer(policies);
+                      } else {
+                        showToast(`${feature} is coming soon.`);
+                      }
+                    }}
+                  />
+                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab === 'more' && moreModule === 'work-timing' && (isRequestingFlex || editingFlex) ? (
+                <RequestFlexibilityView
+                  key={editingFlex?.id ?? 'new'}
+                  signerName={resignationUser.staffName}
+                  declarant={declarant}
+                  initialRequest={editingFlex}
+                  onExit={() => {
+                    setIsRequestingFlex(false);
+                    setEditingFlex(null);
+                  }}
+                  onSubmit={(req) => {
+                    if (editingFlex) {
+                      // Replace the whole request; it stays pending until the manager decides
+                      const updated: FlexRequest = {
+                        ...req,
+                        id: editingFlex.id,
+                        staffName: editingFlex.staffName,
+                        staffCode: editingFlex.staffCode,
+                        status: 'Pending',
+                        submittedAt: editingFlex.submittedAt,
+                        updatedAt: new Date().toISOString(),
+                        comments: [
+                          ...(editingFlex.comments ?? []),
+                          threadNote('System', 'System', `Request updated by ${editingFlex.staffName}`),
+                        ],
+                      };
+                      setMyFlexRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+                      setEditingFlex(null);
+                      showToast('Request updated. Your manager will see the latest version.');
+                    } else {
+                      setMyFlexRequests((prev) => [
+                        {
+                          ...req,
+                          id: `flex-${Date.now()}`,
+                          staffName: resignationUser.staffName,
+                          staffCode: resignationUser.staffCode,
+                          status: 'Pending',
+                          submittedAt: new Date().toISOString(),
+                        },
+                        ...prev,
+                      ]);
+                      setIsRequestingFlex(false);
+                      showToast('Flexibility request sent to your reporting manager.');
+                      if (!isManager) {
+                        pushNotification('Manager', {
+                          category: 'Work Timing',
+                          title: `New flexibility request from ${resignationUser.staffName}`,
+                          body: `${req.type}${req.duration ? ` · ${req.duration}` : ''}. Needs your approval.`,
+                          link: 'work-timing',
+                          actionRequired: true,
+                        });
+                      }
+                    }
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'my-team' && isManager ? (
+                editingMember ? (
+                  <MyProfileView
+                    key={editingMember.staffCode}
+                    profile={memberProfile(editingMember)}
+                    photoUrl={isSelf(editingMember) ? profilePhoto : null}
+                    title="Staff Profile"
+                    startEditing
+                    onBack={() => setEditingMemberCode(null)}
+                    onNotify={showToast}
+                    onSave={(next) => {
+                      if (isSelf(editingMember)) setMyProfile(next);
+                      else setTeamProfiles((prev) => ({ ...prev, [editingMember.staffCode]: next }));
+                      showToast(`${editingMember.staffName}'s details updated.`);
+                    }}
+                  />
+                ) : (
+                <MyTeamView
+                  members={myTeam}
+                  onBack={closeMoreModule}
+                  onEditDetails={(member) => setEditingMemberCode(member.staffCode)}
+                  onSubmitReview={(member) => {
+                    // Opens the Staff Review flow; Back returns to My Team
+                    setIsEvaluating(false);
+                    setProfileModuleFromApp(true);
+                    setProfileModule('Staff Review');
+                    setIsProfileOpen(true);
+                    showToast(`Reviewing ${member.staffName}.`);
+                  }}
+                />
+                )
+              ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
+                <FeedPostView
+                  post={openFeedPost}
+                  reaction={feedReactions[openFeedPost.id] ?? null}
+                  onBack={() => setOpenFeedPostId(null)}
+                  onReact={(r) => setFeedReactions((prev) => ({ ...prev, [openFeedPost.id]: r }))}
+                  onOpenProfile={() => {
+                    setProfileModuleFromApp(true);
+                    setProfileModule('My Profile');
+                    setIsProfileOpen(true);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'training-request' && trainingForm ? (
+                <AddTrainingRequestView
+                  me={trainingMe}
+                  people={isManager ? TRAINING_TEAM : undefined}
+                  defaultStaffCode={trainingForm.scope === 'team' ? '' : trainingMe.staffCode}
+                  initial={editingTraining}
+                  onBack={() => setTrainingForm(null)}
+                  onSubmit={(draft) => {
+                    if (editingTraining) {
+                      setTrainingRequests((prev) => prev.map((r) => (r.id === editingTraining.id ? { ...r, ...draft } : r)));
+                      showToast('Training request updated.');
+                    } else {
+                      const person = [trainingMe, ...TRAINING_TEAM].find((p) => p.staffCode === draft.staffCode) ?? trainingMe;
+                      const forSelf = person.staffCode === trainingMe.staffCode;
+                      const request: TrainingRequest = {
+                        id: `tr-${Date.now()}`,
+                        ...person,
+                        ...draft,
+                        learningStatus: 'Pending',
+                        ldStatus: 'Pending',
+                        raisedBy: trainingMe.staffName,
+                      };
+                      setTrainingRequests((prev) => [request, ...prev]);
+                      const subCount = `${draft.subProgrammes.length} sub programme${draft.subProgrammes.length === 1 ? '' : 's'}`;
+                      if (!isManager) {
+                        pushNotification('Manager', {
+                          category: 'Training',
+                          title: `${person.staffName} requested training`,
+                          body: `${draft.mainProgramme} · ${subCount}. Sent to the L&D team.`,
+                          link: 'training-request',
+                        });
+                      } else if (person.staffCode === CURRENT_STAFF.staffCode) {
+                        pushNotification('Staff', {
+                          category: 'Training',
+                          title: `${trainingMe.staffName} requested training for you`,
+                          body: `${draft.mainProgramme} · ${subCount}. The L&D team will schedule it.`,
+                          link: 'training-request',
+                        });
+                      }
+                      setTrainingScope(forSelf ? 'my' : 'team');
+                      showToast(forSelf ? 'Training request sent to the L&D team.' : `Training requested for ${person.staffName}.`);
+                    }
+                    setTrainingForm(null);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'training-request' ? (
+                <TrainingRequestView
+                  key={userRole}
+                  firstName={trainingMe.staffName.split(' ')[0]}
+                  me={trainingMe}
+                  requests={trainingRequests}
+                  isManager={isManager}
+                  scope={trainingTab}
+                  onScopeChange={setTrainingScope}
+                  onBack={closeMoreModule}
+                  onAdd={(scope) => setTrainingForm({ scope })}
+                  onEdit={(r) => setTrainingForm({ scope: trainingTab, editId: r.id })}
+                  onWithdraw={(r) => {
+                    setTrainingRequests((prev) => prev.filter((x) => x.id !== r.id));
+                    showToast('Training request withdrawn.');
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'expense-reimbursement' ? (
+                <ExpenseReimbursementView
+                  key={userRole}
+                  onBack={closeMoreModule}
+                  myRequests={expenseRequests
+                    .filter((r) => r.staffName === resignationUser.staffName)
+                    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))}
+                  onSubmit={(kind, items, total, meta) => {
+                    if (meta.editId) {
+                      // Edit a pending request in place (it stays pending)
+                      setExpenseRequests((prev) => prev.map((r) => (r.id === meta.editId ? { ...r, items, total } : r)));
+                      showToast('Request updated.');
+                      return;
+                    }
+                    const now = new Date();
+                    const todayKey = now.toISOString().slice(0, 10);
+                    const seq = expenseRequests.filter((r) => r.staffName === resignationUser.staffName && r.submittedAt.slice(0, 10) === todayKey).length + 1;
+                    const req: ExpenseRequest = {
+                      id: `exp-${Date.now()}`,
+                      trackingNo: makeTrackingNo(items[0]?.branch ?? null, now, seq),
+                      kind,
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
+                      items,
+                      total,
+                      status: 'Pending',
+                      submittedAt: now.toISOString(),
+                      advanceId: meta.advanceId,
+                    };
+                    setExpenseRequests((prev) => [req, ...prev]);
+                    showToast(`${EXPENSE_KIND_LABEL[kind]} request ${req.trackingNo} sent for approval.`);
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Reimbursement',
+                        title: `New ${EXPENSE_KIND_LABEL[kind].toLowerCase()} request from ${resignationUser.staffName}`,
+                        body: `${req.trackingNo} · ${formatRupees(total)} · ${items.length} ${items.length === 1 ? 'item' : 'items'}. Review it in Team's Requests.`,
+                        link: 'reimbursement',
+                        actionRequired: true,
+                      });
+                    }
+                  }}
+                  onDelete={(id) => {
+                    setExpenseRequests((prev) => prev.filter((r) => r.id !== id));
+                    showToast('Request deleted.');
+                  }}
+                  team={
+                    isManager
+                      ? {
+                          requests: expenseRequests.filter((r) => r.staffName !== resignationUser.staffName),
+                          onReview: (id, decision, comment) => {
+                            const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                            const target = expenseRequests.find((r) => r.id === id);
+                            setExpenseRequests((prev) =>
+                              prev.map((r) =>
+                                r.id === id
+                                  ? {
+                                      ...r,
+                                      status: decision,
+                                      reviewedBy: resignationUser.staffName,
+                                      reviewedAt,
+                                      managerComment: comment || undefined,
+                                      approvedAmount: decision === 'Approved' ? r.total : undefined,
+                                    }
+                                  : r
+                              )
+                            );
+                            showToast(decision === 'Approved' ? 'Request approved.' : 'Request declined.');
+                            if (target?.staffName === CURRENT_STAFF.staffName) {
+                              const verb = decision === 'Approved' ? 'approved' : 'declined';
+                              pushNotification('Staff', {
+                                category: 'Reimbursement',
+                                title: `Your ${EXPENSE_KIND_LABEL[target.kind].toLowerCase()} request was ${verb}`,
+                                body: `${target.trackingNo} · ${formatRupees(target.total)} · by ${resignationUser.staffName}${comment ? ` — “${comment}”` : '.'}`,
+                                link: 'reimbursement',
+                              });
+                            }
+                          },
+                        }
+                      : undefined
+                  }
+                />
+              ) : appTab === 'more' && moreModule === 'policies' ? (
+                <PoliciesView onBack={closeMoreModule} />
+              ) : appTab === 'more' && moreModule === 'recognitions' ? (
+                <RecognitionsView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  recognitions={RECOGNITIONS_SEED}
+                  myCode={resignationUser.staffCode}
+                  isManager={isManager}
+                  onBack={closeMoreModule}
+                />
+              ) : appTab === 'more' && moreModule === 'company-feed' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <CompanyFeedView
+                    posts={feedPosts}
+                    reactions={feedReactions}
+                    category={feedCategory}
+                    onCategoryChange={setFeedCategory}
+                    onBack={closeMoreModule}
+                    onOpenPost={(post) => {
+                      // Opening a post marks it read
+                      setFeedPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, unread: false } : p)));
+                      setOpenFeedPostId(post.id);
+                    }}
+                    onReact={(id, r) => setFeedReactions((prev) => ({ ...prev, [id]: r }))}
+                  />
+                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab === 'more' && moreModule === 'work-timing' ? (
+                <WorkTimingView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={myFlexRequests}
+                  onBack={closeMoreModule}
+                  onRequestFlexibility={() => {
+                    setEditingFlex(null);
+                    setIsRequestingFlex(true);
+                  }}
+                  onEdit={(req) => setEditingFlex(req)}
+                  currentUser={resignationUser.staffName}
+                  onComment={commentOnFlex}
+                  onDownloadAgreement={(req) =>
+                    showToast(`Agreement for ${req.type} downloaded as WFA-${req.id.replace(/\D/g, '').slice(-6).padStart(6, '0')}.pdf`)
+                  }
+                  team={isManager ? { requests: teamFlexList, onReview: reviewFlex } : undefined}
+                />
+              ) : appTab === 'more' && moreModule === 'ot-request' && isAddingOT && myOTRequests.length === 0 ? (
+                <AddOTRequestView
+                  onBack={() => setIsAddingOT(false)}
+                  onSubmit={(req) => {
+                    // Only one OT request per person; it's approved as soon as it's submitted
+                    (isManager ? setManagerOTRequests : setStaffOTRequests)((prev) =>
+                      prev.length
+                        ? prev
+                        : [
+                            {
+                              ...req,
+                              id: `ot-${Date.now()}`,
+                              staffName: resignationUser.staffName,
+                              staffCode: resignationUser.staffCode,
+                              assignedHours: 0,
+                              status: 'Approved',
+                              submittedAt: new Date().toISOString(),
+                            },
+                          ]
+                    );
+                    setIsAddingOT(false);
+                    showToast('OT availability submitted and approved.');
+                    if (!isManager) {
+                      // FYI only: managers can view it, there's nothing to approve
+                      pushNotification('Manager', {
+                        category: 'Work Timing',
+                        title: `${resignationUser.staffName} shared their OT availability`,
+                        body: `${req.domain} · ${req.country}${req.extraHours ? ` · ${req.extraHours} extra hrs` : ''}. View it in Team's Availability.`,
+                        link: 'ot-request',
+                      });
+                    }
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'ot-request' ? (
+                <OTRequestView
+                  key={userRole}
+                  firstName={resignationUser.staffName.split(' ')[0]}
+                  requests={myOTRequests}
+                  otHours={myLeaveBalance.otHours}
+                  onBack={closeMoreModule}
+                  onAddRequest={() => setIsAddingOT(true)}
+                  onRaiseTicket={() => {
+                    // Edits to a submitted OT request go through Tickets; Back returns here
+                    setProfileModuleFromApp(true);
+                    setProfileModule('Tickets');
+                    setIsCreatingTicket(true);
+                    setIsProfileOpen(true);
+                  }}
+                  team={isManager ? { requests: teamOTList } : undefined}
+                />
+              ) : appTab === 'more' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <MoreView
+                    role={userRole}
+                    onOpenModule={openMoreModule}
+                  />
+                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
+                </div>
+              ) : appTab !== 'attendance' ? (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <ComingSoonView
+                    title={appTab === 'learning' ? 'Learning' : 'More'}
+                    onGoHome={() => handleAppTabChange('home')}
+                  />
+                  <AppBottomNav activeTab={appTab} onTabChange={handleAppTabChange} />
+                </div>
+              ) : editingLeave ? (
                 <LeavesApplyView
                   key={editingLeave.id}
                   initialRequest={editingLeave}
                   onBack={() => setEditingLeave(null)}
-                  availableBalance={leaveBalance.ptoAvailable + editingLeave.daysCount}
-                  totalBalance={leaveBalance.ptoTotal}
+                  availableBalance={myLeaveBalance.ptoAvailable + editingLeave.daysCount}
+                  totalBalance={myLeaveBalance.ptoTotal}
                   onSubmit={(data) => {
                     const updated: LeaveRequest = {
                       ...editingLeave,
@@ -312,8 +2026,8 @@ export default function App() {
                       dayItems: data.dayItems,
                       attachmentName: data.attachmentName,
                     };
-                    setLeaveRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-                    setLeaveBalance((prev) => ({
+                    setMyLeaveRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+                    setMyLeaveBalance((prev) => ({
                       ...prev,
                       ptoAvailable: Math.max(0, prev.ptoAvailable + editingLeave.daysCount - data.daysCount),
                     }));
@@ -325,8 +2039,8 @@ export default function App() {
               ) : isApplyingLeaveOpen ? (
                 <LeavesApplyView
                   onBack={() => setIsApplyingLeaveOpen(false)}
-                  availableBalance={leaveBalance.ptoAvailable}
-                  totalBalance={leaveBalance.ptoTotal}
+                  availableBalance={myLeaveBalance.ptoAvailable}
+                  totalBalance={myLeaveBalance.ptoTotal}
                   onSubmit={(data) => {
                     const now = new Date();
                     const appliedDate = now.toLocaleDateString('en-US', {
@@ -340,6 +2054,8 @@ export default function App() {
                     });
                     const newReq: LeaveRequest = {
                       id: `leave-${Date.now()}`,
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
                       type: 'PTO',
                       dateRange: `${data.startDate} – ${data.endDate}`,
                       startDate: '2026-10-20',
@@ -347,18 +2063,27 @@ export default function App() {
                       daysCount: data.daysCount,
                       reason: data.reason,
                       description: data.description,
-                      managerName: 'Sarah Miller',
+                      managerName: isManager ? 'Priya Nair' : ATTENDANCE_REVIEWER,
                       managerRole: 'Reporting Manager',
                       appliedOn: appliedDate,
                       status: 'Pending',
                       dayItems: data.dayItems,
                       attachmentName: data.attachmentName,
                     };
-                    setLeaveRequests([newReq, ...leaveRequests]);
-                    setLeaveBalance((prev) => ({
+                    setMyLeaveRequests((prev) => [newReq, ...prev]);
+                    setMyLeaveBalance((prev) => ({
                       ...prev,
                       ptoAvailable: Math.max(0, prev.ptoAvailable - data.daysCount),
                     }));
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Leaves',
+                        title: `Leave request from ${resignationUser.staffName}`,
+                        body: `${newReq.type} · ${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
+                        link: 'leaves',
+                        actionRequired: true,
+                      });
+                    }
                     setSubmittedLeave({
                       request: newReq,
                       code: `LV${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getTime()).slice(-4)}`,
@@ -395,111 +2120,127 @@ export default function App() {
                     <div className="flex items-center h-13 px-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (activeModuleTab !== 'Attendance') {
-                            setActiveModuleTab('Attendance');
-                          }
-                        }}
-                        className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] hover:bg-slate-100 transition-colors cursor-pointer"
+                        onClick={() => handleAppTabChange('home')}
+                        className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 transition-colors cursor-pointer"
                         aria-label="Back"
                       >
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
                       </button>
-                      <h1 className="text-base font-bold text-[#1E293B] ml-2">
-                        Attendance &amp; Leaves
+                      <h1 className="text-base font-bold text-[#1E293B] screen-title">
+                        {activeModuleTab}
                       </h1>
                     </div>
 
-                    {/* 4 Module Sub-Tabs matching Screenshot 1 */}
-                    <div className="flex items-center justify-between px-3 border-t border-[#F1F5F9] text-xs font-semibold">
-                      {(['Attendance', 'Holidays', 'Leaves', 'WFO Days'] as const).map(
-                        (tab) => {
-                          const isActive = activeModuleTab === tab;
-                          return (
-                            <button
-                              key={tab}
-                              type="button"
-                              onClick={() => setActiveModuleTab(tab)}
-                              className={`flex-1 py-3 text-center transition-all relative cursor-pointer ${
-                                isActive
-                                  ? 'text-[#2F68FE] font-bold'
-                                  : 'text-slate-400 font-medium hover:text-slate-700'
-                              }`}
-                            >
-                              <span>{tab}</span>
-                              {isActive && (
-                                <div className="absolute bottom-0 left-2 right-2 h-0.75 bg-[#2F68FE] rounded-t-full" />
-                              )}
-                            </button>
-                          );
-                        }
-                      )}
-                    </div>
                   </header>
 
                   {/* Sub-tab Content: Holidays | Leaves | WFO Days | Attendance */}
                   {activeModuleTab === 'Holidays' ? (
                     <PublicHolidaysView />
                   ) : activeModuleTab === 'Leaves' ? (
-                    <LeavesView
-                      balance={leaveBalance}
-                      requests={leaveRequests}
-                      onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
-                      onCancelRequest={handleCancelLeave}
-                      onViewDetails={(req) => setSelectedLeave(req)}
-                      onEditRequest={(req) => setEditingLeave(req)}
-                    />
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      {isManager && (
+                        <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                          <SegmentedTabs
+                            ariaLabel="Leaves view"
+                            value={leavesTab}
+                            onChange={setLeavesTab}
+                            options={[
+                              { id: 'mine', label: 'My Leaves' },
+                              {
+                                id: 'team',
+                                label: "Team's Leaves",
+                                badge: teamLeaveList.filter((r) => r.status === 'Pending').length,
+                              },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      {isManager && leavesTab === 'team' ? (
+                        <TeamLeavesView requests={teamLeaveList} onReview={reviewLeaves} />
+                      ) : (
+                        <LeavesView
+                          balance={myLeaveBalance}
+                          requests={myLeaveRequests}
+                          onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
+                          onCancelRequest={handleCancelLeave}
+                          onViewDetails={(req) => setSelectedLeave(req)}
+                          onEditRequest={(req) => setEditingLeave(req)}
+                        />
+                      )}
+                    </div>
                   ) : activeModuleTab === 'WFO Days' ? (
-                  <WFODaysView
-                    onViewDetails={(rec) => setSelectedWFORecord(rec)}
-                  />
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      {isManager && (
+                        <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                          <SegmentedTabs
+                            ariaLabel="WFO Days view"
+                            value={wfoTab}
+                            onChange={setWfoTab}
+                            options={[
+                              { id: 'mine', label: 'My WFO Days' },
+                              {
+                                id: 'team',
+                                label: "Team's WFO Days",
+                                badge: teamWFOList.filter((r) => r.status === 'Pending').length,
+                              },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      {isManager && wfoTab === 'team' ? (
+                        <TeamWFOView records={teamWFOList} onReview={reviewWFO} />
+                      ) : (
+                        <WFODaysView
+                          key={userRole}
+                          records={myWFORecords}
+                          onViewDetails={(rec) => setSelectedWFORecord(rec)}
+                          onSubmit={(month, year, days, idToEdit) => {
+                            submitWFO(month, year, days, idToEdit);
+                            showToast(idToEdit ? 'WFO request updated successfully.' : 'WFO days submitted for approval.');
+                          }}
+                        />
+                      )}
+                    </div>
                 ) : (
+                  <div className="flex-1 min-h-0 flex flex-col">
+                  {/* Manager: My Attendance / Team's Attendance (segmented, so it reads as a view switch) */}
+                  {isManager && (
+                    <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
+                      <SegmentedTabs
+                        ariaLabel="Attendance view"
+                        value={attendanceTab}
+                        onChange={setAttendanceTab}
+                        options={[
+                          { id: 'mine', label: 'My Attendance' },
+                          {
+                            id: 'team',
+                            label: "Team's Attendance",
+                            badge: teamAttendanceList.filter(
+                              (r) => r.editStatus !== 'approved' && r.editStatus !== 'rejected'
+                            ).length,
+                          },
+                        ]}
+                      />
+                    </div>
+                  )}
+                  {isManager && attendanceTab === 'team' ? (
+                    <TeamAttendanceView
+                      requests={teamAttendanceList}
+                      dailyRecords={teamDailyAttendance}
+                      onReview={reviewAttendance}
+                      onBulkReview={reviewAttendanceMany}
+                      onViewLogs={(rec) => setSelectedPunchRecord(rec)}
+                    />
+                  ) : (
                   /* 2. Scrollable Attendance Content */
                   <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-20 space-y-3.5 no-scrollbar">
-                  {/* Month Navigation Strip */}
-                  <div className="flex items-center justify-between px-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentMonth('August 2026');
-                        setExpandedCardIds(new Set());
-                      }}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
-                      aria-label="Previous month"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    <h2 className="text-sm font-bold text-[#1E293B]">
-                      {currentMonth}
-                    </h2>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentMonth('September 2026');
-                        setExpandedCardIds(new Set());
-                      }}
-                      className="w-8 h-8 rounded-full bg-white border border-[#EBF0F7] shadow-2xs flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors"
-                      aria-label="Next month"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* 3. 3-KPI Card Container (Screenshot 1) */}
-                  <AttendanceKPIs
-                    kpis={kpis}
-                    onOpenSummarySheet={() => setIsKPISummaryOpen(true)}
-                  />
-
-                  {/* 4. Date Range & Filter Row (Screenshot 1) */}
+                  {/* 3. Date Range & Filter Row (top) */}
                   <div className="flex items-center gap-2.5">
                     {/* Date Range Selector Button */}
                     <button
                       type="button"
                       onClick={() => setIsFilterSheetOpen(true)}
-                      className="flex-1 h-12 px-3.5 rounded-2xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-slate-400" />
@@ -513,21 +2254,16 @@ export default function App() {
                     </button>
 
                     {/* Filter Button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsFilterSheetOpen(true)}
-                      className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-colors shadow-2xs cursor-pointer ${
-                        activeFilterStatus !== 'All'
-                          ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
-                          : 'bg-white border-slate-200/90 text-[#2F68FE] hover:bg-slate-50'
-                      }`}
-                      aria-label="Filter Attendance"
-                    >
-                      <Filter className="w-4.5 h-4.5 stroke-[1.9]" />
-                    </button>
+                    <FilterIconButton count={activeFilterStatus !== 'All' ? 1 : 0} onClick={() => setIsFilterSheetOpen(true)} label="Filter attendance" />
                   </div>
 
-                  {/* 5. Daily Attendance Cards (Collapsible by default) */}
+                  {/* 4. 3-KPI Card Container */}
+                  <AttendanceKPIs
+                    kpis={kpis}
+                    onOpenSummarySheet={() => setIsKPISummaryOpen(true)}
+                  />
+
+                  {/* 5. Daily Attendance Cards (always open: no expand / collapse) */}
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center justify-between px-1">
                       <div className="flex items-center gap-2">
@@ -538,33 +2274,12 @@ export default function App() {
                           {filteredRecords.length}
                         </span>
                       </div>
-                      {filteredRecords.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleToggleAll}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2F68FE] bg-[#EFF6FF] hover:bg-[#DBEAFE]/80 active:bg-blue-200 transition-all cursor-pointer shadow-2xs border border-[#BFDBFE]/60"
-                        >
-                          {isAnyExpanded ? (
-                            <>
-                              <ChevronUp className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Collapse All</span>
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Expand All</span>
-                            </>
-                          )}
-                        </button>
-                      )}
                     </div>
 
                     {filteredRecords.map((record) => (
                       <AttendanceCard
                         key={record.id}
                         record={record}
-                        isExpanded={expandedCardIds.has(record.id)}
-                        onToggleExpand={() => toggleCardExpand(record.id)}
                         onViewPunchLogs={(rec) => setSelectedPunchRecord(rec)}
                         onRequestEdit={(rec) => setSelectedEditRecord(rec)}
                         onApplyLeave={(rec) => setApplyingLeaveRecord(rec)}
@@ -579,10 +2294,9 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveFilterStatus('All');
-                            setAttendanceRange(DEFAULT_ATTENDANCE_RANGE);
+                            resetAttendanceRange();
                           }}
-                          className="mt-2 text-xs font-semibold text-[#2F68FE] hover:underline"
+                          className="mt-2 text-xs font-semibold text-[#2F68FE]"
                         >
                           Clear Filter
                         </button>
@@ -590,9 +2304,17 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                  )}
+                  </div>
                 )}
+                  <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
               </div>
             )}
+              </ScreenTransition>
+                </div>
+              )}
+
+            <AdvanceGuidelineSheet isOpen={advanceGuideOpen} onClose={() => setAdvanceGuideOpen(false)} />
 
             {/* Bottom Sheet: Punch Logs (Screenshot 4) */}
             <PunchLogsSheet
@@ -616,6 +2338,7 @@ export default function App() {
               currentStatus={activeFilterStatus}
               currentFrom={attendanceRange.from}
               currentTo={attendanceRange.to}
+              defaultRange={currentAttendanceCycle()}
               onApply={(status, workMode, from, to) => {
                 setActiveFilterStatus(status);
                 setActiveWorkMode(workMode);
@@ -629,7 +2352,7 @@ export default function App() {
               isOpen={isKPISummaryOpen}
               onClose={() => setIsKPISummaryOpen(false)}
               kpis={kpis}
-              monthTitle={currentMonth}
+              monthTitle={rangeLabel}
             />
 
             {/* Bottom Sheet: Edit WFO Days from Details view */}
@@ -637,18 +2360,21 @@ export default function App() {
               isOpen={Boolean(editingWFORecordFromDetails)}
               onClose={() => setEditingWFORecordFromDetails(null)}
               recordToEdit={editingWFORecordFromDetails}
-              onSubmit={(month, year, days) => {
-                if (selectedWFORecord) {
-                  setSelectedWFORecord({
-                    ...selectedWFORecord,
-                    month,
-                    year,
-                    days,
-                    monthYear: `${month} ${year}`,
-                    status: 'Pending',
-                  });
-                }
+              existingRecords={myWFORecords}
+              onSubmit={(month, year, days, idToEdit) => {
+                submitWFO(month, year, days, idToEdit);
                 showToast('WFO request updated successfully.');
+              }}
+            />
+
+            {/* Send birthday / anniversary wishes */}
+            <WishSheet
+              person={wishTarget?.person ?? null}
+              kind={wishTarget?.kind ?? 'birthday'}
+              onClose={() => setWishTarget(null)}
+              onSend={(person) => {
+                setWishTarget(null);
+                showToast(`Wish sent to ${person.name} 🎉`);
               }}
             />
 

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, ChevronDown } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
+import { Dropdown } from '../../design-system/components/Dropdown';
 import { RangeCalendar, formatShortDate } from '../../design-system/components/RangeCalendar';
+import { currentAttendanceCycle } from '../../data/attendanceMonths';
 
-export const DEFAULT_ATTENDANCE_RANGE = {
-  from: new Date(2026, 7, 26),
-  to: new Date(2026, 8, 23),
-};
+/** The 26th → today (recomputed each time it's used) */
+export const DEFAULT_ATTENDANCE_RANGE = currentAttendanceCycle();
 
 interface FilterSheetProps {
   isOpen: boolean;
@@ -14,6 +14,8 @@ interface FilterSheetProps {
   currentStatus: string;
   currentFrom: Date;
   currentTo: Date;
+  /** Range restored by "Clear All" (the selected month's cycle) */
+  defaultRange?: { from: Date; to: Date };
   onApply: (status: string, workMode: string, from: Date, to: Date) => void;
 }
 
@@ -23,6 +25,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
   currentStatus,
   currentFrom,
   currentTo,
+  defaultRange = DEFAULT_ATTENDANCE_RANGE,
   onApply,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState(currentStatus || 'All');
@@ -66,7 +69,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
   const handleClear = () => {
     setSelectedStatus('All');
     setSelectedWorkMode('Office');
-    onApply('All', 'Office', DEFAULT_ATTENDANCE_RANGE.from, DEFAULT_ATTENDANCE_RANGE.to);
+    onApply('All', 'Office', defaultRange.from, defaultRange.to);
     onClose();
   };
 
@@ -81,7 +84,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           className={`w-full h-11 px-3 rounded-xl border bg-white flex items-center justify-between font-medium transition-all cursor-pointer shadow-2xs ${
             isActive
               ? 'border-[#2F68FE] ring-4 ring-blue-50'
-              : 'border-slate-200 hover:border-slate-300'
+              : 'border-slate-200'
           }`}
         >
           <div className="flex items-center gap-2 min-w-0">
@@ -115,7 +118,7 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -145,108 +148,34 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
                   end={toDate}
                   activeField={activeDateField}
                   onSelect={handleDaySelect}
+                  maxDate={new Date()}
                 />
               </div>
             )}
           </div>
 
           {/* Section 2: Status */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-bold text-[#1E293B]">
-              Status
-            </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* All */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('All')}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'All'
-                    ? 'bg-[#1E293B] text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                All
-              </button>
-
-              {/* Full Day */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Full Day')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Full Day'
-                    ? 'bg-[#10B981] text-white shadow-2xs'
-                    : 'bg-[#E8F8F0] text-[#10B981] hover:bg-[#D8F2E4]'
-                }`}
-              >
-                Full Day
-              </button>
-
-              {/* Half Day */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Half Day')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Half Day'
-                    ? 'border-2 border-[#F59E0B] bg-[#FFF9EC] text-[#D97706] shadow-2xs'
-                    : 'border border-[#F59E0B]/40 bg-[#FFF9EC] text-[#D97706]'
-                }`}
-              >
-                Half Day
-              </button>
-
-              {/* Absent */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('Absent')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'Absent'
-                    ? 'bg-[#F43F5E] text-white shadow-2xs'
-                    : 'bg-[#FDECEC] text-[#F34D59] hover:bg-[#FCD8D8]'
-                }`}
-              >
-                Absent
-              </button>
-
-              {/* WO */}
-              <button
-                type="button"
-                onClick={() => setSelectedStatus('WO')}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  selectedStatus === 'WO'
-                    ? 'bg-[#D97706] text-white shadow-2xs'
-                    : 'bg-[#FEF8E7] text-[#D97706]'
-                }`}
-              >
-                WO
-              </button>
-            </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-[#1E293B]">Status</h3>
+            <Dropdown
+              size="md"
+              ariaLabel="Status"
+              value={selectedStatus}
+              options={['All', 'Full Day', 'Half Day', 'Absent', 'WO']}
+              onChange={setSelectedStatus}
+            />
           </div>
 
           {/* Section 3: Work Mode */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-bold text-[#1E293B]">
-              Work Mode
-            </h3>
-            <div className="flex items-center gap-2">
-              {['Office', 'WFH', 'Hybrid'].map((mode) => {
-                const isActive = selectedWorkMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setSelectedWorkMode(mode)}
-                    className={`flex-1 h-11 rounded-xl text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'border-2 border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-[#1E293B]">Work Mode</h3>
+            <Dropdown
+              size="md"
+              ariaLabel="Work mode"
+              value={selectedWorkMode}
+              options={['Office', 'WFH', 'Hybrid']}
+              onChange={setSelectedWorkMode}
+            />
           </div>
         </div>
 
@@ -255,14 +184,14 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           <button
             type="button"
             onClick={handleClear}
-            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white hover:bg-blue-50/50 active:bg-blue-100 transition-colors"
+            className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] font-semibold text-xs bg-white active:bg-blue-100 transition-colors"
           >
             Clear All
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs hover:bg-[#2558E6] active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
+            className="h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-xs shadow-xs active:bg-[#1D4ED8] transition-colors flex items-center justify-center cursor-pointer"
           >
             Apply Filters
           </button>
