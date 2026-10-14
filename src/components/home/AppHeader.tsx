@@ -34,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <Menu className="w-5.5 h-5.5 stroke-[2]" />
       </button>
       <button type="button" onClick={onGoHome} className="flex items-center cursor-pointer" aria-label="Go to dashboard">
-        <BrandLogoHorizontal className="h-5" />
+        <BrandLogoHorizontal className="h-8" />
       </button>
     </div>
     <div className="flex items-center gap-3">

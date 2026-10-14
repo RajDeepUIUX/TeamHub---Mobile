@@ -104,7 +104,7 @@ const LoginScreen: React.FC<{
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center pb-8" noValidate>
         <BrandLogo size="sm" />
         <div className="mt-8">
-          <AuthHeading title="Welcome back" subtitle="Sign in to continue to MYCPE ONE HRMS 247." />
+          <AuthHeading title="Welcome back" subtitle="Sign in to continue to MYCPE ONE HRMS 24*7." />
         </div>
 
         <div className="mt-7 space-y-3.5">

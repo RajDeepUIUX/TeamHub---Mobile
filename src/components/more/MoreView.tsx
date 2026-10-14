@@ -133,7 +133,6 @@ export const MORE_GROUPS: MoreGroup[] = [
       },
       { id: 'Relevant Contacts', label: 'Relevant Contacts', hint: 'Key people to reach out to', icon: Phone, tint: 'bg-emerald-50 text-emerald-600' },
       { id: 'Asset', label: 'Asset', hint: 'Devices and equipment assigned to you', icon: Laptop, tint: 'bg-indigo-50 text-indigo-600' },
-      { id: 'VOIP Directory', label: 'VOIP Directory', hint: "Find colleagues' extensions", icon: Users, tint: 'bg-teal-50 text-teal-600' },
       { id: 'Cab Request', label: 'Cab Request', hint: 'Book office transport', icon: Car, tint: 'bg-cyan-50 text-cyan-600' },
     ],
   },

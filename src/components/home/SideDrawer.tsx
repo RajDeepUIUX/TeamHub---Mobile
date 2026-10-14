@@ -94,7 +94,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <span className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-violet-200/40 blur-2xl pointer-events-none" />
           <span className="absolute top-16 -left-12 w-28 h-28 rounded-full bg-blue-200/40 blur-2xl pointer-events-none" />
           <div className="relative flex items-center justify-between">
-            <BrandLogoHorizontal className="h-5" />
+            <BrandLogoHorizontal className="h-8" />
             <button
               type="button"
               onClick={onClose}

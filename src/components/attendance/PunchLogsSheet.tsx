@@ -94,11 +94,11 @@ export const PunchLogsSheet: React.FC<PunchLogsSheetProps> = ({
       {punches.length > 0 && (
         <div className="mx-5 mb-2 grid grid-cols-2 rounded-2xl bg-slate-50 border border-slate-100 divide-x divide-slate-200/70 shrink-0">
           <div className="px-3.5 py-2.5">
-            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">First In</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Start Time</span>
             <span className="block text-sm font-bold text-[#1E293B]">{firstIn?.time ?? '—'}</span>
           </div>
           <div className="px-3.5 py-2.5">
-            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Last Out</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">End Time</span>
             <span className="block text-sm font-bold text-[#1E293B]">{lastOut?.time ?? '—'}</span>
           </div>
         </div>

@@ -7,7 +7,6 @@ import {
   Clock,
   Building,
   BarChart2,
-  ChevronDown,
   Fingerprint,
   ChevronRight,
   AlertCircle,
@@ -19,8 +18,6 @@ import {
 
 interface AttendanceCardProps {
   record: AttendanceRecord;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
   onViewPunchLogs: (record: AttendanceRecord) => void;
   onRequestEdit: (record: AttendanceRecord) => void;
   onApplyLeave: (record: AttendanceRecord) => void;
@@ -28,8 +25,6 @@ interface AttendanceCardProps {
 
 export const AttendanceCard: React.FC<AttendanceCardProps> = ({
   record,
-  isExpanded = false,
-  onToggleExpand,
   onViewPunchLogs,
   onRequestEdit,
   onApplyLeave,
@@ -111,25 +106,9 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
   );
 
   return (
-    <div
-      className={`bg-white border rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all ${
-        isExpanded ? 'border-[#C7D9FB] shadow-[0_4px_14px_rgba(47,104,254,0.06)]' : 'border-[#EBF0F7]'
-      }`}
-    >
-      {/* Header: Clickable row to toggle expand/collapse */}
-      <div
-        onClick={onToggleExpand}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggleExpand?.();
-          }
-        }}
-        className="flex items-center justify-between gap-3 cursor-pointer select-none group focus:outline-hidden"
-      >
+    <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+      {/* Header: date, day / mode and status */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-[15px] text-[#1E293B] transition-colors leading-tight">
@@ -156,93 +135,13 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {renderStatusBadge()}
-          <div
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-              isExpanded
-                ? 'bg-[#EFF6FF] text-[#2F68FE]'
-                : 'bg-slate-50 text-gray-400 '
-            }`}
-          >
-            <ChevronDown
-              className={`w-4 h-4 transition-transform duration-250 ${
-                isExpanded ? 'rotate-180 text-[#2F68FE]' : ''
-              }`}
-            />
-          </div>
-        </div>
+        <div className="flex items-center gap-2 shrink-0">{renderStatusBadge()}</div>
       </div>
 
-      {/* Collapsed State: Clean, Structured Mini Stats Row */}
-      {!isExpanded && !isWeeklyOff && (!isAbsent || record.punches.length > 0) && (
-        <div
-          onClick={onToggleExpand}
-          className="mt-3 pt-3 border-t border-[#F1F5F9] grid grid-cols-2 gap-2.5 cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5 bg-[#F8FAFC] active:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
-            <div className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2F68FE] shrink-0">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider leading-none">
-                Office
-              </div>
-              <div className="text-xs font-bold text-[#1E293B] mt-0.5 truncate">
-                {record.totalOfficeTime}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 bg-[#F8FAFC] active:bg-[#F1F5F9] rounded-xl px-3 py-2 border border-[#EBF0F7] transition-colors">
-            <div className="w-6 h-6 rounded-lg bg-[#E8F8F0] flex items-center justify-center text-[#10B981] shrink-0">
-              <BarChart2 className="w-3.5 h-3.5" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider leading-none">
-                Working
-              </div>
-              <div className="text-xs font-bold text-[#1E293B] mt-0.5 truncate">
-                {record.totalWorkingTime}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Collapsed State: punch logs shown by default */}
-      {!isExpanded && !isWeeklyOff && record.punches.length > 0 && <div className="mt-2.5">{punchLogsButton}</div>}
-
-      {/* Collapsed State: Weekly Off */}
-      {!isExpanded && isWeeklyOff && (
-        <div
-          onClick={onToggleExpand}
-          className="mt-2.5 pt-2.5 border-t border-[#F1F5F9] flex items-center gap-2 text-xs text-blue-600 font-medium cursor-pointer"
-        >
-          <Info className="w-3.5 h-3.5" />
-          <span>
-            {record.date === '2026-09-04'
-              ? 'Public Holiday (Janmasthmi) · Status: WO'
-              : 'Scheduled Weekly Off'}
-          </span>
-        </div>
-      )}
-
-      {/* Collapsed State: Absent */}
-      {!isExpanded && isAbsent && record.punches.length === 0 && (
-        <div
-          onClick={onToggleExpand}
-          className="mt-2.5 pt-2.5 border-t border-[#F1F5F9] flex items-center gap-2 text-xs text-red-500 font-medium cursor-pointer"
-        >
-          <AlertCircle className="w-3.5 h-3.5" />
-          <span>No attendance logged</span>
-        </div>
-      )}
-
-      {/* Expanded Content Body */}
-      {isExpanded && (
-        <div className="pt-3.5 mt-3 border-t border-[#F1F5F9] space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+      {/* Body (always visible — no expand / collapse) */}
+        <div className="pt-3.5 mt-3 border-t border-[#F1F5F9] space-y-3">
           {/* Workplace & Work Mode Row */}
+          {!isWeeklyOff && (
           <div className="flex items-center gap-3 text-xs text-gray-500">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-gray-400" />
@@ -254,12 +153,13 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
               <span>{record.workMode}</span>
             </div>
           </div>
+          )}
 
           {/* State-specific Body */}
           {isWeeklyOff && (
             <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-xl p-3 text-xs flex items-center gap-2 font-medium">
               <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
-              <span>Weekly Off</span>
+              <span>{record.date === '2026-09-04' ? 'Public Holiday (Janmasthmi) · Status: WO' : 'Scheduled Weekly Off'}</span>
             </div>
           )}
 
@@ -271,32 +171,8 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
           )}
 
           {!isWeeklyOff && (!isAbsent || record.punches.length > 0) && (
-            /* 2x2 Time Tracking Box */
-            <div className="rounded-xl border border-[#EBF0F7] bg-white divide-y divide-[#EBF0F7] overflow-hidden">
-              {/* Top Row: Start Time & End Time */}
-              <div className="grid grid-cols-2 divide-x divide-[#EBF0F7]">
-                <div className="p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Start Time</span>
-                  </div>
-                  <div className="text-sm font-bold text-[#1E293B] mt-0.5">
-                    {record.startTime}
-                  </div>
-                </div>
-
-                <div className="p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>End Time</span>
-                  </div>
-                  <div className="text-sm font-bold text-[#1E293B] mt-0.5">
-                    {record.endTime}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Row: Office Time & Working Time */}
+            /* Office + Working time (Start / End live in the Punch Logs sheet) */
+            <div className="rounded-xl border border-[#EBF0F7] bg-white overflow-hidden">
               <div className="grid grid-cols-2 divide-x divide-[#EBF0F7]">
                 <div className="p-3">
                   <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
@@ -442,7 +318,6 @@ export const AttendanceCard: React.FC<AttendanceCardProps> = ({
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   Calendar,
   CheckCircle2,
   RotateCcw,
@@ -865,32 +863,6 @@ export default function App() {
     setMonthIndex(index);
     setAttendanceRange(month.range);
     setActiveFilterStatus('All');
-    setExpandedCardIds(new Set());
-  };
-
-  // Expand/Collapse state: Default is all collapsed (empty set)
-  const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
-
-  const toggleCardExpand = (id: string) => {
-    setExpandedCardIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const isAnyExpanded = expandedCardIds.size > 0;
-
-  const handleToggleAll = () => {
-    if (isAnyExpanded) {
-      setExpandedCardIds(new Set());
-    } else {
-      setExpandedCardIds(new Set(filteredRecords.map((r) => r.id)));
-    }
   };
 
   // Toast message
@@ -1195,7 +1167,7 @@ export default function App() {
           </div>
           <div>
             <span className="font-semibold text-xs tracking-tight text-white">
-              MYCPE ONE HRMS 247
+              MYCPE ONE HRMS 24*7
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               Attendance &amp; Leaves
@@ -1291,7 +1263,7 @@ export default function App() {
               {scale}%
             </span>
             <button
-              onClick={() => setScale(Math.min(100, scale + 10))}
+              onClick={() => setScale(Math.min(200, scale + 10))}
               className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs font-mono"
             >
               +
@@ -1301,24 +1273,21 @@ export default function App() {
       </header>
 
       {/* Main Workspace Canvas */}
-      <main className="flex-1 flex items-center justify-center p-4 overflow-auto bg-slate-900 relative">
+      <main className="flex-1 flex p-4 overflow-auto bg-slate-900 relative">
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="absolute top-6 z-50 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="absolute inset-x-0 top-6 z-50 flex justify-center pointer-events-none">
+          <div className="animate-in fade-in slide-in-from-top-3 duration-300">
             <div className="bg-[#1E293B] text-white px-4 py-2.5 rounded-xl border border-slate-700 shadow-xl flex items-center gap-2 text-xs">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{toastMessage}</span>
             </div>
           </div>
+          </div>
         )}
 
-        <div
-          style={{
-            transform: `scale(${scale / 100})`,
-            transformOrigin: 'center center',
-            transition: 'transform 0.2s ease',
-          }}
-        >
+        {/* zoom (not transform) so the enlarged device takes real space and the canvas can scroll to all of it */}
+        <div className="m-auto shrink-0" style={{ zoom: scale / 100 }}>
           <BottomSheetProvider>
             <MobileDeviceFrame
               activeDevice={device}
@@ -2196,7 +2165,7 @@ export default function App() {
                     onOpenSummarySheet={() => setIsKPISummaryOpen(true)}
                   />
 
-                  {/* 5. Daily Attendance Cards (Collapsible by default) */}
+                  {/* 5. Daily Attendance Cards (always open: no expand / collapse) */}
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center justify-between px-1">
                       <div className="flex items-center gap-2">
@@ -2207,33 +2176,12 @@ export default function App() {
                           {filteredRecords.length}
                         </span>
                       </div>
-                      {filteredRecords.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleToggleAll}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2F68FE] bg-[#EFF6FF] active:bg-blue-200 transition-all cursor-pointer shadow-2xs border border-[#BFDBFE]/60"
-                        >
-                          {isAnyExpanded ? (
-                            <>
-                              <ChevronUp className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Collapse All</span>
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
-                              <span>Expand All</span>
-                            </>
-                          )}
-                        </button>
-                      )}
                     </div>
 
                     {filteredRecords.map((record) => (
                       <AttendanceCard
                         key={record.id}
                         record={record}
-                        isExpanded={expandedCardIds.has(record.id)}
-                        onToggleExpand={() => toggleCardExpand(record.id)}
                         onViewPunchLogs={(rec) => setSelectedPunchRecord(rec)}
                         onRequestEdit={(rec) => setSelectedEditRecord(rec)}
                         onApplyLeave={(rec) => setApplyingLeaveRecord(rec)}
