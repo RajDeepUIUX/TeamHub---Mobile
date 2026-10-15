@@ -81,6 +81,7 @@ import {
 } from './data/notificationsData';
 import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
 import { PoliciesView } from './components/more/PoliciesView';
+import { SalaryStructureView } from './components/payroll/SalaryStructureView';
 import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
 import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees, makeTrackingNo } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
@@ -655,7 +656,7 @@ export default function App() {
     } else if (m.id === 'company-feed') {
       setOpenFeedPostId(null);
       setMoreModule(m.id);
-    } else if (m.id === 'policies' || m.id === 'expense-reimbursement') {
+    } else if (m.id === 'policies' || m.id === 'expense-reimbursement' || m.id === 'salary-structure-declaration') {
       setMoreModule(m.id);
     } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
       setSelectedWFORecord(null);
@@ -691,7 +692,7 @@ export default function App() {
   };
 
   // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
-  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'policies', 'expense-reimbursement', 'salary-structure-declaration', 'work-timing', 'ot-request'];
   const openFromDrawer = (m: MoreModule) => {
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
@@ -1143,6 +1144,7 @@ export default function App() {
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
     if (appTab === 'more' && moreModule === 'recognitions') return { key: 'more/recognitions', depth: 1 };
     if (appTab === 'more' && moreModule === 'policies') return { key: 'more/policies', depth: 1 };
+    if (appTab === 'more' && moreModule === 'salary-structure-declaration') return { key: 'more/salary-structure', depth: 1 };
     if (appTab === 'more' && moreModule === 'expense-reimbursement') return { key: 'more/expense-reimbursement', depth: 1 };
     if (appTab === 'more' && moreModule === 'training-request') {
       return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
@@ -1901,6 +1903,24 @@ export default function App() {
                         }
                       : undefined
                   }
+                />
+              ) : appTab === 'more' && moreModule === 'salary-structure-declaration' ? (
+                <SalaryStructureView
+                  declarations={[
+                    {
+                      id: 'ssd-2026-10',
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
+                      effectiveMonth: 'Oct 2026',
+                      reportingManager: isManager ? 'Priya Nair' : REPORTING_MANAGER,
+                      ctm: 'Mithun Menon',
+                      currentCtc: 100000,
+                      revisedCtc: 2000000,
+                      otherAllowanceBase: 251900,
+                    },
+                  ]}
+                  onBack={closeMoreModule}
+                  onToast={showToast}
                 />
               ) : appTab === 'more' && moreModule === 'policies' ? (
                 <PoliciesView onBack={closeMoreModule} />
