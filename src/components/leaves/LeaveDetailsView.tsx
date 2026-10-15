@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   ArrowLeft,
+  ArrowUpRight,
   Calendar,
   CheckCircle2,
   Clock,
@@ -61,6 +62,13 @@ const STATUS_STYLES: Record<
   },
 };
 
+/** Status shown as plain coloured text with its icon (no chip) */
+const STATUS_TEXT: Record<LeaveRequest['status'], string> = {
+  Pending: 'text-[#D97706]',
+  Approved: 'text-[#16A34A]',
+  Rejected: 'text-[#DC2626]',
+};
+
 const DetailRow: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; last?: boolean }> = ({
   icon,
   label,
@@ -113,36 +121,37 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
             </span>
             <div className="min-w-0">
               <span className="block text-sm font-bold text-[#1E293B] truncate">{request.staffName}</span>
-              <span className="block text-[11px] text-slate-400">
-                {request.staffCode ? `${request.staffCode} · ` : ''}Applied on {request.appliedOn}
-              </span>
+              <span className="block text-[11px] text-slate-400">Applied on {request.appliedOn}</span>
             </div>
           </div>
         )}
-
-        {/* Summary Card */}
-        <div className={`rounded-2xl p-4.5 flex items-center gap-3.5 border ${style.card}`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${style.iconBox}`}>
-            <Calendar className="w-6 h-6 stroke-[2]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-base text-[#1E293B] leading-tight">{request.dateRange}</h2>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${style.badge}`}>
-                {style.icon}
-                {request.status}
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500">
-                {request.daysCount} {request.daysCount > 1 ? 'days' : 'day'}
-              </span>
-            </div>
-          </div>
-        </div>
 
         {/* Request Details */}
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs">
           <h3 className="text-sm font-bold text-[#1E293B] mb-1.5">Request Details</h3>
           <div className="text-xs">
+            <DetailRow
+              icon={<Calendar className="w-4 h-4" />}
+              label="Leave Dates"
+              value={
+                <>
+                  {request.dateRange}
+                  <span className="block mt-0.5 text-[11px] font-semibold text-slate-500">
+                    {request.daysCount} {request.daysCount > 1 ? 'days' : 'day'}
+                  </span>
+                </>
+              }
+            />
+            <DetailRow
+              icon={<Info className="w-4 h-4" />}
+              label="Status"
+              value={
+                <span className={`inline-flex items-center gap-1.5 ${STATUS_TEXT[request.status]}`}>
+                  {style.icon}
+                  {request.status}
+                </span>
+              }
+            />
             <DetailRow icon={<Clock className="w-4 h-4" />} label="Applied On" value={request.appliedOn} />
             <DetailRow icon={<MessageSquare className="w-4 h-4" />} label="Reason" value={request.reason} />
             {/* Description sits below its label so long text stays readable */}
@@ -200,15 +209,21 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
 
         {/* Attachment */}
         {request.attachmentName && (
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs flex items-center gap-3">
+          // Demo only: the file doesn't open
+          <button
+            type="button"
+            aria-label={`Open ${request.attachmentName}`}
+            className="w-full text-left bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs flex items-center gap-3 active:bg-slate-50 cursor-pointer"
+          >
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
               <Paperclip className="w-4.5 h-4.5" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <span className="block text-[11px] text-slate-400">Attachment</span>
               <span className="block text-xs font-bold text-[#1E293B] truncate">{request.attachmentName}</span>
             </div>
-          </div>
+            <ArrowUpRight className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+          </button>
         )}
         {/* Upload a document skipped while applying */}
         {!request.attachmentName && !isReviewer && request.status !== 'Rejected' && onUploadDocument && (
@@ -262,11 +277,13 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
           </div>
         )}
 
-        {/* Info Banner */}
-        <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
-          <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
-          <span>{isReviewer ? MANAGER_NOTES[request.status] : style.note}</span>
-        </div>
+        {/* Info Banner: hidden once approved (the green decision card says it all) */}
+        {request.status !== 'Approved' && (
+          <div className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] rounded-2xl p-4 flex items-start gap-3 text-xs leading-relaxed">
+            <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+            <span>{isReviewer ? MANAGER_NOTES[request.status] : style.note}</span>
+          </div>
+        )}
       </div>
 
       {/* Bottom CTA Bar (only when Pending) */}

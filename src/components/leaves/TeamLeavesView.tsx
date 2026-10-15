@@ -1,16 +1,48 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, X, Check, Paperclip, Inbox } from 'lucide-react';
 import { LeaveRequest } from '../../types/leaves';
 import {
   TeamFilterBar,
+  FilterSection,
   FilterSelection,
   TeamFilterSheet,
   activeFilterCount,
   matchesFilters,
+  toRangeValue,
 } from '../common/TeamFilterSheet';
 import { LeaveReviewSheet, LeaveDecision } from './LeaveReviewSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
-import { LeaveDateBadge } from './LeaveDateBadge';
+import { LeaveBreakdownSheet } from './LeaveBreakdownSheet';
+
+/** Staff note capped at two lines, with Show more / Show less when it runs longer */
+const ClampedQuote: React.FC<{ text: string }> = ({ text }) => {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && !expanded) setOverflows(el.scrollHeight > el.clientHeight + 1);
+  }, [text, expanded]);
+
+  return (
+    <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 leading-relaxed">
+      <p ref={ref} className={`break-words ${expanded ? '' : 'line-clamp-2'}`}>
+        “{text}”
+      </p>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-0.5 -mx-1 px-1 rounded text-[11px] font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+};
 
 type LeaveState = LeaveRequest['status'];
 
@@ -30,14 +62,21 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
   const [filters, setFilters] = useState<FilterSelection>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [review, setReview] = useState<{ id: string; decision: LeaveDecision } | null>(null);
+  const [breakdownFor, setBreakdownFor] = useState<LeaveRequest | null>(null);
 
+  const leaveRange = (r: LeaveRequest) => {
+    const start = new Date(r.startDate);
+    const end = new Date(r.endDate || r.startDate);
+    return Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) ? '' : toRangeValue(start, end);
+  };
   const visible = requests.filter((r) =>
-    matchesFilters(filters, { member: r.staffName ?? '', status: r.status })
+    matchesFilters(filters, { member: r.staffName ?? '', dates: leaveRange(r), status: r.status })
   );
   const filterCount = activeFilterCount(filters);
 
-  const filterSections = [
+  const filterSections: FilterSection[] = [
     { id: 'member', label: 'Team Member', options: Array.from(new Set(requests.map((r) => r.staffName ?? ''))).sort() },
+    { id: 'dates', label: 'Date Range', options: [], kind: 'dateRange' },
     { id: 'status', label: 'Status', options: ['Pending', 'Approved', 'Rejected'] },
   ];
 
@@ -75,8 +114,12 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
               </div>
 
               {/* Leave summary */}
-              <div className="mx-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                <LeaveDateBadge startDate={r.startDate} />
+              <button
+                type="button"
+                onClick={() => setBreakdownFor(r)}
+                aria-label={`Leave duration for ${r.dateRange}`}
+                className="mx-3.5 w-[calc(100%-1.75rem)] p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3 text-left active:bg-slate-100 cursor-pointer"
+              >
                 <div className="flex-1 min-w-0">
                   <span className="block text-xs font-bold text-[#1E293B]">{r.dateRange}</span>
                   {r.dayItems && r.dayItems.length > 0 && (
@@ -91,7 +134,7 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
                   <span className="block text-base font-extrabold text-[#1E293B] leading-none tabular-nums">{r.daysCount}</span>
                   <span className="block text-[10px] text-slate-400">{r.daysCount === 1 ? 'day' : 'days'}</span>
                 </span>
-              </div>
+              </button>
 
               {/* Reason, short description, attachment, manager note */}
               <div className="px-3.5 pt-3 space-y-2">
@@ -105,11 +148,7 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
                     </span>
                   )}
                 </div>
-                {r.description && (
-                  <p className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 leading-relaxed line-clamp-2">
-                    “{r.description}”
-                  </p>
-                )}
+                {r.description && <ClampedQuote text={r.description} />}
                 {r.status !== 'Pending' && r.managerComment && (
                   <p
                     className={`px-3 py-2 rounded-xl text-[11px] leading-relaxed ${
@@ -118,7 +157,6 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
                   >
                     <span className="font-semibold">{r.status === 'Rejected' ? 'Rejection reason' : 'Your note'}: </span>
                     {r.managerComment}
-                    {r.reviewedAt && <span className="opacity-70"> · {r.reviewedAt}</span>}
                   </p>
                 )}
               </div>
@@ -199,6 +237,8 @@ export const TeamLeavesView: React.FC<TeamLeavesViewProps> = ({ requests, onRevi
           setIsFilterOpen(false);
         }}
       />
+
+      <LeaveBreakdownSheet request={breakdownFor} onClose={() => setBreakdownFor(null)} />
     </div>
   );
 };

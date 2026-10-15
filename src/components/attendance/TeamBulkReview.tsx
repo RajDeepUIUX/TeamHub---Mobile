@@ -98,10 +98,10 @@ export const BulkReviewList: React.FC<{
     const k = ids.filter((id) => selectedIds.has(id)).length;
     return k === 0 ? 'off' : k === ids.length ? 'on' : 'some';
   };
-  const allState = stateOfIds(allIds);
+  const allOn = selectedCount === allIds.length;
 
   return (
-    <div className="space-y-3.5 animate-in fade-in duration-200">
+    <div className="space-y-3 animate-in fade-in duration-200">
       {/* Title row */}
       <div className="flex items-center gap-2">
         <button
@@ -118,58 +118,48 @@ export const BulkReviewList: React.FC<{
           </h2>
           <p className="text-[11px] text-slate-500">
             {records.length} {records.length === 1 ? 'request' : 'requests'}
-            {!staffName && ` · ${groups.length} team ${groups.length === 1 ? 'member' : 'members'}`}
+            {!staffName && ` · ${groups.length} ${groups.length === 1 ? 'person' : 'people'}`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onSetSelected(allIds, allState !== 'on')}
-          className="h-9 px-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-700 active:bg-slate-100 cursor-pointer"
-        >
-          <Tick state={allState} size="sm" />
-          {allState === 'on' ? 'Deselect all' : 'Select all'}
-        </button>
+        {records.length > 1 && (
+          <button
+            type="button"
+            onClick={() => onSetSelected(allIds, !allOn)}
+            className="h-8 px-2.5 rounded-lg text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer shrink-0"
+          >
+            {allOn ? 'Clear all' : 'Select all'}
+          </button>
+        )}
       </div>
 
-      {/* How it works */}
-      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] text-[#1E40AF] leading-relaxed">
-        <span className="mt-px w-4 h-4 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-          i
-        </span>
-        <span>
-          {selectedCount === records.length
-            ? 'Everything is selected. Untick any request you want to leave for later, then Approve or Reject at the bottom.'
-            : 'Tick the requests you want to decide on, then Approve or Reject them together at the bottom.'}
-        </span>
-      </div>
-
-      {/* Grouped by team member */}
+      {/* One card per person; a request row is the only thing to tick */}
       {groups.map(([name, items]) => {
         const ids = items.map((r) => r.id);
         const groupState = stateOfIds(ids);
         return (
-          <section key={name} className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-            <button
-              type="button"
-              onClick={() => onSetSelected(ids, groupState !== 'on')}
-              aria-pressed={groupState === 'on'}
-              className="w-full px-3.5 py-3 flex items-center gap-3 bg-slate-50/70 border-b border-slate-100 text-left active:bg-slate-100 cursor-pointer"
-            >
-              <Tick state={groupState} />
+          <section key={name} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+            <header className="px-3.5 pt-3 pb-2 flex items-center gap-2.5">
               <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarTint(avatarIdxOf(items[0]))}`}>
                 {initialsOf(name)}
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-xs font-bold text-[#1E293B] truncate">{name}</span>
+                <span className="block text-[13px] font-bold text-[#1E293B] truncate">{name}</span>
                 <span className="block text-[10.5px] text-slate-400">
-                  {items.length} pending {items.length === 1 ? 'request' : 'requests'}
+                  {items.length} {items.length === 1 ? 'request' : 'requests'}
                 </span>
               </span>
-              <span className="text-[10.5px] font-semibold text-slate-500 shrink-0">
-                {ids.filter((id) => selectedIds.has(id)).length}/{items.length}
-              </span>
-            </button>
-            <ul className="divide-y divide-slate-100">
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => onSetSelected(ids, groupState !== 'on')}
+                  className="h-7 px-2 rounded-lg text-[11px] font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer shrink-0"
+                >
+                  {groupState === 'on' ? 'Clear' : 'Select all'}
+                </button>
+              )}
+            </header>
+
+            <ul className="px-2 pb-2 space-y-1.5">
               {items.map((r) => {
                 const on = selectedIds.has(r.id);
                 return (
@@ -179,35 +169,40 @@ export const BulkReviewList: React.FC<{
                       role="checkbox"
                       aria-checked={on}
                       onClick={() => onSetSelected([r.id], !on)}
-                      className={`w-full px-3.5 py-3 flex items-start gap-3 text-left transition-colors cursor-pointer ${
-                        on ? 'bg-[#F5F8FF] active:bg-[#EEF4FF]' : 'active:bg-slate-50'
+                      className={`w-full p-2.5 rounded-xl border flex items-start gap-2.5 text-left transition-colors cursor-pointer ${
+                        on ? 'border-blue-200 bg-[#F5F8FF] active:bg-[#EEF4FF]' : 'border-slate-100 bg-white active:bg-slate-50'
                       }`}
                     >
-                      <span className="mt-0.5">
-                        <Tick state={on ? 'on' : 'off'} />
+                      <span className="mt-px">
+                        <Tick state={on ? 'on' : 'off'} size="sm" />
                       </span>
-                      <span className="flex-1 min-w-0 space-y-1.5">
-                        <span className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[#1E293B]">
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-[#1E293B] truncate">
                             {r.dayOfWeek.slice(0, 3)}, {r.dateFormatted}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[#2F68FE] text-[10px] font-semibold truncate">
+                          <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[#2F68FE] text-[10px] font-semibold shrink-0">
                             {r.editReason ?? '—'}
                           </span>
                         </span>
-                        <span className="flex items-center gap-1.5 text-[11px] text-slate-500 tabular-nums">
-                          <span className="text-[10px] text-slate-400">Office</span>
-                          <span className="font-semibold text-slate-600">{r.totalOfficeTime}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-300" />
-                          <span className="font-bold text-[#2F68FE]">{r.reqOfficeHrs ?? '—'}</span>
-                          <span className="text-slate-300 px-0.5">·</span>
-                          <span className="text-[10px] text-slate-400">Work</span>
-                          <span className="font-semibold text-slate-600">{r.totalWorkingTime}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-300" />
-                          <span className="font-bold text-[#2F68FE]">{r.reqWorkHrs ?? '—'}</span>
+                        {/* Logged → requested hours */}
+                        <span className="mt-2 grid grid-cols-2 gap-1.5 tabular-nums">
+                          {[
+                            { label: 'Office', from: r.totalOfficeTime, to: r.reqOfficeHrs },
+                            { label: 'Work', from: r.totalWorkingTime, to: r.reqWorkHrs },
+                          ].map((t) => (
+                            <span key={t.label} className="px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                              <span className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{t.label}</span>
+                              <span className="flex items-center gap-1 text-[11px]">
+                                <span className="text-slate-500">{t.from}</span>
+                                <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
+                                <span className="font-bold text-[#2F68FE]">{t.to ?? '—'}</span>
+                              </span>
+                            </span>
+                          ))}
                         </span>
                         {r.editNote && (
-                          <span className="block text-[11px] text-slate-500 leading-relaxed line-clamp-2">“{r.editNote}”</span>
+                          <span className="mt-1.5 block text-[11px] text-slate-500 leading-relaxed line-clamp-2">“{r.editNote}”</span>
                         )}
                       </span>
                     </button>

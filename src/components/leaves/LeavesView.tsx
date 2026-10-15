@@ -15,7 +15,6 @@ import {
 import { LeaveRequest, LeaveBalance } from '../../types/leaves';
 import { FilterLeavesSheet } from './FilterLeavesSheet';
 import { LeaveCommentsSheet } from './LeaveCommentsSheet';
-import { LeaveDateBadge } from './LeaveDateBadge';
 
 import { FilterIconButton } from '../common/TeamFilterSheet';
 interface LeavesViewProps {
@@ -161,10 +160,9 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                 activeMenuId === req.id ? 'z-30' : ''
               }`}
             >
-              {/* Top Row: Date tile + Dates/Days + Status Badge + Menu */}
+              {/* Top Row: Dates/Days + Status Badge + Menu */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <LeaveDateBadge startDate={req.startDate} />
                   <div className="min-w-0">
                     <h3 className="text-sm font-bold text-[#1E293B] leading-snug">
                       {req.dateRange}
