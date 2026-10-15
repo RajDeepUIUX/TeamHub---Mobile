@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  HelpCircle,
   Lock,
   ShieldCheck,
   X,
@@ -16,6 +15,7 @@ import { BottomSheet } from '../common/BottomSheet';
 import { SalaryComponentsStep, ComponentChoices, DEFAULT_CHOICES } from './SalaryComponentsStep';
 import { FamilyMember, ProfFeeAccount, ProfFeesView, totalProfFees } from './ProfFeesView';
 import { SalaryPreviewStep } from './SalaryPreviewStep';
+import { LetterStatus, SignatureStep } from './SignatureStep';
 
 /* ---------------------------------- Data ---------------------------------- */
 
@@ -169,59 +169,6 @@ const PanVerifySheet: React.FC<{ isOpen: boolean; onClose: () => void; onVerifie
   );
 };
 
-/* ----------------------------- How it works sheet ----------------------------- */
-
-const HOW_IT_WORKS: { title: string; text: string }[] = [
-  { title: 'Details', text: 'Check your current and revised CTC and the month the new structure starts.' },
-  { title: 'Select Components', text: 'Pick your tax regime and opt in to Flexi Allowance, Meal Allowance, PF / VPF and NPS.' },
-  { title: 'Preview', text: 'See your monthly take-home and taxable salary with the choices you made.' },
-  { title: 'Signature', text: 'Sign to confirm. Payroll then freezes your final salary breakup.' },
-];
-
-const HowItWorksSheet: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
-  <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[85%]">
-    <div className="pt-3 pb-1 flex justify-center shrink-0">
-      <div className="w-10 h-1 bg-slate-300 rounded-full" />
-    </div>
-    <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
-      <h2 className="text-base font-bold text-[#1E293B]">How it works</h2>
-      <button
-        type="button"
-        onClick={onClose}
-        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-        aria-label="Close"
-      >
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-    <ol className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4">
-      {HOW_IT_WORKS.map((s, i) => (
-        <li key={s.title} className="flex gap-3">
-          <div className="flex flex-col items-center">
-            <span className="w-7 h-7 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center shrink-0">
-              {i + 1}
-            </span>
-            {i < HOW_IT_WORKS.length - 1 && <span className="flex-1 w-px bg-blue-100 my-1" />}
-          </div>
-          <div className="pb-4">
-            <p className="text-sm font-bold text-[#1E293B]">{s.title}</p>
-            <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{s.text}</p>
-          </div>
-        </li>
-      ))}
-    </ol>
-    <div className="p-4 pt-2 pb-8 border-t border-slate-100 shrink-0">
-      <button
-        type="button"
-        onClick={onClose}
-        className="w-full h-12 rounded-xl bg-[#2F68FE] text-white font-semibold text-sm shadow-xs active:bg-[#1D4ED8] cursor-pointer"
-      >
-        Got it
-      </button>
-    </div>
-  </BottomSheet>
-);
-
 /* --------------------------------- Stepper --------------------------------- */
 
 const Stepper: React.FC<{ current: number }> = ({ current }) => (
@@ -276,10 +223,22 @@ const DeclarationWizard: React.FC<{
     setStep(s);
     scrollRef.current?.scrollTo({ top: 0 });
   };
-  const [isHowOpen, setIsHowOpen] = useState(false);
   const [profAccounts, setProfAccounts] = useState<ProfFeeAccount[]>([]);
   const [isProfFeesOpen, setIsProfFeesOpen] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(d.familyMembers);
+  const isLastStep = step === STEPS.length - 1;
+  const [letter, setLetter] = useState<LetterStatus>('none');
+  const [isLetterConfirmOpen, setIsLetterConfirmOpen] = useState(false);
+  const [letterVersions, setLetterVersions] = useState(0);
+  const [isLettersOpen, setIsLettersOpen] = useState(false);
+  const generateLetter = () => {
+    setLetter('generating');
+    setTimeout(() => {
+      setLetter('ready');
+      setLetterVersions((n) => n + 1);
+      setIsLetterConfirmOpen(true);
+    }, 1800);
+  };
 
   if (isProfFeesOpen) {
     return (
@@ -316,14 +275,6 @@ const DeclarationWizard: React.FC<{
           <div className="screen-title">
             <h1 className="text-base font-bold leading-tight">Salary Structure Declaration</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsHowOpen(true)}
-            aria-label="How it works"
-            className="ml-auto w-9 h-9 -mr-1 rounded-full text-[#2F68FE] flex items-center justify-center active:bg-blue-50 cursor-pointer"
-          >
-            <HelpCircle className="w-5 h-5" />
-          </button>
         </div>
       </header>
 
@@ -331,6 +282,21 @@ const DeclarationWizard: React.FC<{
         <Stepper current={step} />
 
         {step === 2 && <SalaryPreviewStep ctc={d.revisedCtc} statutory={d.statutoryDeduction} choices={choices} />}
+
+        {step === 3 && (
+          <SignatureStep
+            staffName={d.staffName}
+            letter={letter}
+            letterVersions={letterVersions}
+            isConfirmOpen={isLetterConfirmOpen}
+            isLettersOpen={isLettersOpen}
+            onGenerate={generateLetter}
+            onCloseConfirm={() => setIsLetterConfirmOpen(false)}
+            onViewLetters={() => setIsLettersOpen(true)}
+            onCloseLetters={() => setIsLettersOpen(false)}
+            onSendForESign={() => onComingSoon('Sending for e-sign')}
+          />
+        )}
 
         {step === 1 && <SalaryComponentsStep
             ctc={d.revisedCtc}
@@ -403,7 +369,11 @@ const DeclarationWizard: React.FC<{
       </div>
 
       {/* Back / Next */}
-      <div className="shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] grid grid-cols-[1fr_2fr] gap-3">
+      <div
+        className={`shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] grid gap-3 ${
+          isLastStep ? 'grid-cols-1' : 'grid-cols-[1fr_2fr]'
+        }`}
+      >
         <button
           type="button"
           disabled={step === 0}
@@ -412,17 +382,18 @@ const DeclarationWizard: React.FC<{
         >
           Back
         </button>
-        <button
-          type="button"
-          onClick={() => (step < 2 ? goTo(step + 1) : onComingSoon(STEPS[step + 1]))}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] cursor-pointer"
-        >
-          {step === 0 ? 'Next' : 'Save & Next'}
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {!isLastStep && (
+          <button
+            type="button"
+            onClick={() => goTo(step + 1)}
+            className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] cursor-pointer"
+          >
+            {step === 0 ? 'Next' : 'Save & Next'}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      <HowItWorksSheet isOpen={isHowOpen} onClose={() => setIsHowOpen(false)} />
     </div>
   );
 };

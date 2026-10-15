@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { Dropdown } from '../../design-system/components/Dropdown';
 
@@ -25,10 +25,10 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
   useEffect(() => {
     if (isOpen) setIsCalendarExpanded(false);
   }, [isOpen]);
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(8); // September = 8
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [selectedStartDay, setSelectedStartDay] = useState<number | null>(21);
-  const [selectedEndDay, setSelectedEndDay] = useState<number | null>(25);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(() => new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
+  const [selectedStartDay, setSelectedStartDay] = useState<number | null>(null);
+  const [selectedEndDay, setSelectedEndDay] = useState<number | null>(null);
   const [activeDateField, setActiveDateField] = useState<'start' | 'end'>('start');
 
   const monthNames = [
@@ -98,9 +98,10 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
   };
 
   const shortMonth = monthNames[currentMonthIndex].substring(0, 3);
-  const startFormatted = selectedStartDay !== null ? `${selectedStartDay} ${shortMonth} ${currentYear}` : 'Select date';
-  const endFormatted = selectedEndDay !== null ? `${selectedEndDay} ${shortMonth} ${currentYear}` : 'Select date';
-  const formattedDateRange = `${startFormatted}  →  ${endFormatted}`;
+  const startFormatted = selectedStartDay !== null ? `${selectedStartDay} ${shortMonth} ${currentYear}` : 'Start date';
+  const endFormatted = selectedEndDay !== null ? `${selectedEndDay} ${shortMonth} ${currentYear}` : 'End date';
+  // Empty when no range is picked, so it doesn't count as an active filter
+  const formattedDateRange = selectedStartDay !== null ? `${startFormatted}  →  ${selectedEndDay !== null ? endFormatted : startFormatted}` : '';
 
   const handleApply = () => {
     onApply(status, formattedDateRange);
@@ -143,83 +144,45 @@ export const FilterLeavesSheet: React.FC<FilterLeavesSheetProps> = ({
           <Dropdown size="md" ariaLabel="Status" value={status} options={statusOptions} onChange={setStatus} />
         </div>
 
-        {/* 2 Different Text Fields Aligned Horizontally: Start Date | End Date */}
+        {/* Date Range: one field, start → end; tapping a side opens the calendar for it */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold text-[#1E293B]">Date Range</label>
-            <button
-              type="button"
-              onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-              className="text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 cursor-pointer"
-            >
-              <span>{isCalendarExpanded ? 'Hide Calendar' : 'Show Calendar'}</span>
-              {isCalendarExpanded ? (
-                <ChevronUp className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
-              )}
-            </button>
-          </div>
+          <label className="block text-xs font-bold text-[#1E293B]">Date Range</label>
 
-          {/* 2 Horizontal Text Fields */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Start Date Field */}
-            <div className="space-y-1">
-              <span className="block text-[11px] font-semibold text-slate-500">Start Date</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCalendarExpanded(true);
-                  setActiveDateField('start');
-                }}
-                className={`w-full h-11 px-3 bg-white border rounded-xl flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
-                  isCalendarExpanded && activeDateField === 'start'
-                    ? 'border-[#2F68FE] ring-1 ring-[#2F68FE] bg-blue-50/30'
-                    : 'border-slate-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Calendar className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                  <span
-                    className={`truncate text-xs ${
-                      selectedStartDay !== null ? 'font-semibold text-slate-800' : 'text-slate-400'
-                    }`}
+          <div
+            className={`h-11 bg-white border rounded-xl flex items-stretch text-xs shadow-2xs transition-all ${
+              isCalendarExpanded ? 'border-[#2F68FE] ring-1 ring-[#2F68FE]' : 'border-slate-200'
+            }`}
+          >
+            {(['start', 'end'] as const).map((field, i) => {
+              const picked = field === 'start' ? selectedStartDay !== null : selectedEndDay !== null;
+              const active = isCalendarExpanded && activeDateField === field;
+              return (
+                <React.Fragment key={field}>
+                  {i === 1 && <ArrowRight className="w-3.5 h-3.5 text-slate-400 self-center shrink-0" aria-hidden="true" />}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Tapping the side that's already open closes the calendar
+                      if (active) setIsCalendarExpanded(false);
+                      else {
+                        setIsCalendarExpanded(true);
+                        setActiveDateField(field);
+                      }
+                    }}
+                    aria-label={field === 'start' ? 'Start date' : 'End date'}
+                    aria-expanded={active}
+                    className={`flex-1 min-w-0 flex items-center gap-2 px-3 rounded-xl cursor-pointer ${
+                      i === 1 ? 'justify-end' : ''
+                    } ${active ? 'bg-blue-50/60' : 'active:bg-slate-50'}`}
                   >
-                    {startFormatted}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
-              </button>
-            </div>
-
-            {/* End Date Field */}
-            <div className="space-y-1">
-              <span className="block text-[11px] font-semibold text-slate-500">End Date</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCalendarExpanded(true);
-                  setActiveDateField('end');
-                }}
-                className={`w-full h-11 px-3 bg-white border rounded-xl flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
-                  isCalendarExpanded && activeDateField === 'end'
-                    ? 'border-[#2F68FE] ring-1 ring-[#2F68FE] bg-blue-50/30'
-                    : 'border-slate-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Calendar className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                  <span
-                    className={`truncate text-xs ${
-                      selectedEndDay !== null ? 'font-semibold text-slate-800' : 'text-slate-400'
-                    }`}
-                  >
-                    {endFormatted}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
-              </button>
-            </div>
+                    {i === 0 && <Calendar className="w-4 h-4 text-[#2F68FE] shrink-0" />}
+                    <span className={`truncate ${picked ? 'font-semibold text-slate-800' : 'font-medium text-slate-400'}`}>
+                      {field === 'start' ? startFormatted : endFormatted}
+                    </span>
+                  </button>
+                </React.Fragment>
+              );
+            })}
           </div>
 
           {/* Interactive Inline Calendar matching Image 3 */}

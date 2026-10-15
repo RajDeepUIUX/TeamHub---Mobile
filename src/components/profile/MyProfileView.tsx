@@ -526,11 +526,10 @@ const FieldInput: React.FC<{
                   type="button"
                   aria-pressed={on}
                   onClick={() => onChange(slots.filter((x) => (x === slot ? !on : picked.includes(x))))}
-                  className={`h-10 rounded-xl border flex items-center justify-center gap-1.5 text-[12px] font-semibold tabular-nums transition-colors cursor-pointer ${
+                  className={`h-10 rounded-xl border flex items-center justify-center text-[12px] font-semibold tabular-nums transition-colors cursor-pointer ${
                     on ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
                   }`}
                 >
-                  {on && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                   {slotShort(slot)}
                 </button>
               );

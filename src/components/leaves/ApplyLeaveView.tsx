@@ -10,7 +10,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { LeaveDurationType, LeaveDayItem, LeaveRequest } from '../../types/leaves';
-import { SelectDateRangeSheet } from './SelectDateRangeSheet';
+import { SelectDateRangeSheet, formatLeaveDate, parseLeaveDate } from './SelectDateRangeSheet';
 import { SelectDurationSheet } from './SelectDurationSheet';
 import { SelectReasonSheet } from './SelectReasonSheet';
 
@@ -100,23 +100,15 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
     setDaysCount(count);
     setHasSelectedDates(true);
 
-    // Generate day items for range
-    const days: LeaveDayItem[] = [];
+    // One item per calendar day in the range (crosses month / year ends)
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    
-    // Parse start day number e.g. "20 Oct 2026"
-    const startNum = parseInt(start.split(' ')[0], 10) || 20;
-    for (let i = 0; i < count; i++) {
-      const curNum = startNum + i;
-      const d = new Date(2026, 9, curNum);
-      const dayName = weekdays[d.getDay()];
-      days.push({
-        date: `${curNum} Oct 2026`,
-        dayOfWeek: dayName,
-        duration: masterDuration,
-      });
-    }
-    setDayItems(days);
+    const first = parseLeaveDate(start) ?? new Date();
+    setDayItems(
+      Array.from({ length: count }, (_, i) => {
+        const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i);
+        return { date: formatLeaveDate(d), dayOfWeek: weekdays[d.getDay()], duration: masterDuration };
+      })
+    );
   };
 
   const handleMasterDurationChange = (dur: LeaveDurationType) => {
@@ -140,7 +132,11 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
 
   // Demo helper: fills every field with realistic sample data (same as the Reimbursement form)
   const handleQuickFill = () => {
-    handleApplyDateRange('20 Oct 2026', '23 Oct 2026', 4);
+    // Monday to Thursday of next week, so it's never in the past
+    const now = new Date();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((8 - now.getDay()) % 7 || 7));
+    const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+    handleApplyDateRange(formatLeaveDate(monday), formatLeaveDate(thursday), 4);
     setSelectedReason('Travel/Vacation');
     setDescription('Family trip to Goa, planned in advance. Work is handed over to Naveen Das.');
     setAttachment('travel-itinerary.pdf');
@@ -427,8 +423,8 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
       <SelectDateRangeSheet
         isOpen={isDateSheetOpen}
         onClose={() => setIsDateSheetOpen(false)}
-        initialStartDate={startDate}
-        initialEndDate={endDate}
+        initialStartDate={hasSelectedDates ? startDate : undefined}
+        initialEndDate={hasSelectedDates ? endDate : undefined}
         onApply={handleApplyDateRange}
       />
 
