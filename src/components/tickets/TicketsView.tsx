@@ -470,6 +470,10 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
           setStatusFilter((prev) => (prev === s ? null : s));
           setIsSummaryOpen(false);
         }}
+        onShowAll={() => {
+          setStatusFilter(null);
+          setIsSummaryOpen(false);
+        }}
       />
       <TicketDetailSheet
         ticket={byId(viewId)}

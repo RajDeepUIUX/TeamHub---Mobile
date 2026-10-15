@@ -1145,32 +1145,40 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Identity card */}
-        <section className="m-4 mb-3 bg-white rounded-3xl p-4 border border-[#EBF0F7]">
-          <div className="flex items-center gap-3.5">
+        {/* Identity card: who (avatar, name, role, department) over three quick facts */}
+        <section className="m-4 mb-3 bg-white rounded-3xl border border-[#EBF0F7] overflow-hidden">
+          <div className="p-4 flex items-center gap-3.5">
             <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5 shrink-0">
               <ProfileAvatar name={v.fullName as string} photoUrl={photoUrl} className="w-full h-full rounded-[14px]" textClassName="text-lg" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h2 className="text-lg font-extrabold leading-tight truncate">{v.fullName as string}</h2>
+                <h2 className="text-[17px] font-extrabold leading-tight truncate">{v.fullName as string}</h2>
                 <BadgeCheck className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
               </div>
-              <p className="text-[11.5px] text-slate-500 leading-snug mt-0.5">
-                {v.designation as string} · {v.department as string} · {v.employeeId as string}
-              </p>
+              <p className="mt-0.5 text-[12px] font-medium text-slate-500 truncate">{v.designation as string}</p>
+              {v.department && (
+                <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[10.5px] font-semibold text-[#2F68FE]">
+                  <BriefcaseBusiness className="w-3 h-3" />
+                  {v.department as string}
+                </span>
+              )}
             </div>
           </div>
-          <div className="mt-3.5 flex flex-wrap gap-1.5">
+
+          <div className="grid grid-cols-3 border-t border-slate-100 bg-slate-50/50 divide-x divide-slate-100">
             {[
-              { icon: MapPin, text: v.location as string },
-              { icon: Clock3, text: `Tenure: ${tenureFrom(v.joiningDate as string)}` },
-              { icon: Phone, text: v.mobile as string },
-            ].map(({ icon: Icon, text }) => (
-              <span key={text} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/80 text-[11px] font-medium text-slate-600">
-                <Icon className="w-3 h-3 text-slate-400" />
-                {text}
-              </span>
+              { icon: MapPin, label: 'Location', value: (v.location as string)?.split(',')[0] },
+              { icon: Clock3, label: 'Tenure', value: tenureFrom(v.joiningDate as string).replace(/\s*Years?/i, ' yr').replace(/\s*Months?/i, ' mo') },
+              { icon: Phone, label: 'Mobile', value: v.mobile as string },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="px-3 py-2.5 min-w-0">
+                <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                  <Icon className="w-3 h-3 shrink-0" />
+                  {label}
+                </span>
+                <span className="mt-0.5 block text-[12px] font-semibold text-[#1E293B] truncate">{value || '—'}</span>
+              </div>
             ))}
           </div>
         </section>

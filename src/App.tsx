@@ -2391,6 +2391,10 @@ export default function App() {
               onClose={() => setIsKPISummaryOpen(false)}
               kpis={kpis}
               monthTitle={rangeLabel}
+              onPick={(status) => {
+                setActiveFilterStatus(status);
+                setIsKPISummaryOpen(false);
+              }}
             />
 
             {/* Bottom Sheet: Edit WFO Days from Details view */}

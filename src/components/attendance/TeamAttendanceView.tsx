@@ -151,36 +151,6 @@ const TeamAttendanceSummarySheet: React.FC<{
           </div>
         </div>
 
-        <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
-          <div className="flex items-center gap-2 font-bold text-[#1E293B]">
-            <Users className="w-4 h-4 text-[#10B981]" />
-            <span>By Team Member</span>
-          </div>
-          <div className="space-y-2 pt-1">
-            {members.map((name) => {
-              const mine = requests.filter((r) => r.staffName === name);
-              const pending = mine.filter((r) => stateOf(r) === 'Pending').length;
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => onPick({ staff: name })}
-                  className={`w-full ${tileCls}`}
-                  aria-label={`Show ${name}'s requests`}
-                >
-                  <span className="text-slate-700 font-semibold truncate">{name}</span>
-                  <span className="flex items-center gap-2 text-[11px] shrink-0">
-                    {pending > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 font-bold">{pending} pending</span>
-                    )}
-                    <span className="font-bold text-slate-700 tabular-nums">{mine.length}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       <div className="p-4 pt-2 pb-8 border-t border-slate-100 shrink-0">
