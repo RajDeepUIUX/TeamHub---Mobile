@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { SalaryComponentsStep, ComponentChoices, DEFAULT_CHOICES } from './SalaryComponentsStep';
+import { FamilyMember, ProfFeeAccount, ProfFeesView, totalProfFees } from './ProfFeesView';
+import { SalaryPreviewStep } from './SalaryPreviewStep';
 
 /* ---------------------------------- Data ---------------------------------- */
 
@@ -28,11 +30,22 @@ export interface SalaryDeclaration {
   revisedCtc: number;
   /** Yearly Other Allowance when no component is opted in */
   otherAllowanceBase: number;
+  /** Yearly statutory deduction applied in the old regime tax calc */
+  statutoryDeduction: number;
+  /** Yearly Flexi Expense Reimbursement ceiling for the rest of the year */
+  flexiAnnualMax: number;
+  /** Fixed monthly NPS ceiling (Max Eligible Limit) */
+  npsMonthlyMax: number;
+  joiningDate: string; // e.g. "16 Jul, 2024"
+  /** Family members who can be set up as Prof. Fees accounts */
+  familyMembers: FamilyMember[];
 }
 
 const STEPS = ['Details', 'Select Components', 'Preview', 'Signature'] as const;
 const COMPONENT_CHIPS = ['Flexi Allowance', 'Meal Allowance', 'PF/VPF', 'NPS'];
 const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+/** Pre-filled for the demo so Verify works straight away */
+const DEMO_PAN = 'BKXPS4821M';
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -51,7 +64,7 @@ const PanVerifySheet: React.FC<{ isOpen: boolean; onClose: () => void; onVerifie
 
   useEffect(() => {
     if (isOpen) {
-      setPan('');
+      setPan(DEMO_PAN);
       setVisible(false);
       setError('');
       setVerifying(false);
@@ -264,6 +277,29 @@ const DeclarationWizard: React.FC<{
     scrollRef.current?.scrollTo({ top: 0 });
   };
   const [isHowOpen, setIsHowOpen] = useState(false);
+  const [profAccounts, setProfAccounts] = useState<ProfFeeAccount[]>([]);
+  const [isProfFeesOpen, setIsProfFeesOpen] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(d.familyMembers);
+
+  if (isProfFeesOpen) {
+    return (
+      <ProfFeesView
+        staffName={d.staffName}
+        joiningDate={d.joiningDate}
+        grossPackage={d.revisedCtc}
+        mainPackage={d.revisedCtc}
+        members={familyMembers}
+        initialAccounts={profAccounts}
+        onCancel={() => setIsProfFeesOpen(false)}
+        onSave={(accounts) => {
+          setProfAccounts(accounts);
+          setChoices((c) => ({ ...c, profFeesAllocation: totalProfFees(accounts) }));
+          setIsProfFeesOpen(false);
+        }}
+        onAddMember={(m) => setFamilyMembers((prev) => [...prev, m])}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -294,12 +330,18 @@ const DeclarationWizard: React.FC<{
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
         <Stepper current={step} />
 
+        {step === 2 && <SalaryPreviewStep ctc={d.revisedCtc} statutory={d.statutoryDeduction} choices={choices} />}
+
         {step === 1 && <SalaryComponentsStep
             ctc={d.revisedCtc}
             pool={d.otherAllowanceBase}
+            statutory={d.statutoryDeduction}
+            effectiveMonth={d.effectiveMonth}
+            flexiAnnualMax={d.flexiAnnualMax}
+            npsMonthlyMax={d.npsMonthlyMax}
             choices={choices}
             onChange={setChoices}
-            onManageProfFees={() => onComingSoon('Professional fees')}
+            onManageProfFees={() => setIsProfFeesOpen(true)}
           />}
 
         {step === 0 && (
@@ -372,7 +414,7 @@ const DeclarationWizard: React.FC<{
         </button>
         <button
           type="button"
-          onClick={() => (step === 0 ? goTo(1) : onComingSoon(STEPS[step + 1]))}
+          onClick={() => (step < 2 ? goTo(step + 1) : onComingSoon(STEPS[step + 1]))}
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] cursor-pointer"
         >
           {step === 0 ? 'Next' : 'Save & Next'}
@@ -431,7 +473,7 @@ export const SalaryStructureView: React.FC<{
             <div className="p-3.5 pb-3">
               <p className="text-[10.5px] text-slate-500">Staff Name</p>
               <h3 className="mt-0.5 text-sm font-bold text-[#1E293B]">
-                {d.staffName} ({d.staffCode})
+                {d.staffName}
               </h3>
             </div>
 

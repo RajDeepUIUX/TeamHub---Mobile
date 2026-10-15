@@ -1917,6 +1917,14 @@ export default function App() {
                       currentCtc: 100000,
                       revisedCtc: 2000000,
                       otherAllowanceBase: 251900,
+                      statutoryDeduction: 48100,
+                      flexiAnnualMax: 347202,
+                      npsMonthlyMax: 6958,
+                      joiningDate: '16 Jul, 2024',
+                      familyMembers: [
+                        { id: 'fm-1', name: 'Robert Smith', relationship: 'Father', dob: '1962-07-01' },
+                        { id: 'fm-2', name: 'Emily Smith', relationship: 'Wife', dob: '1994-03-18' },
+                      ],
                     },
                   ]}
                   onBack={closeMoreModule}
