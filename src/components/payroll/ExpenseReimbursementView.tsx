@@ -19,6 +19,7 @@ import {
   emptyExpenseItem,
   formatRupees,
 } from '../../data/reimbursementData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /* ------------------------------ Illustrations ------------------------------ */
 
@@ -110,7 +111,7 @@ const ExpenseItemCard: React.FC<{
   onChange: (patch: Partial<ExpenseItem>) => void;
   onRemove: () => void;
 }> = ({ index, item, withDate, errors, canRemove, onChange, onRemove }) => {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<AttachmentInputHandle>(null);
   const [isDateOpen, setIsDateOpen] = useState(false);
   const label = (text: string, required = false) => (
     <span className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -272,10 +273,9 @@ const ExpenseItemCard: React.FC<{
             Upload receipt
           </button>
         )}
-        <input
+        <AttachmentInput
+          title="Upload Receipt"
           ref={fileRef}
-          type="file"
-          className="hidden"
           accept=".pdf,.jpg,.jpeg,.png"
           onChange={(e) => {
             const file = e.target.files?.[0];

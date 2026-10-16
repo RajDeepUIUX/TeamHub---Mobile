@@ -20,6 +20,7 @@ import {
   monthlyDeduction,
   requestAvailability,
 } from '../../data/advanceSalaryData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 export type AdvanceDraft = Pick<
   AdvanceRequest,
@@ -61,7 +62,7 @@ const FileField: React.FC<{
   error?: string;
   onChange: (files: string[]) => void;
 }> = ({ label, files, multiple, error, onChange }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<AttachmentInputHandle>(null);
   const pick = () => inputRef.current?.click();
 
   return (
@@ -142,12 +143,10 @@ const FileField: React.FC<{
           </button>
         ))}
 
-      <input
+      <AttachmentInput
         ref={inputRef}
-        type="file"
         multiple={multiple}
         accept=".pdf,.jpg,.jpeg,.png"
-        className="hidden"
         onChange={(e) => {
           const picked = Array.from(e.target.files ?? []).map((f) => f.name);
           if (picked.length) onChange(multiple ? [...files, ...picked.filter((n) => !files.includes(n))] : picked.slice(0, 1));

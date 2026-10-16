@@ -11,6 +11,7 @@ import {
   lastWorkingDateFor,
   toISODate,
 } from '../../data/resignationData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 export interface ResignationFormData {
   resignationDate: string;
@@ -40,7 +41,7 @@ export const ApplyResignationView: React.FC<ApplyResignationViewProps> = ({ empl
   const [isReasonsOpen, setIsReasonsOpen] = useState(false);
   const [errors, setErrors] = useState<{ reasons?: string; email?: string; agreed?: string }>({});
   const [submitting, setSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<AttachmentInputHandle>(null);
 
   const emailTemplate = RESIGNATION_EMAIL_TEMPLATE(REPORTING_MANAGER, formatResignationDate(lastWorkingDate), employeeName);
 
@@ -232,12 +233,11 @@ export const ApplyResignationView: React.FC<ApplyResignationViewProps> = ({ empl
                 <span className="block text-[11px] text-slate-400">PDF, DOC, PPT, JPG, PNG</span>
               </span>
             </button>
-            <input
+            <AttachmentInput
+          title="Add Attachments"
               ref={fileInputRef}
-              type="file"
               multiple
               accept={ACCEPTED_ATTACHMENTS}
-              className="hidden"
               onChange={handleFiles}
             />
             {attachments.length > 0 && (

@@ -4,6 +4,7 @@ import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /* ---------------------------------- Model ---------------------------------- */
 
@@ -210,7 +211,7 @@ const UploadField: React.FC<{
   error?: string;
   onChange: (name: string | null) => void;
 }> = ({ label, fileName, error, onChange }) => {
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<AttachmentInputHandle>(null);
   return (
     <Field label={label} required error={error}>
       {fileName ? (
@@ -238,10 +239,8 @@ const UploadField: React.FC<{
           Choose File
         </button>
       )}
-      <input
+      <AttachmentInput
         ref={ref}
-        type="file"
-        className="hidden"
         accept=".pdf,.jpg,.jpeg,.png"
         onChange={(e) => {
           const file = e.target.files?.[0];

@@ -132,12 +132,44 @@ import {
   ATTENDANCE_STAFF_CODE,
 } from './data/teamAttendanceData';
 
+/** URL options for opening on a real phone: ?role=manager, ?frame=1 (force the mockup) / ?frame=0 (force full screen) */
+const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+
+const initialRole = (): UserRole => {
+  const r = urlParams.get('role')?.toLowerCase();
+  return USER_ROLES.find((role) => role.toLowerCase() === r) ?? 'Staff';
+};
+
+/** A real phone (touch screen, phone/tablet width): show the app full screen instead of the studio mockup */
+const detectPhone = () => {
+  const frame = urlParams.get('frame');
+  if (frame === '1') return false;
+  if (frame === '0') return true;
+  return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse) and (max-width: 820px)').matches;
+};
+
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
   const [device, setDevice] = useState<DeviceModel>('pixel8');
+  const [isPhone, setIsPhone] = useState(detectPhone);
 
-  // Logged-in user role (Staff by default); Manager review screens come later
-  const [userRole, setUserRole] = useState<UserRole>('Staff');
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse) and (max-width: 820px)');
+    const update = () => setIsPhone(detectPhone());
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Full-screen app on a phone: app-coloured page behind it, no pull-to-refresh / bounce revealing the dark studio background
+  useEffect(() => {
+    const { body, documentElement } = document;
+    body.style.background = isPhone ? '#F8FAFC' : '';
+    body.style.overscrollBehavior = isPhone ? 'none' : '';
+    documentElement.style.overscrollBehavior = isPhone ? 'none' : '';
+  }, [isPhone]);
+
+  // Logged-in user role (Staff by default, or ?role= in the URL); Manager review screens come later
+  const [userRole, setUserRole] = useState<UserRole>(initialRole);
 
   // Auth: splash -> login (or forgot-password flow) -> app
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -1170,9 +1202,9 @@ export default function App() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased">
-      {/* Top Studio Control Bar */}
-      <header className="h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none">
+    <div className={`flex flex-col antialiased ${isPhone ? 'h-dvh bg-[#F8FAFC] overflow-hidden' : 'min-h-screen bg-slate-900 text-slate-100'}`}>
+      {/* Top Studio Control Bar (desktop only; on a phone the app fills the screen) */}
+      <header className={`h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none ${isPhone ? 'hidden' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-[#2F68FE] flex items-center justify-center text-white font-bold text-xs shadow-xs">
             HR
@@ -1285,7 +1317,7 @@ export default function App() {
       </header>
 
       {/* Main Workspace Canvas */}
-      <main className="flex-1 flex p-4 overflow-auto bg-slate-900 relative">
+      <main className={`flex-1 flex relative ${isPhone ? 'min-h-0' : 'p-4 overflow-auto bg-slate-900'}`}>
         {/* Toast Notification */}
         {toastMessage && (
           <div className="absolute inset-x-0 top-6 z-50 flex justify-center pointer-events-none">
@@ -1299,9 +1331,10 @@ export default function App() {
         )}
 
         {/* zoom (not transform) so the enlarged device takes real space and the canvas can scroll to all of it */}
-        <div className="m-auto shrink-0" style={{ zoom: scale / 100 }}>
+        <div className={isPhone ? 'w-full' : 'm-auto shrink-0'} style={isPhone ? undefined : { zoom: scale / 100 }}>
           <BottomSheetProvider>
             <MobileDeviceFrame
+              bare={isPhone}
               activeDevice={device}
               showThumbZoneOverlay={showThumbZones}
               showTouchHitboxOverlay={showHitboxes}

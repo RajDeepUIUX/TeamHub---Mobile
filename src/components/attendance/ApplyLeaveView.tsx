@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AttendanceRecord } from '../../types/attendance';
 import { LeaveDurationType } from '../../types/leaves';
 import { SelectReasonSheet } from '../leaves/SelectReasonSheet';
 import { SelectDurationSheet } from '../leaves/SelectDurationSheet';
 import { ArrowLeft, PieChart, ChevronDown, Paperclip, X, Wand2 } from 'lucide-react';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 interface ApplyLeaveViewProps {
   record: AttendanceRecord;
@@ -24,6 +25,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
   const [duration, setDuration] = useState<LeaveDurationType>(record.status === 'absent' ? 'Full Day' : '4 Hours');
   const [description, setDescription] = useState('');
   const [attachment, setAttachment] = useState<string | null>(null);
+  const attachmentRef = useRef<AttachmentInputHandle>(null);
   const [isReasonSheetOpen, setIsReasonSheetOpen] = useState(false);
   const [isDurationSheetOpen, setIsDurationSheetOpen] = useState(false);
   const [errors, setErrors] = useState<{ reason?: string; description?: string }>({});
@@ -156,7 +158,12 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           {/* Attachment (optional, single file) */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700">Attachment</label>
-            <label className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => attachmentRef.current?.click()}
+              className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-50/60 cursor-pointer transition-colors"
+            >
               <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
                 <Paperclip className="w-4.5 h-4.5" />
               </div>
@@ -177,7 +184,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 <button
                   type="button"
                   onClick={(e) => {
-                    e.preventDefault();
+                    e.stopPropagation();
                     setAttachment(null);
                   }}
                   className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200"
@@ -186,17 +193,17 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-              <input
-                type="file"
-                className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setAttachment(file.name);
-                  e.target.value = '';
-                }}
-              />
-            </label>
+            </div>
+            <AttachmentInput
+              ref={attachmentRef}
+              title="Add Attachment"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setAttachment(file.name);
+                e.target.value = '';
+              }}
+            />
           </div>
         </div>
 

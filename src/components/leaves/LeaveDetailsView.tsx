@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -18,6 +18,7 @@ import {
 import { LeaveRequest } from '../../types/leaves';
 import { LeaveReviewSheet, LeaveDecision } from './LeaveReviewSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 interface LeaveDetailsViewProps {
   request: LeaveRequest;
@@ -86,6 +87,7 @@ const DetailRow: React.FC<{ icon: React.ReactNode; label: string; value: React.R
 
 export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onBack, onUploadDocument, onCancel, onReview }) => {
   const [decision, setDecision] = useState<LeaveDecision | null>(null);
+  const uploadRef = useRef<AttachmentInputHandle>(null);
   const isPending = request.status === 'Pending';
   const isReviewer = Boolean(onReview);
   const style = STATUS_STYLES[request.status];
@@ -227,17 +229,23 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
         )}
         {/* Upload a document skipped while applying */}
         {!request.attachmentName && !isReviewer && request.status !== 'Rejected' && onUploadDocument && (
-          <label className="bg-white rounded-2xl border border-dashed border-blue-200 p-4 flex items-center gap-3 active:bg-blue-50/50 transition-colors cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-              <Upload className="w-4.5 h-4.5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-xs font-bold text-[#2F68FE]">Upload Document</span>
-              <span className="block text-[11px] text-slate-400">Add a supporting file · PDF, JPG or PNG</span>
-            </div>
-            <input
-              type="file"
-              className="hidden"
+          <>
+            <button
+              type="button"
+              onClick={() => uploadRef.current?.click()}
+              className="w-full text-left bg-white rounded-2xl border border-dashed border-blue-200 p-4 flex items-center gap-3 active:bg-blue-50/50 transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
+                <Upload className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-[#2F68FE]">Upload Document</span>
+                <span className="block text-[11px] text-slate-400">Add a supporting file · PDF, JPG or PNG</span>
+              </div>
+            </button>
+            <AttachmentInput
+              ref={uploadRef}
+              title="Upload Document"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -245,7 +253,7 @@ export const LeaveDetailsView: React.FC<LeaveDetailsViewProps> = ({ request, onB
                 e.target.value = '';
               }}
             />
-          </label>
+          </>
         )}
 
         {/* Manager decision (synced from the manager's Team's Leaves view) */}

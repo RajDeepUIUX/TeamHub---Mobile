@@ -44,6 +44,7 @@ import {
   ProfileValues,
   tenureFrom,
 } from '../../data/profileData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 interface MyProfileViewProps {
   profile: MyProfileData;
@@ -323,7 +324,7 @@ const TimeField: React.FC<{ label: string; value: string; error: boolean; onChan
 
 /** Pick a document; only the file name is kept in this prototype */
 const FileField: React.FC<{ value: string; onChange: (name: string) => void }> = ({ value, onChange }) => {
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<AttachmentInputHandle>(null);
   const [error, setError] = useState('');
   return (
     <div className="space-y-1.5">
@@ -340,11 +341,9 @@ const FileField: React.FC<{ value: string; onChange: (name: string) => void }> =
           <Upload className="w-3.5 h-3.5" />
           {value ? 'Replace' : 'Upload'}
         </button>
-        <input
+        <AttachmentInput
           ref={ref}
-          type="file"
           accept="application/pdf,image/png,image/jpeg"
-          className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = '';

@@ -17,6 +17,7 @@ import { FilterLeavesSheet } from './FilterLeavesSheet';
 import { LeaveCommentsSheet } from './LeaveCommentsSheet';
 
 import { FilterIconButton } from '../common/TeamFilterSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 interface LeavesViewProps {
   balance: LeaveBalance;
   requests: LeaveRequest[];
@@ -42,7 +43,7 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showBalanceInfo, setShowBalanceInfo] = useState(false);
   const [commentsFor, setCommentsFor] = useState<LeaveRequest | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<AttachmentInputHandle>(null);
   const uploadTargetId = useRef<string | null>(null);
 
   // Filtered requests
@@ -338,10 +339,9 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
         </button>
       </div>
 
-      <input
+      <AttachmentInput
+          title="Upload Document"
         ref={fileInputRef}
-        type="file"
-        className="hidden"
         accept=".pdf,.jpg,.jpeg,.png"
         onChange={(e) => {
           const file = e.target.files?.[0];

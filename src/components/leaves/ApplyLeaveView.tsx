@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -13,6 +13,7 @@ import { LeaveDurationType, LeaveDayItem, LeaveRequest } from '../../types/leave
 import { SelectDateRangeSheet, formatLeaveDate, parseLeaveDate } from './SelectDateRangeSheet';
 import { SelectDurationSheet } from './SelectDurationSheet';
 import { SelectReasonSheet } from './SelectReasonSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 export const LEAVE_REASONS = [
   'Medical (Personal)',
@@ -88,6 +89,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
   // Description & Attachment
   const [description, setDescription] = useState(initialRequest?.description ?? '');
   const [attachment, setAttachment] = useState<string | null>(initialRequest?.attachmentName ?? null);
+  const attachmentRef = useRef<AttachmentInputHandle>(null);
 
   // Sheets
   const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
@@ -361,7 +363,12 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         {/* Attachment Card */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">Attachment</label>
-          <label className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors block">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => attachmentRef.current?.click()}
+            className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-50/60 cursor-pointer transition-colors"
+          >
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
               <Paperclip className="w-4.5 h-4.5" />
             </div>
@@ -382,7 +389,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   setAttachment(null);
                 }}
                 className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200"
@@ -390,13 +397,8 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleAttachmentUpload}
-              accept=".pdf,.jpg,.jpeg,.png"
-            />
-          </label>
+          </div>
+          <AttachmentInput ref={attachmentRef} title="Add Attachment" accept=".pdf,.jpg,.jpeg,.png" onChange={handleAttachmentUpload} />
         </div>
       </div>
 
