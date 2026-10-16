@@ -23,6 +23,8 @@ interface DropdownProps<T extends string | number> {
   menuMinWidth?: number;
   /** Title of the search sheet used for long lists (defaults to ariaLabel) */
   sheetTitle?: string;
+  /** Always open as a bottom sheet, even for a short list (e.g. inside another sheet) */
+  forceSheet?: boolean;
 }
 
 interface MenuPosition {
@@ -88,6 +90,8 @@ export function SearchSelectSheet<T extends string | number>({
           <X className="w-5 h-5" />
         </button>
       </div>
+      {/* Search only helps on long lists; a short forced-sheet list is just the options */}
+      {items.length > SHEET_THRESHOLD && (
       <div className="px-4 pb-2 shrink-0">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -111,6 +115,7 @@ export function SearchSelectSheet<T extends string | number>({
           )}
         </div>
       </div>
+      )}
       <div ref={listRef} role="listbox" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-6">
         {shown.map((opt) => {
           const isSelected = opt.value === value;
@@ -163,10 +168,11 @@ export function Dropdown<T extends string | number>({
   ariaLabel,
   menuMinWidth = 0,
   sheetTitle,
+  forceSheet = false,
 }: DropdownProps<T>) {
   const items = options.map(normalize);
   const selected = items.find((o) => o.value === value);
-  const useSheet = items.length > SHEET_THRESHOLD;
+  const useSheet = forceSheet || items.length > SHEET_THRESHOLD;
 
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<MenuPosition | null>(null);

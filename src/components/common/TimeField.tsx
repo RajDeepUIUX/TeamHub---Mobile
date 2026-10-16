@@ -14,10 +14,12 @@ interface TimeFieldProps {
   /** Allow a time equal to `after` */
   inclusive?: boolean;
   invalid?: boolean;
+  /** Minute step on the wheel (default 15; 1 gives every minute 00–59) */
+  step?: number;
 }
 
 /** Field that opens the hour / minute wheels (used for every time pick instead of a long list) */
-export const TimeField: React.FC<TimeFieldProps> = ({ value, placeholder, title, onChange, after, inclusive, invalid }) => {
+export const TimeField: React.FC<TimeFieldProps> = ({ value, placeholder, title, onChange, after, inclusive, invalid, step }) => {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -38,6 +40,7 @@ export const TimeField: React.FC<TimeFieldProps> = ({ value, placeholder, title,
         isOpen={open}
         title={title}
         value={value ?? ''}
+        step={step}
         after={after}
         inclusive={inclusive}
         onClose={() => setOpen(false)}
