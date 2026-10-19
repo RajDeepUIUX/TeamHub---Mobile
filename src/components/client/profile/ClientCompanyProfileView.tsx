@@ -315,7 +315,7 @@ export const ClientCompanyProfileView: React.FC<{
                     const inner = (
                       <>
                         <Icon className={`w-3 h-3 shrink-0 ${href ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-                        <span className="truncate">{text}</span>
+                        <span className="min-w-0 break-words">{text}</span>
                       </>
                     );
                     return href ? (

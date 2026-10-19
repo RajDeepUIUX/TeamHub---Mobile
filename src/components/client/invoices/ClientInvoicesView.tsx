@@ -237,7 +237,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[13px] font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</span>
-                <span className="block text-[11px] text-slate-500 truncate">
+                <span className="block text-[11px] text-slate-500 break-words">
                   {isManual ? inv.note ?? 'Manual invoice' : invoicePeriodTitle(inv)}
                 </span>
               </span>

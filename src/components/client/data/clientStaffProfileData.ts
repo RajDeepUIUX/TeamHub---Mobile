@@ -224,7 +224,7 @@ export const leaveBalancesFor = (s: ClientStaffMember): LeaveBalance[] => {
   ];
 };
 
-const LEAVE_REASONS = ['Family function', 'Not feeling well', 'Personal work', 'Travelling to hometown', 'Medical appointment', 'Festival with family'];
+const LEAVE_REASONS = ['Family function', 'Not feeling well', 'Personal work', 'Traveling to hometown', 'Medical appointment', 'Festival with family'];
 
 export const leavesFor = (s: ClientStaffMember): LeaveRecord[] => {
   const n = num(s.id);
@@ -266,7 +266,7 @@ export interface StaffSkills {
 }
 
 const TECH_SKILLS = ['Individual Tax (1040)', 'Business Tax (1120/1120S)', 'Partnership Tax (1065)', 'Bookkeeping', 'Bank Reconciliation', 'Payroll Processing', 'Financial Statements', 'Audit Workpapers', 'Sales Tax', 'Trust Tax (1041)'];
-const SOFTWARE = ['CCH Axcess', 'Drake', 'UltraTax CS', 'Lacerte', 'QuickBooks Online', 'Xero', 'Freshbooks', 'MS Excel', 'CaseWare', 'Karbon'];
+const SOFTWARE = ['CCH Axcess', 'Drake', 'UltraTax CS', 'Lacerte', 'QuickBooks Online', 'Xero', 'FreshBooks', 'MS Excel', 'CaseWare', 'Karbon'];
 
 export const skillsFor = (s: ClientStaffMember): StaffSkills => {
   const n = num(s.id);
@@ -317,7 +317,7 @@ export const documentsFor = (s: ClientStaffMember): StaffDocument[] => {
     ...(joinYear < 2026 ? [doc('Employee Document', 'Appraisal Letter', `Appraisal_04-${joinYear + 1}`, false)] : []),
     ...(joinYear < 2025 ? [doc('Employee Document', 'Appraisal Letter', `Appraisal_04-${joinYear + 2}`, false)] : []),
     ...(n % 2 ? [doc('Employee Document', 'Work From Home Agreement', 'WFH Terms & Condition pdf', false), doc('Employee Document', 'AI Usage Declaration', 'AI Usage Declaration', false)] : []),
-    doc('Government Documents', 'Aadhar card', `aadhar_${slug}.pdf`),
+    doc('Government Documents', 'Aadhaar card', `aadhar_${slug}.pdf`),
     doc('Government Documents', 'Pan Card', `pan_${slug}.pdf`),
     ...(n % 2 === 0 ? [doc('Government Documents', 'Passport', `passport_${slug}.pdf`)] : []),
     doc('Government Documents', 'Form No. 11', `form11_${slug}.pdf`),
@@ -358,7 +358,7 @@ export const termsFor = (s: ClientStaffMember): StaffTerms => {
     buyOutNoticePeriod: n % 3 === 1 ? (40000 + n * 1000).toFixed(2) : null,
     nextAppraisalDate: `${nextYear}-04-01`,
     baseLocation: s.location,
-    branchName: `${s.location} - ${pick(['City Centre', 'Tech Park', 'Main Road', 'Business Bay'], s.id + 'b')}`,
+    branchName: `${s.location} - ${pick(['City Center', 'Tech Park', 'Main Road', 'Business Bay'], s.id + 'b')}`,
     otAvailability: pick(['OT Round the Year', 'OT Seasonal', 'Not Available'], s.id + 'ot'),
     employmentType: s.engagementType === 'Seasonal Staffing' ? 'Contract' : 'Full Time',
     availableUpTo: pick(['11:00 AM', '12:00 PM', '01:00 PM'], s.id + 'au'),

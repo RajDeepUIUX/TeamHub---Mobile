@@ -29,12 +29,9 @@ import { ClientNotificationsView } from './notifications/ClientNotificationsView
 import { ClientUserProfileView } from './profile/ClientUserProfileView';
 import { CLIENT_USER_PROFILE_SEED, ClientUserProfile } from './data/clientUserProfileData';
 import { ClientCompanyProfileView } from './profile/ClientCompanyProfileView';
-import {
-  CLIENT_AGREEMENTS_SEED,
-  CLIENT_COMPANY_PROFILE_SEED,
-  CLIENT_FIRM_CONTACTS_SEED,
-  ClientCompanyProfile,
-} from './data/clientCompanyProfileData';
+import { CLIENT_AGREEMENTS_SEED, CLIENT_COMPANY_PROFILE_SEED, ClientCompanyProfile } from './data/clientCompanyProfileData';
+import { ClientContactsView } from './contacts/ClientContactsView';
+import { CLIENT_CONTACTS_SEED, ClientContact, firmContactOf } from './data/clientContactsData';
 import { CLIENT_NOTIFICATIONS_SEED, ClientNotification } from './data/clientNotificationsData';
 import { ClientDirectoryView } from './directory/ClientDirectoryView';
 import { ClientInterviewsView } from './interviews/ClientInterviewsView';
@@ -105,6 +102,10 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const [company, setCompany] = useState<ClientCompanyProfile>(CLIENT_COMPANY_PROFILE_SEED);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const companyName = company.companyName;
+
+  // Client Contacts (Account); Company Profile's Contact Persons list reads the same data
+  const [contacts, setContacts] = useState<ClientContact[]>(CLIENT_CONTACTS_SEED);
+  const firmContacts = useMemo(() => contacts.map(firmContactOf), [contacts]);
 
   // App shell (Dashboard + modules)
   const [tab, setTab] = useState<ClientTab>('home');
@@ -400,11 +401,24 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             profile={company}
             logoUrl={companyLogo}
             agreements={CLIENT_AGREEMENTS_SEED}
-            contacts={CLIENT_FIRM_CONTACTS_SEED}
+            contacts={firmContacts}
             onSave={setCompany}
             onLogoChange={setCompanyLogo}
             onOpenContacts={canList('client-contacts') ? () => openModule('client-contacts') : undefined}
             onContactManager={() => openModule('account-manager')}
+          />
+        ) : tab === 'more' && moreModuleId === 'client-contacts' ? (
+          <ClientContactsView
+            contacts={contacts}
+            company={{
+              address: company.address1,
+              city: company.city,
+              zipCode: company.zipCode,
+              country: company.country,
+              state: company.state,
+              timeZone: company.timeZone,
+            }}
+            onChange={setContacts}
           />
         ) : tab === 'more' && moreModuleId === 'work-flexibility' ? (
           <ClientWorkFlexibilityView prefs={workFlex} staff={workFlexStaff} userName={userName} onChange={setWorkFlex} />

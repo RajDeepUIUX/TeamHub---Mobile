@@ -207,7 +207,7 @@ export const INCLUSION_SECTIONS: InclusionSection[] = [
       { title: 'Work Anniversary Gifts', desc: 'Tokens for year completions' },
       { title: 'Cricket & League Play', desc: 'Internal sports tournaments' },
       { title: 'Fitness Activities', desc: 'Yoga, Zumba, guided meditation' },
-      { title: 'Wellness Initiatives', desc: 'Includes annual Stepathon and mental health counselling support.' },
+      { title: 'Wellness Initiatives', desc: 'Includes annual Stepathon and mental health counseling support.' },
     ],
   },
   {

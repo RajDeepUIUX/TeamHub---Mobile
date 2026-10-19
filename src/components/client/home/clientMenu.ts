@@ -186,7 +186,7 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     icon: UserRound,
     modules: [
       { id: 'user-profile', label: 'User Profile', hint: 'Your details, photo & password', icon: UserRound },
-      { id: 'client-contacts', label: 'Client Contacts', hint: 'Add contacts & send credentials', icon: Contact },
+      { id: 'client-contacts', label: 'Client Contacts', hint: 'Add contacts & send credentials', icon: Contact, designed: true },
       { id: 'contact-roles', label: 'Contact Roles', hint: 'Menu access per role', icon: ShieldCheck },
       { id: 'settings', label: 'Settings', hint: 'Email preferences', icon: Settings },
       { id: 'staff-agreements', label: 'Staff Agreements', hint: 'E-sign offer letters', icon: PenLine },

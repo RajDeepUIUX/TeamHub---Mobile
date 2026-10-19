@@ -124,7 +124,7 @@ MYCPE ONE`,
     tab: 'HRMS Feature Updates',
     title: 'Client Update #72: Which feature should we build next?',
     publishDate: '2026-04-10',
-    description: `Help us prioritise the HRMS roadmap. Pick the feature that would save your team the most time.`,
+    description: `Help us prioritize the HRMS roadmap. Pick the feature that would save your team the most time.`,
     poll: {
       validTill: '2026-12-31',
       options: [
@@ -290,7 +290,7 @@ MYCPE ONE`,
     publishDate: '2026-10-12',
     description: `Hello Everyone,
 
-Our Ahmedabad and Rajkot offices came alive with **Garba night** last Friday — colourful outfits, music and plenty of dancing. A big thank-you to the teams who planned it!
+Our Ahmedabad and Rajkot offices came alive with **Garba night** last Friday — colorful outfits, music and plenty of dancing. A big thank-you to the teams who planned it!
 
 Here's a glimpse of the evening.
 

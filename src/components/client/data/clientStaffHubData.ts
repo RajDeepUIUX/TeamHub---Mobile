@@ -532,7 +532,7 @@ const SPECS: Spec[] = [
   {
     id: 'hp11', name: 'Farah Khan', resumeId: 'RS-2111', domain: 'Audit & Assurance', profile: 'Associate - Audit Associate', level: 2, gender: 'Female', rate: 14, notice: 0,
     location: 'Pune', mode: 'WFO', quals: ['B.Com'], us: [1, 6], india: [1, 0], seed: 1, verified: false,
-    summary: 'Audit associate supporting walkthroughs, control testing and PBC tracking. Organised and quick with documentation.',
+    summary: 'Audit associate supporting walkthroughs, control testing and PBC tracking. Organized and quick with documentation.',
     jobs: [job('Audit Associate', 'Granite Peak Assurance', '2024-02-01', null, 'Control testing, PBC tracking, workpaper tick-and-tie')],
   },
   {
