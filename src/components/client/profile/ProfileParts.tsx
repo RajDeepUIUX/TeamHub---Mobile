@@ -1,11 +1,11 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import { Card } from '../staff/tabs/StaffTabParts';
 
 /* Shared by User Profile and Company Profile */
 
-export type Row = { label: string; value: string; wide?: boolean; locked?: boolean };
+export type Row = { label: string; value: string; wide?: boolean; locked?: boolean; href?: string };
 
 /** Label / value grid; unlike staff tabs, empty values stay visible as "Not added" so the user knows what to fill */
 export const ValueGrid: React.FC<{ rows: Row[] }> = ({ rows }) => (
@@ -17,7 +17,18 @@ export const ValueGrid: React.FC<{ rows: Row[] }> = ({ rows }) => (
           {r.locked && <Lock className="w-2.5 h-2.5" aria-label="Locked" />}
         </dt>
         <dd className={`mt-0.5 text-[13px] leading-snug break-words ${r.value ? 'font-medium text-[#1E293B]' : 'italic text-slate-400'}`}>
-          {r.value || 'Not added'}
+          {r.value && r.href ? (
+            <a
+              href={r.href}
+              target={r.href.startsWith('http') ? '_blank' : undefined}
+              rel="noopener noreferrer"
+              className="text-[#2F68FE] active:text-[#1D4ED8]"
+            >
+              {r.value}
+            </a>
+          ) : (
+            r.value || 'Not added'
+          )}
         </dd>
       </div>
     ))}
@@ -33,6 +44,37 @@ export const SectionCard: React.FC<{ title: string; action?: React.ReactNode; ch
     {children}
   </Card>
 );
+
+/** Desktop (MyCPE ONE) section card: grey title band + white body */
+export const BandSectionCard: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, action, children }) => (
+  <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
+    <div className="min-h-12 px-4 py-2 flex items-center justify-between gap-2 bg-[#F3F4F8]">
+      <h2 className="text-sm font-bold text-[#1E293B]">{title}</h2>
+      {action}
+    </div>
+    <div className="p-4">{children}</div>
+  </section>
+);
+
+/** Selected values under a multi-select, each removable (B tag chips with ✕) */
+export const RemovableTags: React.FC<{ items: string[]; onRemove: (v: string) => void }> = ({ items, onRemove }) =>
+  items.length ? (
+    <div className="flex flex-wrap gap-1.5 pt-0.5">
+      {items.map((t) => (
+        <span key={t} className="inline-flex items-center gap-0.5 pl-2.5 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8]">
+          {t}
+          <button
+            type="button"
+            onClick={() => onRemove(t)}
+            aria-label={`Remove ${t}`}
+            className="w-7 h-7 -my-1 flex items-center justify-center rounded-full active:bg-blue-100 cursor-pointer"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+    </div>
+  ) : null;
 
 export const Label: React.FC<{ text: string; required?: boolean; hint?: string }> = ({ text, required, hint }) => (
   <span className="flex items-baseline justify-between gap-2 text-xs font-bold text-[#1E293B]">

@@ -1,32 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Building2,
-  Check,
-  ChevronRight,
-  Clock3,
-  Download,
-  ExternalLink,
-  Facebook,
-  FileText,
-  Globe,
-  Info,
-  Linkedin,
-  Mail,
-  MapPin,
-  Pencil,
-  Phone,
-  RefreshCw,
-  Twitter,
-  UsersRound,
-  X,
-} from 'lucide-react';
+import { Check, ChevronRight, Download, FileText, Image as ImageIcon, Info, Pencil, RefreshCw } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
 import { ConfirmSheet, Pill, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { CompanyLogoSheet } from './CompanyLogoSheet';
-import { DisabledSelect, ErrorText, Label, LockedField, ProfileSkeleton, SectionCard, ValueGrid } from './ProfileParts';
+import {
+  BandSectionCard as SectionCard,
+  DisabledSelect,
+  ErrorText,
+  Label,
+  LockedField,
+  ProfileSkeleton,
+  RemovableTags,
+  ValueGrid,
+} from './ProfileParts';
 import { CLIENT_COUNTRIES, CLIENT_TIME_ZONES, citiesOf, statesOf, timeZoneLabel } from '../data/clientUserProfileData';
 import {
   BUSINESS_TYPES,
@@ -93,30 +82,6 @@ const validate = (p: ClientCompanyProfile): Errors => {
 
 /* ------------------------------- View parts ------------------------------- */
 
-const LinkRow: React.FC<{ icon: React.ElementType; label: string; url: string }> = ({ icon: Icon, label, url }) => {
-  const body = (
-    <>
-      <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${url ? 'bg-[#EFF6FF] text-[#2F68FE]' : 'bg-slate-100 text-slate-400'}`}>
-        <Icon className="w-4.5 h-4.5" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block text-[11px] text-slate-400">{label}</span>
-        <span className={`block text-[13px] truncate ${url ? 'font-medium text-[#1E293B]' : 'italic text-slate-400'}`}>
-          {url ? shortUrl(url) : 'Not added'}
-        </span>
-      </span>
-      {url && <ExternalLink className="w-4 h-4 text-slate-300 shrink-0" />}
-    </>
-  );
-  return url ? (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="min-h-14 px-1 py-2 flex items-center gap-3 rounded-xl active:bg-slate-50">
-      {body}
-    </a>
-  ) : (
-    <div className="min-h-14 px-1 py-2 flex items-center gap-3">{body}</div>
-  );
-};
-
 const TagList: React.FC<{ items: string[]; empty: string }> = ({ items, empty }) =>
   items.length ? (
     <div className="flex flex-wrap gap-1.5">
@@ -129,26 +94,6 @@ const TagList: React.FC<{ items: string[]; empty: string }> = ({ items, empty })
   ) : (
     <p className="text-[13px] italic text-slate-400">{empty}</p>
   );
-
-/** Selected values under a multi-select, each removable (B tag chips with ✕) */
-const RemovableTags: React.FC<{ items: string[]; onRemove: (v: string) => void }> = ({ items, onRemove }) =>
-  items.length ? (
-    <div className="flex flex-wrap gap-1.5 pt-0.5">
-      {items.map((t) => (
-        <span key={t} className="inline-flex items-center gap-0.5 pl-2.5 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8]">
-          {t}
-          <button
-            type="button"
-            onClick={() => onRemove(t)}
-            aria-label={`Remove ${t}`}
-            className="w-7 h-7 -my-1 flex items-center justify-center rounded-full active:bg-blue-100 cursor-pointer"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </span>
-      ))}
-    </div>
-  ) : null;
 
 /* --------------------------------- Screen --------------------------------- */
 
@@ -231,114 +176,25 @@ export const ClientCompanyProfileView: React.FC<{
   const v = editing ? draft : profile;
   const states = statesOf(v.country);
   const cities = citiesOf(v.country, v.state);
-  const location = [profile.city, profile.state].filter(Boolean).join(', ') || profile.country;
-  const phoneLine = profile.phone ? `${profile.phone}${profile.ext ? ` · Ext ${profile.ext}` : ''}` : '';
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {notice && <div className="absolute top-3 inset-x-4 z-20 pointer-events-none">{notice}</div>}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Account <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Company Profile</span>
-          </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
-            <h1 className="text-xl font-extrabold leading-tight">{editing ? 'Edit Company Details' : 'Company Profile'}</h1>
-            {editing && (
-              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1 shrink-0">
-                <Pencil className="w-3 h-3" />
-                Editing
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-[11.5px] text-slate-500">Your firm's details in the Client Hub and MyCPE ONE</p>
-        </div>
-
         {loading ? (
           <ProfileSkeleton label="Loading company profile" />
         ) : (
-          <div className="px-4 mt-4 space-y-3 animate-in fade-in duration-200">
-            {/* Identity */}
-            <section className="bg-white rounded-3xl p-4 border border-white shadow-[0_12px_32px_-16px_rgba(79,70,229,0.3)]">
-              <div className="flex items-center gap-3.5">
-                <div className="relative shrink-0">
-                  <span className="w-18 h-18 rounded-2xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt={`${profile.companyName} logo`} className="w-full h-full object-contain p-1.5" />
-                    ) : (
-                      <span className="w-full h-full bg-linear-to-br from-[#EFF6FF] to-[#EEF2FF] flex items-center justify-center">
-                        <Building2 className="w-8 h-8 text-[#2F68FE]" aria-hidden />
-                      </span>
-                    )}
-                  </span>
-                  {perm.edit && (
-                    <button
-                      type="button"
-                      onClick={() => setLogoSheet(true)}
-                      className="absolute -right-3 -bottom-3 w-11 h-11 flex items-center justify-center cursor-pointer group"
-                      aria-label={logoUrl ? 'Change company logo' : 'Add company logo'}
-                    >
-                      <span className="w-7.5 h-7.5 rounded-full bg-[#2F68FE] border-2 border-white text-white flex items-center justify-center shadow-xs group-active:bg-[#1D4ED8]">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </span>
-                    </button>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-extrabold leading-tight truncate">{profile.companyName}</h2>
-                  <p className="text-[11.5px] text-slate-500 leading-snug mt-0.5 truncate">
-                    {businessTypeLabel(profile.businessType) || 'Business type not added'}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {profile.employees && (
-                      <Pill tone="indigo">
-                        <UsersRound className="w-3 h-3" />
-                        {profile.employees} employees
-                      </Pill>
-                    )}
-                    {profile.onshoreStaff && <Pill tone="slate">{profile.onshoreStaff} onshore staff</Pill>}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {[
-                  { icon: Phone, text: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : '' },
-                  { icon: Mail, text: profile.email, href: `mailto:${profile.email}` },
-                  { icon: Globe, text: profile.website ? shortUrl(profile.website) : '', href: profile.website },
-                  { icon: MapPin, text: location, href: '' },
-                  { icon: Clock3, text: profile.timeZone ? timeZoneLabel(profile.timeZone) : '', href: '' },
-                ]
-                  .filter((c) => c.text)
-                  .map(({ icon: Icon, text, href }) => {
-                    const cls = 'max-w-full inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/80 text-[11px] font-medium text-slate-600';
-                    const inner = (
-                      <>
-                        <Icon className={`w-3 h-3 shrink-0 ${href ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-                        <span className="min-w-0 break-words">{text}</span>
-                      </>
-                    );
-                    return href ? (
-                      <a
-                        key={text}
-                        href={href}
-                        target={href.startsWith('http') ? '_blank' : undefined}
-                        rel="noopener noreferrer"
-                        className={`${cls} active:bg-slate-200`}
-                      >
-                        {inner}
-                      </a>
-                    ) : (
-                      <span key={text} className={cls}>
-                        {inner}
-                      </span>
-                    );
-                  })}
-              </div>
-            </section>
-
+          <div className="px-4 pt-4 space-y-3 animate-in fade-in duration-200">
             {editing ? (
               <>
+                <div className="flex items-center justify-between gap-3">
+                  <h1 className="text-xl font-extrabold leading-tight">Edit Company Details</h1>
+                  <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1 shrink-0">
+                    <Pencil className="w-3 h-3" />
+                    Editing
+                  </span>
+                </div>
                 <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 text-[11px] text-slate-500">
                   <Info className="w-3.5 h-3.5 shrink-0" />
                   Fields marked * are required.
@@ -382,6 +238,17 @@ export const ClientCompanyProfileView: React.FC<{
                       <RemovableTags items={draft.industries} onRemove={(t) => set('industries', draft.industries.filter((x) => x !== t))} />
                       <ErrorText error={errors.industries} />
                     </div>
+                    <label className="block space-y-1.5">
+                      <Label text="Fax" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={draft.fax}
+                        onChange={(e) => set('fax', digitsOnly(e.target.value, COMPANY_LIMITS.fax))}
+                        placeholder="Fax number"
+                        className={`${fieldInputClass()} tabular-nums`}
+                      />
+                    </label>
                     <div className="grid grid-cols-[1fr_92px] gap-3">
                       <label className="block space-y-1.5 min-w-0" data-field="phone">
                         <Label text="Company Phone" required />
@@ -409,17 +276,6 @@ export const ClientCompanyProfileView: React.FC<{
                       </label>
                     </div>
                     {errors.phone && <div className="-mt-2.5"><ErrorText error={errors.phone} /></div>}
-                    <label className="block space-y-1.5">
-                      <Label text="Fax" />
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={draft.fax}
-                        onChange={(e) => set('fax', digitsOnly(e.target.value, COMPANY_LIMITS.fax))}
-                        placeholder="Fax number"
-                        className={`${fieldInputClass()} tabular-nums`}
-                      />
-                    </label>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5 min-w-0">
                         <Label text="No. of Employees" />
@@ -559,7 +415,7 @@ export const ClientCompanyProfileView: React.FC<{
                       [
                         { key: 'website', label: 'Website', max: COMPANY_LIMITS.website, placeholder: 'https://www.yourfirm.com' },
                         { key: 'linkedin', label: 'LinkedIn', max: COMPANY_LIMITS.social, placeholder: 'https://www.linkedin.com/company/…' },
-                        { key: 'twitter', label: 'X (Twitter)', max: COMPANY_LIMITS.social, placeholder: 'https://x.com/…' },
+                        { key: 'twitter', label: 'Twitter', max: COMPANY_LIMITS.social, placeholder: 'https://x.com/…' },
                         { key: 'facebook', label: 'Facebook', max: COMPANY_LIMITS.social, placeholder: 'https://www.facebook.com/…' },
                       ] as const
                     ).map((f) => (
@@ -598,13 +454,63 @@ export const ClientCompanyProfileView: React.FC<{
               </>
             ) : (
               <>
+                <section className="rounded-2xl bg-[#E0E7FF] p-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative shrink-0">
+                      <span className="w-18 h-18 rounded-full bg-white/80 border border-white flex items-center justify-center overflow-hidden">
+                        {logoUrl ? (
+                          <img src={logoUrl} alt={`${profile.companyName} logo`} className="w-full h-full object-contain p-1.5" />
+                        ) : (
+                          <ImageIcon className="w-7 h-7 text-slate-400" aria-hidden />
+                        )}
+                      </span>
+                      {perm.edit && (
+                        <button
+                          type="button"
+                          onClick={() => setLogoSheet(true)}
+                          className="absolute -right-2.5 -top-2.5 w-11 h-11 flex items-center justify-center cursor-pointer group"
+                          aria-label={logoUrl ? 'Change company logo' : 'Add company logo'}
+                        >
+                          <span className="w-7.5 h-7.5 rounded-full bg-white text-[#1E293B] flex items-center justify-center shadow-xs group-active:bg-slate-100">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-slate-500">Company Profile</p>
+                      <h1 className="text-xl font-extrabold leading-tight break-words">{profile.companyName}</h1>
+                    </div>
+                  </div>
+                  {perm.edit ? (
+                    <button
+                      type="button"
+                      onClick={startEdit}
+                      className="mt-3.5 w-full h-11 rounded-xl bg-[#4F46E5] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#4338CA] transition-colors cursor-pointer"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Update Profile
+                    </button>
+                  ) : (
+                    <p className="mt-3 flex items-center gap-2 text-[11.5px] font-medium text-slate-500">
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      View only — your role can't change company details
+                    </p>
+                  )}
+                </section>
+
                 <SectionCard title="Company Master Profile">
                   <ValueGrid
                     rows={[
                       { label: 'Business Type', value: businessTypeLabel(profile.businessType), wide: true },
-                      { label: 'Email', value: profile.email, wide: true, locked: true },
+                      { label: 'Email', value: profile.email, wide: true, locked: true, href: `mailto:${profile.email}` },
                       { label: 'Industry', value: profile.industries.join(', '), wide: true },
-                      { label: 'Phone Number', value: phoneLine, wide: true },
+                      {
+                        label: 'Phone Number',
+                        value: profile.phone,
+                        href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : undefined,
+                      },
+                      { label: 'Ext', value: profile.ext },
                       { label: 'Fax', value: profile.fax },
                       { label: 'Time Zone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '' },
                       { label: 'No. of Employees', value: profile.employees },
@@ -618,25 +524,28 @@ export const ClientCompanyProfileView: React.FC<{
                     rows={[
                       { label: 'Address 1', value: profile.address1, wide: true },
                       { label: 'Address 2', value: profile.address2, wide: true },
-                      { label: 'City', value: profile.city },
-                      { label: 'State', value: profile.state },
                       { label: 'Country', value: profile.country },
+                      { label: 'State', value: profile.state },
+                      { label: 'City', value: profile.city },
                       { label: 'Zip Code', value: profile.zipCode },
                     ]}
                   />
                 </SectionCard>
 
                 <SectionCard title="Online Presence">
-                  <div className="-mx-1 -my-1 divide-y divide-slate-100">
-                    <LinkRow icon={Globe} label="Website" url={profile.website} />
-                    <LinkRow icon={Linkedin} label="LinkedIn" url={profile.linkedin} />
-                    <LinkRow icon={Twitter} label="X (Twitter)" url={profile.twitter} />
-                    <LinkRow icon={Facebook} label="Facebook" url={profile.facebook} />
-                  </div>
+                  <ValueGrid
+                    rows={[
+                      { label: 'Website', value: shortUrl(profile.website), href: profile.website || undefined, wide: true },
+                      { label: 'LinkedIn', value: shortUrl(profile.linkedin), href: profile.linkedin || undefined, wide: true },
+                      { label: 'X', value: shortUrl(profile.twitter), href: profile.twitter || undefined, wide: true },
+                      { label: 'Facebook', value: shortUrl(profile.facebook), href: profile.facebook || undefined, wide: true },
+                    ]}
+                  />
                 </SectionCard>
 
                 <SectionCard title="Services Provided">
-                  <TagList items={profile.services} empty="No services added" />
+                  <p className="mb-1.5 text-[11px] text-slate-400">Services</p>
+                  <TagList items={profile.services} empty="Not added" />
                 </SectionCard>
 
                 {agreements.length > 0 && (
@@ -644,7 +553,7 @@ export const ClientCompanyProfileView: React.FC<{
                     <ul className="-mx-1 -my-1 divide-y divide-slate-100">
                       {agreements.map((a) => (
                         <li key={a.id} className="min-h-14 px-1 py-2 flex items-center gap-3">
-                          <span className="w-9 h-9 rounded-xl bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">
+                          <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
                             <FileText className="w-4.5 h-4.5" />
                           </span>
                           <span className="flex-1 min-w-0">
@@ -656,7 +565,7 @@ export const ClientCompanyProfileView: React.FC<{
                               type="button"
                               onClick={() => showNotice(`Downloading ${a.fileName}`)}
                               aria-label={`Download ${a.fileName}`}
-                              className="w-11 h-11 -mr-1 rounded-xl text-[#2F68FE] flex items-center justify-center active:bg-[#EFF6FF] cursor-pointer shrink-0"
+                              className="w-11 h-11 -mr-1 rounded-xl text-slate-500 flex items-center justify-center active:bg-slate-100 cursor-pointer shrink-0"
                             >
                               <Download className="w-4.5 h-4.5" />
                             </button>
@@ -731,43 +640,27 @@ export const ClientCompanyProfileView: React.FC<{
         )}
       </div>
 
-      {/* Footer: Update Profile (view) or Cancel / Save (edit); view-only roles see why they can't edit */}
-      {!loading && (
+      {/* Footer (edit only): Cancel / Save. Update Profile lives in the header banner, like desktop */}
+      {!loading && editing && (
         <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          {editing ? (
-            <div className="grid grid-cols-[1fr_2fr] gap-2.5">
-              <button
-                type="button"
-                onClick={() => (dirty ? setConfirmDiscard(true) : stopEdit())}
-                className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving || !dirty}
-                className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                <Check className="w-4 h-4" />
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          ) : perm.edit ? (
+          <div className="grid grid-cols-[1fr_2fr] gap-2.5">
             <button
               type="button"
-              onClick={startEdit}
-              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
+              onClick={() => (dirty ? setConfirmDiscard(true) : stopEdit())}
+              className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
             >
-              <Pencil className="w-4 h-4" />
-              Update Profile
+              Cancel
             </button>
-          ) : (
-            <p className="flex items-center justify-center gap-2 h-10 text-[11.5px] font-medium text-slate-500">
-              <Info className="w-3.5 h-3.5" />
-              View only — your role can't change company details
-            </p>
-          )}
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving || !dirty}
+              className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <Check className="w-4 h-4" />
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       )}
 
