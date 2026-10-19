@@ -244,7 +244,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Invoices <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Billing Details</span>
           </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold leading-tight">Billing Details</h1>
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Billing Details</h1>
           <p className="mt-0.5 text-[12px] text-slate-500">
             Payment methods for <span className="font-semibold text-slate-700">{serviceName}</span> invoices
           </p>

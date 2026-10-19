@@ -187,14 +187,14 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
               type="button"
               onClick={onOpenMyStaff}
               disabled={!onOpenMyStaff}
-              className="flex items-center gap-2.5 min-w-0 cursor-pointer disabled:cursor-default"
+              className="flex items-center gap-2 min-w-0 cursor-pointer disabled:cursor-default"
               aria-label="Open My Staff"
             >
-              <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-                <UsersRound className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-lg bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                <UsersRound className="w-3.5 h-3.5" />
               </span>
-              <h2 className="text-sm font-bold text-[#1E293B] truncate">My Offshore Staff</h2>
-              {onOpenMyStaff && <ArrowUpRight className="w-4 h-4 text-[#2F68FE] shrink-0" />}
+              <h2 className="text-[13.5px] font-bold text-[#1E293B] truncate">My Offshore Staff</h2>
+              {onOpenMyStaff && <ArrowUpRight className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />}
             </button>
             <div className="w-[128px] shrink-0">
               <Dropdown size="md" ariaLabel="Period" value={period} options={OFFSHORE_PERIODS} onChange={changePeriod} menuMinWidth={150} />

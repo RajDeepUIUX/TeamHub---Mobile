@@ -180,7 +180,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Attendance Management</span>
           </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold leading-tight">Attendance Amend</h1>
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Attendance Amend</h1>
           <p className="mt-1 text-xs text-slate-500">
             {pending ? `${pending} request${pending === 1 ? '' : 's'} waiting for your approval.` : 'No requests waiting for your approval.'}
           </p>

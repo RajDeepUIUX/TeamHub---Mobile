@@ -379,12 +379,12 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-[#E6EEFF] via-[#F0F5FF] to-[#F8FAFC]">
+        <div className="px-4 pt-4">
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Staff Work Flexibility</span>
+            Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Work Flexibility Preferences</span>
           </p>
-          <h1 className="mt-1 text-[26px] font-extrabold leading-[1.1] tracking-tight">Work Flexibility Preferences</h1>
-          <p className="mt-2.5 inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white/80 border border-white shadow-2xs text-[11px] text-slate-500">
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Work Flexibility Preferences</h1>
+          <p className="mt-2.5 inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] text-slate-500">
             {prefs.savedAt ? (
               <>
                 <span className="w-6 h-6 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center shrink-0" aria-hidden="true">
@@ -405,7 +405,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           </p>
 
           {/* Progress (Added by designer) — one segment per question, tap to jump to it */}
-          <div className="mt-4 p-3 rounded-2xl bg-white/85 border border-white shadow-[0_4px_16px_rgba(47,104,254,0.08)]">
+          <div className="mt-4 p-3 rounded-2xl bg-white border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between gap-2">
               <span className={`flex items-center gap-1.5 text-[12.5px] font-bold ${allDone ? 'text-[#059669]' : 'text-[#1E293B]'}`}>
                 {allDone && <CheckCircle2 className="w-4 h-4" />}
@@ -443,7 +443,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
         {loading ? (
           <PageSkeleton />
         ) : (
-          <div className="px-4 mt-3 space-y-3">
+          <div className="px-4 mt-4 space-y-3">
             <Card className="p-3.5">
               <div className="flex gap-2.5">
                 <Info className="w-4 h-4 text-[#2F68FE] shrink-0 mt-0.5" />

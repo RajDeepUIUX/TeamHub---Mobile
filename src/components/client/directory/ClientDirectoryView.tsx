@@ -219,7 +219,7 @@ export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Directory <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">{tabLabel}</span>
           </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold leading-tight">Directory</h1>
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Directory</h1>
           <p className="mt-1 text-[11.5px] text-slate-500">Email, call, chat or book a meeting with your Entigrity team.</p>
           <div className="mt-3">
             <SegmentedTabs ariaLabel="Directory" options={DIRECTORY_TABS} value={tab} onChange={setTab} />

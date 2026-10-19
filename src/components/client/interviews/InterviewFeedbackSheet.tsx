@@ -125,7 +125,7 @@ export const InterviewFeedbackSheet: React.FC<Props> = ({ isOpen, candidate, can
                 <Briefcase className="w-3 h-3" />
                 Applied Position
               </dt>
-              <dd className="mt-1 text-[13px] font-bold text-[#1E293B] truncate">{candidate.profile}</dd>
+              <dd className="mt-1 text-[13px] font-bold text-[#1E293B] leading-snug">{candidate.profile}</dd>
             </div>
           </dl>
 

@@ -266,8 +266,8 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Feedback & Evaluation <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Surveys</span>
           </p>
-          <div className="mt-0.5 flex items-end justify-between gap-3">
-            <h1 className="text-2xl font-extrabold leading-tight">Feedback & Evaluation</h1>
+          <div className="mt-0.5 flex items-end justify-between gap-3 mb-1.5">
+            <h1 className="text-xl font-extrabold leading-tight">Feedback & Evaluation</h1>
             {!loading && <span className="pb-1 text-xs font-semibold text-slate-500 tabular-nums shrink-0">{results.length} {results.length === 1 ? 'survey' : 'surveys'}</span>}
           </div>
 

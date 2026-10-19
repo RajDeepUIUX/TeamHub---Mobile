@@ -168,8 +168,8 @@ export const ClientUserProfileView: React.FC<{
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Account <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">User Profile</span>
           </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-extrabold leading-tight">{editing ? 'Edit Profile' : 'User Profile'}</h1>
+          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
+            <h1 className="text-xl font-extrabold leading-tight">{editing ? 'Edit Profile' : 'User Profile'}</h1>
             {editing && (
               <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1 shrink-0">
                 <Pencil className="w-3 h-3" />

@@ -431,7 +431,7 @@ export const ClientMgmtFeeView: React.FC<Props> = ({ structure, teamSize, staffB
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Management Fee Structure</span>
           </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold leading-tight">Management Fee Structure</h1>
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Management Fee Structure</h1>
           <p className="mt-1 text-[11.5px] text-slate-500">
             {companyName} <span className="text-slate-300">·</span> All amounts in USD
           </p>

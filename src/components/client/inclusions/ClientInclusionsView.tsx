@@ -146,7 +146,7 @@ export const ClientInclusionsView: React.FC<Props> = ({ companyName, onContactMa
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Invoices <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Inclusions</span>
           </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold leading-tight">Inclusions</h1>
+          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Inclusions</h1>
           <p className="mt-1 text-[11.5px] text-slate-500">What your {companyName} engagement covers, area by area.</p>
         </div>
 

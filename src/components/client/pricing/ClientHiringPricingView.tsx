@@ -409,8 +409,8 @@ export const ClientHiringPricingView: React.FC<Props> = ({ companyName, country,
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Hire New Staff <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Pricing & Hiring</span>
           </p>
-          <div className="mt-0.5 flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-extrabold leading-tight">Pricing & Hiring</h1>
+          <div className="mt-0.5 flex items-start justify-between gap-3 mb-1.5">
+            <h1 className="text-xl font-extrabold leading-tight">Pricing & Hiring</h1>
             {onAddRequirement && (
               <button
                 type="button"

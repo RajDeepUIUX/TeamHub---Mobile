@@ -151,7 +151,7 @@ export const HubResumeView: React.FC<Props> = ({
                       </span>
                       <span className="min-w-0">
                         <dt className="text-[10.5px] text-slate-400">{label}</dt>
-                        <dd className="text-[12.5px] font-bold text-[#1E293B] leading-snug truncate tabular-nums">{value}</dd>
+                        <dd className="text-[12.5px] font-bold text-[#1E293B] leading-snug tabular-nums">{value}</dd>
                       </span>
                     </div>
                   ))}

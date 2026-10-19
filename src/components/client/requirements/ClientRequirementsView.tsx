@@ -259,8 +259,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
           <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
             Hire New Staff <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Staff Requirement</span>
           </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-extrabold leading-tight">Staff Requirement</h1>
+          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
+            <h1 className="text-xl font-extrabold leading-tight">Staff Requirement</h1>
             {canAdd && (
               <button
                 type="button"
@@ -440,17 +440,17 @@ const Detail: React.FC<{ icon: React.ElementType; label: string; value: string }
 const LinkTile: React.FC<{ label: string; count: number; icon: React.ElementType; onClick?: () => void; ariaLabel: string }> = ({ label, count, icon: Icon, onClick, ariaLabel }) => {
   const body = (
     <>
-      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${count > 0 ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-slate-100 text-slate-400'}`}>
+      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${count > 0 ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-slate-100 text-slate-400'}`}>
         <Icon className="w-4 h-4" />
       </span>
       <span className="flex-1 min-w-0 text-left">
-        <span className="block text-[10.5px] text-slate-400 truncate">{label}</span>
+        <span className="block text-[10px] leading-tight text-slate-400">{label}</span>
         <span className="block text-[13px] font-extrabold text-[#1E293B] tabular-nums leading-tight">{count > 0 ? count : '-'}</span>
       </span>
-      {onClick && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+      {onClick && <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />}
     </>
   );
-  const cls = 'h-14 px-2.5 rounded-xl border border-slate-200 bg-white flex items-center gap-2';
+  const cls = 'h-14 px-2 rounded-xl border border-slate-200 bg-white flex items-center gap-1.5';
   return onClick ? (
     <button type="button" onClick={onClick} aria-label={ariaLabel} className={`${cls} active:bg-slate-50 cursor-pointer`}>
       {body}
