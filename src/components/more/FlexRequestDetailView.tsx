@@ -29,6 +29,7 @@ import { FLEX_ICONS } from './RequestFlexibilityView';
 import { FLEX_STATUS_CHIP } from './FlexRequestCard';
 import { FlexReviewSheet, FlexDecision } from './FlexReviewSheet';
 import { CommentThreadSheet } from '../common/CommentThreadSheet';
+import { BottomSheet } from '../common/BottomSheet';
 import { FlexAgreementSheet } from './FlexAgreementSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
 
@@ -117,6 +118,7 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
   const [isAgreementOpen, setIsAgreementOpen] = useState(false);
   const agreementReady = isFlexApproved(r.status);
   const [decision, setDecision] = useState<FlexDecision | null>(null);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
 
   const Icon = FLEX_ICONS[r.type];
   const meta = flexMeta(r.type);
@@ -176,6 +178,26 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
         : []),
   ];
 
+  // The step the request is at now, shown on its own; "Awaiting …" steps are still open
+  const last = timeline[timeline.length - 1];
+  const inProgress = last.title.startsWith('Awaiting');
+  const stage: 'manager' | 'it' | 'approved' | 'rejected' = last.title.startsWith('Awaiting manager')
+    ? 'manager'
+    : last.title.startsWith('Awaiting IT')
+      ? 'it'
+      : r.status === 'Rejected'
+        ? 'rejected'
+        : 'approved';
+  const STAGE_TONE = {
+    manager: { card: 'bg-linear-to-br from-amber-50 to-white border-amber-200', iconBox: 'bg-amber-100 text-amber-600', dot: 'bg-amber-500', bar: 'bg-amber-400', link: 'text-amber-700', icon: <Clock className="w-5 h-5" /> },
+    it: { card: 'bg-linear-to-br from-indigo-50 to-white border-indigo-200', iconBox: 'bg-indigo-100 text-indigo-600', dot: 'bg-indigo-500', bar: 'bg-indigo-400', link: 'text-indigo-700', icon: <ShieldCheck className="w-5 h-5" /> },
+    approved: { card: 'bg-linear-to-br from-emerald-50 to-white border-emerald-200', iconBox: 'bg-emerald-100 text-emerald-600', dot: 'bg-emerald-500', bar: 'bg-emerald-400', link: 'text-emerald-700', icon: <Check className="w-5 h-5 stroke-[2.5]" /> },
+    rejected: { card: 'bg-linear-to-br from-rose-50 to-white border-rose-200', iconBox: 'bg-rose-100 text-rose-600', dot: 'bg-rose-500', bar: 'bg-rose-400', link: 'text-rose-700', icon: <X className="w-5 h-5 stroke-[2.5]" /> },
+  } as const;
+  const statusTone = STAGE_TONE[stage];
+  const current = { ...last, bigIcon: statusTone.icon };
+  const currentTitle = stage === 'manager' && isManager ? 'Waiting for your approval' : last.title;
+
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       {/* Header */}
@@ -197,60 +219,80 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3.5">
-        {/* Summary */}
+        {/* Summary: what is being asked for leads; who asked sits underneath */}
         <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-          {isManager && (
-            <div className="flex items-center gap-3 px-3.5 py-3 border-b border-slate-100">
-              <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
-                {initialsOf(r.staffName)}
-              </span>
-              <div className="min-w-0">
-                <span className="block text-sm font-bold text-[#1E293B] truncate">{r.staffName}</span>
-                <span className="block text-[11px] text-slate-400">Requested by your team member</span>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-3 p-3.5">
+          <div className="flex items-start gap-3.5 p-4">
             <span className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${meta.tint}`}>
               <Icon className="w-6 h-6" />
             </span>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-[15px] font-extrabold text-[#1E293B] leading-tight">{r.type}</h2>
-              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-extrabold text-[#1E293B] leading-tight">{r.type}</h2>
                 {r.duration && (
                   <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">{r.duration}</span>
                 )}
-                <span className="text-[11px] text-slate-500">{meta.description}</span>
               </div>
+              <p className="mt-1 text-[11.5px] text-slate-500 leading-snug">{meta.description}</p>
             </div>
           </div>
-
-          {/* Timeline */}
-          <ol className="px-3.5 pb-3.5">
-            {timeline.map((step, idx) => (
-              <li key={step.title} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${step.tone}`}>{step.icon}</span>
-                  {idx < timeline.length - 1 && <span className="w-px flex-1 bg-slate-200 my-1" />}
-                </div>
-                <div className={`min-w-0 ${idx < timeline.length - 1 ? 'pb-2.5' : ''}`}>
-                  <span className="block text-xs font-semibold text-[#1E293B]">{step.title}</span>
-                  {step.subtitle && <span className="block text-[10.5px] text-slate-400">{step.subtitle}</span>}
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          {!isPending && r.managerComment && (
-            <p
-              className={`mx-3.5 mb-3.5 px-3 py-2 rounded-xl text-[11px] leading-relaxed ${
-                r.status === 'Rejected' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
-              }`}
-            >
-              <span className="font-semibold">{r.status === 'Rejected' ? 'Reason' : 'Note'}: </span>“{r.managerComment}”
-            </p>
+          {isManager && (
+            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-50/70 border-t border-slate-100">
+              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarTint(avatarIdx)}`}>
+                {initialsOf(r.staffName)}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Requested by</span>
+                <span className="block text-xs font-bold text-[#1E293B] truncate">{r.staffName}</span>
+              </div>
+              <span className="text-[10.5px] text-slate-400 text-right shrink-0">{dateTime(r.submittedAt)}</span>
+            </div>
           )}
         </section>
+
+        {/* Current status only; the full timeline opens in a drawer */}
+        <button
+          type="button"
+          onClick={() => setIsTimelineOpen(true)}
+          aria-label="View request timeline"
+          className={`w-full rounded-2xl border p-3.5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform cursor-pointer ${statusTone.card}`}
+        >
+          <span className={`relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${statusTone.iconBox}`}>
+            {current.bigIcon}
+            {inProgress && (
+              <span className="absolute -top-0.5 -right-0.5 flex w-2.5 h-2.5">
+                <span className={`absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping ${statusTone.dot}`} />
+                <span className={`relative inline-flex w-2.5 h-2.5 rounded-full ring-2 ring-white ${statusTone.dot}`} />
+              </span>
+            )}
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13px] font-bold text-[#1E293B] leading-snug">{currentTitle}</span>
+            {current.subtitle && <span className="block text-[11px] text-slate-500 truncate">{current.subtitle}</span>}
+            {/* One segment per step; the open step is faded */}
+            <span className="mt-2 flex gap-1" aria-hidden="true">
+              {timeline.map((s, i) => (
+                <span
+                  key={s.title}
+                  className={`h-1 flex-1 rounded-full ${statusTone.bar} ${i === timeline.length - 1 && inProgress ? 'opacity-30' : ''}`}
+                />
+              ))}
+            </span>
+          </span>
+          <span className={`flex items-center gap-0.5 text-[11px] font-semibold shrink-0 ${statusTone.link}`}>
+            Timeline
+            <ChevronRight className="w-3.5 h-3.5" />
+          </span>
+        </button>
+
+        {!isPending && r.managerComment && (
+          <p
+            className={`px-3.5 py-2.5 rounded-2xl text-[11.5px] leading-relaxed border ${
+              r.status === 'Rejected' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
+            }`}
+          >
+            <span className="font-semibold">{r.status === 'Rejected' ? 'Reason' : 'Note'}: </span>“{r.managerComment}”
+          </p>
+        )}
 
         {/* When */}
         {r.type !== 'Work From Office' && r.startDate && (
@@ -539,6 +581,46 @@ export const FlexRequestDetailView: React.FC<FlexRequestDetailViewProps> = ({
         onClose={() => setIsCommentsOpen(false)}
         onSend={(text) => onComment(r.id, text)}
       />
+      {/* Full status history */}
+      <BottomSheet isOpen={isTimelineOpen} onClose={() => setIsTimelineOpen(false)} maxHeight="max-h-[75%]">
+        <div className="pt-3 pb-1 flex justify-center shrink-0">
+          <div className="w-10 h-1 bg-slate-300 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-[#1E293B]">Request Timeline</h2>
+            <p className="text-[11px] text-slate-400 truncate">
+              {isManager ? `${r.staffName} · ` : ''}
+              {r.type}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsTimelineOpen(false)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer shrink-0"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <ol className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 pb-8">
+          {timeline.map((step, idx) => (
+            <li key={step.title} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${step.tone}`}>{step.icon}</span>
+                {idx < timeline.length - 1 && <span className="w-px flex-1 bg-slate-200 my-1" />}
+              </div>
+              <div className={`min-w-0 pt-0.5 ${idx < timeline.length - 1 ? 'pb-4' : ''}`}>
+                <span className="block text-[13px] font-semibold text-[#1E293B]">
+                  {step.title.startsWith('Awaiting manager') && isManager ? 'Waiting for your approval' : step.title}
+                </span>
+                {step.subtitle && <span className="block text-[11px] text-slate-400">{step.subtitle}</span>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </BottomSheet>
+
       <FlexAgreementSheet
         request={isAgreementOpen ? r : null}
         onClose={() => setIsAgreementOpen(false)}
