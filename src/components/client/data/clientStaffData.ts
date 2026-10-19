@@ -57,6 +57,8 @@ export interface ClientStaffMember {
   permanentAddress: string;
   correspondenceAddress: string;
   timeZone: string;
+  /** Hired from Shortlisted Candidates: the candidate row this staff member came from */
+  sourceCandidateId?: string;
 }
 
 const emailFor = (name: string) => `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`;
@@ -125,6 +127,15 @@ export const MY_STAFF_SEED: ClientStaffMember[] = [
   seed(19, 'Varun Gill', 3, 'Specialist - Tax Accountant', '2022-02-14', 'Ahmedabad', 'Inactive', { lastWorkingDay: '2025-12-31' }),
   seed(20, 'Zara Sheikh', 2, 'Associate - Bookkeeper', '2023-08-21', 'Gandhinagar', 'Inactive', { lastWorkingDay: '2026-03-15' }),
 ];
+
+/** A candidate hired in Shortlisted Candidates joins My Staff as an Active member (next free id, joining today) */
+export const staffFromHire = (
+  current: ClientStaffMember[],
+  hire: { candidateId: string; name: string; designation: string; level: number; joiningDate: string },
+): ClientStaffMember => {
+  const next = Math.max(0, ...current.map((s) => Number(s.id.replace(/\D/g, '')))) + 1;
+  return seed(next, hire.name, hire.level, hire.designation, hire.joiningDate, 'Ahmedabad', 'Active', { sourceCandidateId: hire.candidateId });
+};
 
 /** Staff cards shown before "Load more" */
 export const MY_STAFF_PAGE_SIZE = 10;

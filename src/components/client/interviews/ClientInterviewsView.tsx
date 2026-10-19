@@ -197,7 +197,9 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   };
 
   const saveFeedback = (id: string, feedback: CandidateFeedback) => {
-    onUpdate(id, { feedback });
+    // The interview result decides the candidate's status (Rejected shows as Not Selected); Hired also stamps the date
+    const decided = feedback.result === 'Rejected' ? 'Not Selected' : feedback.result;
+    onUpdate(id, decided ? { feedback, status: decided, completedOn: decided === 'Hired' ? feedback.submittedOn : null } : { feedback });
     setSheet(null);
     showNotice('Feedback Added Successfully.');
   };

@@ -47,13 +47,15 @@ export interface ClientNotification {
   read: boolean;
   /**
    * Client menu module id opened on tap (`clientMenu.ts`); 'updates' opens the Important Updates sheet.
-   * Modules without a mobile design yet open "Coming soon".
+   * Every link points at a designed module (leaves → staff profile, meetings → Account Manager, holidays → Attendance Management).
    */
   link?: string;
   /** Highlights notifications that need the client to do something */
   actionRequired?: boolean;
-  /** Record opened inside the module (e.g. invoice no. → Invoice Details) */
+  /** Record opened inside the module (e.g. invoice no. → Invoice Details, staff id → that staff profile) */
   targetId?: string;
+  /** Staff profile tab opened with `targetId` (My Staff) */
+  targetTab?: string;
 }
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -100,6 +102,8 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     createdAt: ago(95),
     read: false,
     link: 'my-staff',
+    targetId: 'ms12',
+    targetTab: 'SOP',
     actionRequired: true,
   },
   {
@@ -174,6 +178,8 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     createdAt: ago(60 * 22),
     read: false,
     link: 'my-staff',
+    targetId: 'ms11',
+    targetTab: 'Work Information',
   },
   {
     id: 'cn-7',
@@ -192,7 +198,9 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     body: `Paid Leave · ${workdayLabel(0)} (full day). Plan hand-offs for his open reviews.`,
     createdAt: ago(60 * 28),
     read: true,
-    link: 'leaves',
+    link: 'my-staff',
+    targetId: 'ms13',
+    targetTab: 'Attendance & Leave',
   },
   {
     id: 'cn-9',
@@ -220,7 +228,7 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     body: `${nextMondayLabel()} · 9:00 AM EST. Agenda and last month’s utilization report are attached.`,
     createdAt: ago(60 * 52),
     read: true,
-    link: 'meetings',
+    link: 'account-manager',
   },
   {
     id: 'cn-12',
@@ -238,6 +246,6 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     body: 'Staff on the busy-season OT plan will work remotely. Share urgent work by Nov 6.',
     createdAt: ago(60 * 96),
     read: true,
-    link: 'holidays',
+    link: 'attendance',
   },
 ];

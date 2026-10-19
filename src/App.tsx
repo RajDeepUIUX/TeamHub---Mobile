@@ -143,6 +143,8 @@ export default function App() {
 
   // Auth: splash -> login (or forgot-password flow) -> app
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Client opens signed in; its drawer Log out shows the login flow again
+  const [clientSignedOut, setClientSignedOut] = useState(false);
 
   // Main app navigation (bottom nav). Home dashboard is the first screen after login.
   const [appTab, setAppTab] = useState<AppTab>('home');
@@ -1315,8 +1317,10 @@ export default function App() {
               showTouchHitboxOverlay={showHitboxes}
             >
               {/* Client (HRMS) is its own app — no link to the Staff / Manager flows */}
-              {userRole === 'Client' ? (
-                <ClientApp />
+              {userRole === 'Client' && clientSignedOut ? (
+                <AuthFlow onAuthenticated={() => setClientSignedOut(false)} />
+              ) : userRole === 'Client' ? (
+                <ClientApp onLogout={() => setClientSignedOut(true)} />
               ) : !isLoggedIn ? (
                 <AuthFlow
                   onAuthenticated={() => {

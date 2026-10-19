@@ -15,6 +15,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
+import type { TniRequest } from '../data/clientTrainingNeedData';
 import { ClientStaffMember, STAFF_PROFILE_TABS, StaffProfileTab, formatStaffDate } from '../data/clientStaffData';
 import {
   assessmentsFor,
@@ -27,6 +28,7 @@ import {
   termsFor,
   trainingsFor,
   workInfoFor,
+  type StaffWorkMode,
 } from '../data/clientStaffProfileData';
 import { StaffAvatar, StaffStatusPill } from './ClientStaffParts';
 import { InfoCard, TabTitle } from './tabs/StaffTabParts';
@@ -59,11 +61,18 @@ interface ClientStaffDetailViewProps {
   /** Signed-in client contact (SOP decisions & feedback author) */
   clientName: string;
   onBack: () => void;
+  /** Tab to open first (e.g. Attendance & Leave from a leave notification) */
+  initialTab?: StaffProfileTab;
+  /** TNI requests raised for this staff member */
+  tniRequests?: TniRequest[];
+  onOpenTrainingNeed?: () => void;
+  /** Work mode set in Staff Work Flexibility */
+  workModeOverride?: StaffWorkMode;
 }
 
 /** Staff details (desktop eye icon in My Staff): profile header + desktop tabs */
-export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ member, tint, clientName, onBack }) => {
-  const [tab, setTab] = useState<StaffProfileTab>('Personal Information');
+export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ member, tint, clientName, onBack, initialTab, tniRequests, onOpenTrainingNeed, workModeOverride }) => {
+  const [tab, setTab] = useState<StaffProfileTab>(initialTab ?? 'Personal Information');
   const tabsRef = useRef<HTMLDivElement>(null);
   const leaving = member.status !== 'Active' && member.status !== 'Replacement In-Progress' && member.lastWorkingDay;
 
@@ -71,7 +80,10 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
     tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [tab]);
 
-  const work = useMemo(() => workInfoFor(member), [member]);
+  const work = useMemo(() => {
+    const info = workInfoFor(member);
+    return workModeOverride ? { ...info, currentMode: workModeOverride } : info;
+  }, [member, workModeOverride]);
   const terms = useMemo(() => termsFor(member), [member]);
   const skills = useMemo(() => skillsFor(member), [member]);
   const documents = useMemo(() => documentsFor(member), [member]);
@@ -183,7 +195,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
           </>
         );
       case 'Training & Development':
-        return <StaffTrainingTab trainings={trainings} />;
+        return <StaffTrainingTab trainings={trainings} tniRequests={tniRequests} onOpenTrainingNeed={onOpenTrainingNeed} />;
       case 'System & IT Details':
         return <StaffSystemTab devices={devices} access={access} />;
       case 'Assessments':

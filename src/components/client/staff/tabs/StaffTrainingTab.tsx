@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ChevronRight, ScanSearch } from 'lucide-react';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { TRAINING_TYPES, TrainingRecord, TrainingType } from '../../data/clientStaffProfileData';
+import { TniStatusPill } from '../../training/TrainingNeedParts';
+import { TniRequest, formatTniDate } from '../../data/clientTrainingNeedData';
 import { Card, ChipRow, EmptyCard, FieldGrid, Pill, SearchField, TabTitle } from './StaffTabParts';
 
 type TypeFilter = 'All' | TrainingType;
 
 /** Desktop "Training & Development" tab (training_development.tpl): type filter + search, training list */
-export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[] }> = ({ trainings }) => {
+export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniRequests?: TniRequest[]; onOpenTrainingNeed?: () => void }> = ({
+  trainings,
+  tniRequests = [],
+  onOpenTrainingNeed,
+}) => {
   const [type, setType] = useState<TypeFilter>('All');
   const [query, setQuery] = useState('');
 
@@ -21,6 +27,33 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[] }> = ({ tr
     <>
       <TabTitle title="Training & Development" />
       <div className="mt-2.5 space-y-3">
+        {tniRequests.length > 0 && (
+          <Card className="p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-[13px] font-bold text-[#1D4ED8]">
+                <ScanSearch className="w-4 h-4" />
+                Training Need Identification
+              </p>
+              {onOpenTrainingNeed && (
+                <button type="button" onClick={onOpenTrainingNeed} className="flex items-center text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+                  View all
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <ul className="mt-2.5 space-y-2">
+              {tniRequests.map((r) => (
+                <li key={r.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
+                    <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
+                  </span>
+                  <TniStatusPill status={r.status} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         <SearchField value={query} onChange={setQuery} placeholder="Search training" />
         <ChipRow<TypeFilter> label="Training type" options={['All', ...TRAINING_TYPES]} value={type} onChange={setType} counts={counts} />
 

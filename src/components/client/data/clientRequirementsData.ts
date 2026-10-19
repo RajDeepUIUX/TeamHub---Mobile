@@ -5,6 +5,7 @@
  * or the project is still at stage 1-2. All names, rates and notes are dummy data.
  */
 import type { ThreadComment } from '../../../types/comments';
+import { hourlyRateForLevel } from './clientHiringPricingData';
 import type { HubProfile } from './clientStaffHubData';
 import type { ShortlistedCandidate } from './clientInterviewsData';
 
@@ -29,7 +30,7 @@ export interface StaffRequirement {
   /** Empty when the profile has no level (desktop level is optional) */
   level: string;
   hoursPerWeek: number;
-  /** Desktop "Tentative Price", e.g. "$12 - $15 / Hr" */
+  /** Desktop "Tentative Price", e.g. "$13 / Hr" or "$14 - $17 / Hr" */
   pricing: string;
   budgetRate: string;
   timeline: string;
@@ -167,16 +168,10 @@ export const profilesOfDomain = (domain: string) => domainSpecOf(domain)?.profil
 export const levelsOfProfile = (domain: string, profile: string) =>
   (profilesOfDomain(domain).find((p) => p.name === profile)?.levels ?? []).map((n) => `Level ${n}`);
 
-const LEVEL_RATE: Record<number, [number, number]> = { 1: [9, 11], 2: [12, 15], 3: [16, 20], 4: [21, 26], 5: [27, 34] };
-const DOMAIN_RATE_EXTRA: Record<string, number> = { 'Business Valuation': 4, Advisory: 3 };
-
-/** Desktop "Tentative Price" shown once the level is known */
-export const tentativePricing = (domain: string, level: string) => {
-  const n = Number(level.replace(/\D/g, ''));
-  const base = LEVEL_RATE[n];
-  if (!base) return '';
-  const extra = DOMAIN_RATE_EXTRA[domain] ?? 0;
-  return `$${base[0] + extra} - $${base[1] + extra} / Hr`;
+/** Desktop "Tentative Price" shown once the level is known: the same per-level rate as Hiring Pricing (USD) */
+export const tentativePricing = (_domain: string, level: string) => {
+  const rate = hourlyRateForLevel(Number(level.replace(/\D/g, '')));
+  return rate ? `${rate} / Hr` : '';
 };
 
 /* ------------------------------- Form helpers ------------------------------- */

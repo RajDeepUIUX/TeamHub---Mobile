@@ -42,6 +42,9 @@ const RATE_TIERS: Record<number, Record<PricingCurrency, string>> = {
   8: { CAD: 'CA$ 70+', USD: '$50+', GBP: '£ 38+' },
 };
 
+/** Hourly rate for a level (rate tier = level), as listed on Hiring Pricing; '' for levels outside 1-8 */
+export const hourlyRateForLevel = (level: number, currency: PricingCurrency = 'USD') => RATE_TIERS[level]?.[currency] ?? '';
+
 export const DESIGNATIONS: Record<number, string> = {
   1: 'Consultant',
   2: 'Sr. Consultant',

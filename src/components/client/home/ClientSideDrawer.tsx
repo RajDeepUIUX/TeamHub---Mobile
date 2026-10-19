@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Search, ChevronDown, ChevronRight, UserCog } from 'lucide-react';
+import { X, Search, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
 import { BrandLogoHorizontal } from '../../auth/BrandLogo';
 import { ProfileAvatar } from '../../profile/ProfileAvatar';
 import { CLIENT_DRAWER_GROUPS, ClientMenuModule } from './clientMenu';
@@ -19,8 +19,7 @@ interface ClientSideDrawerProps {
   version: string;
   onOpenModule: (module: ClientMenuModule) => void;
   onOpenProfile: () => void;
-  /** Prototype: preview the app as another Contact Role */
-  onOpenRole: () => void;
+  onLogout: () => void;
 }
 
 const SLIDE_MS = 280;
@@ -36,7 +35,7 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
   version,
   onOpenModule,
   onOpenProfile,
-  onOpenRole,
+  onLogout,
 }) => {
   const role = useClientRole();
   // Desktop hides menus without `is_list` for the contact's role
@@ -227,13 +226,11 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
         <div className="shrink-0 px-4 pt-3 pb-5 border-t border-[#EBF0F7] bg-white flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={onOpenRole}
-            className="min-w-0 h-8 px-2.5 -ml-1 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 active:bg-slate-50 cursor-pointer"
-            aria-label={`Preview as role, current ${role.name}`}
+            onClick={onLogout}
+            className="h-10 px-3 -ml-1 rounded-xl flex items-center gap-3 text-[15px] font-medium text-rose-500 active:bg-rose-50 cursor-pointer"
           >
-            <UserCog className="w-4 h-4 shrink-0" />
-            <span className="truncate">Role: {role.name}</span>
-            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+            <LogOut className="w-5 h-5 stroke-[1.8]" />
+            Log out
           </button>
           <span className="text-[10.5px] font-medium text-slate-400">Version {version}</span>
         </div>

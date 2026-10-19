@@ -8,10 +8,13 @@ import {
   ClientStaffMember,
   ClientStaffStatus,
   MY_STAFF_PAGE_SIZE,
+  StaffProfileTab,
   formatStaffDate,
   hourlyRateOf,
   staffOptions,
 } from '../data/clientStaffData';
+import type { StaffWorkMode } from '../data/clientStaffProfileData';
+import type { TniRequest } from '../data/clientTrainingNeedData';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
 import { ClientStaffFilterSheet, ClientStaffFilters, EMPTY_STAFF_FILTERS, staffFilterCount } from './ClientStaffFilterSheet';
 import { STATUS_SHORT, StaffAvatar, StaffSkeleton, StaffStatusPill } from './ClientStaffParts';
@@ -27,6 +30,13 @@ interface ClientMyStaffViewProps {
   clientName: string;
   /** Desktop "check timesheet info" action → Reports › Timesheets for that staff; hidden without Timesheets access */
   onOpenTimesheets?: (member: ClientStaffMember) => void;
+  /** TNI requests raised for staff (shown on the Training & Development tab) */
+  tniRequests?: TniRequest[];
+  onOpenTrainingNeed?: () => void;
+  /** Work mode chosen in Staff Work Flexibility; overrides the default shown in Work Information */
+  workModeOf?: (staffId: string) => StaffWorkMode | undefined;
+  /** Opens this staff profile straight away (e.g. from a notification), optionally on a given tab */
+  focus?: { staffId: string; tab?: StaffProfileTab } | null;
 }
 
 /** Desktop shows a loader while the list reloads */
@@ -49,7 +59,7 @@ const ListSkeleton: React.FC = () => (
   </div>
 );
 
-export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, clientName, onOpenTimesheets }) => {
+export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, clientName, onOpenTimesheets, tniRequests, onOpenTrainingNeed, workModeOf, focus }) => {
   // `is_view` opens Staff Details
   const { view: canView } = useClientPermission('my-staff');
   const [loading, setLoading] = useState(true);
@@ -59,7 +69,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   const [filterOpen, setFilterOpen] = useState(false);
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(focus?.staffId ?? null);
   const chipsRef = useRef<HTMLDivElement>(null);
   const listTopRef = useRef<HTMLDivElement>(null);
 
@@ -124,6 +134,10 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         member={selected}
         tint={tintOf(selected.id)}
         clientName={clientName}
+        initialTab={focus?.staffId === selected.id ? focus.tab : undefined}
+        tniRequests={tniRequests?.filter((r) => r.staffId === selected.id)}
+        onOpenTrainingNeed={onOpenTrainingNeed}
+        workModeOverride={workModeOf?.(selected.id)}
         onBack={() => setSelectedId(null)}
       />
     );

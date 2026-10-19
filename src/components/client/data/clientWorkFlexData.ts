@@ -213,6 +213,12 @@ export const workFlexStaffFrom = (staff: ClientStaffMember[]): WorkFlexStaff[] =
 
 export const WORK_FLEX_STAFF = workFlexStaffFrom(MY_STAFF_SEED);
 
+/** Work mode the client allowed a staff member in Staff Work Flexibility ('Hybrid' / 'WFH'); undefined = nothing chosen */
+export const workModeFromPrefs = (prefs: WorkFlexPreferences, staffId: string): 'Hybrid' | 'WFH' | undefined => {
+  const has = (key: FlexModeKey) => prefs.modes[key].offer !== 'no' && Object.values(prefs.modes[key].arrangements).some((a) => staffId in a);
+  return has('wfh') ? 'WFH' : has('hyb') ? 'Hybrid' : undefined;
+};
+
 /* -------------------------------- Helpers -------------------------------- */
 
 export const emptyArrangements = (): Record<ArrangementKey, ArrangementStaff> => ({

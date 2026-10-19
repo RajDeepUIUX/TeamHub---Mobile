@@ -88,12 +88,18 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     modules: [{ id: 'company-profile', label: 'Company Profile', hint: 'Firm details & address', icon: Building2, designed: true }],
   },
   {
+    id: 'directory',
+    label: 'Directory',
+    icon: BookUser,
+    modules: [{ id: 'directories', label: 'Directory', hint: 'Primary contacts & product POCs', icon: BookUser, designed: true }],
+  },
+  {
     id: 'hr',
     label: 'Human Resources',
     icon: Users,
     modules: [
       { id: 'my-staff', label: 'My Staff', hint: 'Profiles, status & staff details', icon: UsersRound, designed: true },
-      { id: 'attendance', label: 'Attendance Management', hint: 'Daily attendance & amend requests', icon: CalendarCheck },
+      { id: 'attendance', label: 'Attendance Management', hint: 'Daily attendance & amend requests', icon: CalendarCheck, designed: true },
       { id: 'leaves', label: 'Leave Management', hint: 'Staff leaves & deductions', icon: Luggage },
       { id: 'holidays', label: 'Holidays', hint: 'Holiday calendar', icon: CalendarDays },
       { id: 'task-repository', label: 'Task Repository', hint: 'Create & assign tasks', icon: ListTodo },
@@ -179,7 +185,7 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     label: 'Account',
     icon: UserRound,
     modules: [
-      { id: 'user-profile', label: 'User Profile', hint: 'Your details, photo & password', icon: UserRound, designed: true },
+      { id: 'user-profile', label: 'User Profile', hint: 'Your details, photo & password', icon: UserRound },
       { id: 'client-contacts', label: 'Client Contacts', hint: 'Add contacts & send credentials', icon: Contact },
       { id: 'contact-roles', label: 'Contact Roles', hint: 'Menu access per role', icon: ShieldCheck },
       { id: 'settings', label: 'Settings', hint: 'Email preferences', icon: Settings },
@@ -192,9 +198,8 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     icon: LayoutGrid,
     modules: [
       { id: 'account-manager', label: 'Account Manager', hint: 'Call, email or chat', icon: Headset, designed: true },
-      { id: 'directories', label: 'Directory', hint: 'Primary contacts & product POCs', icon: BookUser, designed: true },
       { id: 'news-insights', label: 'News and Insights', hint: 'Industry news, updates & infographics', icon: Newspaper, designed: true },
-      { id: 'other-modules', label: 'Other Modules & Services', hint: 'MyCPE ONE modules', icon: LayoutGrid, designed: true },
+      { id: 'other-modules', label: 'Other Modules & Services', hint: 'MyCPE ONE modules', icon: LayoutGrid },
     ],
   },
 ];
