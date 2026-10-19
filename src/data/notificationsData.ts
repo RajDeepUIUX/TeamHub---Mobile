@@ -27,6 +27,7 @@ export type NotificationLink =
   | 'wfo'
   | 'celebrations'
   | 'training-request'
+  | 'training-need'
   | 'reimbursement';
 
 export interface AppNotification {

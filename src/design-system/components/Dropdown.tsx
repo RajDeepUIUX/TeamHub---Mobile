@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
 import { BottomSheet } from '../../components/common/BottomSheet';
@@ -38,6 +38,11 @@ const MAX_MENU_HEIGHT = 264;
 /** Lists longer than this open a bottom sheet with search instead of the inline menu */
 const SHEET_THRESHOLD = 6;
 const VIEWPORT_MARGIN = 12;
+
+/** When true, every Dropdown / MultiSelectDropdown below opens as a bottom drawer instead of an inline menu */
+const DropdownSheetModeContext = createContext(false);
+export const DropdownSheetModeProvider = DropdownSheetModeContext.Provider;
+export const useDropdownSheetMode = () => useContext(DropdownSheetModeContext);
 
 const normalize = <T extends string | number>(opt: T | DropdownOption<T>): DropdownOption<T> =>
   typeof opt === 'object' ? opt : { value: opt, label: String(opt) };
@@ -88,29 +93,31 @@ function SearchSelectSheet<T extends string | number>({
           <X className="w-5 h-5" />
         </button>
       </div>
-      <div className="px-4 pb-2 shrink-0">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${items.length} options`}
-            aria-label={`Search ${title}`}
-            className="w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+      {items.length > SHEET_THRESHOLD && (
+        <div className="px-4 pb-2 shrink-0">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${items.length} options`}
+              aria-label={`Search ${title}`}
+              className="w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div ref={listRef} role="listbox" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-6">
         {shown.map((opt) => {
           const isSelected = opt.value === value;
@@ -166,7 +173,8 @@ export function Dropdown<T extends string | number>({
 }: DropdownProps<T>) {
   const items = options.map(normalize);
   const selected = items.find((o) => o.value === value);
-  const useSheet = items.length > SHEET_THRESHOLD;
+  const sheetMode = useDropdownSheetMode();
+  const useSheet = sheetMode || items.length > SHEET_THRESHOLD;
 
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<MenuPosition | null>(null);

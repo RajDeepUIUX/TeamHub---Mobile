@@ -26,6 +26,7 @@ import {
   GraduationCap,
   BookOpen,
   ClipboardList,
+  Target,
   Award,
   ScrollText,
   Wallet,
@@ -130,6 +131,7 @@ export const MORE_GROUPS: MoreGroup[] = [
     modules: [
       { id: 'policies', label: 'Policies & Guidelines', hint: 'Company policies & documents', icon: ScrollText, tint: 'bg-blue-50 text-[#2F68FE]' },
       { id: 'my-learning', label: 'My Learning', hint: 'Your courses, progress & certificates', icon: BookOpen, tint: 'bg-indigo-50 text-indigo-600' },
+      { id: 'training-need', label: 'Training Need Identification', hint: 'Skill gaps & the training you need', icon: Target, tint: 'bg-rose-50 text-rose-500' },
       { id: 'training-request', label: 'Training Request', hint: 'Request a course or training session', icon: ClipboardList, tint: 'bg-teal-50 text-teal-600' },
       { id: 'recognitions', label: 'Recognitions', hint: 'Awards & appreciation from your team', icon: Award, tint: 'bg-amber-50 text-amber-600' },
     ],

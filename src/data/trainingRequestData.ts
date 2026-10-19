@@ -93,7 +93,7 @@ const BRANCH_ONLY: TrainingPerson[] = [
 
 const NAVEEN: TrainingPerson = { staffName: 'Naveen Das', staffCode: 'A01120', reportingManager: 'Priya Nair', branch: TRAINING_BRANCH };
 
-const personOf = (name: string): TrainingPerson =>
+export const personOf = (name: string): TrainingPerson =>
   [...TRAINING_TEAM, ...BRANCH_ONLY, NAVEEN].find((p) => p.staffName === name)!;
 
 const req = (

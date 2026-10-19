@@ -98,6 +98,9 @@ import { RecognitionsView } from './components/more/RecognitionsView';
 import { TrainingRequestView, TrainingScope } from './components/more/TrainingRequestView';
 import { AddTrainingRequestView } from './components/more/AddTrainingRequestView';
 import { TRAINING_BRANCH, TRAINING_REQUESTS_SEED, TRAINING_TEAM, TrainingPerson, TrainingRequest } from './data/trainingRequestData';
+import { TrainingNeedView, NeedScope } from './components/more/TrainingNeedView';
+import { AddTrainingNeedView } from './components/more/AddTrainingNeedView';
+import { TRAINING_NEEDS_SEED, TrainingNeed } from './data/trainingNeedData';
 import { RECOGNITIONS_SEED } from './data/recognitionsData';
 import { FEED_POSTS_SEED, FeedCategory, FeedPost, FeedReaction } from './data/companyFeedData';
 import { MyTeamView } from './components/more/MyTeamView';
@@ -284,10 +287,15 @@ export default function App() {
   const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(TRAINING_REQUESTS_SEED);
   const [trainingScope, setTrainingScope] = useState<TrainingScope>('my');
   const [trainingForm, setTrainingForm] = useState<null | { scope: TrainingScope; editId?: string }>(null);
+  // L&D › Training Need Identification
+  const [trainingNeeds, setTrainingNeeds] = useState<TrainingNeed[]>(TRAINING_NEEDS_SEED);
+  const [needScope, setNeedScope] = useState<NeedScope>('my');
+  const [needForm, setNeedForm] = useState<null | { scope: NeedScope; editId?: string }>(null);
   // Leaving My Team closes any open member profile
   useEffect(() => {
     if (appTab !== 'more' || moreModule !== 'my-team') setEditingMemberCode(null);
     if (appTab !== 'more' || moreModule !== 'training-request') setTrainingForm(null);
+    if (appTab !== 'more' || moreModule !== 'training-need') setNeedForm(null);
   }, [appTab, moreModule]);
   const [myProfileStartEditing, setMyProfileStartEditing] = useState(false);
   // Resignation module: no logs initially; newest first
@@ -642,6 +650,12 @@ export default function App() {
         setAppTab('more');
         setMoreModule('training-request');
         break;
+      case 'training-need':
+        setNeedForm(null);
+        setNeedScope('my');
+        setAppTab('more');
+        setMoreModule('training-need');
+        break;
     }
   };
 
@@ -651,6 +665,10 @@ export default function App() {
     } else if (m.id === 'training-request') {
       setTrainingForm(null);
       setTrainingScope('my');
+      setMoreModule(m.id);
+    } else if (m.id === 'training-need') {
+      setNeedForm(null);
+      setNeedScope('my');
       setMoreModule(m.id);
     } else if (m.id === 'company-feed') {
       setOpenFeedPostId(null);
@@ -691,7 +709,7 @@ export default function App() {
   };
 
   // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
-  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'training-need', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
   const openFromDrawer = (m: MoreModule) => {
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
@@ -1108,6 +1126,8 @@ export default function App() {
     : { staffName: CURRENT_STAFF.staffName, staffCode: CURRENT_STAFF.staffCode, reportingManager: REPORTING_MANAGER, branch: TRAINING_BRANCH };
   // Staff logins have no Team tab
   const trainingTab: TrainingScope = !isManager && trainingScope === 'team' ? 'my' : trainingScope;
+  const needTab: NeedScope = !isManager && needScope === 'team' ? 'my' : needScope;
+  const editingNeed = needForm?.editId ? trainingNeeds.find((n) => n.id === needForm.editId) : undefined;
   const editingTraining = trainingForm?.editId ? trainingRequests.find((r) => r.id === trainingForm.editId) : undefined;
 
   const editingMember = moreModule === 'my-team' ? myTeam.find((m) => m.staffCode === editingMemberCode) ?? null : null;
@@ -1134,6 +1154,9 @@ export default function App() {
     if (appTab === 'more' && moreModule === 'expense-reimbursement') return { key: 'more/expense-reimbursement', depth: 1 };
     if (appTab === 'more' && moreModule === 'training-request') {
       return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
+    }
+    if (appTab === 'more' && moreModule === 'training-need') {
+      return { key: `more/training-need${needForm ? '/form' : ''}`, depth: needForm ? 2 : 1 };
     }
     if (appTab === 'more' && moreModule === 'my-team') {
       return { key: `more/my-team${editingMember ? '/profile' : ''}`, depth: editingMember ? 2 : 1 };
@@ -1752,6 +1775,106 @@ export default function App() {
                     setProfileModuleFromApp(true);
                     setProfileModule('My Profile');
                     setIsProfileOpen(true);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'training-need' && needForm ? (
+                <AddTrainingNeedView
+                  me={trainingMe}
+                  people={isManager ? TRAINING_TEAM : undefined}
+                  defaultStaffCode={needForm.scope === 'team' ? '' : trainingMe.staffCode}
+                  initial={editingNeed}
+                  onBack={() => setNeedForm(null)}
+                  onSubmit={(draft) => {
+                    if (editingNeed) {
+                      setTrainingNeeds((prev) => prev.map((n) => (n.id === editingNeed.id ? { ...n, ...draft } : n)));
+                      showToast('Training need updated.');
+                    } else {
+                      const person = [trainingMe, ...TRAINING_TEAM].find((p) => p.staffCode === draft.staffCode) ?? trainingMe;
+                      const forSelf = person.staffCode === trainingMe.staffCode;
+                      const created: TrainingNeed = {
+                        id: `tn-${Date.now()}`,
+                        ...person,
+                        ...draft,
+                        source: forSelf ? 'Self' : 'Manager Review',
+                        status: 'Identified',
+                        identifiedOn: toISODate(new Date()),
+                        identifiedBy: trainingMe.staffName,
+                      };
+                      setTrainingNeeds((prev) => [created, ...prev]);
+                      if (!isManager) {
+                        pushNotification('Manager', {
+                          category: 'Training',
+                          title: `${person.staffName} noted a training need`,
+                          body: `${draft.skill} · ${draft.mainProgramme}`,
+                          link: 'training-need',
+                        });
+                      } else if (person.staffCode === CURRENT_STAFF.staffCode) {
+                        pushNotification('Staff', {
+                          category: 'Training',
+                          title: `${trainingMe.staffName} identified a training need for you`,
+                          body: `${draft.skill} · ${draft.mainProgramme}. You can request training for it.`,
+                          link: 'training-need',
+                          actionRequired: true,
+                        });
+                      }
+                      setNeedScope(forSelf ? 'my' : 'team');
+                      showToast(forSelf ? 'Training need saved.' : `Training need recorded for ${person.staffName}.`);
+                    }
+                    setNeedForm(null);
+                  }}
+                />
+              ) : appTab === 'more' && moreModule === 'training-need' ? (
+                <TrainingNeedView
+                  key={userRole}
+                  firstName={trainingMe.staffName.split(' ')[0]}
+                  me={trainingMe}
+                  needs={trainingNeeds}
+                  isManager={isManager}
+                  scope={needTab}
+                  onScopeChange={setNeedScope}
+                  onBack={closeMoreModule}
+                  onAdd={(scope) => setNeedForm({ scope })}
+                  onEdit={(n) => setNeedForm({ scope: needTab, editId: n.id })}
+                  onRemove={(n) => {
+                    setTrainingNeeds((prev) => prev.filter((x) => x.id !== n.id));
+                    showToast('Training need removed.');
+                  }}
+                  onRequestTraining={(n) => {
+                    const request: TrainingRequest = {
+                      id: `tr-${Date.now()}`,
+                      staffName: n.staffName,
+                      staffCode: n.staffCode,
+                      reportingManager: n.reportingManager,
+                      branch: n.branch,
+                      mainProgramme: n.mainProgramme,
+                      subProgrammes: [n.skill],
+                      software: [],
+                      requestedOn: toISODate(new Date()),
+                      remarks: `Raised from a training need: ${n.remarks}`,
+                      learningStatus: 'Pending',
+                      ldStatus: 'Pending',
+                      raisedBy: trainingMe.staffName,
+                    };
+                    setTrainingRequests((prev) => [request, ...prev]);
+                    setTrainingNeeds((prev) =>
+                      prev.map((x) => (x.id === n.id ? { ...x, status: 'Training Requested', requestId: request.id } : x))
+                    );
+                    if (!isManager) {
+                      pushNotification('Manager', {
+                        category: 'Training',
+                        title: `${n.staffName} requested training`,
+                        body: `${n.mainProgramme} · ${n.skill}. Sent to the L&D team.`,
+                        link: 'training-request',
+                      });
+                    } else if (n.staffCode === CURRENT_STAFF.staffCode) {
+                      pushNotification('Staff', {
+                        category: 'Training',
+                        title: `${trainingMe.staffName} requested training for you`,
+                        body: `${n.mainProgramme} · ${n.skill}. The L&D team will schedule it.`,
+                        link: 'training-request',
+                      });
+                    }
+                    showToast(n.staffCode === trainingMe.staffCode ? 'Training request sent to the L&D team.' : `Training requested for ${n.staffName}.`);
                   }}
                 />
               ) : appTab === 'more' && moreModule === 'training-request' && trainingForm ? (

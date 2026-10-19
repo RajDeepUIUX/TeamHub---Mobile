@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
+import { BottomSheet } from './BottomSheet';
+import { useDropdownSheetMode } from '../../design-system/components/Dropdown';
 
 export interface DropdownOption {
   value: string;
@@ -48,6 +50,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   disabled = false,
   disabledHint,
 }) => {
+  const sheetMode = useDropdownSheetMode();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [position, setPosition] = useState<PanelPosition | null>(null);
@@ -78,7 +81,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, [portal]);
 
   useLayoutEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || sheetMode) return;
     updatePosition();
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
@@ -90,7 +93,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
   // Close on outside tap
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || sheetMode) return;
     const onDown = (e: PointerEvent) => {
       const target = e.target as Node;
       if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) setIsOpen(false);
@@ -151,7 +154,68 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         )}
         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && !disabled && portal &&
+      {sheetMode && (
+        <BottomSheet isOpen={isOpen && !disabled} onClose={() => setIsOpen(false)} maxHeight="max-h-[80%]">
+          <div className="pt-3 pb-1 flex justify-center shrink-0">
+            <div className="w-10 h-1 bg-slate-300 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between px-5 pt-1 pb-3 shrink-0">
+            <h2 className="text-base font-bold text-[#1E293B]">{label}</h2>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {searchable && (
+            <div className="px-4 pb-2 shrink-0">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search..."
+                  aria-label={`Search ${label}`}
+                  className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden"
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-1 pb-2">
+            {!q && options.length > 1 && (
+              <OptionRow
+                label="Select all"
+                checked={allSelected}
+                bold
+                onClick={() => onChange(allSelected ? [] : options.map((o) => o.value))}
+              />
+            )}
+            {groups.map(({ name, items }) => (
+              <div key={name ?? 'ungrouped'}>
+                {name && <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-semibold text-slate-400 truncate">{name}</p>}
+                {items.map((o) => (
+                  <OptionRow key={o.value} label={o.label} checked={selected.includes(o.value)} onClick={() => toggle(o.value)} />
+                ))}
+              </div>
+            ))}
+            {visible.length === 0 && <p className="px-3.5 py-6 text-center text-xs text-slate-400">No matches</p>}
+          </div>
+          <div className="px-4 pt-2 pb-5 shrink-0 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-sm font-bold active:brightness-95 cursor-pointer"
+            >
+              Done{selected.length > 0 ? ` (${selected.length})` : ''}
+            </button>
+          </div>
+        </BottomSheet>
+      )}
+      {!sheetMode && isOpen && !disabled && portal &&
         createPortal(
         <div
           ref={panelRef}
