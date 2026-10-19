@@ -123,10 +123,10 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
                 </a>
                 <a
                   href={`mailto:${c.email}`}
-                  className="h-9 px-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-[11.5px] font-semibold text-slate-600 active:bg-slate-100 min-w-0"
+                  className="min-h-9 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-[11.5px] font-semibold text-slate-600 active:bg-slate-100 min-w-0"
                 >
                   <Mail className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />
-                  <span className="truncate">{c.email}</span>
+                  <span className="min-w-0 break-all">{c.email}</span>
                 </a>
               </div>
               {c.birthDate && <p className="mt-2 text-[11px] text-slate-400">Birth Date: {formatStaffDate(c.birthDate)}</p>}

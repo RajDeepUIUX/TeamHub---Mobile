@@ -269,7 +269,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
                     <StaffAvatar name={s.name} tint={tintOf(s.id)} />
                     <span className="flex-1 min-w-0">
                       <span className="block text-[13.5px] font-bold text-[#2F68FE] truncate">{s.name}</span>
-                      <span className="block text-[11.5px] text-slate-500 truncate">{s.designation}</span>
+                      <span className="block text-[11.5px] text-slate-500 break-words">{s.designation}</span>
                     </span>
                     <StaffStatusPill status={s.status} />
                   </button>

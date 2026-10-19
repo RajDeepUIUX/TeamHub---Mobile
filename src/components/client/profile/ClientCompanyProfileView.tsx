@@ -696,7 +696,7 @@ export const ClientCompanyProfileView: React.FC<{
                             <span className="text-[13px] font-semibold text-[#1E293B] truncate">{c.name}</span>
                             {c.isPrimary && <Pill tone="green">Primary</Pill>}
                           </span>
-                          <span className="block text-[11px] text-slate-400 truncate">{c.email}</span>
+                          <span className="block text-[11px] text-slate-400 break-all">{c.email}</span>
                         </span>
                         <Pill tone={c.isAdmin ? 'indigo' : 'slate'}>{c.role || 'Manager'}</Pill>
                       </li>

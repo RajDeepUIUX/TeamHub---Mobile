@@ -87,12 +87,12 @@ export const InterviewScheduleSheet: React.FC<ScheduleProps> = ({ isOpen, candid
           </p>
         )}
 
-        <div className="grid grid-cols-5 gap-3">
-          <label className="col-span-2 block space-y-1.5">
+        <div className="grid grid-cols-[108px_1fr] gap-3">
+          <label className="block space-y-1.5">
             <span className="block text-xs font-bold text-[#1E293B]">Duration</span>
             <input readOnly value={`${INTERVIEW_MINUTES} Minutes`} aria-label="Duration" className={`${fieldInputClass()} bg-slate-50 text-slate-500`} />
           </label>
-          <div className="col-span-3 space-y-1.5">
+          <div className="space-y-1.5">
             <span className="block text-xs font-bold text-[#1E293B]">
               Time Zone <span className="text-rose-500">*</span>
             </span>
