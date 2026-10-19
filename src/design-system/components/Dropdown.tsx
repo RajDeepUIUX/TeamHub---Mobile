@@ -23,6 +23,8 @@ interface DropdownProps<T extends string | number> {
   menuMinWidth?: number;
   /** Title of the search sheet used for long lists (defaults to ariaLabel) */
   sheetTitle?: string;
+  /** Always open as a bottom sheet, even for a short list (e.g. inside another sheet) */
+  forceSheet?: boolean;
 }
 
 interface MenuPosition {
@@ -49,7 +51,7 @@ const normalize = <T extends string | number>(opt: T | DropdownOption<T>): Dropd
 
 /* ------------------------- Search sheet (long lists) ------------------------ */
 
-function SearchSelectSheet<T extends string | number>({
+export function SearchSelectSheet<T extends string | number>({
   isOpen,
   title,
   items,
@@ -93,6 +95,7 @@ function SearchSelectSheet<T extends string | number>({
           <X className="w-5 h-5" />
         </button>
       </div>
+      {/* Search only helps on long lists; a short forced-sheet list is just the options */}
       {items.length > SHEET_THRESHOLD && (
         <div className="px-4 pb-2 shrink-0">
           <div className="relative">
@@ -170,11 +173,12 @@ export function Dropdown<T extends string | number>({
   ariaLabel,
   menuMinWidth = 0,
   sheetTitle,
+  forceSheet = false,
 }: DropdownProps<T>) {
   const items = options.map(normalize);
   const selected = items.find((o) => o.value === value);
   const sheetMode = useDropdownSheetMode();
-  const useSheet = sheetMode || items.length > SHEET_THRESHOLD;
+  const useSheet = forceSheet || sheetMode || items.length > SHEET_THRESHOLD;
 
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<MenuPosition | null>(null);

@@ -5,6 +5,7 @@ import { BrandLogoHorizontal } from '../auth/BrandLogo';
 import { ProfileAvatar } from '../profile/ProfileAvatar';
 import { MORE_GROUPS, MoreModule } from '../more/MoreView';
 import type { UserRole } from '../../types/user';
+import { RoleSwitcher } from '../common/RoleSwitcher';
 
 interface SideDrawerProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface SideDrawerProps {
   onOpenModule: (module: MoreModule) => void;
   onOpenProfile: () => void;
   onLogout: () => void;
+  /** Prototype: switch role from the menu (shown when set) */
+  onSwitchRole?: (role: UserRole) => void;
 }
 
 const SLIDE_MS = 280;
@@ -36,6 +39,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onOpenModule,
   onOpenProfile,
   onLogout,
+  onSwitchRole,
 }) => {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -232,8 +236,15 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           )}
         </nav>
 
+        {/* Prototype: switch between Staff / Manager / Client */}
+        {onSwitchRole && (
+          <div className="shrink-0 border-t border-[#EBF0F7] bg-white">
+            <RoleSwitcher role={role} onChange={onSwitchRole} />
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="shrink-0 px-4 pt-3 pb-5 border-t border-[#EBF0F7] bg-white flex items-center justify-between">
+        <div className={`shrink-0 px-4 pt-3 pb-5 bg-white flex items-center justify-between ${onSwitchRole ? '' : 'border-t border-[#EBF0F7]'}`}>
           <button
             type="button"
             onClick={onLogout}

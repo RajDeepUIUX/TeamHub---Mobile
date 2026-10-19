@@ -35,6 +35,7 @@ import {
   validateCore,
 } from '../data/clientRequirementsData';
 import { RequirementStepper } from './RequirementParts';
+import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
 
 interface Props {
   /** Present when editing: domain, profile, hours, level, timeline, start date and staff count are locked (desktop update ignores them) */
@@ -104,7 +105,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<AttachmentInputHandle>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const isEdit = Boolean(editing);
@@ -535,7 +536,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
       <Section icon={FileText} title="Job Description" subtitle="Upload a file or write it yourself">
         <div className="space-y-1.5">
           <span className="block text-xs font-bold text-[#1E293B]">Upload Job Description</span>
-          <input ref={fileRef} type="file" accept={JD_ACCEPT} className="hidden" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
+          <AttachmentInput ref={fileRef} title="Upload Job Description" accept={JD_ACCEPT} onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
           {fileName ? (
             <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center gap-3">
               <span className="w-10 h-10 rounded-lg bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">

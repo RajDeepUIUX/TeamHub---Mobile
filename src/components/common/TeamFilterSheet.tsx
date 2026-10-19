@@ -1,24 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import { X, Filter, Users, ChevronRight } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
+import { DateRangeFields } from './DateRangeFields';
+import { toDateKey } from '../../design-system/components/RangeCalendar';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 import { ChoiceTiles } from './ChoiceTiles';
 
 export interface FilterSection {
   id: string;
   label: string;
+  /** Choices for an options section; unused for a date range */
   options: string[];
+  /** 'dateRange' stores one value, "YYYY-MM-DD..YYYY-MM-DD" */
+  kind?: 'options' | 'dateRange';
 }
 
 /** Selected values per section id; an empty/missing list means "any" */
 export type FilterSelection = Record<string, string[]>;
 
+const RANGE_SEP = '..';
+const RANGE_PATTERN = /^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/;
+const isRangeValue = (v: string) => RANGE_PATTERN.test(v);
+
+/** "YYYY-MM-DD..YYYY-MM-DD" for a date-range section, or for a record's own dates */
+export const toRangeValue = (start: Date, end: Date) => `${toDateKey(start)}${RANGE_SEP}${toDateKey(end)}`;
+
+const rangesOverlap = (a: string, b: string) => {
+  const [aStart, aEnd] = a.split(RANGE_SEP);
+  const [bStart, bEnd] = b.split(RANGE_SEP);
+  return aStart <= bEnd && bStart <= aEnd;
+};
+
+const shortDay = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+/** "20 Dec – 23 Dec" for a stored range, anything else unchanged */
+const filterValueLabel = (v: string) => {
+  if (!isRangeValue(v)) return v;
+  const [s, e] = v.split(RANGE_SEP);
+  return s === e ? shortDay(s) : `${shortDay(s)} – ${shortDay(e)}`;
+};
+
 export const activeFilterCount = (selection: FilterSelection) =>
   Object.values(selection).reduce((n, values) => n + values.length, 0);
 
-/** True when a record passes every section that has selections */
+/** True when a record passes every section that has selections (date ranges match on any overlap) */
 export const matchesFilters = (selection: FilterSelection, valuesById: Record<string, string>) =>
-  Object.entries(selection).every(([id, selected]) => selected.length === 0 || selected.includes(valuesById[id]));
+  Object.entries(selection).every(([id, selected]) => {
+    if (selected.length === 0) return true;
+    if (isRangeValue(selected[0])) return Boolean(valuesById[id]) && rangesOverlap(selected[0], valuesById[id]);
+    return selected.includes(valuesById[id]);
+  });
 
 /* ------------------------------ Trigger icon ------------------------------ */
 
@@ -49,7 +80,7 @@ export const TeamFilterBar: React.FC<{ selection: FilterSelection; placeholder: 
   placeholder,
   onClick,
 }) => {
-  const values = Object.values(selection).flat();
+  const values = Object.values(selection).flat().map(filterValueLabel);
   const count = values.length;
   const summary = count === 0 ? placeholder : values.length > 2 ? `${values.slice(0, 2).join(', ')} +${values.length - 2}` : values.join(', ');
   return (
@@ -115,6 +146,20 @@ export const TeamFilterSheet: React.FC<TeamFilterSheetProps> = ({ isOpen, title,
         {sections.map((section) => {
           const selected = draft[section.id] ?? [];
           const setSelected = (next: string[]) => setDraft((prev) => ({ ...prev, [section.id]: next }));
+          if (section.kind === 'dateRange') {
+            // Shared filter design: Start Date | End Date with the calendar inline
+            const [start, end] = selected[0]?.split(RANGE_SEP) ?? [];
+            const asDate = (iso?: string) => (iso ? new Date(`${iso}T00:00:00`) : null);
+            return (
+              <DateRangeFields
+                key={section.id}
+                start={asDate(start)}
+                end={asDate(end)}
+                onChange={(s, e) => setSelected(s ? [`${toDateKey(s)}${RANGE_SEP}${toDateKey(e ?? s)}`] : [])}
+                resetKey={isOpen}
+              />
+            );
+          }
           // Two options: side-by-side tiles; more: a multi-select dropdown (no chips)
           return section.options.length <= 2 ? (
             <div key={section.id} className="space-y-2">

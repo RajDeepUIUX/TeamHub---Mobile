@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Info, AlertCircle } from 'lucide-react';
+import { X, Info, AlertCircle, Wand2 } from 'lucide-react';
 import { WFORecord } from '../../types/wfo';
 import {
   MONTH_NAMES,
@@ -98,6 +98,13 @@ export const AddWFOSheet: React.FC<AddWFOSheetProps> = ({
   };
 
   const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  // Demo helper: picks the latest month that is still free and a typical day count
+  const quickFill = () => {
+    const free = [...selectableMonths].reverse().find((m) => !takenMonth(m, year));
+    if (free) setMonth(free);
+    setDays(12);
+  };
   const isEditing = Boolean(recordToEdit || cachedRecord);
 
   return (
@@ -112,6 +119,11 @@ export const AddWFOSheet: React.FC<AddWFOSheetProps> = ({
         <h2 className="text-base font-bold text-[#1E293B]">
           {isEditing ? 'Edit WFO Days' : 'Add WFO Days'}
         </h2>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={quickFill} className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
         <button
           onClick={onClose}
           type="button"
@@ -120,6 +132,7 @@ export const AddWFOSheet: React.FC<AddWFOSheetProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </div>
 
       {/* Form Body */}

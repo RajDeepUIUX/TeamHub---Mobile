@@ -78,6 +78,8 @@ interface TicketSummarySheetProps {
   activeStatus: TicketStatus | null;
   /** Tapping a status filters the list and closes the sheet */
   onSelectStatus: (status: TicketStatus) => void;
+  /** "Total" clears the status filter */
+  onShowAll: () => void;
 }
 
 export const TicketSummarySheet: React.FC<TicketSummarySheetProps> = ({
@@ -87,6 +89,7 @@ export const TicketSummarySheet: React.FC<TicketSummarySheetProps> = ({
   scopeLabel,
   activeStatus,
   onSelectStatus,
+  onShowAll,
 }) => {
   const reopened = tickets.filter((t) => t.comments.some((c) => c.role === 'System' && c.text.startsWith('Reopened'))).length;
   const overview = [
@@ -124,12 +127,29 @@ export const TicketSummarySheet: React.FC<TicketSummarySheetProps> = ({
             <span>Overview</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center pt-1">
-            {overview.map(({ label, value, color }) => (
-              <div key={label} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs">
-                <span className="text-[11px] text-slate-500 block mb-0.5">{label}</span>
-                <span className={`text-base font-bold tabular-nums ${color}`}>{value}</span>
-              </div>
-            ))}
+            {overview.map(({ label, value, color }) =>
+              // Only Total maps to the list (no priority / reopened filter there)
+              label === 'Total' ? (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={onShowAll}
+                  className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer"
+                  aria-label="Show all tickets"
+                >
+                  <span className="text-[11px] text-slate-500 flex items-center justify-center gap-0.5 mb-0.5">
+                    {label}
+                    <ChevronRight className="w-3 h-3 text-slate-300" />
+                  </span>
+                  <span className={`text-base font-bold tabular-nums ${color}`}>{value}</span>
+                </button>
+              ) : (
+                <div key={label} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs">
+                  <span className="text-[11px] text-slate-500 block mb-0.5">{label}</span>
+                  <span className={`text-base font-bold tabular-nums ${color}`}>{value}</span>
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -163,7 +183,10 @@ export const TicketSummarySheet: React.FC<TicketSummarySheetProps> = ({
                       }`}
                     >
                       <span className="text-slate-600 font-medium truncate">{s}</span>
-                      <span className={`text-sm font-bold tabular-nums ${n ? meta.valueColor : 'text-slate-400'}`}>{n}</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <span className={`text-sm font-bold tabular-nums ${n ? meta.valueColor : 'text-slate-400'}`}>{n}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+                      </span>
                     </button>
                   );
                 })}

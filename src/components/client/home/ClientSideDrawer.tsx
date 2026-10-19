@@ -6,6 +6,8 @@ import { ProfileAvatar } from '../../profile/ProfileAvatar';
 import { CLIENT_DRAWER_GROUPS, ClientMenuModule } from './clientMenu';
 import { useClientRole } from '../context/ClientPermissionContext';
 import { permissionFor } from '../data/clientPermissionsData';
+import { RoleSwitcher } from '../../common/RoleSwitcher';
+import type { UserRole } from '../../../types/user';
 
 interface ClientSideDrawerProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ interface ClientSideDrawerProps {
   onOpenModule: (module: ClientMenuModule) => void;
   onOpenProfile: () => void;
   onLogout: () => void;
+  /** Prototype: switch to the Staff / Manager app from the menu (shown when set) */
+  onSwitchRole?: (role: UserRole) => void;
 }
 
 const SLIDE_MS = 280;
@@ -36,6 +40,7 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
   onOpenModule,
   onOpenProfile,
   onLogout,
+  onSwitchRole,
 }) => {
   const role = useClientRole();
   // Desktop hides menus without `is_list` for the contact's role
@@ -223,7 +228,14 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
           )}
         </nav>
 
-        <div className="shrink-0 px-4 pt-3 pb-5 border-t border-[#EBF0F7] bg-white flex items-center justify-between gap-3">
+        {/* Prototype: switch between Staff / Manager / Client */}
+        {onSwitchRole && (
+          <div className="shrink-0 border-t border-[#EBF0F7] bg-white">
+            <RoleSwitcher role="Client" onChange={onSwitchRole} />
+          </div>
+        )}
+
+        <div className={`shrink-0 px-4 pt-3 pb-5 bg-white flex items-center justify-between gap-3 ${onSwitchRole ? '' : 'border-t border-[#EBF0F7]'}`}>
           <button
             type="button"
             onClick={onLogout}

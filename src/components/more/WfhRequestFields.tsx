@@ -32,6 +32,7 @@ import {
 } from '../../data/workTimingData';
 import { Declarant } from '../../data/staffDeclaration';
 import { StaffDeclarationSheet } from './StaffDeclarationSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /** Form state for the Work From Home sections */
 export interface WfhFormState {
@@ -155,7 +156,7 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
   variant = 'full',
   declarant,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<AttachmentInputHandle>(null);
   const [isDeclarationOpen, setIsDeclarationOpen] = useState(false);
   const declarationAddress =
     [f.address.address || SAVED_ADDRESSES.Current.address, f.address.city || SAVED_ADDRESSES.Current.city].filter(Boolean).join(', ');
@@ -228,7 +229,7 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
               <span className="block text-[11px] text-slate-400">Supporting documents, e.g. a medical note</span>
             </span>
           </button>
-          <input ref={fileInputRef} type="file" multiple accept={WFH_ATTACHMENT_TYPES} className="hidden" onChange={addFiles} />
+          <AttachmentInput title="Add Attachments" ref={fileInputRef} multiple accept={WFH_ATTACHMENT_TYPES} onChange={addFiles} />
           {f.attachments.length > 0 && (
             <div className="grid grid-cols-4 gap-2 pt-1">
               {f.attachments.map((a) => (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart2, Check, ChevronRight, Coins, Inbox, LayoutGrid, MessageSquare, Users, X } from 'lucide-react';
+import { BarChart2, Check, ChevronRight, Coins, Inbox, LayoutGrid, MessageSquare, X } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { FilterIconButton, FilterSelection, TeamFilterSheet, activeFilterCount, matchesFilters } from '../common/TeamFilterSheet';
 import { avatarTint, initialsOf } from '../home/celebrationUtils';
@@ -63,14 +63,15 @@ const AdvanceKPIs: React.FC<{ requests: AdvanceRequest[]; onViewSummary: () => v
   </div>
 );
 
-const AdvanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests: AdvanceRequest[] }> = ({
-  isOpen,
-  onClose,
-  requests,
-}) => {
+const AdvanceSummarySheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  requests: AdvanceRequest[];
+  /** Tapping a tile filters the list by it */
+  onPick: (selection: FilterSelection) => void;
+}> = ({ isOpen, onClose, requests, onPick }) => {
   const count = (fn: (r: AdvanceRequest) => boolean) => requests.filter(fn).length;
   const sum = (fn: (r: AdvanceRequest) => boolean) => requests.filter(fn).reduce((n, r) => n + r.amount, 0);
-  const members = Array.from(new Set(requests.map((r) => r.staffName))).sort();
 
   const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
@@ -81,12 +82,36 @@ const AdvanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requ
       {children}
     </div>
   );
-  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-slate-700' }) => (
-    <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs">
-      <span className="text-slate-600 font-medium truncate">{label}</span>
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${color}`}>{value}</span>
-    </div>
-  );
+  /** With `pick` the tile is a link (arrow) that filters the list; without it, it's just a number */
+  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string; pick?: FilterSelection }> = ({
+    label,
+    value,
+    color = 'text-slate-700',
+    pick,
+  }) => {
+    const body = (
+      <>
+        <span className="text-slate-600 font-medium truncate">{label}</span>
+        <span className="flex items-center gap-1 shrink-0">
+          <span className={`text-sm font-bold tabular-nums ${color}`}>{value}</span>
+          {pick && <ChevronRight className="w-3.5 h-3.5 text-slate-300" />}
+        </span>
+      </>
+    );
+    const cls = 'bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs text-left';
+    return pick ? (
+      <button
+        type="button"
+        onClick={() => onPick(pick)}
+        className={`${cls} active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer`}
+        aria-label={`Show ${label.toLowerCase()}`}
+      >
+        {body}
+      </button>
+    ) : (
+      <div className={cls}>{body}</div>
+    );
+  };
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
@@ -108,42 +133,26 @@ const AdvanceSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requ
       <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 no-scrollbar text-xs">
         <Section icon={<LayoutGrid className="w-4 h-4 text-[#2F68FE]" />} title="Requests Overview">
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <Tile label="Total Requests" value={requests.length} color="text-[#1E293B]" />
+            <Tile label="Total Requests" value={requests.length} color="text-[#1E293B]" pick={{}} />
             <Tile label="Awaiting You" value={count(awaitsManager)} color="text-[#D97706]" />
             <Tile label="With CTM / HR" value={count(inProcess)} color="text-[#2F68FE]" />
-            <Tile label="Disbursed" value={count((r) => r.status === 'Disbursed')} color="text-[#10B981]" />
-            <Tile label="Closed" value={count((r) => r.status === 'Closed')} color="text-slate-500" />
-            <Tile label="Rejected" value={count((r) => REJECTED.includes(r.status))} color="text-rose-500" />
+            <Tile label="Disbursed" value={count((r) => r.status === 'Disbursed')} color="text-[#10B981]" pick={{ status: ['Disbursed'] }} />
+            <Tile label="Closed" value={count((r) => r.status === 'Closed')} color="text-slate-500" pick={{ status: ['Closed'] }} />
+            <Tile label="Rejected" value={count((r) => REJECTED.includes(r.status))} color="text-rose-500" pick={{ status: [...REJECTED] }} />
           </div>
         </Section>
         <Section icon={<Coins className="w-4 h-4 text-amber-500" />} title="Amounts">
           <div className="grid grid-cols-1 gap-2 pt-1">
             <Tile label="Awaiting your review" value={formatINR(sum(awaitsManager))} color="text-[#D97706]" />
             <Tile label="In process" value={formatINR(sum(inProcess))} color="text-[#2F68FE]" />
-            <Tile label="Being repaid" value={formatINR(sum((r) => r.status === 'Disbursed'))} color="text-[#10B981]" />
+            <Tile label="Being repaid" value={formatINR(sum((r) => r.status === 'Disbursed'))} color="text-[#10B981]" pick={{ status: ['Disbursed'] }} />
           </div>
         </Section>
         <Section icon={<LayoutGrid className="w-4 h-4 text-teal-600" />} title="By Request Type">
           <div className="grid grid-cols-1 gap-2 pt-1">
             {REQUEST_TYPES.map((t) => (
-              <Tile key={t} label={t} value={count((r) => r.type === t)} />
+              <Tile key={t} label={t} value={count((r) => r.type === t)} pick={{ type: [t] }} />
             ))}
-          </div>
-        </Section>
-        <Section icon={<Users className="w-4 h-4 text-[#10B981]" />} title="By Team Member">
-          <div className="space-y-2 pt-1">
-            {members.map((name) => {
-              const pending = count((r) => r.staffName === name && awaitsManager(r));
-              return (
-                <div key={name} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs">
-                  <span className="text-slate-700 font-semibold truncate">{name}</span>
-                  <span className="flex items-center gap-2 text-[11px] shrink-0">
-                    {pending > 0 && <span className="px-1.5 py-0.5 rounded-md bg-[#FEF8E7] text-[#D97706] font-bold">{pending} to review</span>}
-                    <span className="font-bold text-slate-700 tabular-nums">{count((r) => r.staffName === name)} total</span>
-                  </span>
-                </div>
-              );
-            })}
           </div>
         </Section>
       </div>
@@ -406,7 +415,15 @@ export const TeamAdvanceList: React.FC<{
           setIsFilterOpen(false);
         }}
       />
-      <AdvanceSummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} requests={requests} />
+      <AdvanceSummarySheet
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        requests={requests}
+        onPick={(selection) => {
+          setFilters(selection);
+          setIsSummaryOpen(false);
+        }}
+      />
       <ReviewSheet
         request={requests.find((r) => r.id === reviewing?.id)}
         decision={reviewing?.decision ?? lastDecision}

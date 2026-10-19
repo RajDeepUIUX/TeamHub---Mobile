@@ -81,6 +81,7 @@ import {
 } from './data/notificationsData';
 import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
 import { PoliciesView } from './components/more/PoliciesView';
+import { SalaryStructureView } from './components/payroll/SalaryStructureView';
 import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
 import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees, makeTrackingNo } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
@@ -121,7 +122,7 @@ import { CreateTicketView } from './components/tickets/CreateTicketView';
 import { Ticket } from './types/tickets';
 import { STAFF_TICKETS_SEED, TEAM_TICKETS_SEED } from './data/ticketsData';
 import type { NewTicketData } from './components/tickets/CreateTicketView';
-import { TeamAttendanceView } from './components/attendance/TeamAttendanceView';
+import { TeamAttendanceView, TeamAttendanceVersion } from './components/attendance/TeamAttendanceView';
 import { SegmentedTabs } from './design-system/components/SegmentedTabs';
 import type { AttendanceDecision } from './components/attendance/AttendanceReviewSheet';
 import { FilterIconButton } from './components/common/TeamFilterSheet';
@@ -134,12 +135,44 @@ import {
   ATTENDANCE_STAFF_CODE,
 } from './data/teamAttendanceData';
 
+/** URL options for opening on a real phone: ?role=manager, ?frame=1 (force the mockup) / ?frame=0 (force full screen) */
+const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+
+const initialRole = (): UserRole => {
+  const r = urlParams.get('role')?.toLowerCase();
+  return USER_ROLES.find((role) => role.toLowerCase() === r) ?? 'Staff';
+};
+
+/** A real phone (touch screen, phone/tablet width): show the app full screen instead of the studio mockup */
+const detectPhone = () => {
+  const frame = urlParams.get('frame');
+  if (frame === '1') return false;
+  if (frame === '0') return true;
+  return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse) and (max-width: 820px)').matches;
+};
+
 export default function App() {
   // Mobile Frame & Canvas State - Pixel 8 active by default
   const [device, setDevice] = useState<DeviceModel>('pixel8');
+  const [isPhone, setIsPhone] = useState(detectPhone);
 
-  // Logged-in user role (Staff by default); Manager review screens come later
-  const [userRole, setUserRole] = useState<UserRole>('Staff');
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse) and (max-width: 820px)');
+    const update = () => setIsPhone(detectPhone());
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Full-screen app on a phone: app-coloured page behind it, no pull-to-refresh / bounce revealing the dark studio background
+  useEffect(() => {
+    const { body, documentElement } = document;
+    body.style.background = isPhone ? '#F8FAFC' : '';
+    body.style.overscrollBehavior = isPhone ? 'none' : '';
+    documentElement.style.overscrollBehavior = isPhone ? 'none' : '';
+  }, [isPhone]);
+
+  // Logged-in user role (Staff by default, or ?role= in the URL); Manager review screens come later
+  const [userRole, setUserRole] = useState<UserRole>(initialRole);
 
   // Auth: splash -> login (or forgot-password flow) -> app
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -675,7 +708,7 @@ export default function App() {
     } else if (m.id === 'company-feed') {
       setOpenFeedPostId(null);
       setMoreModule(m.id);
-    } else if (m.id === 'policies' || m.id === 'expense-reimbursement') {
+    } else if (m.id === 'policies' || m.id === 'expense-reimbursement' || m.id === 'salary-structure-declaration') {
       setMoreModule(m.id);
     } else if (m.id === 'Attendance' || m.id === 'Leaves' || m.id === 'Holidays' || m.id === 'WFO Days') {
       setSelectedWFORecord(null);
@@ -711,7 +744,7 @@ export default function App() {
   };
 
   // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
-  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'training-need', 'company-feed', 'policies', 'expense-reimbursement', 'work-timing', 'ot-request'];
+  const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'training-need', 'company-feed', 'policies', 'expense-reimbursement', 'salary-structure-declaration', 'work-timing', 'ot-request'];
   const openFromDrawer = (m: MoreModule) => {
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
@@ -728,6 +761,15 @@ export default function App() {
     // Support modules open in the profile flow over the current screen
     openMoreModule(m);
   };
+  /** Prototype role switch from the side menu (phones don't show the studio toolbar) */
+  const switchRole = (role: UserRole) => {
+    setIsMenuOpen(false);
+    setUserRole(role);
+    setIsLoggedIn(true);
+    setClientSignedOut(false);
+    showToast(`Viewing as ${role}`);
+  };
+
   const closeMoreModule = () => {
     setMoreModule(null);
     setAppTab(moreReturnTab === 'more' ? 'home' : moreReturnTab);
@@ -740,6 +782,7 @@ export default function App() {
     setMoreModule(null);
     setOpenFeedPostId(null);
     setIsNotificationsOpen(false);
+    setReviewingLeaveId(null);
     if (tab === 'attendance') setActiveModuleTab('Attendance');
     // Leaves lives on the Attendance & Leaves screen
     if (tab === 'leaves') {
@@ -770,6 +813,8 @@ export default function App() {
   const myLeaveBalance = isManager ? managerLeaveBalance : leaveBalance;
   const setMyLeaveBalance = isManager ? setManagerLeaveBalance : setLeaveBalance;
   // Staff member's requests + the rest of the team's: pending first, then most recent
+  // Manager reviewing a team member's leave; looked up by id so the screen reflects the decision
+  const [reviewingLeaveId, setReviewingLeaveId] = useState<string | null>(null);
   const teamLeaveList = [...leaveRequests, ...teamLeaveRequests].sort((a, b) =>
     a.status === 'Pending' && b.status !== 'Pending'
       ? -1
@@ -777,6 +822,7 @@ export default function App() {
         ? 1
         : b.startDate.localeCompare(a.startDate)
   );
+  const reviewingLeave = reviewingLeaveId ? teamLeaveList.find((r) => r.id === reviewingLeaveId) ?? null : null;
   const [isApplyingLeaveOpen, setIsApplyingLeaveOpen] = useState(false);
   const [submittedLeave, setSubmittedLeave] = useState<{
     request: LeaveRequest;
@@ -799,6 +845,8 @@ export default function App() {
   // Manager's "Team's Attendance": other team members' edit requests (the staff member's own come from `records`)
   const [teamAttendanceRequests, setTeamAttendanceRequests] = useState<AttendanceRecord[]>(TEAM_ATTENDANCE_REQUESTS_SEED);
   const [attendanceTab, setAttendanceTab] = useState<'mine' | 'team'>('team');
+  // Design exploration for Team's Attendance: V1 = single list, V2 = member list → member, V3 = staff picker
+  const [teamAttendanceVersion, setTeamAttendanceVersion] = useState<TeamAttendanceVersion>('V1');
 
   // Staff member's own edit requests + the rest of the team's, newest first
   const teamAttendanceList = [
@@ -900,6 +948,12 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleUploadLeaveDocument = (id: string, fileName: string) => {
+    setMyLeaveRequests((prev) => prev.map((r) => (r.id === id ? { ...r, attachmentName: fileName } : r)));
+    setSelectedLeave((prev) => (prev?.id === id ? { ...prev, attachmentName: fileName } : prev));
+    showToast('Document uploaded.');
+  };
+
   const handleCancelLeave = (id: string) => {
     setMyLeaveRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const } : r))
@@ -929,7 +983,7 @@ export default function App() {
         pushNotification('Staff', {
           category: 'Leaves',
           title: `Leave ${verb}`,
-          body: `Your ${x.type} for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
+          body: `Your leave for ${x.dateRange} was ${verb} by ${ATTENDANCE_REVIEWER}${comment ? ` — “${comment}”` : '.'}`,
           link: 'leaves',
         })
       );
@@ -1153,6 +1207,7 @@ export default function App() {
     if (celebrationsTab) return { key: 'celebrations', depth: 1 };
     if (appTab === 'more' && moreModule === 'recognitions') return { key: 'more/recognitions', depth: 1 };
     if (appTab === 'more' && moreModule === 'policies') return { key: 'more/policies', depth: 1 };
+    if (appTab === 'more' && moreModule === 'salary-structure-declaration') return { key: 'more/salary-structure', depth: 1 };
     if (appTab === 'more' && moreModule === 'expense-reimbursement') return { key: 'more/expense-reimbursement', depth: 1 };
     if (appTab === 'more' && moreModule === 'training-request') {
       return { key: `more/training-request${trainingForm ? '/form' : ''}`, depth: trainingForm ? 2 : 1 };
@@ -1173,6 +1228,7 @@ export default function App() {
     if (appTab !== 'attendance') return { key: appTab, depth: 0 };
     if (editingLeave) return { key: 'attendance/edit-leave', depth: 2 };
     if (isApplyingLeaveOpen) return { key: 'attendance/apply-leave', depth: 2 };
+    if (reviewingLeave) return { key: 'attendance/team-leave', depth: 1 };
     if (selectedLeave) return { key: 'attendance/leave', depth: 1 };
     if (applyingLeaveRecord) return { key: 'attendance/apply-for-day', depth: 1 };
     if (selectedWFORecord) return { key: 'attendance/wfo', depth: 1 };
@@ -1180,9 +1236,9 @@ export default function App() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased">
-      {/* Top Studio Control Bar */}
-      <header className="h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none">
+    <div className={`flex flex-col antialiased ${isPhone ? 'h-dvh bg-[#F8FAFC] overflow-hidden' : 'min-h-screen bg-slate-900 text-slate-100'}`}>
+      {/* Top Studio Control Bar (desktop only; on a phone the app fills the screen) */}
+      <header className={`h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none ${isPhone ? 'hidden' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-[#2F68FE] flex items-center justify-center text-white font-bold text-xs shadow-xs">
             HR
@@ -1295,7 +1351,7 @@ export default function App() {
       </header>
 
       {/* Main Workspace Canvas */}
-      <main className="flex-1 flex p-4 overflow-auto bg-slate-900 relative">
+      <main className={`flex-1 flex relative ${isPhone ? 'min-h-0' : 'p-4 overflow-auto bg-slate-900'}`}>
         {/* Toast Notification */}
         {toastMessage && (
           <div className="absolute inset-x-0 top-6 z-50 flex justify-center pointer-events-none">
@@ -1309,9 +1365,10 @@ export default function App() {
         )}
 
         {/* zoom (not transform) so the enlarged device takes real space and the canvas can scroll to all of it */}
-        <div className="m-auto shrink-0" style={{ zoom: scale / 100 }}>
+        <div className={isPhone ? 'w-full' : 'm-auto shrink-0'} style={isPhone ? undefined : { zoom: scale / 100 }}>
           <BottomSheetProvider>
             <MobileDeviceFrame
+              bare={isPhone}
               activeDevice={device}
               showThumbZoneOverlay={showThumbZones}
               showTouchHitboxOverlay={showHitboxes}
@@ -1320,7 +1377,7 @@ export default function App() {
               {userRole === 'Client' && clientSignedOut ? (
                 <AuthFlow onAuthenticated={() => setClientSignedOut(false)} />
               ) : userRole === 'Client' ? (
-                <ClientApp onLogout={() => setClientSignedOut(true)} />
+                <ClientApp onLogout={() => setClientSignedOut(true)} onSwitchRole={switchRole} />
               ) : !isLoggedIn ? (
                 <AuthFlow
                   onAuthenticated={() => {
@@ -1362,6 +1419,7 @@ export default function App() {
                             : null
                     }
                     version={APP_VERSION}
+                    onSwitchRole={switchRole}
                     onOpenModule={openFromDrawer}
                     onOpenProfile={() => {
                       setIsMenuOpen(false);
@@ -1640,7 +1698,6 @@ export default function App() {
                     holidaysNext30Days={holidaysNext30Days}
                     onBack={() => setCelebrationsTab(null)}
                   />
-                  <AppBottomNav activeTab="home" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab === 'home' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -1665,6 +1722,7 @@ export default function App() {
                         if (tickets) openFromDrawer(tickets);
                       } else if (feature === 'Pending Approval') {
                         setSelectedLeave(null);
+                        setReviewingLeaveId(null);
                         setActiveModuleTab('Leaves');
                         setAppTab('attendance');
                       } else if (feature === 'Assets') {
@@ -1759,14 +1817,6 @@ export default function App() {
                   members={myTeam}
                   onBack={closeMoreModule}
                   onEditDetails={(member) => setEditingMemberCode(member.staffCode)}
-                  onSubmitReview={(member) => {
-                    // Opens the Staff Review flow; Back returns to My Team
-                    setIsEvaluating(false);
-                    setProfileModuleFromApp(true);
-                    setProfileModule('Staff Review');
-                    setIsProfileOpen(true);
-                    showToast(`Reviewing ${member.staffName}.`);
-                  }}
                 />
                 )
               ) : appTab === 'more' && moreModule === 'company-feed' && openFeedPost ? (
@@ -2024,6 +2074,32 @@ export default function App() {
                       : undefined
                   }
                 />
+              ) : appTab === 'more' && moreModule === 'salary-structure-declaration' ? (
+                <SalaryStructureView
+                  declarations={[
+                    {
+                      id: 'ssd-2026-10',
+                      staffName: resignationUser.staffName,
+                      staffCode: resignationUser.staffCode,
+                      effectiveMonth: 'Oct 2026',
+                      reportingManager: isManager ? 'Priya Nair' : REPORTING_MANAGER,
+                      ctm: 'Mithun Menon',
+                      currentCtc: 100000,
+                      revisedCtc: 2000000,
+                      otherAllowanceBase: 251900,
+                      statutoryDeduction: 48100,
+                      flexiAnnualMax: 347202,
+                      npsMonthlyMax: 6958,
+                      joiningDate: '16 Jul, 2024',
+                      familyMembers: [
+                        { id: 'fm-1', name: 'Robert Smith', relationship: 'Father', dob: '1962-07-01' },
+                        { id: 'fm-2', name: 'Emily Smith', relationship: 'Wife', dob: '1994-03-18' },
+                      ],
+                    },
+                  ]}
+                  onBack={closeMoreModule}
+                  onToast={showToast}
+                />
               ) : appTab === 'more' && moreModule === 'policies' ? (
                 <PoliciesView onBack={closeMoreModule} />
               ) : appTab === 'more' && moreModule === 'recognitions' ? (
@@ -2050,7 +2126,6 @@ export default function App() {
                     }}
                     onReact={(id, r) => setFeedReactions((prev) => ({ ...prev, [id]: r }))}
                   />
-                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab === 'more' && moreModule === 'work-timing' ? (
                 <WorkTimingView
@@ -2126,7 +2201,6 @@ export default function App() {
                     role={userRole}
                     onOpenModule={openMoreModule}
                   />
-                  <AppBottomNav activeTab="more" onTabChange={handleAppTabChange} />
                 </div>
               ) : appTab !== 'attendance' ? (
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -2206,7 +2280,7 @@ export default function App() {
                       pushNotification('Manager', {
                         category: 'Leaves',
                         title: `Leave request from ${resignationUser.staffName}`,
-                        body: `${newReq.type} · ${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
+                        body: `${newReq.dateRange} (${newReq.daysCount} ${newReq.daysCount === 1 ? 'day' : 'days'})`,
                         link: 'leaves',
                         actionRequired: true,
                       });
@@ -2218,11 +2292,17 @@ export default function App() {
                     });
                   }}
                 />
+              ) : reviewingLeave ? (
+                <LeaveDetailsView
+                  request={reviewingLeave}
+                  onBack={() => setReviewingLeaveId(null)}
+                  onReview={reviewLeaves}
+                />
               ) : selectedLeave ? (
                 <LeaveDetailsView
                   request={selectedLeave}
                   onBack={() => setSelectedLeave(null)}
-                  onEdit={(req) => setEditingLeave(req)}
+                  onUploadDocument={handleUploadLeaveDocument}
                   onCancel={handleCancelLeave}
                 />
               ) : applyingLeaveRecord ? (
@@ -2253,9 +2333,30 @@ export default function App() {
                       >
                         <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
                       </button>
-                      <h1 className="text-base font-bold text-[#1E293B] screen-title">
-                        {activeModuleTab}
-                      </h1>
+                      {isManager && activeModuleTab === 'Attendance' && attendanceTab === 'team' ? (
+                        <div className="screen-title flex items-center gap-2">
+                          <h1 className="text-base font-bold text-[#1E293B]">{activeModuleTab}</h1>
+                          {/* Design versions (V1 current, V2 member list, V3 staff picker) */}
+                          <div className="pointer-events-auto flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/70" role="tablist" aria-label="Design version">
+                            {(['V1', 'V2', 'V3'] as const).map((v) => (
+                              <button
+                                key={v}
+                                type="button"
+                                role="tab"
+                                aria-selected={teamAttendanceVersion === v}
+                                onClick={() => setTeamAttendanceVersion(v)}
+                                className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold cursor-pointer ${
+                                  teamAttendanceVersion === v ? 'bg-white text-[#2F68FE] shadow-2xs' : 'text-slate-500'
+                                }`}
+                              >
+                                {v}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <h1 className="text-base font-bold text-[#1E293B] screen-title">{activeModuleTab}</h1>
+                      )}
                     </div>
 
                   </header>
@@ -2283,7 +2384,11 @@ export default function App() {
                         </div>
                       )}
                       {isManager && leavesTab === 'team' ? (
-                        <TeamLeavesView requests={teamLeaveList} onReview={reviewLeaves} />
+                        <TeamLeavesView
+                          requests={teamLeaveList}
+                          onReview={reviewLeaves}
+                          onViewDetails={(req) => setReviewingLeaveId(req.id)}
+                        />
                       ) : (
                         <LeavesView
                           balance={myLeaveBalance}
@@ -2291,7 +2396,7 @@ export default function App() {
                           onApplyLeaveClick={() => setIsApplyingLeaveOpen(true)}
                           onCancelRequest={handleCancelLeave}
                           onViewDetails={(req) => setSelectedLeave(req)}
-                          onEditRequest={(req) => setEditingLeave(req)}
+                          onUploadDocument={handleUploadLeaveDocument}
                         />
                       )}
                     </div>
@@ -2352,6 +2457,8 @@ export default function App() {
                   )}
                   {isManager && attendanceTab === 'team' ? (
                     <TeamAttendanceView
+                      key={teamAttendanceVersion}
+                      version={teamAttendanceVersion}
                       requests={teamAttendanceList}
                       dailyRecords={teamDailyAttendance}
                       onReview={reviewAttendance}
@@ -2434,7 +2541,9 @@ export default function App() {
                   )}
                   </div>
                 )}
-                  <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
+                  {(activeModuleTab === 'Attendance' || activeModuleTab === 'Leaves') && (
+                    <AppBottomNav activeTab={activeModuleTab === 'Leaves' ? 'leaves' : 'attendance'} onTabChange={handleAppTabChange} />
+                  )}
               </div>
             )}
               </ScreenTransition>
@@ -2480,6 +2589,10 @@ export default function App() {
               onClose={() => setIsKPISummaryOpen(false)}
               kpis={kpis}
               monthTitle={rangeLabel}
+              onPick={(status) => {
+                setActiveFilterStatus(status);
+                setIsKPISummaryOpen(false);
+              }}
             />
 
             {/* Bottom Sheet: Edit WFO Days from Details view */}
@@ -2508,7 +2621,6 @@ export default function App() {
             {/* Leave Submitted Success Popup (auto-returns to Leaves listing) */}
             <LeaveSubmittedModal
               request={submittedLeave?.request ?? null}
-              requestCode={submittedLeave?.code ?? ''}
               appliedAt={submittedLeave?.appliedAt ?? ''}
               onDone={handleLeaveSubmittedDone}
             />

@@ -40,6 +40,7 @@ import {
   syncedLicenseIds,
   timeZoneLabel,
 } from '../data/clientUserProfileData';
+import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
 
 const LOAD_MS = 600;
 
@@ -132,7 +133,7 @@ export const ClientUserProfileView: React.FC<{
   const [deleteQual, setDeleteQual] = useState<ClientQualification | null>(null);
   const [unfollow, setUnfollow] = useState<FollowedSpeaker | null>(null);
   const [notice, showNotice] = useNotice();
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<AttachmentInputHandle>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -665,7 +666,7 @@ export const ClientUserProfileView: React.FC<{
         </div>
       )}
 
-      <input ref={fileInput} type="file" accept=".jpg,.jpeg,.png" className="hidden" onChange={pickPhoto} />
+      <AttachmentInput ref={fileInput} title="Profile Photo" cameraFacing="user" accept=".jpg,.jpeg,.png" onChange={pickPhoto} />
       <PhotoActionSheet
         isOpen={photoSheet}
         hasPhoto={Boolean(photoUrl)}

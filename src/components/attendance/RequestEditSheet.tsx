@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { AttendanceRecord } from '../../types/attendance';
 import { Dropdown } from '../../design-system/components/Dropdown';
-import { X, Calendar, Building, BarChart2, Clock, Info } from 'lucide-react';
+import { X, Calendar, Building, BarChart2, Info, Wand2 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
+import { TimeField } from '../common/TimeField';
+
+/** "09:00" → "09h 00m" (how requested hours are stored on the record) */
+const asHours = (hhmm: string) => {
+  const [h = '00', m = '00'] = hhmm.split(':');
+  return `${h.padStart(2, '0')}h ${m.padStart(2, '0')}m`;
+};
 
 interface RequestEditSheetProps {
   isOpen: boolean;
@@ -24,8 +31,8 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
   onSubmit,
 }) => {
   const [cachedRecord, setCachedRecord] = useState<AttendanceRecord | null>(record);
-  const [officeTime, setOfficeTime] = useState('09 : 00');
-  const [workingTime, setWorkingTime] = useState('08 : 15');
+  const [officeTime, setOfficeTime] = useState('09:00');
+  const [workingTime, setWorkingTime] = useState('08:15');
   const [reason, setReason] = useState('Punching Error');
   const [note, setNote] = useState('');
   const [noteError, setNoteError] = useState('');
@@ -34,8 +41,8 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
   useEffect(() => {
     if (record) {
       setCachedRecord(record);
-      setOfficeTime('09 : 00');
-      setWorkingTime('08 : 15');
+      setOfficeTime('09:00');
+      setWorkingTime('08:15');
       setReason('Punching Error');
       setNote('');
       setNoteError('');
@@ -47,6 +54,15 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
 
   const requiresNote = reason === 'Others' || reason === 'Hybrid';
 
+  // Demo helper: fills every field with realistic sample data
+  const quickFill = () => {
+    setOfficeTime('09:00');
+    setWorkingTime('08:15');
+    setReason('Hybrid');
+    setNote('Worked from the Gota office in the morning and from home after 2 PM, approved by Naveen Das.');
+    setNoteError('');
+  };
+
   const handleSubmit = () => {
     if (requiresNote && !note.trim()) {
       setNoteError(`Please provide a note for ${reason}.`);
@@ -55,8 +71,7 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
 
     setIsSubmitting(true);
     setTimeout(() => {
-      // Clean string
-      onSubmit(activeRecord.id, '09h 00m', '08h 15m', reason, requiresNote ? note.trim() || undefined : undefined);
+      onSubmit(activeRecord.id, asHours(officeTime), asHours(workingTime), reason, requiresNote ? note.trim() || undefined : undefined);
       setIsSubmitting(false);
       onClose();
     }, 400);
@@ -74,6 +89,11 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
         <h2 className="text-lg font-bold text-[#1E293B]">
           Request Attendance Edit
         </h2>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={quickFill} className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
         <button
           onClick={onClose}
           type="button"
@@ -82,6 +102,7 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
+        </div>
       </div>
 
       {/* Scrollable Form Body */}
@@ -141,38 +162,20 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
           </div>
         </div>
 
-        {/* 2-Column Inputs for Requested Hours */}
+        {/* Requested hours: hour / minute wheels (same picker as the rest of the app) */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700">
               Requested Office Time<span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-              <input
-                type="text"
-                value={officeTime}
-                onChange={(e) => setOfficeTime(e.target.value)}
-                className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 text-xs font-medium text-[#1E293B] focus:outline-hidden focus:ring-2 focus:ring-[#2F68FE]"
-              >
-              </input>
-            </div>
+            <TimeField value={officeTime} placeholder="HH : MM" title="Requested Office Time" step={1} onChange={setOfficeTime} />
           </div>
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700">
               Requested Working Time<span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-              <input
-                type="text"
-                value={workingTime}
-                onChange={(e) => setWorkingTime(e.target.value)}
-                className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 text-xs font-medium text-[#1E293B] focus:outline-hidden focus:ring-2 focus:ring-[#2F68FE]"
-              >
-              </input>
-            </div>
+            <TimeField value={workingTime} placeholder="HH : MM" title="Requested Working Time" step={1} onChange={setWorkingTime} />
           </div>
         </div>
 
@@ -184,6 +187,8 @@ export const RequestEditSheet: React.FC<RequestEditSheetProps> = ({
           <Dropdown
             size="md"
             ariaLabel="Reason"
+            sheetTitle="Reason"
+            forceSheet
             value={reason}
             options={['Punching Error', 'Hybrid', 'Work From Home', 'Others']}
             onChange={(val) => {

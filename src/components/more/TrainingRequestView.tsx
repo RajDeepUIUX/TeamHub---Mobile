@@ -83,12 +83,14 @@ const BooksIllustration: React.FC = () => (
 
 /* ------------------------------ Summary sheet ------------------------------ */
 
-const SummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; list: TrainingRequest[]; scopeLabel: string }> = ({
-  isOpen,
-  onClose,
-  list,
-  scopeLabel,
-}) => {
+const SummarySheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  list: TrainingRequest[];
+  scopeLabel: string;
+  /** Tapping a status tile narrows the list to that status */
+  onPick: (selection: FilterSelection) => void;
+}> = ({ isOpen, onClose, list, scopeLabel, onPick }) => {
   const programmes = uniq(list.map((r) => r.mainProgramme));
   const statusSection = (title: string, key: 'ldStatus' | 'learningStatus', icon: React.ReactNode) => (
     <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
@@ -98,10 +100,19 @@ const SummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; list: Train
       </div>
       <div className="grid grid-cols-3 gap-2 text-center pt-1">
         {TRAINING_STATUSES.map((s) => (
-          <div key={s} className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs">
-            <span className="text-[11px] text-slate-500 block mb-0.5">{s}</span>
+          <button
+            key={s}
+            type="button"
+            onClick={() => onPick({ [key === 'ldStatus' ? 'ld' : 'learning']: [s] })}
+            className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer"
+            aria-label={`Show ${title} ${s}`}
+          >
+            <span className="text-[11px] text-slate-500 flex items-center justify-center gap-0.5 mb-0.5">
+              {s}
+              <ChevronRight className="w-3 h-3 text-slate-300" />
+            </span>
             <span className={`text-base font-bold tabular-nums ${STATUS_META[s].chip.split(' ')[1]}`}>{countBy(list, key, s)}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -593,7 +604,17 @@ export const TrainingRequestView: React.FC<TrainingRequestViewProps> = ({
           setIsFilterOpen(false);
         }}
       />
-      <SummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} list={visible} scopeLabel={scopeLabel} />
+      <SummarySheet
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        list={visible}
+        scopeLabel={scopeLabel}
+        onPick={(pick) => {
+          // Keep the other filters; the tapped status replaces that status filter
+          setFilters((prev) => ({ ...prev, [scope]: { ...prev[scope], ...pick } }));
+          setIsSummaryOpen(false);
+        }}
+      />
       <DetailSheet
         request={open}
         canManage={Boolean(open && canManage(open))}

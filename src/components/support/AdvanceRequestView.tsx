@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Check, CheckCircle2, FileText, Info, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, CheckCircle2, FileText, Info, Plus, Trash2, UploadCloud, Wand2 } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { DatePickerSheet } from '../common/DatePickerSheet';
 import { todayIso } from '../common/DateWheelSheet';
@@ -20,6 +20,7 @@ import {
   monthlyDeduction,
   requestAvailability,
 } from '../../data/advanceSalaryData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 export type AdvanceDraft = Pick<
   AdvanceRequest,
@@ -61,7 +62,7 @@ const FileField: React.FC<{
   error?: string;
   onChange: (files: string[]) => void;
 }> = ({ label, files, multiple, error, onChange }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<AttachmentInputHandle>(null);
   const pick = () => inputRef.current?.click();
 
   return (
@@ -142,12 +143,10 @@ const FileField: React.FC<{
           </button>
         ))}
 
-      <input
+      <AttachmentInput
         ref={inputRef}
-        type="file"
         multiple={multiple}
         accept=".pdf,.jpg,.jpeg,.png"
-        className="hidden"
         onChange={(e) => {
           const picked = Array.from(e.target.files ?? []).map((f) => f.name);
           if (picked.length) onChange(multiple ? [...files, ...picked.filter((n) => !files.includes(n))] : picked.slice(0, 1));
@@ -248,6 +247,30 @@ export const AdvanceRequestView: React.FC<AdvanceRequestViewProps> = ({ requests
     });
   };
 
+  // Demo helper: fills every field with realistic sample data for the selected type
+  const quickFill = () => {
+    const inDays = (n: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + n);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    setAmount(String(Math.min(limit.maxAmount, ev ? 30000 : 50000)));
+    setMonths(Math.min(limit.maxMonths, 6));
+    if (!ev) {
+      setReason('Medical Emergency');
+      setOtherReason('');
+    } else {
+      setPurchaseDate(inDays(14));
+    }
+    setCheques(['000101', '000102', '000103'].map((number) => ({ number, file: `cheque-${number}.pdf` })));
+    setDocuments(
+      Object.fromEntries(
+        docList.map((d, i) => [d.label, [`${d.label.split(' ')[0].toLowerCase()}-document-${i + 1}.pdf`]])
+      )
+    );
+    setErrors({});
+  };
+
   const errorCount = Object.keys(errors).length;
 
   return (
@@ -262,15 +285,22 @@ export const AdvanceRequestView: React.FC<AdvanceRequestViewProps> = ({ requests
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold screen-title">{initial ? 'Edit Request' : 'Raise Request'}</h1>
-          <button
-            type="button"
-            onClick={onOpenGuidelines}
-            className="h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-[#2F68FE] text-[11.5px] font-bold active:bg-blue-50 cursor-pointer"
-          >
-            <BookOpen className="w-4 h-4" />
-            Guidelines
-          </button>
+          <h1 className="text-base font-bold screen-title screen-title-tight">{initial ? 'Edit Request' : 'Raise Request'}</h1>
+          <div className="ml-auto flex items-center gap-1">
+            <button type="button" onClick={quickFill} className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+              <Wand2 className="w-3.5 h-3.5" />
+              Quick Fill
+            </button>
+            {/* Icon only, so Quick Fill fits beside the title */}
+            <button
+              type="button"
+              onClick={onOpenGuidelines}
+              className="w-8 h-8 -mr-1 rounded-lg flex items-center justify-center text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+              aria-label="Guidelines"
+            >
+              <BookOpen className="w-4.5 h-4.5" />
+            </button>
+          </div>
         </div>
       </header>
 

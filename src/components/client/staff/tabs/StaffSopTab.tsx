@@ -7,6 +7,7 @@ import { formatStaffDate } from '../../data/clientStaffData';
 import { SOP_DECISIONS, SOP_DOC_FORMATS, SOP_VIDEO_FORMATS, SopRecord, SopStatus } from '../../data/clientStaffProfileData';
 import { Card, ConfirmSheet, EmptyCard, FieldGrid, Pill, SheetHeader, TabTitle, TextField, Tone, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
+import { AttachmentInput, AttachmentInputHandle } from '../../../common/AttachmentInput';
 
 interface StaffSopTabProps {
   staffName: string;
@@ -47,7 +48,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
   const [touched, setTouched] = useState(false);
   const [progress, setProgress] = useState(0);
   const [aiSteps, setAiSteps] = useState(0);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<AttachmentInputHandle>(null);
 
   useEffect(() => {
     if (!genOpen) return;
@@ -61,7 +62,6 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
   useEffect(() => {
     setFile(null);
     setTouched(false);
-    if (fileInput.current) fileInput.current.value = '';
   }, [mode]);
 
   // Mock upload → AI processing → success
@@ -305,12 +305,14 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                 <span className="text-xs font-bold text-[#1E293B]">
                   Upload File<span className="text-rose-500"> *</span>
                 </span>
-                <input
+                <AttachmentInput
                   ref={fileInput}
-                  type="file"
-                  className="sr-only"
+                  title="Upload File"
                   accept={formats.map((f) => `.${f}`).join(',')}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    setFile(e.target.files?.[0] ?? null);
+                    e.target.value = ''; // lets the same file be picked again
+                  }}
                 />
                 <button
                   type="button"

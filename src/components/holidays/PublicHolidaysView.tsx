@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { HOLIDAYS_DATA, Holiday } from '../../data/holidayData';
 import { Dropdown } from '../../design-system/components/Dropdown';
 
@@ -78,24 +78,6 @@ export const PublicHolidaysView: React.FC<PublicHolidaysViewProps> = ({
               options={[2026, 2025]}
               onChange={setSelectedYear}
             />
-          </div>
-        </div>
-
-        {/* Organization & Team Information Card matching Screenshot */}
-        <div className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-[20px] p-4 flex items-center gap-3.5 shadow-2xs">
-          <div className="w-11 h-11 rounded-xl bg-blue-100/90 border border-blue-200/50 flex items-center justify-center text-[#2F68FE] shrink-0">
-            <Building2 className="w-5 h-5 stroke-[2]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-sm text-[#1E293B] leading-tight">
-              Product Development Team
-            </h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Ahmedabad
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Division : Common
-            </p>
           </div>
         </div>
 

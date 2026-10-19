@@ -11,8 +11,8 @@ const base = {
   workMode: 'Office' as const,
 };
 
-/** Attendance edit requests raised by other members of the manager's team */
-export const TEAM_ATTENDANCE_REQUESTS_SEED: AttendanceRecord[] = [
+/** Hand-written edit requests from earlier cycles (current-cycle ones are generated below) */
+const FIXED_TEAM_REQUESTS: AttendanceRecord[] = [
   {
     ...base,
     id: 'team-att-ak-0924',
@@ -304,22 +304,39 @@ export const TEAM_HISTORY = (() => {
   return { from: '2026-08-26', to: dayKey(y) };
 })();
 
-// [start, end] per working day; '' = absent. Each member starts at a different offset for variety
+// [start, end] for a full working day; each member starts at a different offset for variety
 const DAY_PATTERNS: [string, string][] = [
   ['10:02', '19:12'],
   ['09:48', '18:55'],
   ['10:15', '19:30'],
   ['09:58', '19:05'],
-  ['13:40', '18:10'],
   ['10:05', '19:20'],
   ['09:52', '19:02'],
   ['10:20', '19:35'],
   ['09:45', '18:58'],
   ['10:08', '19:16'],
-  ['', ''],
   ['09:55', '19:05'],
   ['10:11', '19:24'],
 ];
+// Short days (under 6h in office) count as a half day
+const HALF_DAY_PATTERNS: [string, string][] = [
+  ['13:40', '18:10'],
+  ['09:50', '14:05'],
+  ['14:10', '19:05'],
+];
+
+/** Small stable hash, so the same member and date always get the same day */
+const hash = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+};
+
+/** Each member's own absence / half-day rates (in %), so team totals differ person to person */
+const memberRates = (staffCode: string) => {
+  const p = hash(staffCode);
+  return { absent: 2 + (p % 9), half: 3 + ((p >>> 4) % 12) };
+};
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const to12 = (hhmm: string) => {
@@ -340,13 +357,21 @@ export const generateMemberDays = (member: TeamMember, offset: number, skip: Set
   const out: AttendanceRecord[] = [];
   const end = new Date(`${TEAM_HISTORY.to}T00:00:00`);
   const punchLocation = member.workMode === 'Remote' ? 'Remote (VPN)' : 'Gota Main Entrance';
+  const rates = memberRates(member.staffCode);
   let i = offset;
   for (let d = new Date(`${TEAM_HISTORY.from}T00:00:00`); d <= end; d.setDate(d.getDate() + 1)) {
     const date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
     if (skip.has(date)) continue;
     const weekday = d.getDay();
     const isWeekend = weekday === 0 || weekday === 6;
-    const [start, end2] = isWeekend ? ['', ''] : DAY_PATTERNS[i++ % DAY_PATTERNS.length];
+    const roll = hash(`${member.staffCode}-${date}`) % 100;
+    const [start, end2]: [string, string] = isWeekend
+      ? ['', '']
+      : roll < rates.absent
+        ? ['', '']
+        : roll < rates.absent + rates.half
+          ? HALF_DAY_PATTERNS[roll % HALF_DAY_PATTERNS.length]
+          : DAY_PATTERNS[i++ % DAY_PATTERNS.length];
     const office = start ? mins(start, end2) : 0;
     const status = isWeekend ? 'weekly_off' : !start ? 'absent' : office < 6 * 60 ? 'half_day' : 'full_day';
     out.push({
@@ -377,12 +402,73 @@ export const generateMemberDays = (member: TeamMember, offset: number, skip: Set
 };
 
 /** Full-cycle daily logs for everyone except the signed-in staff member (their days come from their own records) */
-export const TEAM_DAILY_ATTENDANCE_SEED: AttendanceRecord[] = TEAM_REPORTING_MANAGERS.flatMap((m) => m.members)
-  .filter((member) => member.staffCode !== ATTENDANCE_STAFF_CODE)
-  .flatMap((member, idx) =>
-    generateMemberDays(
-      member,
-      idx * 3,
-      new Set(TEAM_ATTENDANCE_REQUESTS_SEED.filter((r) => r.staffName === member.staffName).map((r) => r.date))
-    )
+const OTHER_MEMBERS = TEAM_REPORTING_MANAGERS.flatMap((m) => m.members).filter((member) => member.staffCode !== ATTENDANCE_STAFF_CODE);
+const fixedDatesOf = (staffName: string) => new Set(FIXED_TEAM_REQUESTS.filter((r) => r.staffName === staffName).map((r) => r.date));
+
+/**
+ * Pending edit requests in the current cycle: 0–3 per member (stable per member), raised on their own
+ * half days / absences so the Pending counts look lived-in and differ person to person.
+ */
+/** Pending edit requests this cycle for specific people (everyone else gets 0–3 from a stable hash) */
+const PENDING_REQUEST_COUNTS: Record<string, number> = {
+  'Nidhi Purohit': 2,
+  'Pooja Bhatt': 4,
+};
+
+/** A full day turned into a short one, as a missed punch would leave it (used when someone needs more requests) */
+const asShortDay = (r: AttendanceRecord): AttendanceRecord => {
+  const [start, end] = ['10:04', '14:18'];
+  const office = mins(start, end);
+  return {
+    ...r,
+    startTime: start,
+    endTime: end,
+    totalOfficeTime: dur(office),
+    totalWorkingTime: dur(office - 32),
+    status: 'half_day',
+    statusLabel: 'Half Day',
+    punches: [
+      { id: `tp-${r.staffCode}-${r.date}-1`, time: to12(start), type: 'IN', location: r.punches[0]?.location ?? 'Gota Main Entrance' },
+      { id: `tp-${r.staffCode}-${r.date}-2`, time: to12(end), type: 'OUT', location: r.punches[0]?.location ?? 'Gota Main Entrance' },
+    ],
+  };
+};
+
+const CYCLE_PENDING_REQUESTS: AttendanceRecord[] = OTHER_MEMBERS.flatMap((member, idx) => {
+  const fixedCount = PENDING_REQUEST_COUNTS[member.staffName];
+  const wanted = fixedCount ?? hash(`${member.staffCode}-pending`) % 4;
+  const days = generateMemberDays(member, idx * 3, fixedDatesOf(member.staffName)).filter(
+    (r) => r.date >= TEAM_CYCLE.from && r.status !== 'weekly_off'
   );
+  // Requests sit on short days and absences; only a pinned count may also use recent full days to reach its number
+  const short = days.filter((r) => r.status === 'half_day' || r.status === 'absent');
+  const full = fixedCount !== undefined ? days.filter((r) => r.status === 'full_day').reverse().map(asShortDay) : [];
+  const picked = (fixedCount !== undefined ? [...short.reverse(), ...full] : short.slice(-wanted || short.length))
+    .slice(0, wanted)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return picked.map((r) => {
+    const raisedOn = new Date(`${r.date}T00:00:00`);
+    raisedOn.setDate(raisedOn.getDate() + 1);
+    return {
+      ...r,
+      id: `team-att-${member.staffCode}-${r.date}-req`,
+      reqOfficeHrs: '09h 00m',
+      reqWorkHrs: '08h 30m',
+      editRequested: true,
+      editStatus: 'pending' as const,
+      editReason: r.status === 'absent' ? 'Work From Home' : 'Punching Error',
+      editRequestedAt: `${MONTH_SHORT[raisedOn.getMonth()]} ${pad2(raisedOn.getDate())}, ${raisedOn.getFullYear()}`,
+    };
+  });
+});
+
+/** Attendance edit requests raised by other members of the manager's team */
+export const TEAM_ATTENDANCE_REQUESTS_SEED: AttendanceRecord[] = [...CYCLE_PENDING_REQUESTS, ...FIXED_TEAM_REQUESTS];
+
+export const TEAM_DAILY_ATTENDANCE_SEED: AttendanceRecord[] = OTHER_MEMBERS.flatMap((member, idx) =>
+  generateMemberDays(
+    member,
+    idx * 3,
+    new Set(TEAM_ATTENDANCE_REQUESTS_SEED.filter((r) => r.staffName === member.staffName).map((r) => r.date))
+  )
+);
