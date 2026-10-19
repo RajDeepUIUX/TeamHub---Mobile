@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Briefcase, CalendarDays, ChevronRight, Clock3, Eye, FileSearch, Loader2, MapPin, MessageSquareText, Pencil, Plus, SearchX, UsersRound, Wallet, X } from 'lucide-react';
+import { Briefcase, CalendarDays, ChevronRight, Clock3, Eye, FileSearch, Info, Loader2, MapPin, MessageSquareText, Pencil, Plus, SearchX, UsersRound, Wallet, X } from 'lucide-react';
 import { CommentThreadSheet } from '../../common/CommentThreadSheet';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
@@ -185,7 +185,6 @@ export const ClientRequirementsView: React.FC<Props> = ({
     const resumes = availableResumesFor(r, hubProfiles, candidates);
     const shortlisted = shortlistedFor(r, candidates);
     const showEdit = canEdit && r.editable;
-    const locationLabel = r.locations.length === 0 ? '-' : r.locations.length === 1 ? r.locations[0] : `${r.locations.length} Locations`;
 
     return (
       <li key={r.id}>
@@ -209,7 +208,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
               <Detail icon={Wallet} label="Pricing" value={r.pricing || '-'} />
               <Detail icon={Clock3} label="Hours/Week" value={`${r.hoursPerWeek} Hrs`} />
               <Detail icon={CalendarDays} label="Onboarding" value={r.timeline} />
-              <Detail icon={MapPin} label={`${r.workMode} · Location`} value={locationLabel} />
+              <LocationDetail label={`${r.workMode} · Location`} locations={r.locations} />
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -422,6 +421,61 @@ export const ClientRequirementsView: React.FC<Props> = ({
             : undefined
         }
       />
+    </div>
+  );
+};
+
+/** Desktop shows the full list in a hover tooltip on "N Locations"; on mobile the link opens the same chip popover on tap */
+const LocationDetail: React.FC<{ label: string; locations: string[] }> = ({ label, locations }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  if (locations.length < 2) return <Detail icon={MapPin} label={label} value={locations[0] ?? '-'} />;
+
+  return (
+    <div ref={ref} className="relative min-w-0">
+      <div className="flex items-start gap-2 min-w-0">
+        <MapPin className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" aria-hidden="true" />
+        <span className="min-w-0">
+          <span className="block text-[10.5px] text-slate-400 truncate">{label}</span>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-label={`${locations.length} locations: ${locations.join(', ')}`}
+            className="inline-flex items-center gap-1 max-w-full text-[12px] font-bold text-[#2F68FE] tabular-nums underline decoration-dotted decoration-[#93B4FF] underline-offset-[3px] cursor-pointer"
+          >
+            <span className="truncate">{locations.length} Locations</span>
+            <Info className={`w-3.5 h-3.5 shrink-0 transition-opacity ${open ? 'opacity-100' : 'opacity-70'}`} aria-hidden="true" />
+          </button>
+        </span>
+      </div>
+      {open && (
+        <div role="tooltip" className="absolute bottom-full right-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_8px_24px_rgba(15,23,42,0.14)] p-2.5 flex flex-wrap gap-1.5">
+            {locations.map((l) => (
+              <span key={l} className="px-2.5 py-1 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11.5px] font-medium">
+                {l}
+              </span>
+            ))}
+          </div>
+          <span aria-hidden="true" className="absolute -bottom-1 right-10 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
+        </div>
+      )}
     </div>
   );
 };

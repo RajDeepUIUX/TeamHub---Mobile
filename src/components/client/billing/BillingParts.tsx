@@ -82,8 +82,8 @@ export const BankAccountCard: React.FC<{
           <Landmark className="w-[18px] h-[18px]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13px] font-bold text-[#1E293B] truncate">{bankNameOf(bank)}</span>
-          <span className="block text-[11px] text-slate-500 truncate">{bank.accountName}</span>
+          <span className="block text-[13px] font-bold text-[#1E293B] break-words">{bankNameOf(bank)}</span>
+          <span className="block text-[11px] text-slate-500 break-words">{bank.accountName}</span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5">
             <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
             <Pill tone={mappedCount ? 'blue' : 'amber'}>{mappedCount ? `${mappedCount} staff mapped` : 'Not mapped'}</Pill>

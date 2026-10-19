@@ -24,6 +24,7 @@ import {
 import { EMPTY_INVOICE_FILTERS, InvoiceFilterSheet, InvoiceFilters, invoiceFilterCount } from './InvoiceFilterSheet';
 import { FileAction, InvoiceExportSheet, InvoiceListSkeleton, InvoiceStatusPill } from './InvoiceParts';
 import { InvoiceDetailView } from './InvoiceDetailView';
+import { SubscriptionInvoices } from './SubscriptionInvoices';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 
 interface ClientInvoicesViewProps {
@@ -40,6 +41,13 @@ interface ClientInvoicesViewProps {
 
 /** Desktop shows a loader while the table reloads */
 const LOAD_MS = 600;
+
+/** Desktop invoice service tabs (`invoiceServices`); the Client panel redirect lands on `service=hrms` */
+type InvoiceService = 'continuing-education' | 'hrms';
+const INVOICE_SERVICES: { id: InvoiceService; label: string }[] = [
+  { id: 'continuing-education', label: 'Continuing Education' },
+  { id: 'hrms', label: 'HRMS 24 × 7 (Offshoring)' },
+];
 
 const shortDate = (iso: string) => parseIso(iso).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
 const shortRange = (inv: ClientInvoice) => `${shortDate(inv.period.from)} – ${shortDate(inv.period.to ?? inv.period.from)}`;
@@ -80,6 +88,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
   const [openId, setOpenId] = useState<string | null>(
     () => (initialInvoiceNo && invoices.find((i) => i.invoiceNo === initialInvoiceNo)?.id) || null,
   );
+  const [service, setService] = useState<InvoiceService>('hrms');
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState<InvoiceStatusChip>('All');
@@ -145,6 +154,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
     return out;
   }, [visible]);
 
+  const isHrms = service === 'hrms';
   const filterCount = invoiceFilterCount(filters);
   const isFiltered = filterCount > 0 || term.length > 0 || chip !== 'All';
 
@@ -317,7 +327,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
           </p>
           <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
             <h1 className="text-xl font-extrabold leading-tight">Invoices</h1>
-            {canDownload && (
+            {canDownload && isHrms && (
               <button
                 type="button"
                 onClick={() => setExportOpen(true)}
@@ -330,6 +340,31 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
             )}
           </div>
 
+          {/* Desktop service tabs */}
+          <nav className="mt-2" aria-label="Invoice services">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4" role="tablist">
+              {INVOICE_SERVICES.map((s) => {
+                const on = s.id === service;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setService(s.id)}
+                    className={`h-9 px-3.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                      on ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]' : 'bg-white border border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {isHrms && (
+            <>
           {/* Account summary */}
           {invoices.length > 0 && (
             <Card className="mt-3 p-4">
@@ -462,10 +497,14 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               label="Payment status"
             />
           </div>
+            </>
+          )}
         </div>
 
         <div className="px-4 mt-3">
-          {loading ? (
+          {!isHrms ? (
+            <SubscriptionInvoices canDownload={canDownload} onNotice={showNotice} />
+          ) : loading ? (
             <InvoiceListSkeleton />
           ) : invoices.length === 0 ? (
             <EmptyCard icon={ReceiptText} title="No invoices yet." text="Invoices for your offshore staff will show up here once they're generated." />

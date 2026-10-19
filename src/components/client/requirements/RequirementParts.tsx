@@ -32,23 +32,23 @@ const STEPS = ['Core Details', 'Additional Details', 'Job Description'];
 
 /** Desktop "Core Details → Additional Details → Job Description" header (current / completed states) */
 export const RequirementStepper: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => (
-  <ol className="flex items-start px-4 pt-3 pb-3 bg-white border-b border-[#EBF0F7]" aria-label="Requirement steps">
+  <ol className="flex items-start px-4 pt-4 pb-3.5 bg-white border-b border-[#EBF0F7]" aria-label="Requirement steps">
     {STEPS.map((title, i) => {
       const n = i + 1;
       const done = n < step;
       const current = n === step;
       return (
         <React.Fragment key={title}>
-          {i > 0 && <li aria-hidden="true" className={`flex-1 h-0.5 mt-[13px] mx-1.5 rounded-full ${done || current ? 'bg-[#2F68FE]' : 'bg-slate-200'}`} />}
-          <li className="flex flex-col items-center gap-1 w-[76px]" aria-current={current ? 'step' : undefined}>
+          {i > 0 && <li aria-hidden="true" className={`flex-1 h-0.5 mt-[17px] mx-1 rounded-full transition-colors ${n <= step ? 'bg-[#2F68FE]' : 'bg-slate-200'}`} />}
+          <li className="flex flex-col items-center gap-2 w-[84px]" aria-current={current ? 'step' : undefined}>
             <span
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-colors ${
-                done ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : current ? 'bg-[#EFF6FF] border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200 text-slate-400'
-              }`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
+                done || current ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-400'
+              } ${current ? 'shadow-[0_4px_10px_rgba(47,104,254,0.35)]' : ''}`}
             >
-              {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : n}
+              {done ? <Check className="w-4 h-4" strokeWidth={3} /> : n}
             </span>
-            <span className={`text-[10.5px] font-semibold text-center leading-tight ${current ? 'text-[#1E293B]' : done ? 'text-[#2F68FE]' : 'text-slate-400'}`}>{title}</span>
+            <span className={`text-[11px] leading-tight text-center ${current ? 'font-bold text-[#1E293B]' : done ? 'font-semibold text-[#2F68FE]' : 'font-medium text-slate-500'}`}>{title}</span>
           </li>
         </React.Fragment>
       );

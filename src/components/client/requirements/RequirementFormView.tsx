@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, CalendarDays, Clock3, FileText, Info, Loader2, Lock, Minus, Plus, Sparkles, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, CalendarClock, CalendarDays, Check, ClipboardList, Clock3, FileText, Globe, GraduationCap, Info, Loader2, Lock, MessageSquare, Minus, Plus, Sparkles, Upload, Wallet, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { DatePickerSheet } from '../../common/DatePickerSheet';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
@@ -64,10 +65,25 @@ const Field: React.FC<{ label: string; required?: boolean; error?: string; hint?
   </div>
 );
 
+const Section: React.FC<{ icon: LucideIcon; title: string; subtitle?: string; children: React.ReactNode }> = ({ icon: Icon, title, subtitle, children }) => (
+  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4" aria-label={title}>
+    <div className="flex items-center gap-2.5 pb-3 mb-4 border-b border-slate-100">
+      <span className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-[13px] font-bold text-[#1E293B] leading-tight">{title}</h2>
+        {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+    <div className="space-y-4">{children}</div>
+  </section>
+);
+
 const LockedValue: React.FC<{ value: string; placeholder?: string }> = ({ value, placeholder = '-' }) => (
-  <div className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 flex items-center justify-between gap-2" aria-disabled="true">
-    <span className="truncate">{value || placeholder}</span>
-    <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+  <div className="w-full h-11 px-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs flex items-center justify-between gap-2" aria-disabled="true">
+    <span className={`truncate ${value ? 'font-semibold text-slate-600' : 'font-medium text-slate-400'}`}>{value || placeholder}</span>
+    <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
   </div>
 );
 
@@ -200,7 +216,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   );
 
   const stepper = (n: number) => (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex items-center justify-center gap-2 shrink-0">
       <button
         type="button"
         onClick={() => set('staffCount', Math.max(1, n - 1))}
@@ -240,290 +256,332 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
 
   /* ------------------------------- Step 1 ------------------------------- */
   const core = (
-    <div className="space-y-4">
-      <Field label="Hiring Type" required>
-        <LockedValue value={HIRING_TYPE} />
-      </Field>
+    <>
+      <Section icon={Briefcase} title="Role Details" subtitle="What kind of staff you need">
+        <Field label="Hiring Type" required>
+          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] text-xs font-bold">
+            <Check className="w-3.5 h-3.5" strokeWidth={3} />
+            {HIRING_TYPE}
+          </span>
+        </Field>
 
-      <Field label="Domain" required error={errors.domain}>
+        <Field label="Domain" required error={errors.domain}>
+          {isEdit ? (
+            <LockedValue value={draft.domain} />
+          ) : (
+            <Dropdown ariaLabel="Domain" sheetTitle="Domain" value={draft.domain || null} placeholder="Select domain" options={REQUIREMENT_DOMAINS.map((d) => d.name)} onChange={setDomain} />
+          )}
+        </Field>
+
+        <Field label="Profile" required error={errors.profile}>
+          {isEdit ? (
+            <LockedValue value={draft.profile} />
+          ) : draft.domain ? (
+            <Dropdown
+              ariaLabel="Profile"
+              sheetTitle="Profile"
+              value={draft.profile || null}
+              placeholder="Select profile"
+              options={profilesOfDomain(draft.domain).map((p) => p.name)}
+              onChange={setProfile}
+            />
+          ) : (
+            <LockedValue value="" placeholder="Select a domain first" />
+          )}
+        </Field>
+
+        <Field label="Level">
+          {isEdit ? (
+            <LockedValue value={draft.level} />
+          ) : levels.length > 0 ? (
+            <Dropdown ariaLabel="Level" sheetTitle="Level" value={draft.level || null} placeholder="Select level" options={levels} onChange={setLevel} />
+          ) : (
+            <LockedValue value="" placeholder="Select a profile first" />
+          )}
+        </Field>
+      </Section>
+
+      <Section icon={Wallet} title="Hours & Pricing" subtitle="Weekly commitment and budget">
+        <Field label="Hours/Week" required error={errors.hoursPerWeek}>
+          {isEdit ? (
+            <LockedValue value={`${draft.hoursPerWeek} Hours/Week`} />
+          ) : (
+            <Dropdown
+              ariaLabel="Hours per week"
+              sheetTitle="Hours/Week"
+              value={draft.hoursPerWeek || null}
+              placeholder="Select hours"
+              options={HOURS_OPTIONS.map((h) => ({ value: h, label: h === 40 ? '40 Hours/Week (Full time)' : `${h} Hours/Week` }))}
+              onChange={(h) => set('hoursPerWeek', h)}
+            />
+          )}
+        </Field>
+
+        <Field label="Tentative Price" required hint="Based on the profile and level. Final pricing is confirmed by your account manager.">
+          {draft.pricing ? (
+            <div className="w-full min-h-11 px-3.5 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between gap-2">
+              <span className="text-sm font-extrabold text-[#2F68FE] truncate">{draft.pricing}</span>
+              <Lock className="w-3.5 h-3.5 text-[#93B4FF] shrink-0" />
+            </div>
+          ) : (
+            <LockedValue value="" placeholder="Shown once a level is selected" />
+          )}
+        </Field>
+
+        <Field label="Budget Hourly Rate" error={errors.budgetRate} hint={`Optional. Minimum $${BUDGET_RATE_MIN}.`}>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={draft.budgetRate}
+              onChange={(e) => set('budgetRate', e.target.value.replace(/[^\d.]/g, ''))}
+              placeholder="Budget Hourly Rate"
+              aria-label="Budget Hourly Rate"
+              aria-invalid={Boolean(errors.budgetRate)}
+              className={`${fieldInputClass(errors.budgetRate)} pl-7`}
+            />
+          </div>
+        </Field>
+      </Section>
+
+      <Section icon={CalendarClock} title="Timeline & Team" subtitle="When and how many">
+        <Field label="Onboarding Timeline" required error={errors.timeline}>
+          {isEdit ? (
+            <LockedValue value={draft.timeline} />
+          ) : (
+            <Dropdown ariaLabel="Onboarding Timeline" value={draft.timeline || null} placeholder="Select timeline" options={TIMELINE_OPTIONS} onChange={(v) => set('timeline', v)} />
+          )}
+        </Field>
+
+        <Field label="Expected Start Date" required error={errors.startDate}>
+          {isEdit ? <LockedValue value={draft.startDate ? formatShortDate(draft.startDate) : ''} /> : dateButton}
+        </Field>
+
         {isEdit ? (
-          <LockedValue value={draft.domain} />
+          <Field label="No. of Staff" required>
+            <LockedValue value={String(draft.staffCount)} />
+          </Field>
         ) : (
-          <Dropdown ariaLabel="Domain" sheetTitle="Domain" value={draft.domain || null} placeholder="Select domain" options={REQUIREMENT_DOMAINS.map((d) => d.name)} onChange={setDomain} />
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="min-w-0">
+              <span className="block text-xs font-bold text-[#1E293B]">
+                No. of Staff<span className="text-rose-500"> *</span>
+              </span>
+              <p className="mt-0.5 text-[11px] text-slate-400 leading-snug">One requirement is created for each staff.</p>
+            </div>
+            {stepper(draft.staffCount)}
+          </div>
         )}
-      </Field>
+      </Section>
 
-      <Field label="Profile" required error={errors.profile}>
-        {isEdit ? (
-          <LockedValue value={draft.profile} />
-        ) : draft.domain ? (
-          <Dropdown
-            ariaLabel="Profile"
-            sheetTitle="Profile"
-            value={draft.profile || null}
-            placeholder="Select profile"
-            options={profilesOfDomain(draft.domain).map((p) => p.name)}
-            onChange={setProfile}
-          />
-        ) : (
-          <LockedValue value="" placeholder="Select a domain first" />
-        )}
-      </Field>
-
-      <Field label="Hours/Week" required error={errors.hoursPerWeek}>
-        {isEdit ? (
-          <LockedValue value={`${draft.hoursPerWeek} Hours/Week`} />
-        ) : (
-          <Dropdown
-            ariaLabel="Hours per week"
-            sheetTitle="Hours/Week"
-            value={draft.hoursPerWeek || null}
-            placeholder="Select hours"
-            options={HOURS_OPTIONS.map((h) => ({ value: h, label: h === 40 ? '40 Hours/Week (Full time)' : `${h} Hours/Week` }))}
-            onChange={(h) => set('hoursPerWeek', h)}
-          />
-        )}
-      </Field>
-
-      <Field label="Level">
-        {isEdit ? (
-          <LockedValue value={draft.level} />
-        ) : levels.length > 0 ? (
-          <Dropdown ariaLabel="Level" sheetTitle="Level" value={draft.level || null} placeholder="Select level" options={levels} onChange={setLevel} />
-        ) : (
-          <LockedValue value="" placeholder="Select a profile first" />
-        )}
-      </Field>
-
-      <Field label="Tentative Price" required hint="Based on the profile and level. Final pricing is confirmed by your account manager.">
-        <LockedValue value={draft.pricing} placeholder="Shown once a level is selected" />
-      </Field>
-
-      <Field label="Budget Hourly Rate" error={errors.budgetRate} hint={`Optional. Minimum $${BUDGET_RATE_MIN}.`}>
-        <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">$</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={draft.budgetRate}
-            onChange={(e) => set('budgetRate', e.target.value.replace(/[^\d.]/g, ''))}
-            placeholder="Budget Hourly Rate"
-            aria-label="Budget Hourly Rate"
-            aria-invalid={Boolean(errors.budgetRate)}
-            className={`${fieldInputClass(errors.budgetRate)} pl-7`}
-          />
+      <Section icon={Globe} title="Work Preferences" subtitle="Availability and location">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Time Zone" required error={errors.timezone}>
+            <Dropdown ariaLabel="Time zone" sheetTitle="Time Zone" value={draft.timezone || null} placeholder="Select" options={TIMEZONES} onChange={(v) => set('timezone', v)} />
+          </Field>
+          <Field label="Available Upto" required error={errors.availableUpto}>
+            <button
+              type="button"
+              onClick={() => setTimeOpen(true)}
+              aria-label="Preferred Available Upto Time"
+              aria-invalid={Boolean(errors.availableUpto)}
+              className={`${fieldInputClass(errors.availableUpto)} flex items-center justify-between gap-2 text-left cursor-pointer`}
+            >
+              <span className={`truncate ${draft.availableUpto ? '' : 'text-slate-400'}`}>{draft.availableUpto ? formatTime12(draft.availableUpto) : 'Select time'}</span>
+              <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
+            </button>
+          </Field>
         </div>
-      </Field>
 
-      <Field label="Onboarding Timeline" required error={errors.timeline}>
-        {isEdit ? (
-          <LockedValue value={draft.timeline} />
-        ) : (
-          <Dropdown ariaLabel="Onboarding Timeline" value={draft.timeline || null} placeholder="Select timeline" options={TIMELINE_OPTIONS} onChange={(v) => set('timeline', v)} />
-        )}
-      </Field>
-
-      <Field label="Expected Start Date" required error={errors.startDate}>
-        {isEdit ? <LockedValue value={draft.startDate ? formatShortDate(draft.startDate) : ''} /> : dateButton}
-      </Field>
-
-      <Field label="No. of Staff" required hint={isEdit ? undefined : 'One requirement is created for each staff.'}>
-        {isEdit ? <LockedValue value={String(draft.staffCount)} /> : stepper(draft.staffCount)}
-      </Field>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Time Zone" required error={errors.timezone}>
-          <Dropdown ariaLabel="Time zone" sheetTitle="Time Zone" value={draft.timezone || null} placeholder="Select" options={TIMEZONES} onChange={(v) => set('timezone', v)} />
+        <Field label="Work Mode Preference">
+          <Dropdown ariaLabel="Work Mode Preference" value={draft.workMode} options={WORK_MODE_OPTIONS} onChange={(v) => set('workMode', v)} />
         </Field>
-        <Field label="Available Upto" required error={errors.availableUpto}>
-          <button
-            type="button"
-            onClick={() => setTimeOpen(true)}
-            aria-label="Preferred Available Upto Time"
-            aria-invalid={Boolean(errors.availableUpto)}
-            className={`${fieldInputClass(errors.availableUpto)} flex items-center justify-between gap-2 text-left cursor-pointer`}
-          >
-            <span className={`truncate ${draft.availableUpto ? '' : 'text-slate-400'}`}>{draft.availableUpto ? formatTime12(draft.availableUpto) : 'Select time'}</span>
-            <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
-          </button>
-        </Field>
-      </div>
 
-      <Field label="Work Mode Preference">
-        <Dropdown ariaLabel="Work Mode Preference" value={draft.workMode} options={WORK_MODE_OPTIONS} onChange={(v) => set('workMode', v)} />
-      </Field>
-
-      <MultiSelectDropdown
-        label="Offshore Location Preference"
-        placeholder="Select locations"
-        options={OFFSHORE_LOCATIONS.map((l) => ({ value: l, label: l }))}
-        selected={draft.locations}
-        onChange={(v) => set('locations', v)}
-      />
-    </div>
+        <MultiSelectDropdown
+          label="Offshore Location Preference"
+          placeholder="Select locations"
+          options={OFFSHORE_LOCATIONS.map((l) => ({ value: l, label: l }))}
+          selected={draft.locations}
+          onChange={(v) => set('locations', v)}
+        />
+      </Section>
+    </>
   );
 
   /* ------------------------------- Step 2 ------------------------------- */
   const additional = (
-    <div className="space-y-4">
-      {yesNo('Do you want staff to directly communicate with your clients?', 'endClientComm')}
+    <>
+      <Section icon={MessageSquare} title="Working Style" subtitle="Communication and reporting">
+        {yesNo('Do you want staff to directly communicate with your clients?', 'endClientComm')}
 
-      <div className="space-y-1.5">
-        <span className="block text-xs font-bold text-[#1E293B]">Overtime Requirement</span>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <span className="block text-[11px] font-semibold text-slate-500">Seasonal</span>
-            <Dropdown ariaLabel="Seasonal overtime" value={draft.overtimeSeasonal || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeSeasonal', v)} />
-          </div>
-          <div className="space-y-1">
-            <span className="block text-[11px] font-semibold text-slate-500">ROY</span>
-            <Dropdown ariaLabel="ROY overtime" value={draft.overtimeRoy || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeRoy', v)} />
+        <Field label="Reporting To">
+          <Dropdown ariaLabel="Reporting To" value={draft.reportingTo || null} placeholder="Select" options={REPORTING_OPTIONS} onChange={(v) => set('reportingTo', v)} />
+        </Field>
+
+        <MultiSelectDropdown
+          label="Expected Communication Involvement"
+          placeholder="Select"
+          options={COMMUNICATION_OPTIONS.map((o) => ({ value: o, label: o }))}
+          selected={draft.communication}
+          onChange={(v) => set('communication', v)}
+        />
+
+        <div className="space-y-1.5">
+          <span className="block text-xs font-bold text-[#1E293B]">Overtime Requirement</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <span className="block text-[11px] font-semibold text-slate-500">Seasonal</span>
+              <Dropdown ariaLabel="Seasonal overtime" value={draft.overtimeSeasonal || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeSeasonal', v)} />
+            </div>
+            <div className="space-y-1">
+              <span className="block text-[11px] font-semibold text-slate-500">ROY</span>
+              <Dropdown ariaLabel="ROY overtime" value={draft.overtimeRoy || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeRoy', v)} />
+            </div>
           </div>
         </div>
-      </div>
 
-      {yesNo('Interview Required?', 'interviewRequired')}
+        <Field label="Does the staff required to travel to US?">
+          <Dropdown ariaLabel="Travel to US" value={draft.travelUS || null} placeholder="Select" options={['Yes', 'No', 'Maybe']} onChange={(v) => set('travelUS', v as RequirementDraft['travelUS'])} />
+        </Field>
+      </Section>
 
-      <Field label="Reporting To">
-        <Dropdown ariaLabel="Reporting To" value={draft.reportingTo || null} placeholder="Select" options={REPORTING_OPTIONS} onChange={(v) => set('reportingTo', v)} />
-      </Field>
+      <Section icon={ClipboardList} title="Hiring Process" subtitle="Interview and sign-off">
+        {yesNo('Interview Required?', 'interviewRequired')}
+        {yesNo('Technical Assessment Required?', 'technicalAssessment')}
+        {domain?.signsTaxReturn && yesNo('Do the staff required to sign Tax Return?', 'signTaxReturn')}
+        {domain?.signsAuditReport && yesNo('Do the staff required to sign Audit Report?', 'signAuditReport')}
+      </Section>
 
-      <MultiSelectDropdown
-        label="Expected Communication Involvement"
-        placeholder="Select"
-        options={COMMUNICATION_OPTIONS.map((o) => ({ value: o, label: o }))}
-        selected={draft.communication}
-        onChange={(v) => set('communication', v)}
-      />
-      <MultiSelectDropdown
-        label="Type of Task to be Handled"
-        placeholder="Select"
-        options={TASK_OPTIONS.map((o) => ({ value: o, label: o }))}
-        selected={draft.tasks}
-        onChange={(v) => set('tasks', v)}
-      />
-
-      <Field label="Does the staff required to travel to US?">
-        <Dropdown ariaLabel="Travel to US" value={draft.travelUS || null} placeholder="Select" options={['Yes', 'No', 'Maybe']} onChange={(v) => set('travelUS', v as RequirementDraft['travelUS'])} />
-      </Field>
-
-      {yesNo('Technical Assessment Required?', 'technicalAssessment')}
-      {domain?.signsTaxReturn && yesNo('Do the staff required to sign Tax Return?', 'signTaxReturn')}
-      {domain?.signsAuditReport && yesNo('Do the staff required to sign Audit Report?', 'signAuditReport')}
-
-      <MultiSelectDropdown
-        label="Are there any Specific Software requirements?"
-        placeholder={domain ? 'Select software' : 'Select a domain first'}
-        options={(domain?.software ?? []).map((o) => ({ value: o, label: o }))}
-        selected={draft.software}
-        onChange={(v) => set('software', v)}
-        searchable
-        disabled={!domain}
-      />
-      <MultiSelectDropdown
-        label="Are there any Specific Technical Skills you’re looking for?"
-        placeholder={domain ? 'Select skills' : 'Select a domain first'}
-        options={(domain?.skills ?? []).map((o) => ({ value: o, label: o }))}
-        selected={draft.skills}
-        onChange={(v) => set('skills', v)}
-        searchable
-        disabled={!domain}
-      />
-      <MultiSelectDropdown
-        label="Are there any Specific Qualifications you’re looking for?"
-        placeholder="Select qualifications"
-        options={QUALIFICATION_OPTIONS.map((o) => ({ value: o, label: o }))}
-        selected={draft.qualifications}
-        onChange={(v) => set('qualifications', v)}
-      />
-
-      <Field label="Anything specific you would like to add">
-        <textarea
-          rows={4}
-          value={draft.additionalNotes}
-          onChange={(e) => set('additionalNotes', e.target.value)}
-          maxLength={1000}
-          placeholder="Add any other requirements or context"
-          aria-label="Anything specific you would like to add"
-          className={textareaClass}
+      <Section icon={GraduationCap} title="Skills & Qualifications" subtitle="Tasks, tools and background">
+        <MultiSelectDropdown
+          label="Type of Task to be Handled"
+          placeholder="Select"
+          options={TASK_OPTIONS.map((o) => ({ value: o, label: o }))}
+          selected={draft.tasks}
+          onChange={(v) => set('tasks', v)}
         />
-      </Field>
-    </div>
+        <MultiSelectDropdown
+          label="Are there any Specific Software requirements?"
+          placeholder={domain ? 'Select software' : 'Select a domain first'}
+          options={(domain?.software ?? []).map((o) => ({ value: o, label: o }))}
+          selected={draft.software}
+          onChange={(v) => set('software', v)}
+          searchable
+          disabled={!domain}
+        />
+        <MultiSelectDropdown
+          label="Are there any Specific Technical Skills you’re looking for?"
+          placeholder={domain ? 'Select skills' : 'Select a domain first'}
+          options={(domain?.skills ?? []).map((o) => ({ value: o, label: o }))}
+          selected={draft.skills}
+          onChange={(v) => set('skills', v)}
+          searchable
+          disabled={!domain}
+        />
+        <MultiSelectDropdown
+          label="Are there any Specific Qualifications you’re looking for?"
+          placeholder="Select qualifications"
+          options={QUALIFICATION_OPTIONS.map((o) => ({ value: o, label: o }))}
+          selected={draft.qualifications}
+          onChange={(v) => set('qualifications', v)}
+        />
+      </Section>
+
+      <Section icon={FileText} title="Additional Notes">
+        <Field label="Anything specific you would like to add">
+          <textarea
+            rows={4}
+            value={draft.additionalNotes}
+            onChange={(e) => set('additionalNotes', e.target.value)}
+            maxLength={1000}
+            placeholder="Add any other requirements or context"
+            aria-label="Anything specific you would like to add"
+            className={textareaClass}
+          />
+          <p className="px-0.5 text-right text-[11px] text-slate-400 tabular-nums">{draft.additionalNotes.length}/1000</p>
+        </Field>
+      </Section>
+    </>
   );
 
   /* ------------------------------- Step 3 ------------------------------- */
   const description = (
-    <div className="space-y-4">
-      <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
-        <Info className="w-4 h-4 shrink-0 mt-px" />
-        To generate an AI-powered Job Description, complete: No. of Staff, Domain, Work Mode, Technical Skills and Software Skills
-        {Number(draft.level.replace(/\D/g, '')) >= 4 ? ' and Qualification.' : '.'}
-      </p>
-
-      <button
-        type="button"
-        onClick={generate}
-        disabled={aiBusy}
-        className="w-full h-11 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-2 active:bg-blue-100 disabled:opacity-60 disabled:cursor-wait cursor-pointer"
-      >
-        {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {aiBusy ? 'Preparing…' : draft.jobDescription ? 'Regenerate with AI' : 'Generate with AI'}
-      </button>
-      {aiMissing.length > 0 && (
-        <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[11.5px] text-rose-600 leading-snug" role="alert">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
-          <span>Complete these first: {aiMissing.join(', ')}.</span>
+    <>
+      <Section icon={Sparkles} title="Generate with AI" subtitle="Draft a job description from your details">
+        <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
+          <Info className="w-4 h-4 shrink-0 mt-px" />
+          To generate an AI-powered Job Description, complete: No. of Staff, Domain, Work Mode, Technical Skills and Software Skills
+          {Number(draft.level.replace(/\D/g, '')) >= 4 ? ' and Qualification.' : '.'}
         </p>
-      )}
 
-      <div className="space-y-1.5">
-        <span className="block text-xs font-bold text-[#1E293B]">Upload Job Description</span>
-        <input ref={fileRef} type="file" accept={JD_ACCEPT} className="hidden" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-        {fileName ? (
-          <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center gap-3">
-            <span className="w-10 h-10 rounded-lg bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5" />
-            </span>
-            <span className="flex-1 min-w-0 text-[12px] font-bold text-[#1E293B] truncate">{fileName}</span>
-            <button
-              type="button"
-              onClick={() => setFileName('')}
-              aria-label="Remove file"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={aiBusy}
-            className="w-full py-5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center gap-1 active:bg-slate-100 disabled:opacity-60 cursor-pointer"
-          >
-            <Upload className="w-5 h-5 text-[#2F68FE]" />
-            <span className="text-xs font-bold text-[#2F68FE]">Choose a file</span>
-            <span className="text-[11px] text-slate-400">PDF, DOCX, JPG or PNG · up to {JD_MAX_MB} MB</span>
-          </button>
-        )}
-        {fileError && (
-          <p className="px-0.5 text-[11px] font-medium text-rose-500" role="alert">
-            {fileError}
+        <button
+          type="button"
+          onClick={generate}
+          disabled={aiBusy}
+          className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-wait cursor-pointer"
+        >
+          {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {aiBusy ? 'Preparing…' : draft.jobDescription ? 'Regenerate with AI' : 'Generate with AI'}
+        </button>
+        {aiMissing.length > 0 && (
+          <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[11.5px] text-rose-600 leading-snug" role="alert">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
+            <span>Complete these first: {aiMissing.join(', ')}.</span>
           </p>
         )}
-      </div>
+      </Section>
 
-      <Field label="Job Description">
-        <textarea
-          rows={10}
-          value={draft.jobDescription}
-          onChange={(e) => set('jobDescription', e.target.value)}
-          placeholder="Describe the role, or generate / upload one above"
-          aria-label="Job Description"
-          className={textareaClass}
-        />
-      </Field>
-    </div>
+      <Section icon={FileText} title="Job Description" subtitle="Upload a file or write it yourself">
+        <div className="space-y-1.5">
+          <span className="block text-xs font-bold text-[#1E293B]">Upload Job Description</span>
+          <input ref={fileRef} type="file" accept={JD_ACCEPT} className="hidden" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
+          {fileName ? (
+            <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center gap-3">
+              <span className="w-10 h-10 rounded-lg bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
+              </span>
+              <span className="flex-1 min-w-0 text-[12px] font-bold text-[#1E293B] truncate">{fileName}</span>
+              <button
+                type="button"
+                onClick={() => setFileName('')}
+                aria-label="Remove file"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={aiBusy}
+              className="w-full py-5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center gap-1 active:bg-slate-100 disabled:opacity-60 cursor-pointer"
+            >
+              <Upload className="w-5 h-5 text-[#2F68FE]" />
+              <span className="text-xs font-bold text-[#2F68FE]">Choose a file</span>
+              <span className="text-[11px] text-slate-400">PDF, DOCX, JPG or PNG · up to {JD_MAX_MB} MB</span>
+            </button>
+          )}
+          {fileError && (
+            <p className="px-0.5 text-[11px] font-medium text-rose-500" role="alert">
+              {fileError}
+            </p>
+          )}
+        </div>
+
+        <Field label="Job Description">
+          <textarea
+            rows={10}
+            value={draft.jobDescription}
+            onChange={(e) => set('jobDescription', e.target.value)}
+            placeholder="Describe the role, or generate / upload one above"
+            aria-label="Job Description"
+            className={textareaClass}
+          />
+        </Field>
+      </Section>
+    </>
   );
 
   const lastLabel = isEdit ? 'Update' : 'Submit';
@@ -545,7 +603,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
             Domain, profile, hours, level, timeline, start date and staff count can&rsquo;t be changed. Contact your account manager if they need to change.
           </p>
         )}
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4">{step === 1 ? core : step === 2 ? additional : description}</div>
+        <div className="space-y-3">{step === 1 ? core : step === 2 ? additional : description}</div>
       </div>
 
       <div className="shrink-0 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 pb-5 grid grid-cols-2 gap-3">
@@ -565,6 +623,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Saving…' : step === 3 ? lastLabel : 'Next'}
+          {!saving && step < 3 && <ArrowRight className="w-4 h-4" />}
         </button>
       </div>
 
