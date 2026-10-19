@@ -1377,7 +1377,7 @@ export default function App() {
               {userRole === 'Client' && clientSignedOut ? (
                 <AuthFlow onAuthenticated={() => setClientSignedOut(false)} />
               ) : userRole === 'Client' ? (
-                <ClientApp onLogout={() => setClientSignedOut(true)} onSwitchRole={switchRole} />
+                <ClientApp onLogout={() => setClientSignedOut(true)} onSwitchRole={isPhone ? switchRole : undefined} />
               ) : !isLoggedIn ? (
                 <AuthFlow
                   onAuthenticated={() => {
@@ -1419,7 +1419,7 @@ export default function App() {
                             : null
                     }
                     version={APP_VERSION}
-                    onSwitchRole={switchRole}
+                    onSwitchRole={isPhone ? switchRole : undefined}
                     onOpenModule={openFromDrawer}
                     onOpenProfile={() => {
                       setIsMenuOpen(false);
