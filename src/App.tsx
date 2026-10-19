@@ -2324,7 +2324,7 @@ export default function App() {
                 <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
                   {/* 1. Persistent Top Header: Back Arrow + Attendance & Leaves */}
                   <header className="sticky top-0 z-20 bg-white border-b border-[#EBF0F7]">
-                    <div className="flex items-center h-13 px-4">
+                    <div className="relative flex items-center h-13 px-4">
                       <button
                         type="button"
                         onClick={() => handleAppTabChange('home')}
