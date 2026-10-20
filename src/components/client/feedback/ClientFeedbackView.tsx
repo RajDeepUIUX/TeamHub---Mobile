@@ -303,8 +303,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
             </dl>
           </div>
 
-          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
-            <span className="flex-1 text-[10.5px] font-semibold text-slate-400">Action</span>
+          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-end gap-2">
             {actionButton(s)}
           </div>
         </Card>
