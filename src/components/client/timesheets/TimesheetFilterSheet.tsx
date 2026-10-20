@@ -13,7 +13,6 @@ import {
   latestTimesheetStart,
   parseIso,
   sameRange,
-  timesheetPresets,
 } from '../data/clientTimesheetsData';
 
 export interface TimesheetFilters {
@@ -50,7 +49,6 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
 
   const todayKey = isoOf(new Date());
   const latestStart = latestTimesheetStart();
-  const presets = useMemo(() => timesheetPresets(), []);
 
   const staffOptions = useMemo(
     () =>
@@ -96,7 +94,7 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
           <span className="flex items-center gap-2 min-w-0">
             <Calendar className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
             <span className={`truncate ${value ? 'text-slate-700 font-semibold' : 'text-slate-400'}`}>
-              {value ? formatShortDate(parseIso(value)) : 'Select date'}
+              {value ? formatShortDate(parseIso(value)) : 'Select Date'}
             </span>
           </span>
           <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isActive ? 'rotate-180 text-[#2F68FE]' : 'text-slate-400'}`} />
@@ -107,33 +105,11 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[88%]">
-      <SheetHeader title="Filter Timesheets" subtitle="Pick a period and one or more staff" onClose={onClose} />
+      <SheetHeader title="Filter Timesheets" subtitle="From Date, To Date and staff" onClose={onClose} />
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
         <div className="space-y-2">
-          <span className="block text-[11px] font-semibold text-slate-500">Period</span>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick periods">
-            {presets.map((p) => {
-              const on = draft.to !== null && sameRange(p, { from: draft.from, to: draft.to });
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    setDraft((d) => ({ ...d, from: p.from, to: p.to }));
-                    setActiveField(null);
-                  }}
-                  className={`h-8 px-3 rounded-full text-[11.5px] font-semibold transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-2 gap-3">
             {dateField('start', 'From Date', draft.from)}
             {dateField('end', 'To Date', draft.to)}
           </div>
@@ -160,8 +136,8 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
         </div>
 
         <MultiSelectDropdown
-          label="Staff"
-          placeholder="All staff"
+          label="Select Staff"
+          placeholder="Select Staff"
           options={staffOptions}
           selected={draft.staffIds}
           onChange={(next) => setDraft((d) => ({ ...d, staffIds: next }))}
@@ -185,7 +161,7 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
           onClick={() => draftFilters && onApply(draftFilters)}
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {draftCount ? `Apply Filters (${draftCount})` : 'Apply Filters'}
+          {draftCount ? `Search (${draftCount})` : 'Search'}
         </button>
       </div>
     </BottomSheet>

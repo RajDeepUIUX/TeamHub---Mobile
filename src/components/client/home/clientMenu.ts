@@ -54,7 +54,6 @@ import {
   CreditCard,
   PackageCheck,
   ScanSearch,
-  Newspaper,
 } from 'lucide-react';
 
 export interface ClientMenuModule {
@@ -109,6 +108,7 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
       { id: 'policies', label: 'Policies & Guidelines', hint: 'Company policies', icon: ScrollText },
       { id: 'work-flexibility', label: 'Work Flexibility Preferences', hint: 'Hybrid / WFH & additional flexibilities', icon: Shuffle, designed: true },
       { id: 'mgmt-fee', label: 'Management Fee Structure', hint: 'MOS & other fee rates', icon: Landmark, designed: true },
+      { id: 'inclusions', label: 'Inclusions', hint: 'What your engagement covers', icon: PackageCheck, designed: true },
       { id: 'performance', label: 'Performance Management', hint: 'Goals & feedback', icon: Target },
       { id: 'pip', label: 'PIP', hint: 'Performance improvement plans', icon: TrendingDown },
     ],
@@ -150,7 +150,6 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     modules: [
       { id: 'invoices', label: 'Invoices', hint: 'Invoices, timesheet PDFs & exports', icon: ReceiptText, designed: true },
       { id: 'billing-details', label: 'Billing Details', hint: 'Payment methods & staff mapping', icon: CreditCard, designed: true },
-      { id: 'inclusions', label: 'Inclusions', hint: 'What your engagement covers', icon: PackageCheck, designed: true },
     ],
   },
   {
@@ -198,14 +197,13 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     icon: LayoutGrid,
     modules: [
       { id: 'account-manager', label: 'Account Manager', hint: 'Call, email or chat', icon: Headset, designed: true },
-      { id: 'news-insights', label: 'News and Insights', hint: 'Industry news, updates & infographics', icon: Newspaper, designed: true },
       { id: 'other-modules', label: 'Other Modules & Services', hint: 'MyCPE ONE modules', icon: LayoutGrid },
     ],
   },
 ];
 
 /** Side menu: designed modules only (set `designed: true` as each module's design is done) */
-export const CLIENT_DRAWER_GROUPS: ClientMenuGroup[] = CLIENT_MENU_GROUPS.map((g) => ({
+export const CLIENT_DRAWER_GROUPS: ClientMenuGroup[] = CLIENT_MENU_GROUPS.filter((g) => g.id !== 'other' && g.id !== 'account').map((g) => ({
   ...g,
   modules: g.modules.filter((m) => m.designed),
 })).filter((g) => g.modules.length > 0);

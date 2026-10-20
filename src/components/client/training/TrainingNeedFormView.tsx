@@ -34,7 +34,7 @@ const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => <span c
 
 /** Desktop card (`rt-card`): grey title bar + body */
 const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+  <section className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
     <h2 className="px-4 py-3 bg-[#F8FAFC] border-b border-[#EBF0F7] text-sm font-bold text-[#1E293B]">{title}</h2>
     <div className="p-4 space-y-4">{children}</div>
   </section>
@@ -100,7 +100,7 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
       </header>
 
       <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-1.5">
+        <div className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] p-4 space-y-1.5">
           <MultiSelectDropdown
             label="Select Staff"
             placeholder="Select Staff"
@@ -226,7 +226,7 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
           </div>
         </SectionCard>
 
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-1.5">
+        <div className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] p-4 space-y-1.5">
           <label htmlFor="tni-message">
             <Label>Message</Label>
           </label>

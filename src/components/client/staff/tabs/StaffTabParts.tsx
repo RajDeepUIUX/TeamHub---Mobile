@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarDays, CheckCircle2, Search, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, Search, X } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { DateWheelSheet } from '../../../common/DateWheelSheet';
 
@@ -21,15 +21,16 @@ export const FieldGrid: React.FC<{ fields: Field[]; compact?: boolean }> = ({ fi
   </dl>
 );
 
-export const TabTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
-  <div className="flex items-center justify-between gap-3 min-h-9">
-    <h3 className="px-1 text-base font-extrabold text-[#1E293B]">{title}</h3>
+/** Section title + optional action; title is left out where the tab pill already names the section */
+export const TabTitle: React.FC<{ title?: string; action?: React.ReactNode }> = ({ title, action }) => (
+  <div className={`flex items-center gap-3 min-h-9 ${title ? 'justify-between' : 'justify-end'}`}>
+    {title && <h3 className="px-1 text-base font-extrabold text-[#1E293B]">{title}</h3>}
     {action}
   </div>
 );
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <section className={`bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs ${className}`}>{children}</section>
+  <section className={`bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] ${className}`}>{children}</section>
 );
 
 /** One white card holding titled groups (Personal / Work / Terms tabs) */
@@ -165,6 +166,23 @@ export const SearchField: React.FC<{ value: string; onChange: (v: string) => voi
         </button>
       ))}
   </div>
+);
+
+/** Module screen header (Staff / Manager style): back arrow + title centred on the screen */
+export const ScreenHeader: React.FC<{ title: string; onBack?: () => void; backLabel?: string }> = ({ title, onBack, backLabel = 'Back to Dashboard' }) => (
+  <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
+    {onBack && (
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label={backLabel}
+        className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
+    )}
+    <h1 className="text-base font-bold screen-title">{title}</h1>
+  </header>
 );
 
 export const SheetHeader: React.FC<{ title: string; subtitle?: string; onClose: () => void }> = ({ title, subtitle, onClose }) => (

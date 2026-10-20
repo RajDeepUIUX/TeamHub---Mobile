@@ -1,20 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import {
-  CalendarClock,
-  ChevronRight,
-  Contact,
-  Globe,
-  GraduationCap,
-  Headset,
-  Mail,
-  Megaphone,
-  MessageSquareText,
-  Phone,
-  UserRoundX,
-  UsersRound,
-} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { CalendarClock, Check, ChevronRight, Contact, Copy, Globe, GraduationCap, Megaphone, UserRoundX, UsersRound } from 'lucide-react';
 import { SegmentedTabs } from '../../../design-system/components/SegmentedTabs';
-import { Card, EmptyCard } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import {
@@ -25,12 +12,14 @@ import {
   directoryTint,
   telHref,
 } from '../data/clientDirectoryData';
-import { DirectoryContactSheet } from './DirectoryContactSheet';
+import { DirectoryContactSheet, TeamsIcon } from './DirectoryContactSheet';
 
 interface Props {
   primaryContacts: DirectoryContact[];
   products: DirectoryProduct[];
   onOpenAccountManager: () => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 /** Desktop loads each tab's table on first show */
@@ -46,7 +35,7 @@ const PRODUCT_STYLE: Record<DirectoryProduct['id'], { icon: React.ElementType; t
 const ListSkeleton: React.FC<{ rows: number; product?: boolean }> = ({ rows, product }) => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading contacts">
     {Array.from({ length: rows }, (_, i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         {product && (
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <StaffSkeleton className="w-10 h-10 rounded-xl" />
@@ -63,61 +52,57 @@ const ListSkeleton: React.FC<{ rows: number; product?: boolean }> = ({ rows, pro
             <StaffSkeleton className="w-44 h-3" />
           </div>
         </div>
-        <StaffSkeleton className="w-full h-3" />
-        <div className="flex gap-2">
+        <div className="rounded-xl border border-slate-100 divide-y divide-slate-100">
           {[0, 1, 2].map((k) => (
-            <StaffSkeleton key={k} className="w-11 h-11 rounded-xl" />
+            <div key={k} className="flex items-center gap-3 px-3 py-2.5">
+              <StaffSkeleton className="w-16 h-3" />
+              <StaffSkeleton className="flex-1 h-3" />
+            </div>
           ))}
-          <StaffSkeleton className="flex-1 h-11 rounded-xl" />
         </div>
+        <StaffSkeleton className="w-full h-10 rounded-xl" />
       </div>
     ))}
   </div>
 );
 
-/** Square icon action (Mail / VOIP / Chat Channel); disabled when the desktop cell is "-" */
-const IconAction: React.FC<{ icon: React.ElementType; label: string; href?: string; external?: boolean }> = ({
-  icon: Icon,
-  label,
-  href,
-  external,
-}) =>
-  href ? (
-    <a
-      href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noreferrer' : undefined}
-      aria-label={label}
-      title={label}
-      className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 text-[#2F68FE] flex items-center justify-center shrink-0 active:bg-[#EFF6FF] active:border-[#BFDBFE]"
-    >
-      <Icon className="w-4.5 h-4.5" />
-    </a>
-  ) : (
-    <span
-      role="img"
-      aria-label={`${label} not available`}
-      title={`${label} not available`}
-      className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 text-slate-300 flex items-center justify-center shrink-0"
-    >
-      <Icon className="w-4.5 h-4.5" />
-    </span>
-  );
+/** Copy button after Mail and VOIP / Phone */
+const CopyButton: React.FC<{ label: string; copied: boolean; onCopy: () => void }> = ({ label, copied, onCopy }) => (
+  <button
+    type="button"
+    onClick={onCopy}
+    aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+    title={copied ? 'Copied' : `Copy ${label.toLowerCase()}`}
+    className={`w-8 h-8 -my-1 rounded-lg flex items-center justify-center shrink-0 cursor-pointer ${
+      copied ? 'text-[#10B981]' : 'text-slate-400 active:bg-slate-100'
+    }`}
+  >
+    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+  </button>
+);
 
-/** Person block shared by both tabs: identity, mail + phone lines, actions, Schedule Meeting */
+/** Desktop row as a card: Staff Name + Designation, then Mail / VOIP / Chat Channel, and the Action (Schedule Meeting) */
 const ContactBody: React.FC<{ contact: DirectoryContact; onOpen?: () => void }> = ({ contact: c, onOpen }) => {
+  const [copied, setCopied] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const copy = (key: string, value: string) => {
+    navigator.clipboard?.writeText(value).catch(() => undefined);
+    clearTimeout(timer.current);
+    setCopied(key);
+    timer.current = setTimeout(() => setCopied(null), 1600);
+  };
+
+  const phoneLabel = c.phoneLabel === 'VOIP' ? 'VOIP' : 'Phone';
+  const dt = 'w-[84px] shrink-0 text-[11px] font-semibold text-slate-500';
+  const row = 'flex items-center gap-3 px-3 py-2.5 min-w-0';
+
   const identity = (
     <>
       <StaffAvatar name={c.name} tint={directoryTint(c.name)} />
       <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[13px] font-bold text-[#1E293B] truncate">{c.name}</span>
-          {c.isAccountManager && (
-            <span className="px-1.5 py-0.5 rounded-md bg-[#EEF2FF] text-[#4F46E5] text-[9.5px] font-bold whitespace-nowrap shrink-0">
-              Account Manager
-            </span>
-          )}
-        </span>
+        <span className="block text-[13px] font-bold text-[#1E293B] truncate">{c.name}</span>
         <span className="block text-[11px] text-slate-500 truncate">{c.designation}</span>
       </span>
     </>
@@ -139,56 +124,79 @@ const ContactBody: React.FC<{ contact: DirectoryContact; onOpen?: () => void }> 
         <div className="flex items-center gap-3">{identity}</div>
       )}
 
-      <dl className="space-y-1.5 text-[11.5px]">
-        <div className="flex items-center gap-2 min-w-0">
-          <dt className="shrink-0 text-slate-400">
-            <Mail className="w-3.5 h-3.5" aria-label="Mail" />
-          </dt>
-          <dd className={`truncate select-text ${c.email ? 'text-slate-600' : 'text-slate-400'}`}>{c.email ?? 'Not shared yet'}</dd>
-        </div>
-        <div className="flex items-center gap-2 min-w-0">
-          <dt className="shrink-0 text-slate-400">
-            <Phone className="w-3.5 h-3.5" aria-label={c.phoneLabel} />
-          </dt>
-          <dd className={`truncate select-text tabular-nums ${c.phone ? 'text-slate-600' : 'text-slate-400'}`}>
-            {c.phone ? (
+      <dl className="rounded-xl border border-slate-100 divide-y divide-slate-100 text-[12px]">
+        <div className={row}>
+          <dt className={dt}>Mail</dt>
+          <dd className="flex-1 min-w-0 flex items-center gap-1">
+            {c.email ? (
               <>
-                {c.phoneLabel === 'VOIP' && <span className="mr-1 text-[10px] font-bold text-slate-400">VOIP</span>}
-                {c.phone}
+                <a href={`mailto:${c.email}`} className="flex-1 min-w-0 truncate text-[#2F68FE] select-text">
+                  {c.email}
+                </a>
+                <CopyButton label="Mail" copied={copied === 'email'} onCopy={() => copy('email', c.email!)} />
               </>
             ) : (
-              'Not shared yet'
+              <span className="text-slate-400">-</span>
+            )}
+          </dd>
+        </div>
+        <div className={row}>
+          <dt className={dt}>{phoneLabel}</dt>
+          <dd className="flex-1 min-w-0 flex items-center gap-1">
+            {c.phone ? (
+              <>
+                <a href={telHref(c.phone)} className="flex-1 min-w-0 truncate text-[#1E293B] tabular-nums select-text">
+                  {c.phone}
+                </a>
+                <CopyButton label={phoneLabel} copied={copied === 'phone'} onCopy={() => copy('phone', c.phone!)} />
+              </>
+            ) : (
+              <span className="text-slate-400">-</span>
+            )}
+          </dd>
+        </div>
+        <div className={row}>
+          <dt className={dt}>Chat Channel</dt>
+          <dd className="flex-1 min-w-0">
+            {c.teamsUrl ? (
+              <a
+                href={c.teamsUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Chat with ${c.name} on Microsoft Teams`}
+                className="-my-1 -ml-1.5 inline-flex items-center gap-2 h-8 pl-1.5 pr-2.5 rounded-lg text-[#4B53BC] font-semibold active:bg-[#EEF0FB]"
+              >
+                <TeamsIcon className="w-5 h-5" />
+                Microsoft Teams
+              </a>
+            ) : (
+              <span className="text-slate-400">-</span>
             )}
           </dd>
         </div>
       </dl>
 
-      <div className="flex gap-2">
-        <IconAction icon={Mail} label={`Email ${c.name}`} href={c.email ? `mailto:${c.email}` : undefined} />
-        <IconAction icon={Phone} label={`Call ${c.name}`} href={c.phone ? telHref(c.phone) : undefined} />
-        <IconAction icon={MessageSquareText} label={`Chat with ${c.name} on Teams`} href={c.teamsUrl} external />
-        {c.meetingUrl ? (
-          <a
-            href={c.meetingUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 min-w-0 h-11 rounded-xl bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#DBEAFE]"
-          >
-            <CalendarClock className="w-4 h-4 shrink-0" />
-            <span className="truncate">Schedule Meeting</span>
-          </a>
-        ) : (
-          <span className="flex-1 min-w-0 h-11 rounded-xl bg-slate-50 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5">
-            <CalendarClock className="w-4 h-4 shrink-0" />
-            <span className="truncate">No meeting link</span>
-          </span>
-        )}
-      </div>
+      {c.meetingUrl ? (
+        <a
+          href={c.meetingUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#DBEAFE]"
+        >
+          <CalendarClock className="w-4 h-4 shrink-0" />
+          Schedule Meeting
+        </a>
+      ) : (
+        <span className="w-full h-10 rounded-xl bg-slate-50 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5">
+          <CalendarClock className="w-4 h-4 shrink-0" />
+          No meeting link
+        </span>
+      )}
     </div>
   );
 };
 
-export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products, onOpenAccountManager }) => {
+export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products, onOpenAccountManager, onBack }) => {
   const canView = useClientPermission('directories').view;
   const [tab, setTab] = useState<DirectoryTab>('primary');
   const [loaded, setLoaded] = useState<DirectoryTab[]>([]);
@@ -203,7 +211,6 @@ export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products
     return () => clearTimeout(t);
   }, [loading, tab]);
 
-  const tabLabel = DIRECTORY_TABS.find((t) => t.id === tab)?.label;
   const open = (contact: DirectoryContact, product?: string) =>
     canView
       ? () => {
@@ -214,16 +221,10 @@ export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Directory" onBack={onBack} />
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Directory <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">{tabLabel}</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Directory</h1>
-          <p className="mt-1 text-[11.5px] text-slate-500">Email, call, chat or book a meeting with your Entigrity team.</p>
-          <div className="mt-3">
-            <SegmentedTabs ariaLabel="Directory" options={DIRECTORY_TABS} value={tab} onChange={setTab} />
-          </div>
+          <SegmentedTabs ariaLabel="Directory" options={DIRECTORY_TABS} value={tab} onChange={setTab} />
         </div>
 
         <div key={tab} className="px-4 mt-4 animate-in fade-in duration-200">
@@ -238,24 +239,10 @@ export const ClientDirectoryView: React.FC<Props> = ({ primaryContacts, products
                   {primaryContacts.length} {primaryContacts.length === 1 ? 'contact' : 'contacts'}
                 </p>
                 {primaryContacts.map((c) => (
-                  <Card key={c.id} className={`p-4 ${c.isAccountManager ? 'border-[#BFDBFE]' : ''}`}>
+                  <Card key={c.id} className="p-4">
                     <ContactBody contact={c} onOpen={open(c)} />
                   </Card>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => setTab('poc')}
-                  className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-dashed border-slate-200 text-left active:bg-slate-50 cursor-pointer"
-                >
-                  <span className="w-10 h-10 rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
-                    <Headset className="w-5 h-5" />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] font-bold text-[#1E293B]">Question about a product?</span>
-                    <span className="block text-[11px] text-slate-500">Offshoring, CPE or Digital Marketing experts</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                </button>
               </div>
             )
           ) : products.length === 0 ? (

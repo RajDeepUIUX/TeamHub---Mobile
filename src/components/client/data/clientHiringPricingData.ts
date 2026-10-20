@@ -173,7 +173,7 @@ export const pricingRowsFor = (category: Exclude<PricingCategory, 'additional'>,
 /** Role areas listed above the Non-technical / Specialized tables */
 export const CATEGORY_INTRO: Partial<Record<PricingCategory, { text: string; areas: string[] }>> = {
   'non-technical': {
-    text: 'Pricing for non-technical roles. Each role is grouped into levels with a designation and an hourly rate.',
+    text: 'Explore our comprehensive Pricing Table for various Non-technical Roles. Each role is categorized into levels with corresponding designations and rates. This structure ensures you find the right expertise for your needs. The roles covered include',
     areas: [
       'HR & Related Support',
       'Talent Acquisition',
@@ -191,7 +191,7 @@ export const CATEGORY_INTRO: Partial<Record<PricingCategory, { text: string; are
     ],
   },
   specialized: {
-    text: 'Pricing for specialized roles. Each role is grouped into levels with a designation and an hourly rate.',
+    text: 'Explore our comprehensive Pricing Table for various Specialized Roles. Each role is categorized into levels with corresponding designations and rates, ensuring you find the right expertise for your needs. The specialized roles covered include',
     areas: [
       'Business Valuation',
       'M & A & Transaction Advisory',
@@ -225,68 +225,46 @@ export interface HiringModel {
   rate: string;
   /** Rate adjustment vs. the listed rate (shown green on desktop) */
   rateAdjusted: boolean;
-  note?: string;
 }
 
+export const HIRING_TENURE = 'Round The Year';
+
 export const HIRING_MODELS: HiringModel[] = [
-  { id: 'full', name: 'Full Time', availableUpto: 'All levels', minWeeklyBilling: '40 hrs × Rate', rate: 'As mentioned', rateAdjusted: false },
-  { id: 'part', name: 'Part Time / Temporary', availableUpto: 'Levels 1 to 4', minWeeklyBilling: '20 hrs × Rate', rate: '25% extra', rateAdjusted: true },
-  { id: 'demand', name: 'On-Demand', availableUpto: 'All levels', minWeeklyBilling: '$100', rate: '50% extra', rateAdjusted: true },
+  { id: 'full', name: 'Full Time', availableUpto: 'All', minWeeklyBilling: '40 hrs X Rate', rate: 'As Mentioned', rateAdjusted: false },
+  { id: 'part', name: 'Part Time/Temporary', availableUpto: '1 to 4', minWeeklyBilling: '20 hrs X Rate', rate: '25%', rateAdjusted: true },
+  { id: 'demand', name: 'On-Demand', availableUpto: 'All', minWeeklyBilling: '$100', rate: '50%', rateAdjusted: true },
 ];
 
 export const HIRING_MODEL_NOTES: { title: string; text: string }[] = [
   {
-    title: 'Part-Time / On-Demand / Temporary',
-    text: 'If you later decide to convert the engagement or staff to full-time, we will try to align the same staff member, but the same staff member may or may not be available.',
+    title: 'In Part-Time / Ondemand / Temporary Model',
+    text: 'In the future, if you decide to convert the engagement or staff to full-time, we shall try to align the same staff member, but same staff member may or may not be available.',
   },
   {
-    title: 'On-Demand',
-    text: 'We directly assign you a dedicated staff member (instead of a formal interview and selection process) with a manager as the point of contact. The manager reviews their tasks and work performed by the staff.',
+    title: 'On-Demand Model',
+    text: 'We shall directly assign you dedicated staff member (Instead of a formal interview & selection process) with a manager as a point of contact (POC). The manager will review their tasks and work performed by the staff.',
   },
 ];
 
-export interface TermGroup {
-  id: string;
-  title: string;
-  items: string[];
-}
-
-export const HIRING_TERM_GROUPS: TermGroup[] = [
-  {
-    id: 'billing',
-    title: 'Billing & terms',
-    items: [
-      'Weekly billing will be in USD.',
-      'No additional set-up fees or charges',
-      'Notice period of 9 weeks for each hire',
-      'Daily timesheet will be provided',
-      '18 paid days and 10 public holidays for team members',
-      'Overtime rate remains same (Not 1.5 times)',
-      'Staff Replacement Tentative Time 2 to 3 weeks',
-      '3% Credit Card charges applicable.',
-    ],
-  },
-  {
-    id: 'certification',
-    title: 'Certification rates',
-    items: [
-      'If Staff clears 2 subjects of CPA (Minimum hourly rate $17/hour)',
-      'If Staff becomes CPA (Minimum hourly rate $22/hour)',
-      'If Staff clears 2 parts of EA (Minimum hourly rate $15/hour)',
-      'If Staff becomes EA (Minimum hourly rate $20/hour)',
-    ],
-  },
-  {
-    id: 'onboarding',
-    title: 'Onboarding & support',
-    items: [
-      'Onboarding Time for Level 1 to 4 shall be 2 to 3 weeks.',
-      'Onboarding Time for Level 5+ Profiles shall be anywhere from 2 weeks to 9 weeks.',
-      'You will be given a Dedicated “Offshoring Strategic Advisor”, who is responsible for managing and scaling your offshoring journey and is your central point of contact.',
-      'For Level 1 to 4 staff, the Subject Matter Expert will work closely with the team for the first 9 weeks to review their work and ensure smooth onboarding and efficient training. This helps them catch up to tasks more quickly than usual.',
-      "After this period, the Subject Matter Expert will continue to provide ongoing support and guidance, focusing on broader oversight rather than involvement in detailed reviews of the staff's work. With over 6 years of experience, the Subject Matter Expert assists with complex tasks and offers expert guidance as needed.",
-    ],
-  },
+/** Desktop check-list under the hiring models table, in desktop order */
+export const HIRING_TERMS: string[] = [
+  'Weekly billing will be in USD.',
+  'No additional set-up fees or charges',
+  'Notice period of 9 weeks for each hire',
+  'Daily timesheet will be provided',
+  '18 paid days and 10 public holidays for team members',
+  'Overtime rate remains same (Not 1.5 times)',
+  'Staff Replacement Tentative Time 2 to 3 weeks',
+  'If Staff clears 2 subjects of CPA (Minimum hourly rate $17/hour)',
+  'If Staff becomes CPA (Minimum hourly rate $22/hour)',
+  'If Staff clears 2 parts of EA (Minimum hourly rate $15/hour)',
+  'If Staff becomes EA (Minimum hourly rate $20/hour)',
+  '3% Credit Card charges applicable.',
+  'Onboarding Time for Level 1 to 4 shall be 2 to 3 weeks.',
+  'Onboarding Time for Level 5+ Profiles shall be anywhere from 2 weeks to 9 weeks.',
+  'You will be given a Dedicated “Offshoring Strategic Advisor”, who is responsible for managing and scaling your offshoring journey and is your central point of contact.',
+  'For Level 1 to 4 staff, the Subject Matter Expert will work closely with the team for the first 9 weeks to review their work and ensure smooth onboarding and efficient training. This helps them catch up to tasks more quickly than usual.',
+  "After this period, the Subject Matter Expert will continue to provide ongoing support and guidance, focusing on broader oversight rather than involvement in detailed reviews of the staff's work. With over 6 years of experience, the Subject Matter Expert assists with complex tasks and offers expert guidance as needed.",
 ];
 
 export const CANCELLATION_POLICY = 'Free Look-In Period: Levels 1-4 are eligible for a full refund if canceled within the first two weeks after hiring.';

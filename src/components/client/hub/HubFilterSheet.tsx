@@ -55,10 +55,10 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
   const count = hubFilterCount(draft);
   const set = <K extends keyof HubFilters>(key: K, value: HubFilters[K]) => setDraft((d) => ({ ...d, [key]: value }));
 
-  const rateLabel = CLIENT_IS_MOS ? 'Talent Cost (per month)' : 'Hourly Rate';
-  const domainOptions = [{ value: '', label: 'All domains' }, ...asOptions(options.domains)];
-  const rateOptions = [{ value: '', label: CLIENT_IS_MOS ? 'Any talent cost' : 'Any hourly rate' }, ...HUB_RATE_OPTIONS];
-  const joiningOptions = [{ value: '', label: 'Any joining time' }, ...HUB_JOINING_OPTIONS];
+  const rateLabel = CLIENT_IS_MOS ? 'Talent Cost' : 'Hourly Rate';
+  const domainOptions = [{ value: '', label: 'Select Domain' }, ...asOptions(options.domains)];
+  const rateOptions = [{ value: '', label: CLIENT_IS_MOS ? 'Select Talent Cost' : 'Select Hourly Rate' }, ...HUB_RATE_OPTIONS];
+  const joiningOptions = [{ value: '', label: 'Select Joining Days' }, ...HUB_JOINING_OPTIONS];
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
@@ -71,7 +71,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
             ariaLabel="Domain"
             sheetTitle="Domain"
             value={draft.domain || null}
-            placeholder="All domains"
+            placeholder="Select Domain"
             options={domainOptions}
             onChange={(v) =>
               setDraft((d) => ({
@@ -86,7 +86,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
 
         <MultiSelectDropdown
           label="Profile"
-          placeholder="All profiles"
+          placeholder="Select Profile"
           options={asOptions(profileNames)}
           selected={draft.profiles}
           onChange={(next) => set('profiles', next)}
@@ -95,11 +95,11 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
           disabledHint="No profiles in this domain"
         />
 
-        <MultiSelectDropdown label="Level" placeholder="All levels" options={asOptions(HUB_LEVELS)} selected={draft.levels} onChange={(next) => set('levels', next)} />
+        <MultiSelectDropdown label="Level" placeholder="Select Level" options={asOptions(HUB_LEVELS)} selected={draft.levels} onChange={(next) => set('levels', next)} />
 
         <MultiSelectDropdown
           label="Work Mode"
-          placeholder="Any work mode"
+          placeholder="Select Work Mode"
           options={asOptions(HUB_WORK_MODES)}
           selected={draft.workModes}
           onChange={(next) => set('workModes', next as HubWorkMode[])}
@@ -131,7 +131,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
 
         <MultiSelectDropdown
           label="Software"
-          placeholder="All software"
+          placeholder="Select Software"
           options={asOptions(options.software)}
           selected={draft.software}
           onChange={(next) => set('software', next)}
@@ -140,7 +140,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
 
         <MultiSelectDropdown
           label="Technical Skills"
-          placeholder="All technical skills"
+          placeholder="Select Technical Skills"
           options={asOptions(options.skills)}
           selected={draft.skills}
           onChange={(next) => set('skills', next)}
@@ -149,7 +149,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
 
         <MultiSelectDropdown
           label="Location"
-          placeholder="All locations"
+          placeholder="Select Location"
           options={asOptions(options.locations)}
           selected={draft.locations}
           onChange={(next) => set('locations', next)}
@@ -157,7 +157,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
 
         <MultiSelectDropdown
           label="Qualification"
-          placeholder="All qualifications"
+          placeholder="Select Qualification"
           options={asOptions(options.qualifications)}
           selected={draft.qualifications}
           onChange={(next) => set('qualifications', next)}
@@ -171,10 +171,10 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
           onClick={() => onApply(EMPTY_HUB_FILTERS)}
           className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer"
         >
-          Clear All
+          Clear
         </button>
         <button type="button" onClick={() => onApply(draft)} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
-          {count ? `Apply Filters (${count})` : 'Apply Filters'}
+          {count ? `Apply (${count})` : 'Apply'}
         </button>
       </div>
     </BottomSheet>

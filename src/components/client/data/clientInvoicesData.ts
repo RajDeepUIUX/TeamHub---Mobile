@@ -100,11 +100,11 @@ export const invoiceAmountFor = (inv: ClientInvoice, staffIds: string[]) => {
 
 /* --------------------------------- Seeds --------------------------------- */
 
-const monthRange = (year: number, month: number): TimesheetRange => {
-  const from = isoOf(new Date(year, month, 1));
-  const to = isoOf(new Date(year, month + 1, 0));
-  return { from, to };
-};
+/** Desktop billing cycle: 26th of one month to the 25th of the next ("Aug 26, 2026 - Sep 25, 2026") */
+const cycleRange = (year: number, month: number): TimesheetRange => ({
+  from: isoOf(new Date(year, month, 26)),
+  to: isoOf(new Date(year, month + 1, 25)),
+});
 
 /**
  * Billing rule (assumed): hours up to the daily available hours are charged; staff with additional availability
@@ -135,15 +135,19 @@ const linesFor = (staff: ClientStaffMember[], range: TimesheetRange, today: Date
     .filter((l): l is InvoiceStaffLine => l !== null);
 };
 
-const MANUAL_SEED: { daysAgo: number; no: string; amount: number; status: InvoicePaymentStatus; note: string }[] = [
-  { daysAgo: 5, no: 'MAN-2026-0031', amount: 420, status: 'Unpaid', note: 'Additional software licenses for Q4' },
-  { daysAgo: 38, no: 'MAN-2026-0027', amount: 850, status: 'Partially Paid', note: 'Onboarding & system setup for 2 new staff' },
-  { daysAgo: 172, no: 'MAN-2026-0018', amount: 1240, status: 'Paid', note: 'Tax season overtime adjustment' },
+const MANUAL_SEED: { daysAgo: number; seq: number; amount: number; status: InvoicePaymentStatus; note: string }[] = [
+  { daysAgo: 5, seq: 2418, amount: 18.64, status: 'Unpaid', note: 'Additional software license' },
+  { daysAgo: 38, seq: 2291, amount: 245.5, status: 'Partially Paid', note: 'Onboarding & system setup for 2 new staff' },
+  { daysAgo: 56, seq: 2264, amount: 12.36, status: 'Paid', note: 'Payment gateway adjustment' },
+  { daysAgo: 172, seq: 1873, amount: 1240, status: 'Paid', note: 'Tax season overtime adjustment' },
 ];
+
+/** Desktop invoice numbers: timesheet "E2608005986", manual "M2608-002376" (YY + MM, dummy sequence) */
+const yymm = (iso: string) => `${iso.slice(2, 4)}${iso.slice(5, 7)}`;
 
 let cache: { key: string; invoices: ClientInvoice[] } | null = null;
 
-/** Last 12 monthly timesheet invoices (created on the 3rd of the next month) + manual invoices, newest first */
+/** Last 12 timesheet invoices (26th–25th cycle, created on the 6th after the cycle ends) + manual invoices, newest first */
 export const clientInvoicesFor = (staff: ClientStaffMember[], today = new Date()): ClientInvoice[] => {
   const key = `${isoOf(today)}-${staff.length}`;
   if (cache?.key === key) return cache.invoices;
@@ -151,9 +155,9 @@ export const clientInvoicesFor = (staff: ClientStaffMember[], today = new Date()
   const todayKey = isoOf(today);
   const timesheet: ClientInvoice[] = [];
   for (let i = 1; i <= 13 && timesheet.length < 12; i++) {
-    const start = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const range = monthRange(start.getFullYear(), start.getMonth());
-    const createdOn = isoOf(new Date(start.getFullYear(), start.getMonth() + 1, 3));
+    const start = new Date(today.getFullYear(), today.getMonth() - i - 1, 1);
+    const range = cycleRange(start.getFullYear(), start.getMonth());
+    const createdOn = isoOf(new Date(start.getFullYear(), start.getMonth() + 2, 6));
     if (createdOn > todayKey) continue;
     const lines = linesFor(staff, range, today);
     if (!lines.length) continue;
@@ -162,7 +166,7 @@ export const clientInvoicesFor = (staff: ClientStaffMember[], today = new Date()
     timesheet.push({
       id: `inv-${range.from}`,
       // Stable per billing month (doesn't change as time passes)
-      invoiceNo: `INV-${start.getFullYear()}-${pad(start.getMonth() + 1)}${pad(10 + ((start.getMonth() * 7 + start.getFullYear()) % 90))}`,
+      invoiceNo: `E${yymm(range.from)}00${4000 + ((start.getMonth() * 379 + start.getFullYear()) % 2000)}`,
       type: 'timesheet',
       createdOn,
       period: { from: range.from, to: range.to },
@@ -178,8 +182,8 @@ export const clientInvoicesFor = (staff: ClientStaffMember[], today = new Date()
   const manual: ClientInvoice[] = MANUAL_SEED.map((m) => {
     const date = addDays(todayKey, -m.daysAgo);
     return {
-      id: `inv-${m.no}`,
-      invoiceNo: m.no,
+      id: `inv-m${m.seq}`,
+      invoiceNo: `M${yymm(date)}-00${m.seq}`,
       type: 'manual',
       createdOn: date,
       period: { from: date, to: null },
@@ -203,24 +207,6 @@ export interface InvoiceDateRange {
   from: string | null;
   to: string | null;
 }
-
-export interface InvoicePreset {
-  id: string;
-  label: string;
-  from: string;
-  to: string;
-}
-
-/** Quick ranges on Invoice Created On (Added by designer) */
-export const invoicePresets = (today = new Date()): InvoicePreset[] => {
-  const todayKey = isoOf(today);
-  return [
-    { id: '3m', label: 'Last 3 Months', from: isoOf(new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())), to: todayKey },
-    { id: '6m', label: 'Last 6 Months', from: isoOf(new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())), to: todayKey },
-    { id: 'ytd', label: 'This Year', from: `${today.getFullYear()}-01-01`, to: todayKey },
-    { id: 'ly', label: `${today.getFullYear() - 1}`, from: `${today.getFullYear() - 1}-01-01`, to: `${today.getFullYear() - 1}-12-31` },
-  ];
-};
 
 /* ----------------------------------- Files ---------------------------------- */
 

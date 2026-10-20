@@ -260,7 +260,7 @@ export const SurveySubmittedModal: React.FC<{
           <h2 className="text-base font-extrabold">Survey Submitted</h2>
           <p className="text-xs text-slate-500 leading-relaxed">Thank you! A summary report of your responses is ready to download.</p>
         </div>
-        <div className="mt-4 p-3 bg-slate-50 border border-[#EBF0F7] rounded-2xl">
+        <div className="mt-4 p-3 bg-slate-50 border border-[#DCE3ED] rounded-2xl">
           <span className="block text-xs font-bold truncate">{title}</span>
           <span className="block text-[11px] text-slate-500 truncate">{subtitle}</span>
         </div>

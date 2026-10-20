@@ -63,7 +63,7 @@ export const QualificationsPanel: React.FC<{
           { label: 'Reciprocal Exemption', value: q.reciprocalExemption === null ? 'Not available' : q.reciprocalExemption ? 'Yes' : 'No' },
         ];
         return (
-          <article key={q.id} className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
+          <article key={q.id} className="bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
             <h3 className="px-4 py-5 bg-[#EEF2FF] text-center text-[15px] font-semibold text-[#1E293B] leading-snug">{qualificationTitle(q)}</h3>
             <dl className="divide-y divide-slate-100">
               {rows.map((r) => (

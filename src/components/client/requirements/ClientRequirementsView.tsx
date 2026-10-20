@@ -1,25 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Briefcase, CalendarDays, ChevronRight, Clock3, Eye, FileSearch, Info, Loader2, MapPin, MessageSquareText, Pencil, Plus, SearchX, UsersRound, Wallet, X } from 'lucide-react';
+import { Briefcase, Eye, Loader2, MessageSquareText, Pencil, SearchX, UserRoundPlus, X } from 'lucide-react';
 import { CommentThreadSheet } from '../../common/CommentThreadSheet';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { Card, ChipRow, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
-import { CardAction, CardIconButton } from '../interviews/InterviewParts';
 import { ShortlistedCandidate, formatShortDate, isoOfDate } from '../data/clientInterviewsData';
 import type { HubProfile } from '../data/clientStaffHubData';
 import {
-  EMPTY_REQUIREMENT_DRAFT,
   EMPTY_REQUIREMENT_FILTERS,
   REQUIREMENT_PAGE_SIZE,
   RequirementDraft,
   RequirementFilters,
-  RequirementStatus,
   StaffRequirement,
   availableResumesFor,
   draftOf,
   matchesRequirement,
+  newRequirementDraft,
   requirementFilterCount,
+  requirementsFromDraft,
   shortlistedFor,
 } from '../data/clientRequirementsData';
 import { RequirementDetailSheet } from './RequirementDetailSheet';
@@ -38,17 +37,40 @@ interface Props {
   defaultLocations: string[];
   onOpenHub?: () => void;
   onOpenShortlisted?: () => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 type Sheet = 'filter' | 'detail' | 'comments' | 'saved' | null;
-type StatusChip = 'All' | RequirementStatus;
 
 /** Desktop loads the table by ajax */
 const LOAD_MS = 600;
 
+
+/** Desktop table column as a label / value pair */
+const Field: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({ label, children, className = '' }) => (
+  <div className={`min-w-0 ${className}`}>
+    <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
+    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
+  </div>
+);
+
+/** Blue table link (Profile, N Locations, N Shortlisted); plain text when it can't be opened */
+const TableLink: React.FC<{ label: string; onClick?: () => void; ariaLabel: string; tone?: 'blue' | 'purple' }> = ({ label, onClick, ariaLabel, tone = 'blue' }) => {
+  const color = tone === 'purple' ? 'text-[#6366F1]' : 'text-[#2F68FE]';
+  return onClick ? (
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`text-left ${color} font-medium underline-offset-2 active:underline cursor-pointer`}>
+      {label}
+    </button>
+  ) : (
+    <span className={`${color} font-medium`}>{label}</span>
+  );
+};
+
 /**
- * Hire New Staff › Staff Requirements (desktop `demands`): requirement list with search and filters, Add / Edit Requirement
- * (3 steps), View Requirement, comments, and links to Available Resumes and Shortlisted Candidates per requirement.
+ * Hire New Staff › Staff Requirement (desktop `demands`): desktop filter bar (Tentative Date, Select Profile, Select Location,
+ * status) with Search / Clear All, requirement cards labelled like the desktop table, Add / Edit Requirement (3 steps),
+ * View Requirement, comments, and links to Available Resumes and Shortlisted Candidates.
  */
 export const ClientRequirementsView: React.FC<Props> = ({
   requirements,
@@ -59,13 +81,12 @@ export const ClientRequirementsView: React.FC<Props> = ({
   defaultLocations,
   onOpenHub,
   onOpenShortlisted,
+  onBack,
 }) => {
   // view = details + comments; add = Add Requirement; edit = Edit Requirement
   const { view: canView, add: canAdd, edit: canEdit } = useClientPermission('requirements');
 
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [chip, setChip] = useState<StatusChip>('All');
   const [filters, setFilters] = useState<RequirementFilters>(EMPTY_REQUIREMENT_FILTERS);
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
@@ -93,18 +114,20 @@ export const ClientRequirementsView: React.FC<Props> = ({
 
   const profiles = useMemo(() => [...new Set(requirements.map((r) => r.profile))].sort(), [requirements]);
 
-  const base = requirements.filter((r) => matchesRequirement(r, query, filters));
-  const chipOptions = useMemo<StatusChip[]>(
-    () => ['All', ...(filters.statuses.length ? filters.statuses : (['In Progress', 'Completed', 'Not Required'] as RequirementStatus[]))],
-    [filters.statuses],
-  );
-  const activeChip = chipOptions.includes(chip) ? chip : 'All';
-  const counts = Object.fromEntries(chipOptions.map((o) => [o, o === 'All' ? base.length : base.filter((r) => r.status === o).length])) as Record<StatusChip, number>;
-  const results = activeChip === 'All' ? base : base.filter((r) => r.status === activeChip);
+  const results = requirements.filter((r) => matchesRequirement(r, '', filters));
   const visible = results.slice(0, pages * REQUIREMENT_PAGE_SIZE);
-
   const filterCount = requirementFilterCount(filters);
-  const isFiltered = filterCount > 0 || query.trim().length > 0 || activeChip !== 'All';
+  const isFiltered = filterCount > 0;
+  // Status chip only when it differs from the desktop default (In Progress, Completed)
+  const statusChanged = filterCount > (filters.date ? 1 : 0) + filters.profiles.length + filters.locations.length;
+  const applied: { key: string; label: string; next: RequirementFilters }[] = [
+    ...(filters.date ? [{ key: 'date', label: formatShortDate(filters.date), next: { ...filters, date: '' } }] : []),
+    ...filters.profiles.map((p) => ({ key: `p-${p}`, label: p, next: { ...filters, profiles: filters.profiles.filter((x) => x !== p) } })),
+    ...filters.locations.map((l) => ({ key: `l-${l}`, label: l, next: { ...filters, locations: filters.locations.filter((x) => x !== l) } })),
+    ...(statusChanged
+      ? [{ key: 'status', label: filters.statuses.length ? filters.statuses.join(', ') : 'All statuses', next: { ...filters, statuses: EMPTY_REQUIREMENT_FILTERS.statuses } }]
+      : []),
+  ];
 
   const reload = () => {
     setPages(1);
@@ -115,11 +138,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
     setFilters(next);
     reload();
   };
-  const clearAll = () => {
-    setQuery('');
-    setChip('All');
-    applyFilters(EMPTY_REQUIREMENT_FILTERS);
-  };
+  const clearAll = () => applyFilters(EMPTY_REQUIREMENT_FILTERS);
 
   const openForm = (editId: string | null) => {
     listScroll.current = listRef.current?.scrollTop ?? 0;
@@ -131,25 +150,15 @@ export const ClientRequirementsView: React.FC<Props> = ({
     if (!form && listRef.current) listRef.current.scrollTop = listScroll.current;
   }, [form]);
 
-  const submit = (draft: RequirementDraft) => {
+  const submit = (next: RequirementDraft) => {
     const today = isoOfDate(new Date());
     if (form?.editId) {
-      onChange(requirements.map((r) => (r.id === form.editId ? { ...r, ...draft } : r)));
-      setSaved({ mode: 'edit', count: 1, profile: draft.profile });
+      onChange(requirements.map((r) => (r.id === form.editId ? { ...r, ...next } : r)));
+      setSaved({ mode: 'edit', count: 1, profile: next.profile });
     } else {
-      const stamp = Date.now();
-      // Desktop saves one requirement per head
-      const created: StaffRequirement[] = Array.from({ length: draft.staffCount }, (_, i) => ({
-        ...draft,
-        id: `rq-${stamp}-${i}`,
-        staffCount: 1,
-        status: 'In Progress',
-        editable: true,
-        createdOn: today,
-        comments: [],
-      }));
+      const created = requirementsFromDraft(next, today);
       onChange([...created, ...requirements]);
-      setSaved({ mode: 'create', count: created.length, profile: draft.profile });
+      setSaved({ mode: 'create', count: created.length, profile: next.profile });
     }
     setForm(null);
     setSheet('saved');
@@ -174,7 +183,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
       <RequirementFormView
         key={form.editId ?? 'new'}
         editing={editing}
-        initial={editing ? draftOf(editing) : { ...EMPTY_REQUIREMENT_DRAFT, locations: defaultLocations }}
+        initial={editing ? draftOf(editing) : newRequirementDraft(defaultLocations)}
         onBack={() => setForm(null)}
         onSubmit={submit}
       />
@@ -191,58 +200,102 @@ export const ClientRequirementsView: React.FC<Props> = ({
         <Card className="overflow-hidden">
           <div className="p-3.5">
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-                <Briefcase className="w-5 h-5" />
-              </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-bold text-[#1E293B] leading-snug">{r.profile}</span>
-                <span className="block text-[11px] text-slate-500 truncate">
-                  {r.domain}
-                  {r.level ? ` · ${r.level}` : ''}
+                <span className="block text-[10.5px] font-semibold text-slate-400">Profile</span>
+                <span className="block mt-0.5 text-[14px] leading-snug">
+                  <TableLink
+                    label={r.profile}
+                    onClick={canView ? () => openSheet('detail', r.id) : undefined}
+                    ariaLabel={`View requirement ${r.profile}`}
+                  />
                 </span>
               </span>
-              <RequirementStatusPill status={r.status} />
+              <span className="shrink-0 flex flex-col items-end">
+                <span className="text-[10.5px] font-semibold text-slate-400">Status</span>
+                <span className="mt-0.5">
+                  <RequirementStatusPill status={r.status} />
+                </span>
+              </span>
             </div>
 
-            <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 grid grid-cols-2 gap-x-3 gap-y-2.5">
-              <Detail icon={Wallet} label="Pricing" value={r.pricing || '-'} />
-              <Detail icon={Clock3} label="Hours/Week" value={`${r.hoursPerWeek} Hrs`} />
-              <Detail icon={CalendarDays} label="Onboarding" value={r.timeline} />
-              <LocationDetail label={`${r.workMode} · Location`} locations={r.locations} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <LinkTile
-                label="Available Resumes"
-                count={resumes}
-                onClick={onOpenHub && resumes > 0 ? onOpenHub : undefined}
-                ariaLabel={`${resumes} available resumes for ${r.profile}`}
-                icon={FileSearch}
-              />
-              <LinkTile
-                label="Shortlisted"
-                count={shortlisted}
-                onClick={onOpenShortlisted && shortlisted > 0 ? onOpenShortlisted : undefined}
-                ariaLabel={`${shortlisted} shortlisted candidates for ${r.profile}`}
-                icon={UsersRound}
-              />
-            </div>
+            <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
+              <Field label="Pricing">
+                <span className="tabular-nums">{r.pricing || '-'}</span>
+              </Field>
+              <Field label="Onboarding Timeline">{r.timeline || '-'}</Field>
+              <Field label="Hours/Week">
+                <span className="tabular-nums">{r.hoursPerWeek || '-'}</span>
+              </Field>
+              <Field label="Work Mode">{r.workMode || '-'}</Field>
+              <Field label="Offshore Location">
+                <LocationValue locations={r.locations} />
+              </Field>
+              <Field label="Available Resumes">
+                {resumes > 0 ? (
+                  <TableLink
+                    label={`${resumes} ${resumes === 1 ? 'Resume' : 'Resumes'}`}
+                    onClick={onOpenHub}
+                    ariaLabel={`${resumes} available resumes for ${r.profile}`}
+                  />
+                ) : (
+                  '-'
+                )}
+              </Field>
+              <Field label="Shortlisted Candidates" className="col-span-2">
+                {shortlisted > 0 ? (
+                  <TableLink
+                    tone="purple"
+                    label={`${shortlisted} Shortlisted`}
+                    onClick={onOpenShortlisted}
+                    ariaLabel={`${shortlisted} shortlisted candidates for ${r.profile}`}
+                  />
+                ) : (
+                  '-'
+                )}
+              </Field>
+            </dl>
           </div>
 
           {(canView || showEdit) && (
-            <div className="px-3.5 py-3 border-t border-slate-100 flex items-center gap-2">
-              {canView && <CardAction size="lg" label="View" icon={Eye} ariaLabel={`View requirement ${r.profile}`} onClick={() => openSheet('detail', r.id)} />}
+            <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
               {canView && (
-                <CardAction
-                  size="lg"
-                  tone="soft"
-                  label={r.comments.length ? `Comments (${r.comments.length})` : 'Comments'}
-                  icon={MessageSquareText}
-                  ariaLabel={`Comments on ${r.profile}`}
+                <button
+                  type="button"
                   onClick={() => openSheet('comments', r.id)}
-                />
+                  aria-label={`Comments on ${r.profile}${r.comments.length > 0 ? `, ${r.comments.length}` : ''}`}
+                  className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                >
+                  <MessageSquareText className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Comments</span>
+                  {r.comments.length > 0 && (
+                    <span className="min-w-4 h-4 px-1 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center tabular-nums shrink-0">
+                      {r.comments.length}
+                    </span>
+                  )}
+                </button>
               )}
-              {showEdit && <CardIconButton icon={Pencil} label={`Edit requirement ${r.profile}`} onClick={() => openForm(r.id)} />}
+              {showEdit && (
+                <button
+                  type="button"
+                  onClick={() => openForm(r.id)}
+                  aria-label={`Edit requirement ${r.profile}`}
+                  className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                >
+                  <Pencil className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Edit</span>
+                </button>
+              )}
+              {canView && (
+                <button
+                  type="button"
+                  onClick={() => openSheet('detail', r.id)}
+                  aria-label={`View requirement ${r.profile}`}
+                  className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-[#2F68FE]/10 text-[#2F68FE] text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-[#2F68FE]/20 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                >
+                  <Eye className="w-4 h-4 shrink-0" />
+                  <span className="truncate">View</span>
+                </button>
+              )}
             </div>
           )}
         </Card>
@@ -252,75 +305,54 @@ export const ClientRequirementsView: React.FC<Props> = ({
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Staff Requirement" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Hire New Staff <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Staff Requirement</span>
-          </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
-            <h1 className="text-xl font-extrabold leading-tight">Staff Requirement</h1>
+        <div className="px-4 pt-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
+              {loading ? '' : `${results.length} ${results.length === 1 ? 'requirement' : 'requirements'}`}
+            </span>
             {canAdd && (
               <button
                 type="button"
                 onClick={() => openForm(null)}
-                className="h-9 px-3 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 active:bg-[#1D4ED8] shrink-0 cursor-pointer"
+                className="h-11 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shadow-2xs active:bg-blue-50 shrink-0 cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                Add
+                <UserRoundPlus className="w-4 h-4" />
+                Add Requirement
               </button>
             )}
-          </div>
-
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0">
-              <SearchField
-                value={query}
-                onChange={(v) => {
-                  setQuery(v);
-                  setPages(1);
-                }}
-                placeholder="Search by profile, domain or location"
-              />
-            </div>
             <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
           </div>
 
-          {filterCount > 0 && (
+          {applied.length > 0 && (
             <div className="mt-2.5 flex items-center gap-2">
-              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
-                {filters.date && <FilterChip label={formatShortDate(filters.date)} onRemove={() => applyFilters({ ...filters, date: '' })} />}
-                {filters.profiles.map((p) => (
-                  <FilterChip key={p} label={p} onRemove={() => applyFilters({ ...filters, profiles: filters.profiles.filter((x) => x !== p) })} />
-                ))}
-                {filters.locations.map((l) => (
-                  <FilterChip key={l} label={l} onRemove={() => applyFilters({ ...filters, locations: filters.locations.filter((x) => x !== l) })} />
-                ))}
-                {filters.statuses.map((s) => (
-                  <FilterChip key={s} label={s} onRemove={() => applyFilters({ ...filters, statuses: filters.statuses.filter((x) => x !== s) })} />
+              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+                {applied.map((a) => (
+                  <span key={a.key} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
+                    {a.label}
+                    <button
+                      type="button"
+                      onClick={() => applyFilters(a.next)}
+                      aria-label={`Remove ${a.label}`}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
                 ))}
               </div>
-              <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-                Clear All
-              </button>
+              {isFiltered && (
+                <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+                  Clear All
+                </button>
+              )}
             </div>
           )}
-
-          <div className="mt-3">
-            <ChipRow
-              options={chipOptions}
-              value={activeChip}
-              onChange={(c) => {
-                setChip(c);
-                reload();
-              }}
-              counts={counts}
-              label="Requirement status"
-            />
-          </div>
         </div>
 
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-4">
           {loading ? (
             <RequirementListSkeleton />
           ) : requirements.length === 0 ? (
@@ -340,7 +372,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
             <EmptyCard
               icon={SearchX}
               title="No requirements found."
-              text="Try another profile, location, date or status."
+              text="Try another date, profile, location or status."
               action={
                 isFiltered && (
                   <button type="button" onClick={clearAll} className="mt-4 h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer">
@@ -425,10 +457,10 @@ export const ClientRequirementsView: React.FC<Props> = ({
   );
 };
 
-/** Desktop shows the full list in a hover tooltip on "N Locations"; on mobile the link opens the same chip popover on tap */
-const LocationDetail: React.FC<{ label: string; locations: string[] }> = ({ label, locations }) => {
+/** Desktop shows "N Locations" with the full list in a hover tooltip; on mobile the link opens the same chip popover on tap */
+const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -444,84 +476,32 @@ const LocationDetail: React.FC<{ label: string; locations: string[] }> = ({ labe
     };
   }, [open]);
 
-  if (locations.length < 2) return <Detail icon={MapPin} label={label} value={locations[0] ?? '-'} />;
+  if (locations.length === 0) return <>-</>;
+  if (locations.length === 1) return <>{locations[0]}</>;
 
   return (
-    <div ref={ref} className="relative min-w-0">
-      <div className="flex items-start gap-2 min-w-0">
-        <MapPin className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" aria-hidden="true" />
-        <span className="min-w-0">
-          <span className="block text-[10.5px] text-slate-400 truncate">{label}</span>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            aria-label={`${locations.length} locations: ${locations.join(', ')}`}
-            className="inline-flex items-center gap-1 max-w-full text-[12px] font-bold text-[#2F68FE] tabular-nums underline decoration-dotted decoration-[#93B4FF] underline-offset-[3px] cursor-pointer"
-          >
-            <span className="truncate">{locations.length} Locations</span>
-            <Info className={`w-3.5 h-3.5 shrink-0 transition-opacity ${open ? 'opacity-100' : 'opacity-70'}`} aria-hidden="true" />
-          </button>
-        </span>
-      </div>
+    <span ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={`${locations.length} locations: ${locations.join(', ')}`}
+        className="text-[#2F68FE] font-medium tabular-nums cursor-pointer"
+      >
+        {locations.length} Locations
+      </button>
       {open && (
-        <div role="tooltip" className="absolute bottom-full right-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
-          <div className="bg-white rounded-xl border border-slate-100 shadow-[0_8px_24px_rgba(15,23,42,0.14)] p-2.5 flex flex-wrap gap-1.5">
+        <span role="tooltip" className="absolute bottom-full left-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
+          <span className="bg-white rounded-xl border border-slate-100 shadow-[0_8px_24px_rgba(15,23,42,0.14)] p-2.5 flex flex-wrap gap-1.5">
             {locations.map((l) => (
               <span key={l} className="px-2.5 py-1 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11.5px] font-medium">
                 {l}
               </span>
             ))}
-          </div>
-          <span aria-hidden="true" className="absolute -bottom-1 right-10 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
-        </div>
+          </span>
+          <span aria-hidden="true" className="absolute -bottom-1 left-8 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
+        </span>
       )}
-    </div>
-  );
-};
-
-const Detail: React.FC<{ icon: React.ElementType; label: string; value: string }> = ({ icon: Icon, label, value }) => (
-  <div className="flex items-start gap-2 min-w-0">
-    <Icon className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" aria-hidden="true" />
-    <span className="min-w-0">
-      <span className="block text-[10.5px] text-slate-400 truncate">{label}</span>
-      <span className="block text-[12px] font-bold text-[#1E293B] tabular-nums truncate">{value}</span>
     </span>
-  </div>
-);
-
-/** Available Resumes / Shortlisted count; opens the matching Hire New Staff screen when the role can open it */
-const LinkTile: React.FC<{ label: string; count: number; icon: React.ElementType; onClick?: () => void; ariaLabel: string }> = ({ label, count, icon: Icon, onClick, ariaLabel }) => {
-  const body = (
-    <>
-      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${count > 0 ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-slate-100 text-slate-400'}`}>
-        <Icon className="w-4 h-4" />
-      </span>
-      <span className="flex-1 min-w-0 text-left">
-        <span className="block text-[10px] leading-tight text-slate-400">{label}</span>
-        <span className="block text-[13px] font-extrabold text-[#1E293B] tabular-nums leading-tight">{count > 0 ? count : '-'}</span>
-      </span>
-      {onClick && <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />}
-    </>
-  );
-  const cls = 'h-14 px-2 rounded-xl border border-slate-200 bg-white flex items-center gap-1.5';
-  return onClick ? (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`${cls} active:bg-slate-50 cursor-pointer`}>
-      {body}
-    </button>
-  ) : (
-    <div className={cls} aria-label={ariaLabel}>
-      {body}
-    </div>
   );
 };
-
-const FilterChip: React.FC<{ label: string; onRemove: () => void }> = ({ label, onRemove }) => (
-  <span className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
-    {label}
-    <button type="button" onClick={onRemove} aria-label={`Remove ${label}`} className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer">
-      <X className="w-3 h-3" />
-    </button>
-  </span>
-);
-

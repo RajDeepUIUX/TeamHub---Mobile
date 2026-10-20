@@ -16,9 +16,9 @@ export const feedbackFilterCount = (f: FeedbackFilters) => f.type.length + f.sta
 type Key = keyof FeedbackFilters;
 
 const FIELDS: { key: Key; label: string; placeholder: string }[] = [
-  { key: 'type', label: 'Survey Type', placeholder: 'All survey types' },
-  { key: 'staff', label: 'Staff Name', placeholder: 'All staff' },
-  { key: 'period', label: 'Period', placeholder: 'All periods' },
+  { key: 'type', label: 'Survey Type', placeholder: 'Select Survey Type' },
+  { key: 'staff', label: 'Staff Name', placeholder: 'Staff Name' },
+  { key: 'period', label: 'Period', placeholder: 'Period' },
 ];
 
 /** Desktop filter bar (Survey Type, Staff Name, Period) → Search / Clear All */
@@ -68,7 +68,7 @@ export const FeedbackFilterSheet: React.FC<{
           onClick={() => onApply(draft)}
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
         >
-          {count ? `Apply Filters (${count})` : 'Apply Filters'}
+          {count ? `Search (${count})` : 'Search'}
         </button>
       </div>
     </BottomSheet>

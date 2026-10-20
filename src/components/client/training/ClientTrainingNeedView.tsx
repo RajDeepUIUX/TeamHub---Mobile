@@ -1,27 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, ClipboardList, GraduationCap, Laptop, Loader2, MessageSquareText, Plus, SearchX } from 'lucide-react';
+import { CalendarDays, ChevronRight, CircleCheck, CirclePlus, ClipboardList, GraduationCap, Loader2, MessageSquareText, MonitorCog, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { Card, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { isoOfDate } from '../data/clientInterviewsData';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
   EMPTY_TNI_FILTERS,
-  TNI_STATUSES,
   TNI_STATUS_LABEL,
   TniDraft,
   TniFilters,
   TniRequest,
-  TniStatus,
   formatTniDate,
   tniFilterCount,
   tniPickableStaff,
 } from '../data/clientTrainingNeedData';
 import { TrainingNeedFilterSheet } from './TrainingNeedFilterSheet';
 import { TrainingNeedFormView } from './TrainingNeedFormView';
-import { TniChips, TniProgress, TniStatusChips, TniStatusPill } from './TrainingNeedParts';
+import { TniStatusPill } from './TrainingNeedParts';
 import { TrainingNeedNotesSheet, TrainingNeedSoftwareSheet } from './TrainingNeedSheets';
 
 interface Props {
@@ -29,11 +27,9 @@ interface Props {
   staff: ClientStaffMember[];
   /** Requests live in ClientApp so changes are kept while switching modules */
   onChange: (next: TniRequest[]) => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
-
-type StatusChip = 'All' | TniStatus;
-const STATUS_CHIPS: StatusChip[] = ['All', ...TNI_STATUSES];
-const chipLabel = (c: StatusChip) => (c === 'All' ? 'All' : TNI_STATUS_LABEL[c]);
 
 const PAGE_SIZE = 10;
 /** Desktop loads the table by ajax */
@@ -44,7 +40,7 @@ type Sheet = 'filter' | 'software' | 'notes' | null;
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading TNI requests">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">
@@ -58,21 +54,22 @@ const ListSkeleton: React.FC = () => (
   </div>
 );
 
-/** Programme / topic summary used for the card title and the Notes header */
+/** Desktop table column label */
+const LABEL = 'text-[10.5px] font-semibold text-slate-400';
+
+/** Programme / topic summary used for the Notes header */
 const trainingLabel = (r: TniRequest) => r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request';
 
 /**
  * Learning & Development › Training Need Identification (desktop `learnings&task=trainingrequest`): the client's TNI
- * Requests for staff with Staff Name / Requested On / Status / Completed On filters, the software list, Notes with the
- * L&D team, and the Add TNI Request form.
+ * Requests for staff with the desktop filter bar (Staff Name, Requested On, Status, Completed On) in a drawer, cards
+ * labelled like the desktop table, the software list, Notes with the L&D team, and the Add TNI Request form.
  */
-export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onChange }) => {
+export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onChange, onBack }) => {
   // `cls-add` = TNI Request button, `cls-comment` = sending a note; the rest is read-only
   const { add: canAdd, edit: canNote } = useClientPermission('training-need');
   const [notice, showNotice] = useTimesheetNotice();
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [chip, setChip] = useState<StatusChip>('All');
   const [filters, setFilters] = useState<TniFilters>(EMPTY_TNI_FILTERS);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [pages, setPages] = useState(1);
@@ -97,37 +94,38 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   // Same avatar colour as My Staff
   const tintOf = (id: string) => sortedStaff.findIndex((s) => s.id === id);
 
-  const term = query.trim().toLowerCase();
-  const base = requests.filter((r) => {
-    const m = memberOf(r.staffId);
-    if (term) {
-      const haystack = [m?.name, r.mainProgramme, ...r.trainingNames, ...r.subProgrammes, ...r.software].join(' ').toLowerCase();
-      if (!haystack.includes(term)) return false;
-    }
-    if (filters.staff.length && !(m && filters.staff.includes(m.name))) return false;
-    if (filters.requestedOn && r.requestedOn !== filters.requestedOn) return false;
-    if (filters.completedOn && r.completedOn !== filters.completedOn) return false;
-    return true;
-  });
-  const inChip = (c: StatusChip, r: TniRequest) => c === 'All' || r.status === c;
-  // Desktop: newest request first
-  const results = base.filter((r) => inChip(chip, r)).sort((a, b) => b.requestedOn.localeCompare(a.requestedOn) || b.id.localeCompare(a.id));
+  const results = requests
+    .filter((r) => {
+      const m = memberOf(r.staffId);
+      if (filters.staff.length && !(m && filters.staff.includes(m.name))) return false;
+      if (filters.requestedOn && r.requestedOn !== filters.requestedOn) return false;
+      if (filters.status && r.status !== filters.status) return false;
+      if (filters.completedOn && r.completedOn !== filters.completedOn) return false;
+      return true;
+    })
+    // Desktop: newest request first
+    .sort((a, b) => b.requestedOn.localeCompare(a.requestedOn) || b.id.localeCompare(a.id));
   const visible = results.slice(0, pages * PAGE_SIZE);
 
   const filterCount = tniFilterCount(filters);
-  const isFiltered = filterCount > 0 || term.length > 0 || chip !== 'All';
+  const isFiltered = filterCount > 0;
+  const applied: { key: string; label: string; next: TniFilters }[] = [
+    ...filters.staff.map((n) => ({ key: `s-${n}`, label: n, next: { ...filters, staff: filters.staff.filter((x) => x !== n) } })),
+    ...(filters.requestedOn ? [{ key: 'req', label: `Requested ${formatTniDate(filters.requestedOn)}`, next: { ...filters, requestedOn: '' } }] : []),
+    ...(filters.status ? [{ key: 'status', label: TNI_STATUS_LABEL[filters.status], next: { ...filters, status: '' as const } }] : []),
+    ...(filters.completedOn ? [{ key: 'done', label: `Completed ${formatTniDate(filters.completedOn)}`, next: { ...filters, completedOn: '' } }] : []),
+  ];
 
   const reload = () => {
     setPages(1);
     setLoading(true);
     listRef.current?.scrollTo({ top: 0 });
   };
-  const clearAll = () => {
-    setQuery('');
-    setFilters(EMPTY_TNI_FILTERS);
-    setChip('All');
+  const applyFilters = (next: TniFilters) => {
+    setFilters(next);
     reload();
   };
+  const clearAll = () => applyFilters(EMPTY_TNI_FILTERS);
 
   const openAdd = () => {
     listScroll.current = listRef.current?.scrollTop ?? 0;
@@ -152,7 +150,6 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
     }));
     onChange([...created, ...requests]);
     setAdding(false);
-    setChip('All');
     showNotice('TNI Request Added Successfully!');
     reload();
   };
@@ -176,69 +173,116 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   const target = targetId ? requests.find((r) => r.id === targetId) ?? null : null;
   const targetMember = target ? memberOf(target.staffId) : undefined;
 
-  const group = (label: string, children: React.ReactNode) => (
-    <div className="min-w-0">
-      <p className="mb-1.5 text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
-      {children}
-    </div>
-  );
-
   const card = (r: TniRequest) => {
     const m = memberOf(r.staffId);
+    const name = m?.name ?? 'Staff';
+    const done = r.status === 'Completed';
+    const shownSoftware = r.software.slice(0, 2);
+    const moreSoftware = r.software.length - shownSoftware.length;
     return (
       <li key={r.id}>
         <Card className="overflow-hidden">
-          <div className="p-3.5 flex items-center gap-3">
+          <div className="p-3.5 flex items-start gap-3">
             {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
-            <span className="flex-1 min-w-0">
-              <span className="block text-[13.5px] font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</span>
-              <span className="block text-[11.5px] text-slate-500 truncate">{m?.designation}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold text-[#1E293B] truncate">{name}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 tabular-nums">
+                <CalendarDays className="w-3 h-3 shrink-0" />
+                Requested On {formatTniDate(r.requestedOn)}
+              </p>
+            </div>
+            <span className="shrink-0">
+              <TniStatusPill status={r.status} />
             </span>
-            <TniStatusPill status={r.status} />
           </div>
 
-          <div className="px-3.5 pb-3.5 pt-3 border-t border-slate-100 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-                <GraduationCap className="w-[18px] h-[18px]" />
+          <div className="px-3.5 pb-3.5 space-y-3">
+            <div>
+              <p className={LABEL}>Training Name</p>
+              {r.trainingNames.length ? (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {r.trainingNames.map((t) => (
+                    <span key={t} className="px-2.5 py-1 rounded-lg bg-[#EEF4FF] text-[12px] font-medium text-[#2F68FE] leading-snug break-words">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[12.5px] text-slate-400">-</p>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-[#F8FAFC] border border-slate-100 p-3">
+              <div className="flex items-start gap-2.5">
+                <span className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-[#2F68FE] flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-4 h-4" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className={LABEL}>Main Training Programme</p>
+                  <p className="mt-0.5 text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{r.mainProgramme || '-'}</p>
+                </div>
+              </div>
+              <p className={`${LABEL} mt-3`}>Sub Training Programme</p>
+              {r.subProgrammes.length ? (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {r.subProgrammes.map((s) => (
+                    <span key={s} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11.5px] font-medium text-slate-600 leading-snug break-words">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[12.5px] text-slate-400">-</p>
+              )}
+            </div>
+
+            <div>
+              <p className={LABEL}>Software</p>
+              {r.software.length ? (
+                <button
+                  type="button"
+                  onClick={() => openSheet('software', r.id)}
+                  aria-label={`View ${r.software.length} software for ${name}`}
+                  className="mt-1.5 w-full min-h-11 px-3 py-2 rounded-xl border border-slate-200 bg-white flex items-center gap-2 text-left active:bg-slate-50 cursor-pointer"
+                >
+                  <MonitorCog className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="flex-1 min-w-0 flex flex-wrap gap-1.5">
+                    {shownSoftware.map((s) => (
+                      <span key={s} className="px-2 py-0.5 rounded-md bg-slate-100 text-[11.5px] font-semibold text-slate-700">
+                        {s}
+                      </span>
+                    ))}
+                    {moreSoftware > 0 && <span className="px-2 py-0.5 rounded-md bg-[#EEF4FF] text-[11.5px] font-bold text-[#2F68FE] tabular-nums">+{moreSoftware}</span>}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                </button>
+              ) : (
+                <p className="mt-1 text-[12.5px] text-slate-400">-</p>
+              )}
+            </div>
+          </div>
+
+          <div className="px-3.5 py-2.5 border-t border-slate-100 bg-[#FCFDFE] flex items-center gap-3">
+            {/* Desktop shows the date only once the L&D team marks the request Completed */}
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-slate-100 text-slate-400'}`}>
+                <CircleCheck className="w-3.5 h-3.5" />
               </span>
               <span className="min-w-0">
-                <span className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Main Training Programme</span>
-                <span className="block text-[13px] font-bold leading-snug">{r.mainProgramme || <span className="text-slate-400">-</span>}</span>
+                <span className="block text-[10px] font-semibold text-slate-400">Completed On</span>
+                <span className={`block text-[12px] font-semibold tabular-nums ${done ? 'text-[#1E293B]' : 'text-slate-400'}`}>{done ? formatTniDate(r.completedOn) : '-'}</span>
               </span>
             </div>
-            {r.subProgrammes.length > 0 && group('Sub Training Programme', <TniChips values={r.subProgrammes} />)}
-            {r.trainingNames.length > 0 && group('Training Name', <TniChips values={r.trainingNames} tone="blue" />)}
-          </div>
-
-          <div className="mx-3.5 mb-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <TniProgress status={r.status} requestedOn={r.requestedOn} completedOn={r.completedOn} formatDate={formatTniDate} />
-          </div>
-
-          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-            {r.software.length ? (
-              <button
-                type="button"
-                onClick={() => openSheet('software', r.id)}
-                aria-label={`View ${r.software.length} software for ${m?.name ?? 'staff'}`}
-                className="h-9 px-3 rounded-xl bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 active:bg-[#DBEAFE] cursor-pointer"
-              >
-                <Laptop className="w-4 h-4" />
-                {r.software.length} Software
-              </button>
-            ) : (
-              <span className="text-[11px] text-slate-400">No software</span>
-            )}
             <button
               type="button"
               onClick={() => openSheet('notes', r.id)}
-              aria-label={`Notes for ${m?.name ?? 'staff'}`}
-              className="h-9 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold flex items-center gap-1.5 active:bg-slate-50 cursor-pointer"
+              aria-label={`Notes for ${name}`}
+              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-700 flex items-center gap-1.5 active:bg-slate-50 shrink-0 cursor-pointer"
             >
-              <MessageSquareText className="w-4 h-4" />
+              <MessageSquareText className="w-4 h-4 text-[#2F68FE]" />
               Notes
               {r.notes.length > 0 && (
-                <span className="min-w-5 h-5 px-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-600 flex items-center justify-center tabular-nums">{r.notes.length}</span>
+                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{r.notes.length}</span>
               )}
             </button>
           </div>
@@ -249,70 +293,52 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Training Need Identification" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Learning &amp; Development <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Training Need Identification</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Training Need Identification</h1>
-
-          <div className="mt-2 flex items-center justify-between gap-3 min-h-9">
-            <span className="text-xs font-semibold text-slate-500 tabular-nums">{loading ? '' : `${results.length} request${results.length === 1 ? '' : 's'}`}</span>
+        <div className="px-4 pt-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
+              {loading ? '' : `${results.length} ${results.length === 1 ? 'Record' : 'Records'}`}
+            </span>
             {canAdd && (
               <button
                 type="button"
                 onClick={openAdd}
-                className="h-9 px-3 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 active:bg-[#1D4ED8] shrink-0 cursor-pointer"
+                className="h-11 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shadow-2xs active:bg-blue-50 shrink-0 cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <CirclePlus className="w-4 h-4" />
                 TNI Request
               </button>
             )}
-          </div>
-
-          <div className="mt-2 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0">
-              <SearchField
-                value={query}
-                onChange={(v) => {
-                  setQuery(v);
-                  setPages(1);
-                }}
-                placeholder="Search by staff, programme or software"
-              />
-            </div>
             <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
           </div>
 
-          <div className="mt-3">
-            <TniStatusChips
-              options={STATUS_CHIPS}
-              value={chip}
-              onChange={(c) => {
-                if (c === chip) return;
-                setChip(c);
-                reload();
-              }}
-              labelOf={chipLabel}
-              counts={Object.fromEntries(STATUS_CHIPS.map((c) => [c, base.filter((r) => inChip(c, r)).length])) as Record<StatusChip, number>}
-            />
-          </div>
-
-          {isFiltered && !loading && (
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">
-                {chip === 'All' ? 'All statuses' : chipLabel(chip)}
-                {filterCount > 0 && ` · ${filterCount} ${filterCount === 1 ? 'filter' : 'filters'}`}
-              </span>
-              <button type="button" onClick={clearAll} className="text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+          {applied.length > 0 && (
+            <div className="mt-2.5 flex items-center gap-2">
+              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+                {applied.map((a) => (
+                  <span key={a.key} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
+                    {a.label}
+                    <button
+                      type="button"
+                      onClick={() => applyFilters(a.next)}
+                      aria-label={`Remove ${a.label}`}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
               </button>
             </div>
           )}
         </div>
 
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-4">
           {loading ? (
             <ListSkeleton />
           ) : requests.length === 0 ? (
@@ -342,25 +368,30 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
               }
             />
           ) : (
-            <ul className="space-y-3">{visible.map(card)}</ul>
-          )}
+            <>
+              <ul className="space-y-3">{visible.map(card)}</ul>
 
-          {!loading && visible.length < results.length && (
-            <button
-              type="button"
-              disabled={moreLoading}
-              onClick={() => {
-                setMoreLoading(true);
-                setTimeout(() => {
-                  setPages((n) => n + 1);
-                  setMoreLoading(false);
-                }, LOAD_MS);
-              }}
-              className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
-            >
-              {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
-            </button>
+              {visible.length < results.length && (
+                <button
+                  type="button"
+                  disabled={moreLoading}
+                  onClick={() => {
+                    setMoreLoading(true);
+                    setTimeout(() => {
+                      setPages((n) => n + 1);
+                      setMoreLoading(false);
+                    }, LOAD_MS);
+                  }}
+                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
+                >
+                  {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
+                </button>
+              )}
+              <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
+                Showing {visible.length} Of {results.length} Records
+              </p>
+            </>
           )}
         </div>
       </div>
@@ -371,9 +402,8 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
         staffOptions={Array.from(new Set(requests.map((r) => memberOf(r.staffId)?.name).filter((v): v is string => Boolean(v)))).sort((a, b) => a.localeCompare(b))}
         onClose={() => setSheet(null)}
         onApply={(next) => {
-          setFilters(next);
           setSheet(null);
-          reload();
+          applyFilters(next);
         }}
       />
       <TrainingNeedSoftwareSheet isOpen={sheet === 'software'} staffName={targetMember?.name ?? ''} software={target?.software ?? []} onClose={() => setSheet(null)} />

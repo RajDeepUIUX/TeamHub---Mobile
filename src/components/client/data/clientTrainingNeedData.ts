@@ -93,13 +93,15 @@ export interface TniFilters {
   staff: string[];
   /** ISO date, exact match (desktop `request_date = ?`) */
   requestedOn: string;
+  /** Desktop single select: Pending / Assigned / Completed; '' = all */
+  status: TniStatus | '';
   /** ISO date (desktop `DATE(crm_status_updated_on) = ?`) */
   completedOn: string;
 }
 
-export const EMPTY_TNI_FILTERS: TniFilters = { staff: [], requestedOn: '', completedOn: '' };
+export const EMPTY_TNI_FILTERS: TniFilters = { staff: [], requestedOn: '', status: '', completedOn: '' };
 
-export const tniFilterCount = (f: TniFilters) => f.staff.length + (f.requestedOn ? 1 : 0) + (f.completedOn ? 1 : 0);
+export const tniFilterCount = (f: TniFilters) => f.staff.length + (f.requestedOn ? 1 : 0) + (f.status ? 1 : 0) + (f.completedOn ? 1 : 0);
 
 export const formatTniDate = (iso: string | null) =>
   iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '-';

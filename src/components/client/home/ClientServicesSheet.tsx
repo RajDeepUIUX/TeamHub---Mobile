@@ -128,7 +128,7 @@ export const ClientServicesSheet: React.FC<ClientServicesSheetProps> = ({ isOpen
                 <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E8F8F0] text-[#059669] text-[10.5px] font-bold">{activeCount} Active</span>
               )}
             </div>
-            <div className="mt-2 bg-white border border-[#EBF0F7] rounded-2xl divide-y divide-slate-100">
+            <div className="mt-2 bg-white border border-[#DCE3ED] rounded-2xl divide-y divide-slate-100">
               {section.services.map((s) => {
                 const Icon = ICONS[s.id] ?? LayoutGrid;
                 return (

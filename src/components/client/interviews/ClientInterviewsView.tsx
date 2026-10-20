@@ -3,10 +3,12 @@ import {
   CalendarClock,
   CalendarPlus,
   Check,
-  ChevronRight,
+  CircleCheck,
+  CircleX,
   ClipboardCheck,
   Eye,
   Headset,
+  Hourglass,
   Loader2,
   MessageSquareText,
   MoreHorizontal,
@@ -15,9 +17,9 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { Card, ChipRow, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { FilterIconButton } from '../../common/TeamFilterSheet';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar } from '../staff/ClientStaffParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import {
@@ -25,12 +27,14 @@ import {
   ASSESSMENT_MAX,
   AssignedAssessment,
   CANDIDATE_PAGE_SIZE,
-  CANDIDATE_STATUS_CHIPS,
   CANDIDATE_STATUSES,
+  CLIENT_TZ,
   CandidateFeedback,
   CandidateFilters,
+  CandidateStatus,
   CandidateStatusChip,
   EMPTY_CANDIDATE_FILTERS,
+  candidateFilterCount,
   ScheduledInterview,
   ShortlistedCandidate,
   activeAssignments,
@@ -39,7 +43,6 @@ import {
   canBulkAssign,
   canManageInterview,
   canRequestInterview,
-  candidateFilterCount,
   feedbackAvailable,
   formatShortDate,
   interviewCountdown,
@@ -70,6 +73,8 @@ interface Props {
   /** Candidates live in ClientApp so changes are kept while switching modules */
   onUpdate: (id: string, patch: Partial<ShortlistedCandidate>) => void;
   onContactManager: () => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 type Sheet = 'filter' | 'feedback' | 'schedule' | 'scheduled' | 'assign' | 'progress' | 'cv' | 'cancel' | 'more' | null;
@@ -87,6 +92,36 @@ const useNow = (intervalMs = 30_000) => {
   return now;
 };
 
+type StatusTone = 'blue' | 'amber' | 'green' | 'red';
+
+/** Desktop status card icons: tick (Applied / Shortlisted), hourglass (waiting), circle tick (done), circle cross (closed) */
+const STATUS_CARD: Record<CandidateStatus, { icon: React.ElementType; tone: StatusTone }> = {
+  Applied: { icon: Check, tone: 'blue' },
+  Shortlisted: { icon: Check, tone: 'blue' },
+  'Interview Scheduled': { icon: Hourglass, tone: 'amber' },
+  'In Process': { icon: Hourglass, tone: 'amber' },
+  Hired: { icon: CircleCheck, tone: 'green' },
+  Hold: { icon: Hourglass, tone: 'amber' },
+  Selected: { icon: CircleCheck, tone: 'green' },
+  'Not Selected': { icon: CircleX, tone: 'red' },
+  Left: { icon: CircleX, tone: 'red' },
+};
+
+const TONE_ICON: Record<StatusTone, string> = {
+  blue: 'bg-[#EFF6FF] text-[#2F68FE]',
+  amber: 'bg-[#FFFBEB] text-[#D97706]',
+  green: 'bg-[#F0FDF4] text-[#16A34A]',
+  red: 'bg-[#FEF2F2] text-[#DC2626]',
+};
+
+/** Desktop table column as a label / value row */
+const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-center justify-between gap-3 py-2.5 min-h-10">
+    <dt className="text-[11.5px] text-slate-500 shrink-0">{label}</dt>
+    <dd className="min-w-0 text-[12.5px] font-semibold text-[#1E293B] text-right flex items-center justify-end gap-2 flex-wrap">{children}</dd>
+  </div>
+);
+
 const hasResumeOf = (c: ShortlistedCandidate) => (c.source === 'hub' ? Boolean(c.resume) : Boolean(c.cvFile));
 
 /**
@@ -94,13 +129,12 @@ const hasResumeOf = (c: ShortlistedCandidate) => (c.source === 'hub' ? Boolean(c
  * list with assessments, View Resume, Interview Feedback, Request / Reschedule / Cancel Interview, Join Interview and
  * bulk "Request Assessment".
  */
-export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager }) => {
+export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, onBack }) => {
   // view = resume / feedback / progress; add = feedback, request interview, assign assessment; edit = reschedule; delete = cancel interview; download = files
   const { view: canView, add: canAdd, edit: canEdit, delete: canDelete, download: canDownload } = useClientPermission('interviews');
 
   const now = useNow();
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
   const [chip, setChip] = useState<CandidateStatusChip>('All');
   const [filters, setFilters] = useState<CandidateFilters>(EMPTY_CANDIDATE_FILTERS);
   const [pages, setPages] = useState(1);
@@ -137,10 +171,9 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   };
 
   const profiles = useMemo(() => [...new Set(candidates.map((c) => c.profile))].sort(), [candidates]);
-  const domains = useMemo(() => [...new Set(candidates.map((c) => c.domain))].sort(), [candidates]);
 
-  // Desktop status cards count the searched / filtered list; tapping one filters by that status
-  const base = candidates.filter((c) => matchesCandidate(c, query, filters));
+  // Desktop status cards count the searched list; tapping one filters by that status (tap again for all)
+  const base = candidates.filter((c) => matchesCandidate(c, filters));
   const counts = Object.fromEntries([
     ['All', base.length],
     ...CANDIDATE_STATUSES.map((s) => [s, base.filter((c) => c.status === s).length]),
@@ -149,8 +182,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   const visible = results.slice(0, pages * CANDIDATE_PAGE_SIZE);
 
   const filterCount = candidateFilterCount(filters);
-  const term = query.trim();
-  const isFiltered = filterCount > 0 || term.length > 0 || chip !== 'All';
+  const isFiltered = filterCount > 0 || chip !== 'All';
 
   const anySelectable = canAdd && candidates.some(isBulkSelectable);
   // Rows whose checkbox can be ticked (desktop disables it when the assessment slots are full)
@@ -166,7 +198,6 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     reload();
   };
   const clearAll = () => {
-    setQuery('');
     setChip('All');
     applyFilters(EMPTY_CANDIDATE_FILTERS);
   };
@@ -255,7 +286,6 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     const selectable = selectMode && isBulkSelectable(c);
     const atMax = atAssessmentMax(c);
     const checked = selected.includes(c.id);
-    const tint = candidates.findIndex((x) => x.id === c.id);
     const resumeReady = canView && hasResumeOf(c);
     const tapOpens = selectMode ? selectable && !atMax : resumeReady;
 
@@ -311,12 +341,12 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               }
             }}
             aria-label={tapOpens ? (selectMode ? `Select ${c.name} for assessment` : `${c.name}, ${c.status}. View resume`) : undefined}
-            className={`p-3.5 ${tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}
+            className={`p-4 ${tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               {selectMode && selectable && (
                 <span
-                  className={`mt-2.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
+                  className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
                     atMax ? 'bg-slate-100 border-slate-200' : checked ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-300'
                   }`}
                   aria-hidden="true"
@@ -324,84 +354,97 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                   {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                 </span>
               )}
-              <StaffAvatar name={c.name} tint={tint} />
+              <StaffAvatar name={c.name} tint={candidates.findIndex((x) => x.id === c.id)} />
               <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-bold text-[#1E293B] truncate">{c.name}</span>
-                <span className="block text-[11px] text-slate-500 truncate">
-                  Resume ID <span className="font-semibold text-slate-600 tabular-nums">{c.resumeId}</span>
+                <span className="block text-[14.5px] font-bold text-[#1E293B] truncate">{c.name}</span>
+                <span className="block mt-0.5 text-[11.5px] text-slate-500 truncate">
+                  Resume ID <span className="font-semibold text-slate-700 tabular-nums">{c.resumeId || '-'}</span>
                 </span>
               </span>
-              <CandidateStatusPill status={c.status} />
-            </div>
-
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              <p className="text-[13px] font-bold text-[#1E293B] leading-snug">{c.profile}</p>
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10.5px] font-semibold text-slate-500 whitespace-nowrap">{c.domain}</span>
-            </div>
-
-            {/* Interview + completed date in one tinted strip */}
-            <div
-              className={`mt-3 rounded-xl border px-3 py-2.5 flex items-center gap-3 ${
-                countdown?.soon ? 'bg-[#EFF6FF] border-[#BFDBFE]' : 'bg-slate-50 border-slate-100'
-              }`}
-            >
-              <span
-                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iv ? 'bg-white text-[#2F68FE] shadow-2xs' : 'bg-slate-100 text-slate-400'}`}
-                aria-hidden="true"
-              >
-                <CalendarClock className="w-[18px] h-[18px]" />
+              <span className="shrink-0 self-start">
+                <CandidateStatusPill status={c.status} />
               </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[10.5px] text-slate-400">Interview{iv ? '' : ' not scheduled yet'}</span>
-                {iv && (
-                  <span className="block text-[12px] font-bold text-[#1E293B] tabular-nums truncate">
-                    {iv.date} · {iv.time}
-                  </span>
-                )}
-              </span>
-              {countdown && (
-                <span
-                  className={`shrink-0 px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${
-                    countdown.soon ? 'bg-[#2F68FE] text-white' : 'bg-white text-slate-600 border border-slate-200'
-                  }`}
-                >
-                  {countdown.label}
-                </span>
-              )}
-              {c.completedOn && (
-                <span className="shrink-0 text-right">
-                  <span className="block text-[10.5px] text-slate-400">Completed</span>
-                  <span className="block text-[11.5px] font-bold text-slate-700 tabular-nums">{formatShortDate(c.completedOn)}</span>
-                </span>
-              )}
             </div>
 
-            {assessAction !== 'none' && (
-              <div className="mt-3 flex items-center gap-2.5 min-h-8">
-                <ClipboardCheck className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-                <span className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className="text-[11.5px] font-semibold text-slate-600">Assessments</span>
-                  <span className="flex items-center gap-1" aria-label={`${activeAssessments} of ${ASSESSMENT_MAX} assessment slots used`}>
-                    {Array.from({ length: ASSESSMENT_MAX }, (_, i) => (
-                      <span key={i} className={`w-2 h-2 rounded-full ${i < activeAssessments ? 'bg-[#2F68FE]' : 'bg-slate-200'}`} />
-                    ))}
-                  </span>
-                  <span className="text-[11px] text-slate-400 tabular-nums">
-                    {activeAssessments}/{ASSESSMENT_MAX}
-                  </span>
-                </span>
-                {assessAction === 'assign' && canAdd && !selectMode && (
-                  <CardAction label="Assign" tone="soft" onClick={() => openAssign([c.id])} ariaLabel={`Assign assessments to ${c.name}`} />
-                )}
-                {assessAction === 'view' && canView && !selectMode && (
-                  <CardAction label="View" tone="soft" onClick={() => openSheet('progress', c.id)} ariaLabel={`View assessment progress for ${c.name}`} />
-                )}
+            <div className="mt-3.5">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Profile</p>
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                <span className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{c.profile || '-'}</span>
+                {c.domain && <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10.5px] font-semibold text-slate-600 whitespace-nowrap">{c.domain}</span>}
               </div>
-            )}
+            </div>
+
+            <dl className="mt-3 border-t border-slate-100 divide-y divide-slate-100">
+              <Row label={`Interview (${CLIENT_TZ})`}>
+                {iv ? (
+                  <>
+                    <span className="tabular-nums">
+                      {iv.date} · {iv.time.replace(` (${CLIENT_TZ})`, '')}
+                    </span>
+                    {countdown && (
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${
+                          countdown.soon ? 'bg-[#2F68FE] text-white' : 'bg-[#EFF6FF] text-[#2F68FE]'
+                        }`}
+                      >
+                        {countdown.label}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-slate-400 font-medium">-</span>
+                )}
+              </Row>
+              <Row label="Completed On">
+                {c.completedOn ? <span className="tabular-nums">{formatShortDate(c.completedOn)}</span> : <span className="text-slate-400 font-medium">-</span>}
+              </Row>
+              <Row label="Assessments">
+                {assessAction === 'none' ? (
+                  <span className="text-slate-400 font-medium">-</span>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1" aria-label={`${activeAssessments} of ${ASSESSMENT_MAX} assessment slots used`}>
+                      {Array.from({ length: ASSESSMENT_MAX }, (_, i) => (
+                        <span key={i} className={`w-2 h-2 rounded-full ${i < activeAssessments ? 'bg-[#2F68FE]' : 'bg-slate-200'}`} />
+                      ))}
+                    </span>
+                    <span className="text-slate-600 tabular-nums">
+                      {activeAssessments}/{ASSESSMENT_MAX}
+                    </span>
+                    {assessAction === 'assign' && canAdd && !selectMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAssign([c.id]);
+                        }}
+                        aria-label={`Assign assessments to ${c.name}`}
+                        className="ml-1 text-[12px] font-bold text-[#2F68FE] cursor-pointer"
+                      >
+                        Assign
+                      </button>
+                    )}
+                    {assessAction === 'view' && canView && !selectMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSheet('progress', c.id);
+                        }}
+                        aria-label={`View assessment progress for ${c.name}`}
+                        className="ml-1 text-[12px] font-bold text-[#2F68FE] cursor-pointer"
+                      >
+                        View
+                      </button>
+                    )}
+                  </>
+                )}
+              </Row>
+            </dl>
           </div>
 
           {accountManagerNote && (
-            <p className="mx-3.5 mb-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 leading-snug flex items-center gap-2">
+            <p className="mx-4 mb-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 leading-snug flex items-center gap-2">
               <Headset className="w-3.5 h-3.5 shrink-0 text-slate-400" />
               <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
               <button type="button" onClick={onContactManager} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
@@ -411,7 +454,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           )}
 
           {!selectMode && (primary.length > 0 || resumeReady || hasMenu) && (
-            <div className="px-3.5 py-3 border-t border-slate-100 flex items-center gap-2">
+            <div className="px-4 pb-4 flex items-center gap-2">
               {primary}
               {resumeReady &&
                 (primary.length === 0 ? (
@@ -440,20 +483,18 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Shortlisted Candidates" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Hire New Staff <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Shortlisted Candidates</span>
-          </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
-            <h1 className="text-xl font-extrabold leading-tight">Shortlisted Candidates</h1>
+        <div className="px-4 pt-3">
+          <div className="flex items-center justify-end gap-2.5">
             {anySelectable && (
               <button
                 type="button"
                 onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
                 disabled={loading}
-                className={`h-9 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 shrink-0 cursor-pointer ${
+                aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
+                className={`h-11 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 shrink-0 cursor-pointer ${
                   selectMode ? 'border-slate-200 bg-white text-slate-600 active:bg-slate-50' : 'border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] active:bg-blue-100'
                 }`}
               >
@@ -461,51 +502,35 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                 {selectMode ? 'Cancel' : 'Select'}
               </button>
             )}
-          </div>
-
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0">
-              <SearchField
-                value={query}
-                onChange={(v) => {
-                  setQuery(v);
-                  setPages(1);
-                }}
-                placeholder="Search by name, resume ID or profile"
-              />
-            </div>
             <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
           </div>
 
           {filterCount > 0 && (
-            <div className="mt-2.5 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2">
               <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
-                {filters.profiles.map((p) => (
-                  <span key={p} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
-                    {p}
-                    <button
-                      type="button"
-                      onClick={() => applyFilters({ ...filters, profiles: filters.profiles.filter((x) => x !== p) })}
-                      aria-label={`Remove ${p}`}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                {(
+                  [
+                    ['resumeId', 'Resume ID'],
+                    ['profile', 'Profile'],
+                  ] as const
+                )
+                  .filter(([key]) => filters[key].trim())
+                  .map(([key, label]) => (
+                    <span
+                      key={key}
+                      className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-                {filters.domains.map((d) => (
-                  <span key={d} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
-                    {d}
-                    <button
-                      type="button"
-                      onClick={() => applyFilters({ ...filters, domains: filters.domains.filter((x) => x !== d) })}
-                      aria-label={`Remove ${d}`}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+                      {label}: {filters[key].trim()}
+                      <button
+                        type="button"
+                        onClick={() => applyFilters({ ...filters, [key]: '' })}
+                        aria-label={`Remove ${label} filter`}
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
               </div>
               <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
@@ -513,17 +538,33 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             </div>
           )}
 
-          <div className="mt-3">
-            <ChipRow
-              options={CANDIDATE_STATUS_CHIPS}
-              value={chip}
-              onChange={(c) => {
-                setChip(c);
-                reload();
-              }}
-              counts={counts}
-              label="Candidate status"
-            />
+          <div className="mt-4 -mx-4 px-4 flex gap-2.5 overflow-x-auto no-scrollbar" role="group" aria-label="Candidate status">
+            {CANDIDATE_STATUSES.map((s) => {
+              const { icon: Icon, tone } = STATUS_CARD[s];
+              const active = chip === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setChip(active ? 'All' : s);
+                    reload();
+                  }}
+                  className={`shrink-0 w-[128px] px-3 py-2.5 rounded-xl border text-left transition-colors cursor-pointer ${
+                    active ? 'border-[#2F68FE] bg-[#EFF6FF] ring-1 ring-[#2F68FE]' : 'border-[#DCE3ED] bg-white active:bg-slate-50'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${TONE_ICON[tone]}`} aria-hidden="true">
+                      <Icon className="w-4 h-4" />
+                    </span>
+                    <span className="text-[18px] font-bold text-[#1E293B] tabular-nums">{counts[s]}</span>
+                  </span>
+                  <span className={`block mt-2 text-[11px] leading-tight truncate ${active ? 'text-[#1D4ED8] font-semibold' : 'text-slate-500 font-medium'}`}>{s}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -536,7 +577,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             <EmptyCard
               icon={SearchX}
               title="No candidates found."
-              text="Try another name, resume ID, profile or status."
+              text="Try another resume ID, profile or status."
               action={
                 isFiltered && (
                   <button
@@ -551,6 +592,23 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             />
           ) : (
             <>
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <p className="text-[12px] font-bold text-[#1E293B]">
+                  {chip === 'All' ? 'All Candidates' : chip} <span className="text-slate-400 font-semibold tabular-nums">({results.length})</span>
+                </p>
+                {chip !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChip('All');
+                      reload();
+                    }}
+                    className="text-[11px] font-bold text-[#2F68FE] cursor-pointer"
+                  >
+                    Show all
+                  </button>
+                )}
+              </div>
               <ul className="space-y-3">{visible.map(card)}</ul>
 
               {visible.length < results.length && (
@@ -608,7 +666,6 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
         isOpen={sheet === 'filter'}
         filters={filters}
         profiles={profiles}
-        domains={domains}
         onClose={closeSheet}
         onApply={(next) => {
           closeSheet();

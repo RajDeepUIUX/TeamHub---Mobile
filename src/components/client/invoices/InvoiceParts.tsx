@@ -45,7 +45,7 @@ export const FileAction: React.FC<{
 export const InvoiceListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
     {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-xl" />
           <div className="flex-1 space-y-1.5">
@@ -66,7 +66,7 @@ export const InvoiceListSkeleton: React.FC = () => (
 export const InvoiceDetailSkeleton: React.FC = () => (
   <div className="px-4 pt-3 space-y-3" aria-busy="true" aria-label="Loading invoice details">
     <StaffSkeleton className="w-40 h-3" />
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
       <StaffSkeleton className="w-24 h-4" />
       <StaffSkeleton className="w-40 h-8" />
       <div className="grid grid-cols-2 gap-3">
@@ -76,7 +76,7 @@ export const InvoiceDetailSkeleton: React.FC = () => (
       </div>
     </div>
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 flex items-center gap-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 flex items-center gap-3">
         <StaffSkeleton className="w-10 h-10 rounded-full" />
         <div className="flex-1 space-y-1.5">
           <StaffSkeleton className="w-32 h-3.5" />

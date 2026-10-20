@@ -4,7 +4,6 @@
  * Desktop list = Available Staff Hub profiles (`project` source) + recruiter-sourced candidates (`candidate` source, MOS clients).
  * All names, resume IDs, companies, links and scores are dummy data.
  */
-import { CLIENT_IS_MOS } from './clientTimesheetsData';
 
 /* --------------------------------- Statuses -------------------------------- */
 
@@ -19,13 +18,20 @@ export type CandidateStatus =
   | 'Selected'
   | 'Left';
 
-/** Desktop status cards: always these four; MOS clients (recruiter-sourced candidates) also get the rest */
-const CORE_STATUSES: CandidateStatus[] = ['Shortlisted', 'Interview Scheduled', 'Hired', 'Not Selected'];
-const MOS_STATUSES: CandidateStatus[] = ['Applied', 'In Process', 'Hold', 'Selected', 'Left'];
-export const CANDIDATE_STATUSES: CandidateStatus[] = CLIENT_IS_MOS ? [...CORE_STATUSES, ...MOS_STATUSES] : CORE_STATUSES;
+/** Desktop status cards, in desktop order (all nine are shown, like the MOS desktop view) */
+export const CANDIDATE_STATUSES: CandidateStatus[] = [
+  'Applied',
+  'Shortlisted',
+  'Interview Scheduled',
+  'In Process',
+  'Hired',
+  'Hold',
+  'Selected',
+  'Not Selected',
+  'Left',
+];
 
 export type CandidateStatusChip = 'All' | CandidateStatus;
-export const CANDIDATE_STATUS_CHIPS: CandidateStatusChip[] = ['All', ...CANDIDATE_STATUSES];
 
 export type CandidateSource = 'hub' | 'recruiter';
 
@@ -595,7 +601,7 @@ const HUB_CANDIDATES: ShortlistedCandidate[] = [
   }),
 ];
 
-/** Recruiter-sourced candidates (desktop `candidate` source): CV file, no Zoom link, 8-question feedback, MOS clients only */
+/** Recruiter-sourced candidates (desktop `candidate` source): CV file, no Zoom link, 8-question feedback */
 const RECRUITER_CANDIDATES: ShortlistedCandidate[] = [
   seed('rc1', 'Rhea Fernandes', '-', 'Tax Associate', 'Tax', 'Interview Scheduled', {
     source: 'recruiter',
@@ -645,8 +651,8 @@ const RECRUITER_CANDIDATES: ShortlistedCandidate[] = [
   }),
 ];
 
-/** Desktop list is `ORDER BY id DESC` — newest first */
-export const SHORTLISTED_SEED: ShortlistedCandidate[] = CLIENT_IS_MOS ? [...HUB_CANDIDATES, ...RECRUITER_CANDIDATES] : HUB_CANDIDATES;
+/** Desktop list is `ORDER BY id DESC` — newest first; both sources are listed so every desktop status card has data */
+export const SHORTLISTED_SEED: ShortlistedCandidate[] = [...HUB_CANDIDATES, ...RECRUITER_CANDIDATES];
 
 export const CANDIDATE_PAGE_SIZE = 8;
 
@@ -701,23 +707,22 @@ export const formatExperience = (pair: [number, number] | undefined) => {
   return parts.join(' ');
 };
 
+/** Desktop search row: "Search By Resume ID" + "Search By Profile", applied with Search / Clear All */
 export interface CandidateFilters {
-  profiles: string[];
-  domains: string[];
+  resumeId: string;
+  profile: string;
 }
-export const EMPTY_CANDIDATE_FILTERS: CandidateFilters = { profiles: [], domains: [] };
-export const candidateFilterCount = (f: CandidateFilters) => f.profiles.length + f.domains.length;
+export const EMPTY_CANDIDATE_FILTERS: CandidateFilters = { resumeId: '', profile: '' };
+export const candidateFilterCount = (f: CandidateFilters) => (f.resumeId.trim() ? 1 : 0) + (f.profile.trim() ? 1 : 0);
 
-/** Desktop search boxes: Resume ID and Profile (combined into one search on mobile, plus name and domain) */
-export const matchesCandidate = (c: ShortlistedCandidate, query: string, f: CandidateFilters) => {
-  const q = query.trim().toLowerCase();
-  if (q && !`${c.name} ${c.resumeId} ${c.profile} ${c.domain}`.toLowerCase().includes(q)) return false;
-  if (f.profiles.length && !f.profiles.includes(c.profile)) return false;
-  if (f.domains.length && !f.domains.includes(c.domain)) return false;
+export const matchesCandidate = (c: ShortlistedCandidate, f: CandidateFilters) => {
+  const id = f.resumeId.trim().toLowerCase();
+  const profile = f.profile.trim().toLowerCase();
+  if (id && !c.resumeId.toLowerCase().includes(id)) return false;
+  if (profile && !c.profile.toLowerCase().includes(profile)) return false;
   return true;
 };
 
-/** "Oct 19, 2026" + "10:30 AM (EST)" shown in the client's time zone */
 export const interviewLabels = (c: ShortlistedCandidate) => {
   if (!c.interview) return null;
   const w = interviewInClientTz(c.interview);

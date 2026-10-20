@@ -1,47 +1,29 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarClock, ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
+import { CalendarClock, Download, Eye, Loader2, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
-import { SegmentedTabs } from '../../../design-system/components/SegmentedTabs';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { Card, EmptyCard } from '../staff/tabs/StaffTabParts';
-import { StaffAvatar } from '../staff/ClientStaffParts';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
   CLIENT_IS_MOS,
   TIMESHEET_PAGE_SIZE,
-  TIMESHEET_STAFF_PAGE_SIZE,
   TimesheetRange,
   TimesheetRow,
-  addDays,
-  datesInRange,
-  daysBetween,
   defaultTimesheetRange,
   downloadCsv,
   formatHm,
+  formatTimesheetDate,
   formatTimesheetRange,
-  isoOf,
-  latestTimesheetStart,
-  parseIso,
   sameRange,
   timesheetDayCsv,
   timesheetDetailedCsv,
   timesheetFileNames,
-  timesheetPresets,
   timesheetRowsFor,
   timesheetSummaryCsv,
 } from '../data/clientTimesheetsData';
 import { TimesheetFilterSheet, TimesheetFilters, timesheetFilterCount } from './TimesheetFilterSheet';
 import { TimesheetDaySheet } from './TimesheetDaySheet';
-import {
-  HoursBar,
-  TimesheetExportSheet,
-  TimesheetExportType,
-  TimesheetListSkeleton,
-  UtilizationRing,
-  useTimesheetNotice,
-  utilizationPct,
-  utilizationTone,
-} from './TimesheetParts';
+import { TimesheetExportSheet, TimesheetExportType, TimesheetListSkeleton, useTimesheetNotice } from './TimesheetParts';
 
 interface ClientTimesheetsViewProps {
   staff: ClientStaffMember[];
@@ -49,44 +31,39 @@ interface ClientTimesheetsViewProps {
   initialStaffIds?: string[];
   /** Invoice Details "View daily hours" opens the invoice period */
   initialRange?: TimesheetRange;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
-
-type ViewMode = 'date' | 'staff';
-
-const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
-  { id: 'date', label: 'By Date' },
-  { id: 'staff', label: 'By Staff' },
-];
 
 /** Desktop reloads the table after every filter change */
 const LOAD_MS = 550;
 
-const weekdayShort = (iso: string) => parseIso(iso).toLocaleDateString('en-US', { weekday: 'short' });
-const dayHeading = (iso: string) => parseIso(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit' });
-const sum = (rows: TimesheetRow[], key: 'workingSeconds' | 'availableSeconds') => rows.reduce((s, r) => s + r[key], 0);
+/** Desktop shows "0" when there are no hours */
+const hours = (seconds: number) => (seconds > 0 ? formatHm(seconds) : '0');
 
-const SummaryStat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="px-2.5 py-2 min-w-0">
-    <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide truncate">{label}</dt>
-    <dd className="mt-0.5 text-[12.5px] font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
+/** Desktop table column as a label / value pair */
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="min-w-0">
+    <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
+    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
   </div>
 );
 
-export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staff, initialStaffIds = [], initialRange }) => {
+/** Desktop Reports › Timesheets: Date, Staff Name, Available Hours (Hrs), Working Hours (Hrs), Action (View / Download) */
+export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staff, initialStaffIds = [], initialRange, onBack }) => {
   // `is_view` = row View (entries); `is_download` = Export + row CSV
   const { view: canView, download: canDownload } = useClientPermission('timesheets');
   const showAvailable = !CLIENT_IS_MOS;
 
   const [filters, setFilters] = useState<TimesheetFilters>(() => ({ range: initialRange ?? defaultTimesheetRange(), staffIds: initialStaffIds }));
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<ViewMode>('date');
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [sheet, setSheet] = useState<{ rowId: string | null; open: boolean }>({ rowId: null, open: false });
   const [notice, showNotice] = useTimesheetNotice();
-  const listTopRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading) return;
@@ -95,7 +72,6 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
   }, [loading]);
 
   const sortedStaff = useMemo(() => [...staff].sort((a, b) => a.name.localeCompare(b.name)), [staff]);
-  const tintOf = (id: string) => sortedStaff.findIndex((s) => s.id === id);
   const memberOf = (id: string) => staff.find((s) => s.id === id);
   const nameOf = (id: string) => memberOf(id)?.name ?? '-';
 
@@ -104,76 +80,31 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
     () => (staffIds.length ? sortedStaff.filter((s) => staffIds.includes(s.id)) : sortedStaff),
     [sortedStaff, staffIds],
   );
+  // Desktop order: date ASC, then staff
   const rows = useMemo(() => timesheetRowsFor(scopeStaff, range), [scopeStaff, range]);
-
-  // Summary (Added by designer)
-  const working = sum(rows, 'workingSeconds');
-  const available = sum(rows, 'availableSeconds');
-  const pct = utilizationPct(working, available);
-  const loggedStaff = new Set(rows.map((r) => r.staffId)).size;
-  const loggedDays = new Set(rows.map((r) => r.date)).size;
+  const visible = rows.slice(0, pages * TIMESHEET_PAGE_SIZE);
   const entryCount = rows.reduce((s, r) => s + r.entries.length, 0);
-
-  // Range stepper moves by the period length; From can't pass the last completed week (desktop datepicker limit)
-  const len = daysBetween(range.from, range.to);
-  const latestStart = latestTimesheetStart();
-  const todayKey = isoOf(new Date());
-  const shiftRange = (dir: -1 | 1): TimesheetRange => {
-    const from = addDays(range.from, dir * len);
-    const to = addDays(range.to, dir * len);
-    return { from, to: to > todayKey ? todayKey : to };
-  };
-  const canNext = addDays(range.from, len) <= latestStart;
-  const preset = timesheetPresets().find((p) => sameRange(p, range));
+  const loggedStaff = new Set(rows.map((r) => r.staffId)).size;
   const rangeLabel = formatTimesheetRange(range);
 
   const filterCount = timesheetFilterCount(filters);
+  const defaultRange = defaultTimesheetRange();
+  const customRange = !sameRange(range, defaultRange);
 
   const applyFilters = (next: TimesheetFilters) => {
     setFilters(next);
     setPages(1);
     setLoading(true);
-    listTopRef.current?.scrollIntoView({ block: 'start' });
+    listRef.current?.scrollTo({ top: 0 });
   };
+  const clearAll = () => applyFilters({ range: defaultTimesheetRange(), staffIds: [] });
 
-  // By Date: desktop rows (date ASC, staff A–Z), grouped per day
-  const visibleRows = rows.slice(0, pages * TIMESHEET_PAGE_SIZE);
-  const dayGroups = useMemo(() => {
-    const groups: { date: string; rows: TimesheetRow[] }[] = [];
-    visibleRows.forEach((r) => {
-      const last = groups[groups.length - 1];
-      if (last?.date === r.date) last.rows.push(r);
-      else groups.push({ date: r.date, rows: [r] });
-    });
-    return groups;
-  }, [visibleRows]);
-  const dayTotals = useMemo(() => {
-    const map = new Map<string, { staff: number; seconds: number }>();
-    rows.forEach((r) => {
-      const t = map.get(r.date) ?? { staff: 0, seconds: 0 };
-      map.set(r.date, { staff: t.staff + 1, seconds: t.seconds + r.workingSeconds });
-    });
-    return map;
-  }, [rows]);
+  const applied: { key: string; label: string; next: TimesheetFilters }[] = [
+    ...(customRange ? [{ key: 'range', label: rangeLabel, next: { ...filters, range: defaultRange } }] : []),
+    ...staffIds.map((id) => ({ key: id, label: nameOf(id), next: { ...filters, staffIds: staffIds.filter((x) => x !== id) } })),
+  ];
 
-  // By Staff: everyone employed during the period, incl. those with no hours (Added by designer)
-  const rangeDates = useMemo(() => datesInRange(range), [range]);
-  const staffCards = useMemo(
-    () =>
-      scopeStaff
-        .filter((s) => s.joiningDate <= range.to && (!s.lastWorkingDay || s.lastWorkingDay >= range.from))
-        .map((s) => {
-          const own = rows.filter((r) => r.staffId === s.id);
-          return { member: s, rows: own, byDate: new Map(own.map((r) => [r.date, r])) };
-        }),
-    [scopeStaff, rows, range],
-  );
-  const visibleStaff = staffCards.slice(0, pages * TIMESHEET_STAFF_PAGE_SIZE);
-
-  const total = mode === 'date' ? rows.length : staffCards.length;
-  const shown = mode === 'date' ? visibleRows.length : visibleStaff.length;
-
-  // Day sheet + previous / next logged day of the same staff
+  // View sheet + previous / next logged day of the same staff
   const sheetRow = sheet.rowId ? rows.find((r) => r.id === sheet.rowId) ?? null : null;
   const sheetSiblings = sheetRow ? rows.filter((r) => r.staffId === sheetRow.staffId) : [];
   const sheetIdx = sheetRow ? sheetSiblings.findIndex((r) => r.id === sheetRow.id) : -1;
@@ -192,18 +123,69 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
     showNotice(`${fileName} downloaded`);
   };
 
-  const selectedNames = staffIds.map((id) => ({ id, name: nameOf(id) }));
+  const actionBtn =
+    'h-9 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1.5 active:bg-blue-100 shrink-0 cursor-pointer';
+
+  const card = (r: TimesheetRow) => {
+    const name = nameOf(r.staffId);
+    const date = formatTimesheetDate(r.date);
+    return (
+      <li key={r.id}>
+        <Card className="overflow-hidden">
+          <dl className="p-3.5 grid grid-cols-2 gap-x-4 gap-y-3">
+            <Field label="Date">
+              <span className="tabular-nums">{date}</span>
+            </Field>
+            <Field label="Staff Name">
+              <span className="font-semibold">{name}</span>
+            </Field>
+            {showAvailable && (
+              <Field label="Available Hours (Hrs)">
+                <span className="tabular-nums">{hours(r.availableSeconds)}</span>
+              </Field>
+            )}
+            <Field label="Working Hours (Hrs)">
+              <span className="tabular-nums font-semibold">{hours(r.workingSeconds)}</span>
+            </Field>
+          </dl>
+
+          {(canView || canDownload) && (
+            <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
+              <span className="flex-1 text-[10.5px] font-semibold text-slate-400">Action</span>
+              {canView && (
+                <button type="button" onClick={() => openRow(r)} aria-label={`View timesheet of ${name}, ${date}`} className={actionBtn}>
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+              )}
+              {canDownload && (
+                <button
+                  type="button"
+                  onClick={() => downloadDay(r)}
+                  aria-label={`Download timesheet of ${name}, ${date}`}
+                  className={actionBtn}
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+              )}
+            </div>
+          )}
+        </Card>
+      </li>
+    );
+  };
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Timesheets" onBack={onBack} />
       {notice}
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div ref={listTopRef} className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Reports <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Timesheets</span>
-          </p>
-          <div className="mt-0.5 flex items-center justify-between gap-3 mb-1.5">
-            <h1 className="text-xl font-extrabold leading-tight">Timesheets</h1>
+      <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
+        <div className="px-4 pt-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
+              {loading ? '' : `${rows.length} ${rows.length === 1 ? 'record' : 'records'}`}
+            </span>
             {canDownload && (
               <button
                 type="button"
@@ -215,321 +197,66 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
                 Export
               </button>
             )}
-          </div>
-
-          {/* Period stepper + filters */}
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0 h-11 bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center">
-              <button
-                type="button"
-                onClick={() => applyFilters({ ...filters, range: shiftRange(-1) })}
-                aria-label="Previous period"
-                className="w-10 h-full flex items-center justify-center text-slate-500 active:bg-slate-50 rounded-l-xl shrink-0 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterOpen(true)}
-                className="flex-1 min-w-0 h-full flex flex-col items-center justify-center border-x border-slate-100 active:bg-slate-50 cursor-pointer"
-                aria-label={`Period ${rangeLabel}. Change period`}
-              >
-                <span className="text-[12px] font-bold text-[#1E293B] tabular-nums truncate max-w-full px-1">{rangeLabel}</span>
-                <span className="text-[10px] font-semibold text-slate-400 truncate max-w-full px-1">
-                  {preset ? preset.label : `${len} days`} · {weekdayShort(range.from)} – {weekdayShort(range.to)}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyFilters({ ...filters, range: shiftRange(1) })}
-                disabled={!canNext}
-                aria-label="Next period"
-                className="w-10 h-full flex items-center justify-center text-slate-500 active:bg-slate-50 rounded-r-xl disabled:text-slate-200 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
             <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
           </div>
 
-          {filterCount > 0 && (
+          {applied.length > 0 && (
             <div className="mt-2.5 flex items-center gap-2">
-              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
-                {selectedNames.length === 0 ? (
-                  <span className="text-[11px] text-slate-500 py-1">Custom period · all staff</span>
-                ) : (
-                  <>
-                    {selectedNames.slice(0, 3).map(({ id, name }) => (
-                      <span key={id} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
-                        {name}
-                        <button
-                          type="button"
-                          onClick={() => applyFilters({ ...filters, staffIds: staffIds.filter((x) => x !== id) })}
-                          aria-label={`Remove ${name}`}
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                    {selectedNames.length > 3 && (
-                      <button
-                        type="button"
-                        onClick={() => setFilterOpen(true)}
-                        className="shrink-0 h-7 px-2.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 cursor-pointer"
-                      >
-                        +{selectedNames.length - 3} more
-                      </button>
-                    )}
-                  </>
-                )}
+              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+                {applied.map((a) => (
+                  <span
+                    key={a.key}
+                    className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1"
+                  >
+                    {a.label}
+                    <button
+                      type="button"
+                      onClick={() => applyFilters(a.next)}
+                      aria-label={`Remove ${a.label}`}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={() => applyFilters({ range: defaultTimesheetRange(), staffIds: [] })}
-                className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer"
-              >
+              <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
               </button>
             </div>
           )}
+          {!customRange && <p className="mt-2 text-[11px] text-slate-400 tabular-nums">{rangeLabel}</p>}
         </div>
 
-        <div className="px-4 mt-4">
+        <div className="px-4 mt-3">
           {loading ? (
             <TimesheetListSkeleton />
           ) : rows.length === 0 ? (
             <EmptyCard
-              icon={CalendarClock}
-              title={staff.length === 0 ? 'No staff hired yet.' : 'No timesheets for this period.'}
+              icon={filterCount > 0 ? SearchX : CalendarClock}
+              title="No Data Found"
               text={
                 staff.length === 0
                   ? 'Timesheets of your offshore staff will show up here.'
-                  : 'Hours show up once staff log their timesheets. Try an earlier period or other staff.'
+                  : 'No timesheets logged for this period. Try another From / To Date or staff.'
               }
               action={
-                staff.length > 0 && (
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => applyFilters({ ...filters, range: shiftRange(-1) })}
-                      className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold active:bg-slate-50 cursor-pointer"
-                    >
-                      Previous Period
-                    </button>
-                    {filterCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => applyFilters({ range: defaultTimesheetRange(), staffIds: [] })}
-                        className="h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
-                      >
-                        Clear All
-                      </button>
-                    )}
-                  </div>
-                )
+                filterCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="mt-4 h-10 px-5 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                ) : undefined
               }
             />
           ) : (
             <>
-              {/* Period summary */}
-              <Card className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-500">Working Hours</p>
-                    <p className="mt-0.5 leading-none">
-                      <span className="text-[26px] font-extrabold tabular-nums text-[#1E293B]">{formatHm(working)}</span>
-                      <span className="ml-1 text-xs font-semibold text-slate-400">hrs</span>
-                    </p>
-                    {showAvailable ? (
-                      <p className="mt-1.5 text-[11px] text-slate-500">
-                        of <span className="font-bold text-slate-700 tabular-nums">{formatHm(available)}</span> available hrs
-                        {available > 0 && (
-                          <span className={`ml-1.5 font-bold ${working >= available ? 'text-[#D97706]' : 'text-slate-400'}`}>
-                            {working >= available ? `+${formatHm(working - available)} extra` : `${formatHm(available - working)} under`}
-                          </span>
-                        )}
-                      </p>
-                    ) : (
-                      <p className="mt-1.5 text-[11px] text-slate-500">{rangeLabel}</p>
-                    )}
-                  </div>
-                  {showAvailable && <UtilizationRing pct={pct} />}
-                </div>
-                <dl className="mt-3.5 grid grid-cols-3 rounded-xl bg-slate-50 border border-slate-100 divide-x divide-slate-100">
-                  <SummaryStat label="Staff" value={String(loggedStaff)} />
-                  <SummaryStat label="Days Logged" value={String(loggedDays)} />
-                  <SummaryStat label="Avg / Day" value={`${formatHm(rows.length ? working / rows.length : 0)}`} />
-                </dl>
-              </Card>
+              <ul className="space-y-3">{visible.map(card)}</ul>
 
-              <div className="mt-4">
-                <SegmentedTabs
-                  options={VIEW_OPTIONS}
-                  value={mode}
-                  onChange={(m) => {
-                    setMode(m);
-                    setPages(1);
-                  }}
-                  ariaLabel="Group timesheets"
-                />
-              </div>
-
-              {mode === 'date' ? (
-                <div className="mt-4 space-y-4">
-                  {dayGroups.map((g) => {
-                    const t = dayTotals.get(g.date);
-                    return (
-                      <section key={g.date} aria-label={dayHeading(g.date)}>
-                        <div className="mb-2 px-1 flex items-center justify-between gap-2">
-                          <h3 className="text-[13px] font-bold text-[#1E293B]">{dayHeading(g.date)}</h3>
-                          <span className="text-[11px] text-slate-500 tabular-nums">
-                            {t?.staff} staff · <span className="font-bold text-slate-700">{formatHm(t?.seconds ?? 0)}</span> hrs
-                          </span>
-                        </div>
-                        <Card className="divide-y divide-slate-100 overflow-hidden">
-                          {g.rows.map((r) => {
-                            const m = memberOf(r.staffId);
-                            return (
-                              <button
-                                key={r.id}
-                                type="button"
-                                onClick={() => openRow(r)}
-                                disabled={!canView}
-                                aria-label={`${m?.name}, ${formatHm(r.workingSeconds)} working hours. View entries`}
-                                className="w-full p-3.5 flex items-center gap-3 text-left active:bg-slate-50 disabled:active:bg-transparent transition-colors cursor-pointer disabled:cursor-default"
-                              >
-                                <StaffAvatar name={m?.name ?? '?'} tint={tintOf(r.staffId)} />
-                                <span className="flex-1 min-w-0">
-                                  <span className="flex items-baseline justify-between gap-2">
-                                    <span className="text-[13px] font-bold text-[#1E293B] truncate">{m?.name}</span>
-                                    <span className="text-[13px] font-extrabold text-[#1E293B] tabular-nums whitespace-nowrap">
-                                      {formatHm(r.workingSeconds)}
-                                      {showAvailable && (
-                                        <span className="text-[11px] font-medium text-slate-400"> / {formatHm(r.availableSeconds)}</span>
-                                      )}
-                                    </span>
-                                  </span>
-                                  <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                                    <span className="truncate">{m?.designation}</span>
-                                    <span className="whitespace-nowrap">
-                                      {r.entries.length} {r.entries.length === 1 ? 'entry' : 'entries'}
-                                    </span>
-                                  </span>
-                                  {showAvailable && <HoursBar working={r.workingSeconds} available={r.availableSeconds} className="mt-2" />}
-                                </span>
-                                {canView && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-                              </button>
-                            );
-                          })}
-                        </Card>
-                      </section>
-                    );
-                  })}
-                </div>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {visibleStaff.map(({ member: m, rows: own, byDate }) => {
-                    const w = sum(own, 'workingSeconds');
-                    const a = sum(own, 'availableSeconds');
-                    const p = utilizationPct(w, a);
-                    return (
-                      <li key={m.id}>
-                        <Card className="p-3.5">
-                          <div className="flex items-center gap-3">
-                            <StaffAvatar name={m.name} tint={tintOf(m.id)} />
-                            <span className="flex-1 min-w-0">
-                              <span className="block text-[13px] font-bold text-[#1E293B] truncate">{m.name}</span>
-                              <span className="block text-[11px] text-slate-500 truncate">{m.designation}</span>
-                            </span>
-                            {showAvailable && own.length > 0 && (
-                              <span className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold tabular-nums ${utilizationTone(p).pill}`}>{p}%</span>
-                            )}
-                          </div>
-
-                          {own.length === 0 ? (
-                            <p className="mt-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11.5px] text-slate-500">
-                              No timesheets logged in this period.
-                            </p>
-                          ) : (
-                            <>
-                              <div className="mt-3 flex items-baseline justify-between gap-2">
-                                <span className="text-[11px] text-slate-500">
-                                  Working <span className="text-[13px] font-extrabold text-[#1E293B] tabular-nums">{formatHm(w)}</span> hrs
-                                </span>
-                                {showAvailable && (
-                                  <span className="text-[11px] text-slate-500 tabular-nums">
-                                    of <span className="font-bold text-slate-700">{formatHm(a)}</span> available
-                                  </span>
-                                )}
-                              </div>
-                              {showAvailable && <HoursBar working={w} available={a} className="mt-1.5" />}
-                              <div className="mt-3 grid grid-cols-7 gap-1.5">
-                                {rangeDates.map((date) => {
-                                  const r = byDate.get(date);
-                                  const d = parseIso(date);
-                                  const head = (
-                                    <>
-                                      <span className="text-[9px] font-semibold uppercase opacity-70">{weekdayShort(date).slice(0, 2)}</span>
-                                      <span className="text-[12px] font-extrabold leading-none tabular-nums">{String(d.getDate()).padStart(2, '0')}</span>
-                                    </>
-                                  );
-                                  if (!r) {
-                                    return (
-                                      <span
-                                        key={date}
-                                        className="h-[54px] rounded-lg bg-slate-50 border border-dashed border-slate-200 text-slate-300 flex flex-col items-center justify-center gap-0.5"
-                                        aria-label={`${dayHeading(date)}: no timesheet`}
-                                      >
-                                        {head}
-                                        <span className="text-[9.5px] font-semibold">–</span>
-                                      </span>
-                                    );
-                                  }
-                                  const over = showAvailable && r.workingSeconds > r.availableSeconds;
-                                  return (
-                                    <button
-                                      key={date}
-                                      type="button"
-                                      onClick={() => openRow(r)}
-                                      disabled={!canView}
-                                      aria-label={`${dayHeading(date)}: ${formatHm(r.workingSeconds)} hours`}
-                                      className={`h-[54px] rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer disabled:cursor-default ${
-                                        over
-                                          ? 'bg-[#FEF8E7] border-[#FDE68A] text-[#B45309] active:bg-amber-100'
-                                          : 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8] active:bg-blue-100'
-                                      }`}
-                                    >
-                                      {head}
-                                      <span className="text-[9.5px] font-bold tabular-nums">{formatHm(r.workingSeconds)}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </>
-                          )}
-                        </Card>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              {mode === 'staff' && showAvailable && staffCards.length > 0 && (
-                <p className="mt-3 px-1 flex items-center gap-3 text-[10.5px] text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#EFF6FF] border border-[#BFDBFE]" /> Logged
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#FEF8E7] border border-[#FDE68A]" /> Extra hours
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-slate-50 border border-dashed border-slate-300" /> No timesheet
-                  </span>
-                </p>
-              )}
-
-              {shown < total && (
+              {visible.length < rows.length && (
                 <button
                   type="button"
                   disabled={moreLoading}
@@ -543,15 +270,12 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
                   className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {moreLoading ? 'Loading…' : `Load More (${total - shown})`}
+                  {moreLoading ? 'Loading…' : `Load More (${rows.length - visible.length})`}
                 </button>
               )}
-
-              {shown >= total && total > 0 && (
-                <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {total} {mode === 'date' ? (total === 1 ? 'record' : 'records') : 'staff'}
-                </p>
-              )}
+              <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
+                Showing {visible.length} Of {rows.length} Records
+              </p>
             </>
           )}
         </div>
@@ -579,9 +303,7 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
       <TimesheetDaySheet
         isOpen={sheet.open}
         row={sheetRow}
-        member={sheetRow ? memberOf(sheetRow.staffId) : undefined}
-        tint={sheetRow ? tintOf(sheetRow.staffId) : 0}
-        showAvailable={showAvailable}
+        staffName={sheetRow ? nameOf(sheetRow.staffId) : ''}
         canDownload={canDownload}
         onPrev={sheetIdx > 0 ? () => setSheet({ rowId: sheetSiblings[sheetIdx - 1].id, open: true }) : undefined}
         onNext={sheetIdx >= 0 && sheetIdx < sheetSiblings.length - 1 ? () => setSheet({ rowId: sheetSiblings[sheetIdx + 1].id, open: true }) : undefined}

@@ -43,7 +43,7 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
   const row = (a: MlAssignment) => {
     const m = memberOf(a.staffId);
     return (
-      <li key={a.staffId} className="p-3 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs">
+      <li key={a.staffId} className="p-3 rounded-2xl bg-white border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)]">
         <div className="flex items-center gap-3">
           {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
           <span className="flex-1 min-w-0">
@@ -74,7 +74,7 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
           <div className="space-y-3" aria-busy="true" aria-label="Loading progress details">
             <StaffSkeleton className="w-full h-12 rounded-xl" />
             {[0, 1, 2].map((i) => (
-              <div key={i} className="p-3 rounded-2xl bg-white border border-[#EBF0F7] space-y-3">
+              <div key={i} className="p-3 rounded-2xl bg-white border border-[#DCE3ED] space-y-3">
                 <div className="flex items-center gap-3">
                   <StaffSkeleton className="w-10 h-10 rounded-full" />
                   <div className="flex-1 space-y-1.5">

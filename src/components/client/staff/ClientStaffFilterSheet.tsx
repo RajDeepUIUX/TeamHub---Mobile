@@ -3,6 +3,7 @@ import { Calendar, ChevronDown, X } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { RangeCalendar, formatShortDate, toDateKey } from '../../../design-system/components/RangeCalendar';
+import { CLIENT_STAFF_STATUSES, CURRENT_STAFF_STATUSES, ClientStaffStatus } from '../data/clientStaffData';
 
 export interface ClientStaffFilters {
   /** ISO dates; both set = joining date range */
@@ -12,6 +13,8 @@ export interface ClientStaffFilters {
   designation: string[];
   engagementType: string[];
   location: string[];
+  /** Desktop Status multi-select; defaults to Active, On Notice, Offboarding In-Progress, Replacement In-Progress */
+  status: ClientStaffStatus[];
 }
 
 export const EMPTY_STAFF_FILTERS: ClientStaffFilters = {
@@ -21,10 +24,14 @@ export const EMPTY_STAFF_FILTERS: ClientStaffFilters = {
   designation: [],
   engagementType: [],
   location: [],
+  status: CURRENT_STAFF_STATUSES,
 };
 
+const isDefaultStatus = (status: ClientStaffStatus[]) =>
+  status.length === CURRENT_STAFF_STATUSES.length && CURRENT_STAFF_STATUSES.every((s) => status.includes(s));
+
 export const staffFilterCount = (f: ClientStaffFilters) =>
-  (f.joinedFrom ? 1 : 0) + f.level.length + f.designation.length + f.engagementType.length + f.location.length;
+  (f.joinedFrom ? 1 : 0) + f.level.length + f.designation.length + f.engagementType.length + f.location.length + (isDefaultStatus(f.status) ? 0 : 1);
 
 type ListKey = 'level' | 'designation' | 'engagementType' | 'location';
 
@@ -45,7 +52,7 @@ const LIST_FIELDS: { key: ListKey; label: string }[] = [
 
 const parse = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00`) : null);
 
-/** Desktop filter bar (Joining Date, Level, Designation, Engagement Type, Location); applies on "Apply Filters" */
+/** Desktop filter bar (Select Joining Date, Level, Designation, Engagement Type, Location, Status); applies on "Search" */
 export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ isOpen, filters, options, onClose, onApply }) => {
   const [draft, setDraft] = useState<ClientStaffFilters>(filters);
   // Same date flow as the Manager team filters: Start Date / End Date fields open the inline calendar
@@ -92,7 +99,7 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
           <span className="flex items-center gap-2 min-w-0">
             <Calendar className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
             <span className={`truncate ${value ? 'text-slate-700 font-semibold' : 'text-slate-400'}`}>
-              {value ? formatShortDate(value) : 'Select date'}
+              {value ? formatShortDate(value) : field === 'start' ? 'Select Joining Date' : 'Select date'}
             </span>
           </span>
           <ChevronDown
@@ -110,8 +117,8 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
       </div>
       <div className="flex items-center justify-between px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
         <div>
-          <h2 className="text-base font-bold text-[#1E293B]">Filter Staff</h2>
-          <p className="text-[11px] text-slate-400">Pick one or more options in each filter</p>
+          <h2 className="text-base font-bold text-[#1E293B]">Filters</h2>
+          <p className="text-[11px] text-slate-400">Pick one or more options, then tap Search</p>
         </div>
         <button
           type="button"
@@ -127,7 +134,7 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
         {/* Joining date range */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-500">Joining Date</span>
+            <span className="text-xs font-bold text-[#1E293B]">Joining Date</span>
             {draft.joinedFrom && (
               <button
                 type="button"
@@ -168,7 +175,7 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
           <MultiSelectDropdown
             key={key}
             label={label}
-            placeholder={`All ${label.toLowerCase()}s`}
+            placeholder={label}
             options={options[key].map((o) => ({ value: o, label: o }))}
             selected={draft[key]}
             onChange={(next) => setDraft((d) => ({ ...d, [key]: next }))}
@@ -177,6 +184,15 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
             disabledHint={`No ${label.toLowerCase()} set for your staff yet`}
           />
         ))}
+
+        <MultiSelectDropdown
+          label="Status"
+          placeholder="Status"
+          options={CLIENT_STAFF_STATUSES.map((o) => ({ value: o, label: o }))}
+          selected={draft.status}
+          onChange={(next) => setDraft((d) => ({ ...d, status: next as ClientStaffStatus[] }))}
+        />
+        {draft.status.length === 0 && <p className="-mt-2 px-0.5 text-[11px] font-medium text-rose-500">Select at least one status.</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
@@ -189,11 +205,11 @@ export const ClientStaffFilterSheet: React.FC<ClientStaffFilterSheetProps> = ({ 
         </button>
         <button
           type="button"
-          disabled={rangeIncomplete}
+          disabled={rangeIncomplete || draft.status.length === 0}
           onClick={() => onApply(draft)}
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {draftCount ? `Apply Filters (${draftCount})` : 'Apply Filters'}
+          {draftCount ? `Search (${draftCount})` : 'Search'}
         </button>
       </div>
     </BottomSheet>

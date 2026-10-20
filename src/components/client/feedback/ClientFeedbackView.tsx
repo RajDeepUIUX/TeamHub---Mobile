@@ -1,32 +1,26 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronRight, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw } from 'lucide-react';
+import { ClipboardCheck, Download, Eye, Loader2, Play, RotateCw, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import {
   ClientSurvey,
   FEEDBACK_PAGE_SIZE,
-  SURVEY_STATUSES,
   SURVEY_TYPES,
   SURVEY_TYPE_LABEL,
   SurveyAnswers,
-  SurveyStatus,
+  SurveyType,
   daysLeft,
   expiryDate,
   formatSurveyDate,
-  shortPeriod,
-  surveyProgress,
   surveyStatus,
   todayIso,
 } from '../data/clientFeedbackData';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
-import { EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { EMPTY_FEEDBACK_FILTERS, FeedbackFilterSheet, FeedbackFilters, feedbackFilterCount } from './FeedbackFilterSheet';
 import { SurveyFormView } from './SurveyFormView';
 import { SurveyIntroView } from './SurveyIntroView';
-import { SurveyStatusPill, SurveyTypeIcon, useSurveyToast } from './SurveyParts';
+import { SurveyStatusPill, useSurveyToast } from './SurveyParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
-
-type StatusChip = 'All' | SurveyStatus;
-const STATUS_CHIPS: StatusChip[] = ['All', ...SURVEY_STATUSES];
 
 type Screen = { mode: 'list' } | { mode: 'intro' | 'form' | 'view'; id: string };
 
@@ -36,6 +30,8 @@ interface ClientFeedbackViewProps {
   userName: string;
   companyName: string;
   onUpdate: (id: string, patch: Partial<ClientSurvey>) => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 const LOAD_MS = 600;
@@ -43,7 +39,7 @@ const LOAD_MS = 600;
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading surveys">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-xl" />
           <div className="flex-1 space-y-1.5">
@@ -58,15 +54,21 @@ const ListSkeleton: React.FC = () => (
   </div>
 );
 
+/** Desktop table column as a label / value pair */
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="min-w-0">
+    <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
+    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
+  </div>
+);
+
 /** Desktop "Feedback & Evaluation" (hbrreports): every survey assigned to the client, with Start / Resume / View / PDF */
-export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys, userName, companyName, onUpdate }) => {
+export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys, userName, onUpdate, onBack }) => {
   const [screen, setScreen] = useState<Screen>({ mode: 'list' });
   // Back from a survey returns to the same place in the list
   const listRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [chip, setChip] = useState<StatusChip>('All');
   const [filters, setFilters] = useState<FeedbackFilters>(EMPTY_FEEDBACK_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pages, setPages] = useState(1);
@@ -106,23 +108,21 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   const isMine = (s: ClientSurvey) => s.assignedTo === userName;
   const canFill = (s: ClientSurvey) => perm.edit && isMine(s) && s.type !== 'hbr' && (surveyStatus(s) === 'Not Started' || surveyStatus(s) === 'In Progress');
 
-  // To do (Added by designer): my open surveys, most urgent first
-  const todo = sorted.filter(canFill).sort((a, b) => daysLeft(a) - daysLeft(b));
-
-  const term = query.trim().toLowerCase();
-  const base = sorted.filter((s) => {
-    if (term && !`${s.staffName ?? ''} ${SURVEY_TYPE_LABEL[s.type]}`.toLowerCase().includes(term)) return false;
+  const results = sorted.filter((s) => {
     if (filters.type.length && !filters.type.includes(s.type)) return false;
     if (filters.staff.length && !(s.staffName && filters.staff.includes(s.staffName))) return false;
     if (filters.period.length && !(s.period && filters.period.includes(s.period))) return false;
     return true;
   });
-  const inChip = (c: StatusChip, s: ClientSurvey) => c === 'All' || surveyStatus(s) === c;
-  const results = base.filter((s) => inChip(chip, s));
   const visible = results.slice(0, pages * FEEDBACK_PAGE_SIZE);
 
   const filterCount = feedbackFilterCount(filters);
-  const isFiltered = filterCount > 0 || term.length > 0 || chip !== 'All';
+  const isFiltered = filterCount > 0;
+  const applied: { key: string; label: string; next: FeedbackFilters }[] = [
+    ...filters.type.map((t) => ({ key: `t-${t}`, label: SURVEY_TYPE_LABEL[t as SurveyType], next: { ...filters, type: filters.type.filter((x) => x !== t) } })),
+    ...filters.staff.map((n) => ({ key: `s-${n}`, label: n, next: { ...filters, staff: filters.staff.filter((x) => x !== n) } })),
+    ...filters.period.map((p) => ({ key: `p-${p}`, label: p, next: { ...filters, period: filters.period.filter((x) => x !== p) } })),
+  ];
 
   const reload = () => {
     setPages(1);
@@ -130,12 +130,11 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     listRef.current?.scrollTo({ top: 0 });
   };
 
-  const clearAll = () => {
-    setQuery('');
-    setFilters(EMPTY_FEEDBACK_FILTERS);
-    setChip('All');
+  const applyFilters = (next: FeedbackFilters) => {
+    setFilters(next);
     reload();
   };
+  const clearAll = () => applyFilters(EMPTY_FEEDBACK_FILTERS);
 
   const download = (s: ClientSurvey) => {
     setDownloadingId(s.id);
@@ -245,131 +244,123 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     );
   };
 
-  const metaOf = (s: ClientSurvey): [string, string, string?][] => {
+  /** Desktop "Expires In": days left while open, "Expired" once closed, "-" for submitted surveys and HBR reports */
+  const expiresIn = (s: ClientSurvey) => {
     const status = surveyStatus(s);
-    const period = s.period ? shortPeriod(s.period) : '—';
-    if (s.type === 'hbr') return [['Period', period], ['Report Date', formatSurveyDate(s.assignedOn)], ['Format', 'PDF']];
+    if (s.type === 'hbr' || status === 'Completed') return '-';
+    if (status === 'Expired') return 'Expired';
     const left = daysLeft(s);
-    const third: [string, string, string?] =
-      status === 'Completed'
-        ? ['Submitted On', s.submittedOn ? formatSurveyDate(s.submittedOn) : '—']
-        : status === 'Expired'
-          ? ['Expired On', formatSurveyDate(expiryDate(s))]
-          : ['Expires In', `${left} ${left === 1 ? 'day' : 'days'}`, left <= 5 ? 'text-[#D97706]' : undefined];
-    return [['Period', period], ['Assigned On', formatSurveyDate(s.assignedOn)], third];
+    return `${left} ${left === 1 ? 'day' : 'days'}`;
+  };
+
+  const card = (s: ClientSurvey) => {
+    const status = surveyStatus(s);
+    const clickable = s.type !== 'hbr' && !(status === 'Expired' && Object.keys(s.answers).length === 0) && (canFill(s) || perm.view);
+    const expires = expiresIn(s);
+    const expiresTone = status === 'Expired' ? 'text-rose-500' : expires !== '-' && daysLeft(s) <= 5 ? 'text-[#D97706] font-semibold' : '';
+    return (
+      <li key={s.id}>
+        <Card className="overflow-hidden">
+          <div className="p-3.5">
+            <div className="flex items-start gap-3">
+              <span className="flex-1 min-w-0">
+                <span className="block text-[10.5px] font-semibold text-slate-400">Survey Type</span>
+                <span className="block mt-0.5 text-[14px] leading-snug">
+                  {clickable ? (
+                    <button
+                      type="button"
+                      onClick={() => open(s)}
+                      className="text-left text-[#2F68FE] font-medium underline-offset-2 active:underline cursor-pointer"
+                    >
+                      {SURVEY_TYPE_LABEL[s.type]}
+                    </button>
+                  ) : (
+                    <span className="font-medium text-[#1E293B]">{SURVEY_TYPE_LABEL[s.type]}</span>
+                  )}
+                </span>
+              </span>
+              <span className="shrink-0 flex flex-col items-end">
+                <span className="text-[10.5px] font-semibold text-slate-400">Status</span>
+                <span className="mt-0.5">
+                  <SurveyStatusPill status={status} />
+                </span>
+              </span>
+            </div>
+
+            <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
+              <Field label="Staff Name">{s.staffName ?? '-'}</Field>
+              <Field label="Submitted By">{s.completed ? s.assignedTo : '-'}</Field>
+              <Field label="Period">{s.period ?? '-'}</Field>
+              <Field label="Assigned On">
+                <span className="tabular-nums">{formatSurveyDate(s.assignedOn)}</span>
+              </Field>
+              <Field label="Submitted On">
+                <span className="tabular-nums">{s.submittedOn ? formatSurveyDate(s.submittedOn) : '-'}</span>
+              </Field>
+              <Field label="Expires In">
+                <span className={`tabular-nums ${expiresTone}`}>{expires}</span>
+              </Field>
+            </dl>
+          </div>
+
+          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
+            <span className="flex-1 text-[10.5px] font-semibold text-slate-400">Action</span>
+            {actionButton(s)}
+          </div>
+        </Card>
+      </li>
+    );
   };
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Feedback & Evaluation" onBack={onBack} />
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Feedback & Evaluation <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Surveys</span>
-          </p>
-          <div className="mt-0.5 flex items-end justify-between gap-3 mb-1.5">
-            <h1 className="text-xl font-extrabold leading-tight">Feedback & Evaluation</h1>
-            {!loading && <span className="pb-1 text-xs font-semibold text-slate-500 tabular-nums shrink-0">{results.length} {results.length === 1 ? 'survey' : 'surveys'}</span>}
-          </div>
-
-          {/* To do (Added by designer) */}
-          {!loading && todo.length > 0 && (
-            <div className="mt-3 p-3.5 rounded-2xl bg-[#2F68FE] text-white shadow-xs">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                  <ClipboardCheck className="w-5 h-5" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-bold">
-                    {todo.length} {todo.length === 1 ? 'survey needs' : 'surveys need'} your feedback
-                  </p>
-                  <p className="text-[11px] text-blue-100 truncate">
-                    Next: {todo[0].staffName ?? companyName} · {SURVEY_TYPE_LABEL[todo[0].type]}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-50">
-                  <Hourglass className="w-3.5 h-3.5" />
-                  Expires in {daysLeft(todo[0])} {daysLeft(todo[0]) === 1 ? 'day' : 'days'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => open(todo[0])}
-                  className="h-9 px-3.5 rounded-xl bg-white text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
-                >
-                  {todo[0].started ? 'Resume' : 'Start now'} <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0">
-              <SearchField
-                value={query}
-                onChange={(v) => {
-                  setQuery(v);
-                  setPages(1);
-                }}
-                placeholder="Search by staff or survey"
-              />
-            </div>
+        <div className="px-4 pt-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
+              {loading ? '' : `${results.length} ${results.length === 1 ? 'survey' : 'surveys'}`}
+            </span>
             <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
           </div>
-        </div>
 
-        <div className="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-1" role="group" aria-label="Status">
-          {STATUS_CHIPS.map((c) => {
-            const on = c === chip;
-            return (
-              <button
-                key={c}
-                type="button"
-                aria-pressed={on}
-                onClick={() => {
-                  if (on) return;
-                  setChip(c);
-                  reload();
-                }}
-                className={`shrink-0 h-8 pl-3 pr-1.5 rounded-full text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                }`}
-              >
-                {c}
-                <span
-                  className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums bg-white ${
-                    on ? 'text-[#2F68FE]' : 'text-slate-500'
-                  }`}
-                >
-                  {base.filter((s) => inChip(c, s)).length}
-                </span>
+          {applied.length > 0 && (
+            <div className="mt-2.5 flex items-center gap-2">
+              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+                {applied.map((a) => (
+                  <span
+                    key={a.key}
+                    className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1"
+                  >
+                    {a.label}
+                    <button
+                      type="button"
+                      onClick={() => applyFilters(a.next)}
+                      aria-label={`Remove ${a.label}`}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+                Clear All
               </button>
-            );
-          })}
+            </div>
+          )}
         </div>
 
-        {isFiltered && !loading && (
-          <div className="px-4 mt-2 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500">
-              {chip === 'All' ? 'All statuses' : chip}
-              {filterCount > 0 && ` · ${filterCount} ${filterCount === 1 ? 'filter' : 'filters'}`}
-            </span>
-            <button type="button" onClick={clearAll} className="text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-              Clear All
-            </button>
-          </div>
-        )}
-
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-4">
           {loading ? (
             <ListSkeleton />
           ) : results.length === 0 ? (
             <EmptyCard
-              icon={ClipboardCheck}
-              title={surveys.length === 0 ? 'No surveys yet.' : 'No surveys match your search.'}
-              text={surveys.length === 0 ? 'Surveys assigned to you will show up here.' : 'Try a different name, status or filter.'}
+              icon={surveys.length === 0 ? ClipboardCheck : SearchX}
+              title={surveys.length === 0 ? 'No Data Found' : 'No surveys found.'}
+              text={surveys.length === 0 ? 'Surveys assigned to you will show up here.' : 'Try another survey type, staff name or period.'}
               action={
-                surveys.length > 0 && isFiltered ? (
+                isFiltered ? (
                   <button
                     type="button"
                     onClick={clearAll}
@@ -381,90 +372,32 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
               }
             />
           ) : (
-            <ul className="space-y-3">
-              {visible.map((s) => {
-                const status = surveyStatus(s);
-                const progress = surveyProgress(s);
-                const clickable = s.type !== 'hbr' && !(status === 'Expired' && Object.keys(s.answers).length === 0) && (canFill(s) || perm.view);
-                return (
-                  <li key={s.id} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-                    <button
-                      type="button"
-                      disabled={!clickable}
-                      onClick={() => open(s)}
-                      className="w-full p-3.5 pb-3 flex items-center gap-3 text-left active:bg-slate-50 disabled:active:bg-transparent transition-colors cursor-pointer disabled:cursor-default"
-                    >
-                      <SurveyTypeIcon type={s.type} />
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-[13.5px] font-bold text-[#1E293B] leading-snug">{SURVEY_TYPE_LABEL[s.type]}</span>
-                        <span className="block text-[11.5px] text-slate-500 truncate">
-                          {s.staffName ? (
-                            <>
-                              <span className="font-semibold text-[#2F68FE]">{s.staffName}</span>
-                              {s.staffLevel !== null && ` · Level ${s.staffLevel}`}
-                            </>
-                          ) : (
-                            `${companyName} · Firm-wide`
-                          )}
-                        </span>
-                      </span>
-                      <SurveyStatusPill status={status} />
-                    </button>
+            <>
+              <ul className="space-y-3">{visible.map(card)}</ul>
 
-                    <dl className="mx-3.5 grid grid-cols-3 rounded-xl bg-slate-50 border border-slate-100 divide-x divide-slate-100">
-                      {metaOf(s).map(([label, value, tone]) => (
-                        <div key={label} className="px-2.5 py-2 min-w-0">
-                          <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide truncate">{label}</dt>
-                          <dd className={`mt-0.5 text-[11.5px] font-semibold truncate tabular-nums ${tone ?? 'text-[#1E293B]'}`}>{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-
-                    {status === 'In Progress' && (
-                      <div className="mx-3.5 mt-2.5 flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#F59E0B] rounded-full" style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }} />
-                        </div>
-                        <span className="text-[10.5px] font-semibold text-slate-500 tabular-nums">
-                          {progress.done}/{progress.total} answered
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="px-3.5 py-2.5 flex items-center gap-2">
-                      <span className="flex-1 min-w-0 text-[11px] text-slate-500 truncate">
-                        {s.type === 'hbr' ? (
-                          'Half-yearly business review'
-                        ) : (
-                          <>
-                            Assigned to <span className="font-semibold text-slate-600">{isMine(s) ? 'You' : s.assignedTo}</span>
-                          </>
-                        )}
-                      </span>
-                      {actionButton(s)}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {!loading && visible.length < results.length && (
-            <button
-              type="button"
-              disabled={moreLoading}
-              onClick={() => {
-                setMoreLoading(true);
-                setTimeout(() => {
-                  setPages((n) => n + 1);
-                  setMoreLoading(false);
-                }, LOAD_MS);
-              }}
-              className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
-            >
-              {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
-            </button>
+              {visible.length < results.length && (
+                <button
+                  type="button"
+                  disabled={moreLoading}
+                  onClick={() => {
+                    setMoreLoading(true);
+                    setTimeout(() => {
+                      setPages((n) => n + 1);
+                      setMoreLoading(false);
+                    }, LOAD_MS);
+                  }}
+                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
+                >
+                  {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
+                </button>
+              )}
+              {visible.length >= results.length && (
+                <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
+                  Showing all {results.length} {results.length === 1 ? 'survey' : 'surveys'}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -477,9 +410,8 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
         options={options}
         onClose={() => setFilterOpen(false)}
         onApply={(next) => {
-          setFilters(next);
           setFilterOpen(false);
-          reload();
+          applyFilters(next);
         }}
       />
     </div>

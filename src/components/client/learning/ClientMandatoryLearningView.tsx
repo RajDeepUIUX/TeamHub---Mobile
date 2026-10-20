@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookMarked, ChevronRight, Clock3, Loader2, SearchX } from 'lucide-react';
-import { Card, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import { MandatoryCourse, countsOf, formatHours, matchesCourseName } from '../data/clientMandatoryLearningData';
@@ -10,6 +10,8 @@ import { MlProgress } from './MandatoryLearningParts';
 interface Props {
   courses: MandatoryCourse[];
   staff: ClientStaffMember[];
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 /** Desktop pages the table 20 at a time; cards are taller, so fewer per page */
@@ -25,7 +27,7 @@ const ListSkeleton: React.FC = () => (
       ))}
     </div>
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-xl" />
           <div className="flex-1 space-y-1.5">
@@ -44,7 +46,7 @@ const ListSkeleton: React.FC = () => (
  * Learning & Development › Mandatory Learning (desktop `mandatorylearning`): the mandatory courses assigned to the client's
  * staff with Hours, Total Assigned, Total Completed and a Progress Details panel per course. Read-only; search by course name.
  */
-export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff }) => {
+export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [pages, setPages] = useState(1);
@@ -152,12 +154,9 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff })
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Mandatory Learning" onBack={onBack} />
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Learning &amp; Development <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Mandatory Learning</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Mandatory Learning</h1>
 
           <div className="mt-3">
             <SearchField
@@ -206,7 +205,7 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff })
                   { label: 'Completed', value: `${allCounts.completed}/${allCounts.assigned}` },
                   { label: 'Completion', value: `${allCounts.percent}%` },
                 ].map((t) => (
-                  <div key={t.label} className="py-3 px-2 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs text-center">
+                  <div key={t.label} className="py-3 px-2 rounded-2xl bg-white border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] text-center">
                     <dd className="text-lg font-extrabold text-[#1E293B] tabular-nums leading-none">{t.value}</dd>
                     <dt className="mt-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{t.label}</dt>
                   </div>

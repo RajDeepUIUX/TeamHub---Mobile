@@ -47,7 +47,7 @@ export const SectionCard: React.FC<{ title: string; action?: React.ReactNode; ch
 
 /** Desktop (MyCPE ONE) section card: grey title band + white body */
 export const BandSectionCard: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, action, children }) => (
-  <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
+  <section className="bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
     <div className="min-h-12 px-4 py-2 flex items-center justify-between gap-2 bg-[#F3F4F8]">
       <h2 className="text-sm font-bold text-[#1E293B]">{title}</h2>
       {action}
@@ -107,7 +107,7 @@ export const DisabledSelect: React.FC<{ text: string }> = ({ text }) => (
 
 export const ProfileSkeleton: React.FC<{ label?: string }> = ({ label = 'Loading profile' }) => (
   <div className="px-4 mt-4 space-y-3" aria-busy="true" aria-label={label}>
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4">
       <div className="flex items-center gap-3.5">
         <StaffSkeleton className="w-18 h-18 rounded-2xl" />
         <div className="flex-1 space-y-2">
@@ -122,7 +122,7 @@ export const ProfileSkeleton: React.FC<{ label?: string }> = ({ label = 'Loading
       </div>
     </div>
     {[0, 1].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3.5">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3.5">
         <StaffSkeleton className="w-28 h-4" />
         <div className="grid grid-cols-2 gap-4">
           {[0, 1, 2, 3].map((j) => (

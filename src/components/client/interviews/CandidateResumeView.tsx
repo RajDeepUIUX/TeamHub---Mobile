@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, BadgeCheck, CalendarClock, ChevronRight, Download, ExternalLink, GraduationCap, Play, UserRound } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, CalendarClock, Download, ExternalLink, GraduationCap, Play, UserRound } from 'lucide-react';
 import { Card, FieldGrid, Pill } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
@@ -85,17 +85,7 @@ export const CandidateResumeView: React.FC<Props> = ({ candidate, canDownload, o
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
         <div className="px-4 pt-3">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 min-w-0">
-            <span className="shrink-0">Hire New Staff</span>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <button type="button" onClick={onBack} className="shrink-0 hover:text-[#2F68FE] cursor-pointer">
-              Shortlisted Candidates
-            </button>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <span className="text-slate-600 truncate tabular-nums">{candidate.resumeId}</span>
-          </p>
-
-          <Card className="mt-2.5 p-4">
+          <Card className="p-4">
             <div className="flex items-start gap-3">
               <span
                 className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${r.gender === 'Female' ? 'bg-[#FDF2F8] text-[#DB2777]' : 'bg-[#EFF6FF] text-[#2F68FE]'}`}

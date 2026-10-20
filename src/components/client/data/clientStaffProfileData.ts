@@ -80,14 +80,15 @@ const CLIENT_CONTACTS = [
 ];
 
 export const mappedContactsFor = (s: ClientStaffMember): MappedContact[] => {
-  const n = num(s.id);
-  return CLIENT_CONTACTS.filter((_, i) => i === 0 || (n + i) % 3 === 0).map((c, i) => ({
+  // Desktop mapped contacts: 2 rows, Designation and Phone No usually empty ("-")
+  return CLIENT_CONTACTS.slice(0, 2).map((c, i) => ({
     id: `${s.id}-mc${i}`,
     ...c,
-    phone: `+1 (555) 01${i}-${String(1000 + n * 37 + i * 7).slice(-4)}`,
+    designation: '',
+    phone: '',
     email: `${c.firstName.toLowerCase()}@northwindcpa.example`,
     birthDate: '',
-    status: i === 2 ? 'Inactive' : 'Active',
+    status: 'Active',
   }));
 };
 
@@ -261,30 +262,22 @@ export interface StaffCertificate {
 export interface StaffSkills {
   technical: string[];
   software: string[];
-  education: string[];
   certificates: StaffCertificate[];
 }
 
-const TECH_SKILLS = ['Individual Tax (1040)', 'Business Tax (1120/1120S)', 'Partnership Tax (1065)', 'Bookkeeping', 'Bank Reconciliation', 'Payroll Processing', 'Financial Statements', 'Audit Workpapers', 'Sales Tax', 'Trust Tax (1041)'];
-const SOFTWARE = ['CCH Axcess', 'Drake', 'UltraTax CS', 'Lacerte', 'QuickBooks Online', 'Xero', 'FreshBooks', 'MS Excel', 'CaseWare', 'Karbon'];
+const TECH_SKILLS = ['1065 Self-Review', 'C Corp/1120', 'S Corp/1120S', '1065 Preparation', '1065 Review', 'Trust & Estate 1041', 'Trust & Estate 709'];
+const SOFTWARE = ['Lacerte', 'Ultra Tax', 'TaxPrep', 'CCH Axcess Knowledge Coach'];
+const CERTIFICATES: StaffCertificate[] = [
+  { name: 'MYCPE Certification For Data Interpretation and Logical Reasoning', type: 'Licensed', status: 'Completed' },
+  { name: 'MYCPE Certification For Data Interpretation and Logical Reasoning', type: 'Licensed', status: 'Completed' },
+  { name: 'MYCPE Certification For Quantitative Aptitude', type: 'Licensed', status: 'Completed' },
+];
 
-export const skillsFor = (s: ClientStaffMember): StaffSkills => {
-  const n = num(s.id);
-  const take = (list: string[], count: number, salt: string) =>
-    [...list].sort((a, b) => rand(salt + a) - rand(salt + b)).slice(0, count);
-  return {
-    technical: take(TECH_SKILLS, 4 + (n % 3), s.id + 't'),
-    software: take(SOFTWARE, 3 + (n % 3), s.id + 's'),
-    education: n % 2 ? ['M.Com — Gujarat University (2019)', 'B.Com — Gujarat University (2017)'] : ['B.Com — Saurashtra University (2018)'],
-    certificates:
-      n % 3 === 0
-        ? []
-        : [
-            { name: n % 2 ? 'CPA (US) — Part qualified' : 'Enrolled Agent (EA)', type: 'Licensed', status: n % 2 ? 'Pursuing' : 'Completed' },
-            { name: 'QuickBooks ProAdvisor', type: 'Others', status: 'Completed' },
-          ],
-  };
-};
+export const skillsFor = (_s: ClientStaffMember): StaffSkills => ({
+  technical: TECH_SKILLS,
+  software: SOFTWARE,
+  certificates: CERTIFICATES,
+});
 
 /* ---------------------------- Employee Documents --------------------------- */
 
@@ -332,39 +325,27 @@ export const documentsFor = (s: ClientStaffMember): StaffDocument[] => {
 
 export interface StaffTerms {
   noticePeriod: string;
-  probationPeriod: string | null;
   minimumEmploymentPeriod: string;
   employmentStartDate: string;
-  joiningBonus: string | null;
-  buyOutNoticePeriod: string | null;
-  nextAppraisalDate: string;
   baseLocation: string;
   branchName: string;
-  otAvailability: string;
   employmentType: string;
+  shiftTimeZone: string;
   availableUpTo: string;
   taxSeasonAvailableUpTo: string;
 }
 
-export const termsFor = (s: ClientStaffMember): StaffTerms => {
-  const n = num(s.id);
-  const nextYear = new Date().getFullYear() + (new Date().getMonth() >= 3 ? 1 : 0);
-  return {
-    noticePeriod: `${n % 2 ? 2 : 3} Months`,
-    probationPeriod: n % 3 === 0 ? null : '3 Months',
-    minimumEmploymentPeriod: `${1 + (n % 2)} Years`,
-    employmentStartDate: s.joiningDate,
-    joiningBonus: n % 4 === 0 ? (25000).toFixed(2) : null,
-    buyOutNoticePeriod: n % 3 === 1 ? (40000 + n * 1000).toFixed(2) : null,
-    nextAppraisalDate: `${nextYear}-04-01`,
-    baseLocation: s.location,
-    branchName: `${s.location} - ${pick(['City Center', 'Tech Park', 'Main Road', 'Business Bay'], s.id + 'b')}`,
-    otAvailability: pick(['OT Round the Year', 'OT Seasonal', 'Not Available'], s.id + 'ot'),
-    employmentType: s.engagementType === 'Seasonal Staffing' ? 'Contract' : 'Full Time',
-    availableUpTo: pick(['11:00 AM', '12:00 PM', '01:00 PM'], s.id + 'au'),
-    taxSeasonAvailableUpTo: pick(['01:00 PM', '02:00 PM', '03:00 PM'], s.id + 'tau'),
-  };
-};
+export const termsFor = (_s: ClientStaffMember): StaffTerms => ({
+  noticePeriod: '2 Months',
+  minimumEmploymentPeriod: '2 Years',
+  employmentStartDate: '2023-01-01',
+  baseLocation: 'Ahmedabad',
+  branchName: 'Ahmedabad: Sakar - 1 11th Floor A Wing Operation',
+  employmentType: 'Full Time',
+  shiftTimeZone: 'EST',
+  availableUpTo: '04:00 PM',
+  taxSeasonAvailableUpTo: '05:00 PM',
+});
 
 /* ------------------------- Training & Development -------------------------- */
 
@@ -377,31 +358,18 @@ export interface TrainingRecord {
   type: TrainingType;
   duration: string;
   startDate: string;
-  status: 'Completed' | 'In Progress' | 'Not Started';
+  status: 'Upcoming' | 'In Progress' | 'Completed';
 }
 
-const TRAININGS: [string, TrainingType, string][] = [
-  ['Individual Tax Return Preparation — 2026 Updates', 'Live Webinar', '2 Hrs'],
-  ['Partnership Taxation Essentials', 'PTC', '16 Hrs'],
-  ['QuickBooks Online Advanced Reporting', 'Self Study', '4 Hrs'],
-  ['Ethics for CPAs', 'Live Webinar', '4 Hrs'],
-  ['US GAAP Fundamentals', 'Certification Programs', '24 Hrs'],
-  ['Excel for Accountants: Power Query', 'Self Study', '3 Hrs'],
-  ['Audit Sampling Techniques', 'PTC', '8 Hrs'],
-  ['Communication Skills for Offshore Teams', 'Live Webinar', '1 Hr'],
+const TRAININGS: [string, TrainingType, string, string][] = [
+  ['Navigating Estate and Gift Tax Laws: Updates and Strategies', 'Self Study', '1 Hrs', '2024-01-04'],
+  ['Federal Tax Update – Individual & Business Current Developments', 'Self Study', '8 Hrs', '2024-01-04'],
+  ['Tax Update: Crypto, CP2100 Letters, PPP, and Tax Ethics', 'Self Study', '1 Hrs', '2024-01-03'],
+  ['Annual Federal Tax Update - C & S Corporations, Partnerships & LLCs (Forms 1120, 1120S & 1065)', 'Self Study', '8 Hrs', '2024-01-03'],
 ];
 
-export const trainingsFor = (s: ClientStaffMember): TrainingRecord[] => {
-  const n = num(s.id);
-  const end = staffRecordsEnd(s);
-  return TRAININGS.filter((_, i) => (i + n) % 4 !== 0)
-    .map(([name, type, duration], i) => {
-      const start = shift(end, -(6 + i * 23 + n));
-      const status: TrainingRecord['status'] = i === 0 ? 'Not Started' : i === 1 ? 'In Progress' : 'Completed';
-      return { id: `${s.id}-tr${i}`, name, type, duration, startDate: start, status };
-    })
-    .filter((t) => t.startDate >= s.joiningDate);
-};
+export const trainingsFor = (s: ClientStaffMember): TrainingRecord[] =>
+  TRAININGS.map(([name, type, duration, startDate], i) => ({ id: `${s.id}-tr${i}`, name, type, duration, startDate, status: 'Upcoming' }));
 
 /* -------------------------- System & IT Details ---------------------------- */
 
@@ -423,68 +391,49 @@ export interface SystemAccess {
   status: 'Active' | 'Revoked';
 }
 
-export const devicesFor = (s: ClientStaffMember): AssignedDevice[] => {
-  const n = num(s.id);
-  const inactive = s.status === 'Inactive';
-  return [
-    ['Laptop', pick(['Dell', 'Lenovo', 'HP'], s.id + 'l')],
-    ['Monitor', pick(['Dell', 'LG', 'Samsung'], s.id + 'm')],
-    ['Headset', pick(['Jabra', 'Logitech'], s.id + 'h')],
-    ...(n % 2 ? [['Keyboard & Mouse', 'Logitech']] : []),
-  ].map(([group, brand], i) => ({
-    id: `${s.id}-dv${i}`,
-    assetCode: `ENT-${group.slice(0, 3).toUpperCase()}-${pad(n)}${300 + i * 7}`,
-    assetGroup: group,
-    deskNo: `${s.location.slice(0, 3).toUpperCase()}-${pad(10 + n)}`,
-    brand,
-    assignedOn: shift(s.joiningDate, i),
-    status: inactive ? 'Returned' : 'Assigned',
-  }));
-};
+export const devicesFor = (s: ClientStaffMember): AssignedDevice[] => [
+  { id: `${s.id}-dv0`, assetCode: '005710', assetGroup: 'Headphones', deskNo: 'SA1-F0GA-099', brand: 'Other', assignedOn: '2023-10-06', status: 'Assigned' },
+];
 
 export const systemAccessFor = (s: ClientStaffMember): SystemAccess[] => {
-  const inactive = s.status === 'Inactive';
-  return ['Microsoft 365', 'CCH Axcess', 'QuickBooks Online', 'Karbon', 'LastPass'].slice(0, 3 + (num(s.id) % 3)).map((software, i) => ({
-    id: `${s.id}-sa${i}`,
-    software,
-    email: i === 0 ? s.email : `${s.name.split(' ')[0].toLowerCase()}@northwindcpa.example`,
-    assignedOn: shift(s.joiningDate, 1 + i * 2),
-    status: inactive ? 'Revoked' : 'Active',
-  }));
+  const email = `${s.name.split(' ')[0].toLowerCase()}@northwindcpa.example`;
+  return [
+    { id: `${s.id}-sa0`, software: 'Microsoft 365', email, assignedOn: '2023-10-06', status: 'Active' },
+    { id: `${s.id}-sa1`, software: 'CCH Axcess', email, assignedOn: '2023-10-09', status: 'Active' },
+    { id: `${s.id}-sa2`, software: 'Lacerte', email, assignedOn: '2023-10-12', status: 'Active' },
+  ];
 };
 
 /* ------------------------------- Assessments ------------------------------- */
 
+/** Desktop `projects::assessments_list` row (newest assigned first) */
 export interface AssessmentRecord {
   id: string;
   name: string;
-  /** Percentage; null while pending */
-  score: number | null;
-  assignedBy: string;
+  /** Desktop "obt_score/tot_score"; null until a result exists */
+  score: { obtained: number; total: number } | null;
+  assignedBy: string | null;
   assignedOn: string;
   completedOn: string | null;
+  /** Desktop `assessment_report_url`: Action shows a download link, "-" when empty */
+  reportUrl: string | null;
 }
 
-const ASSESSMENTS = ['Individual Tax Assessment', 'Bookkeeping Fundamentals', 'MS Excel Proficiency', 'Business Communication', 'Audit Basics'];
+export const assessmentScore = (a: AssessmentRecord) => (a.score ? `${a.score.obtained}/${a.score.total}` : '-');
 
-export const ASSESSMENT_NAMES = ASSESSMENTS;
+const REPORT_BASE = 'https://reports.example.com/assessments';
 
-export const assessmentsFor = (s: ClientStaffMember): AssessmentRecord[] => {
-  const n = num(s.id);
-  const end = staffRecordsEnd(s);
-  return ASSESSMENTS.filter((_, i) => (i + n) % 3 !== 0).map((name, i) => {
-    const assigned = shift(end, -(8 + i * 41 + n * 2));
-    const pending = i === 0 && n % 2 === 0;
-    return {
-      id: `${s.id}-as${i}`,
-      name,
-      score: pending ? null : 55 + Math.floor(rand(s.id + name) * 43),
-      assignedBy: i % 2 ? 'Riley Brooks' : 'Taylor Morgan',
-      assignedOn: assigned,
-      completedOn: pending ? null : shift(assigned, 2 + (i % 4)),
-    };
-  }).filter((a) => a.assignedOn >= s.joiningDate);
-};
+const ASSESSMENTS: Omit<AssessmentRecord, 'id'>[] = [
+  { name: 'Data Interpretation and Logical Reasoning', score: { obtained: 0, total: 0 }, assignedBy: null, assignedOn: '2026-07-09', completedOn: '2026-08-09', reportUrl: null },
+  { name: 'Excel Proficiency', score: null, assignedBy: 'Taylor Morgan', assignedOn: '2026-06-22', completedOn: null, reportUrl: null },
+  { name: 'Quantitative Aptitude', score: { obtained: 18, total: 25 }, assignedBy: 'Taylor Morgan', assignedOn: '2026-05-14', completedOn: '2026-05-16', reportUrl: `${REPORT_BASE}/quantitative-aptitude.pdf` },
+  { name: 'Verbal Ability', score: { obtained: 21, total: 25 }, assignedBy: 'Riley Brooks', assignedOn: '2026-04-03', completedOn: '2026-04-04', reportUrl: `${REPORT_BASE}/verbal-ability.pdf` },
+  { name: 'US Individual Tax (1040)', score: { obtained: 34, total: 40 }, assignedBy: 'Riley Brooks', assignedOn: '2026-02-18', completedOn: '2026-02-20', reportUrl: `${REPORT_BASE}/us-individual-tax-1040.pdf` },
+];
+
+export const ASSESSMENT_NAMES = ASSESSMENTS.map((a) => a.name);
+
+export const assessmentsFor = (s: ClientStaffMember): AssessmentRecord[] => ASSESSMENTS.map((a, i) => ({ id: `${s.id}-as${i}`, ...a }));
 
 /* ----------------------------------- SOP ----------------------------------- */
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ComingSoonView } from '../home/ComingSoonView';
 import { DropdownSheetModeProvider } from '../../design-system/components/Dropdown';
 import { AppHeader } from '../home/AppHeader';
@@ -16,7 +16,7 @@ import { ClientPermissionProvider } from './context/ClientPermissionContext';
 import { CLIENT_CONTACT_ROLES, ClientContactRole, permissionFor } from './data/clientPermissionsData';
 import { findClientModule } from './home/clientMenu';
 import { ClientMyStaffView } from './staff/ClientMyStaffView';
-import { CURRENT_STAFF_STATUSES, ClientStaffMember, MY_STAFF_SEED, StaffProfileTab, staffFromHire } from './data/clientStaffData';
+import { ClientStaffMember, MY_STAFF_SEED, StaffProfileTab, staffFromHire } from './data/clientStaffData';
 import { ClientAttendanceView } from './attendance/ClientAttendanceView';
 import { AMEND_SEED, AmendRequest, AmendStatus, pendingAmendCount } from './data/clientAttendanceData';
 import { ClientWorkFlexibilityView } from './flexibility/ClientWorkFlexibilityView';
@@ -49,7 +49,7 @@ import { ClientTrainingNeedView } from './training/ClientTrainingNeedView';
 import { TNI_REQUESTS_SEED, TniRequest } from './data/clientTrainingNeedData';
 import { ClientMandatoryLearningView } from './learning/ClientMandatoryLearningView';
 import { MANDATORY_COURSES_SEED } from './data/clientMandatoryLearningData';
-import { BillingDetails, billingSeedFor, billingSummaryOf } from './data/clientBillingData';
+import { BillingDetails, billingSeedFor } from './data/clientBillingData';
 import type { TimesheetRange } from './data/clientTimesheetsData';
 import { DIRECTORY_POC_SEED, DIRECTORY_PRIMARY_SEED } from './data/clientDirectoryData';
 import {
@@ -83,6 +83,9 @@ const TAB_TO_MODULE: Record<Exclude<ClientTab, 'more'>, string> = {
 
 /** Mock load time of the dashboard when the app opens */
 const DASHBOARD_LOAD_MS = 700;
+
+/** Important Updates auto-opens until it is closed once (Skip / Mark As Read / ✕); later visits to Client don't reopen it */
+let updatesDismissed = false;
 
 /**
  * Client (HRMS) experience — completely separate from the Staff / Manager app:
@@ -127,7 +130,11 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const unreadUpdates = updatesRead ? 0 : updates.length;
 
   // Skip keeps Important Updates for the next visit; Mark As Read clears them
-  const [overlay, setOverlay] = useState<ClientOverlay>('updates');
+  const [overlay, setOverlay] = useState<ClientOverlay>(() => (updatesDismissed ? null : 'updates'));
+  const closeUpdates = () => {
+    updatesDismissed = true;
+    setOverlay(null);
+  };
 
   // One inbox for every Client Hub module (bell in the header)
   const [notifications, setNotifications] = useState<ClientNotification[]>(CLIENT_NOTIFICATIONS_SEED);
@@ -142,22 +149,13 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const [staffFocus, setStaffFocus] = useState<{ staffId: string; tab?: StaffProfileTab } | null>(null);
   const offshoreStaff = useMemo(() => offshoreStaffFrom(staff), [staff]);
   const workFlexStaff = useMemo(() => workFlexStaffFrom(staff), [staff]);
-  const currentStaff = useMemo(() => staff.filter((s) => CURRENT_STAFF_STATUSES.includes(s.status)), [staff]);
-  const staffByLevel = useMemo(
-    () =>
-      currentStaff.reduce<Record<number, number>>((acc, s) => {
-        const n = Number(s.level.replace(/\D/g, ''));
-        acc[n] = (acc[n] ?? 0) + 1;
-        return acc;
-      }, {}),
-    [currentStaff],
-  );
 
   // Attendance Management > Attendance Amend (requests staff raise; the notification follows it)
   const [amends, setAmends] = useState<AmendRequest[]>(AMEND_SEED);
 
   // Staff Work Flexibility (kept while switching modules, like desktop's saved preferences)
   const [workFlex, setWorkFlex] = useState<WorkFlexPreferences>(WORK_FLEX_SEED);
+  const workModeOf = useCallback((id: string) => workModeFromPrefs(workFlex, id), [workFlex]);
 
   // Reports › Timesheets opened from a My Staff card (desktop `task=report&id=`) or an invoice staff row (+ invoice period)
   const [timesheetPreset, setTimesheetPreset] = useState<{ staffIds: string[]; range?: TimesheetRange }>({ staffIds: [] });
@@ -284,6 +282,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     setMoreModuleId(id);
   };
 
+  const goHome = () => openTab('home');
+
   const closeOverlay = () => setOverlay(null);
 
   const markUpdatesRead = () => {
@@ -355,7 +355,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             }}
           />
         ) : !canList(currentModuleId) ? (
-          <ClientNoAccessView title={screenTitle} roleName={role.name} onGoHome={() => openTab('home')} />
+          <ClientNoAccessView onBack={goHome} title={screenTitle} roleName={role.name} onGoHome={() => openTab('home')} />
         ) : tab === 'home' ? (
           <ClientDashboard
             userName={userName}
@@ -372,6 +372,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'staff' ? (
           <ClientMyStaffView
+            onBack={goHome}
             staff={staff}
             clientName={userName}
             focus={staffFocus}
@@ -389,6 +390,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'user-profile' ? (
           <ClientUserProfileView
+            onBack={goHome}
             profile={profile}
             photoUrl={profilePhoto}
             companyName={companyName}
@@ -398,6 +400,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'company-profile' ? (
           <ClientCompanyProfileView
+            onBack={goHome}
             profile={company}
             logoUrl={companyLogo}
             agreements={CLIENT_AGREEMENTS_SEED}
@@ -409,6 +412,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'client-contacts' ? (
           <ClientContactsView
+            onBack={goHome}
             contacts={contacts}
             company={{
               address: company.address1,
@@ -421,33 +425,33 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             onChange={setContacts}
           />
         ) : tab === 'more' && moreModuleId === 'work-flexibility' ? (
-          <ClientWorkFlexibilityView prefs={workFlex} staff={workFlexStaff} userName={userName} onChange={setWorkFlex} />
+          <ClientWorkFlexibilityView onBack={goHome} prefs={workFlex} staff={workFlexStaff} userName={userName} onChange={setWorkFlex} />
         ) : tab === 'more' && moreModuleId === 'mgmt-fee' ? (
           <ClientMgmtFeeView
+            onBack={goHome}
             structure={MGMT_FEE_SEED}
-            teamSize={currentStaff.length}
-            staffByLevel={staffByLevel}
-            companyName={companyName}
             onContactManager={() => openModule('account-manager')}
-            onOpenMyStaff={canList('my-staff') ? () => openTab('staff') : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'directories' ? (
           <ClientDirectoryView
+            onBack={goHome}
             primaryContacts={DIRECTORY_PRIMARY_SEED}
             products={DIRECTORY_POC_SEED}
             onOpenAccountManager={() => openModule('account-manager')}
           />
         ) : tab === 'approvals' ? (
           <ClientAttendanceView
+            onBack={goHome}
             requests={amends}
             staff={staff}
             onDecide={decideAmends}
-            onOpenMyStaff={canList('my-staff') ? () => openTab('staff') : undefined}
+            workModeOf={workModeOf}
           />
         ) : tab === 'timesheets' ? (
-          <ClientTimesheetsView staff={staff} initialStaffIds={timesheetPreset.staffIds} initialRange={timesheetPreset.range} />
+          <ClientTimesheetsView onBack={goHome} staff={staff} initialStaffIds={timesheetPreset.staffIds} initialRange={timesheetPreset.range} />
         ) : tab === 'invoices' ? (
           <ClientInvoicesView
+            onBack={goHome}
             staff={staff}
             initialInvoiceNo={invoiceFocus}
             onOpenTimesheets={
@@ -459,11 +463,10 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
                 : undefined
             }
             onContactManager={() => openModule('account-manager')}
-            billingSummary={canList('billing-details') ? billingSummaryOf(billing, staff) : undefined}
-            onOpenBilling={canList('billing-details') ? () => openModule('billing-details') : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'billing-details' ? (
           <ClientBillingDetailsView
+            onBack={goHome}
             billing={billing}
             staff={staff}
             country={company.country}
@@ -472,9 +475,10 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             onOpenInvoices={canList('invoices') ? () => openTab('invoices') : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'inclusions' ? (
-          <ClientInclusionsView companyName={companyName} onContactManager={() => openModule('account-manager')} />
+          <ClientInclusionsView onBack={goHome} />
         ) : tab === 'more' && moreModuleId === 'staff-hub' ? (
           <ClientStaffHubView
+            onBack={goHome}
             profiles={HUB_PROFILES_SEED}
             candidates={candidates}
             savedIds={hubSaved}
@@ -494,6 +498,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'requirements' ? (
           <ClientRequirementsView
+            onBack={goHome}
             requirements={requirements}
             onChange={changeRequirements}
             userName={userName}
@@ -505,30 +510,33 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'hiring-pricing' ? (
           <ClientHiringPricingView
-            companyName={companyName}
+            onBack={goHome}
             country={company.country}
-            onContactManager={() => openModule('account-manager')}
-            onAddRequirement={canList('requirements') && permissionFor(role, 'requirements').add ? () => openModule('requirements') : undefined}
+            onCreateRequirements={canList('requirements') && permissionFor(role, 'requirements').add ? (created) => changeRequirements([...created, ...requirements]) : undefined}
+            defaultLocations={OFFSHORE_LOCATIONS.filter((l) => staff.some((m) => m.location === l))}
+            onOpenHub={canList('staff-hub') ? () => openModule('staff-hub') : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'interviews' ? (
           <ClientInterviewsView
+            onBack={goHome}
             candidates={candidates}
             onUpdate={updateCandidate}
             onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'training-need' ? (
-          <ClientTrainingNeedView requests={tniRequests} staff={staff} onChange={changeTni} />
+          <ClientTrainingNeedView onBack={goHome} requests={tniRequests} staff={staff} onChange={changeTni} />
         ) : tab === 'more' && moreModuleId === 'mandatory-learning' ? (
-          <ClientMandatoryLearningView courses={MANDATORY_COURSES_SEED} staff={staff} />
+          <ClientMandatoryLearningView onBack={goHome} courses={MANDATORY_COURSES_SEED} staff={staff} />
         ) : tab === 'more' && moreModuleId === 'feedback-evaluation' ? (
           <ClientFeedbackView
+            onBack={goHome}
             surveys={surveys}
             userName={userName}
             companyName={companyName}
             onUpdate={(id, patch) => setSurveys((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))}
           />
         ) : (
-          <ComingSoonView title={screenTitle} onGoHome={() => openTab('home')} />
+          <ComingSoonView title={screenTitle} onGoHome={goHome} onBack={goHome} />
         )}
       </div>
       {/* Hidden on Notifications, like Staff / Manager */}
@@ -550,9 +558,9 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
         onUpdate={(id, patch) => setUpdates((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)))}
         onMarkAllRead={() => {
           markUpdatesRead();
-          closeOverlay();
+          closeUpdates();
         }}
-        onSkip={closeOverlay}
+        onSkip={closeUpdates}
       />
       <ClientServicesSheet isOpen={overlay === 'services'} onClose={closeOverlay} />
       <ClientNewsInsightsSheet isOpen={overlay === 'news'} onClose={closeOverlay} />

@@ -61,7 +61,7 @@ const DashboardSkeleton: React.FC = () => (
     </div>
     <Skeleton className="w-full h-14 rounded-2xl" />
     <Skeleton className="w-full h-[76px] rounded-2xl" />
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
       <Skeleton className="w-44 h-8" />
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-3">
@@ -181,7 +181,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
         )}
 
         {/* My Offshore Staff */}
-        <section className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs">
+        <section className="bg-white border border-[#DCE3ED] rounded-2xl p-4 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)]">
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -239,10 +239,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                       <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${avatarTint(idx)}`}>
                         {initialsOf(s.name)}
                       </span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-[13px] font-semibold text-[#1E293B] truncate">{s.name}</span>
-                        <span className="block text-[11px] text-slate-400 truncate">{s.designation}</span>
-                      </span>
+                      <span className="flex-1 min-w-0 text-[13px] font-semibold text-[#1E293B] truncate">{s.name}</span>
                       <span className={`shrink-0 text-[12.5px] tabular-nums ${hrs == null ? 'text-slate-300 font-semibold' : 'font-bold text-[#1E293B]'}`}>
                         {hrs == null ? '–' : formatHrs(hrs)}
                       </span>
@@ -300,7 +297,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
           <div key={tab} className="mt-3 space-y-3 animate-in fade-in duration-200" role="tabpanel" aria-label={tab}>
             {tabLoading &&
               [0, 1].map((i) => (
-                <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-2.5" aria-busy="true">
+                <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-2.5" aria-busy="true">
                   <Skeleton className="w-3/4 h-4" />
                   <Skeleton className="w-full h-3" />
                   <Skeleton className="w-5/6 h-3" />
@@ -317,7 +314,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
               ))}
 
             {!tabLoading && tabPosts.length === 0 && (
-              <div className="py-12 flex flex-col items-center text-center bg-white border border-[#EBF0F7] rounded-2xl">
+              <div className="py-12 flex flex-col items-center text-center bg-white border border-[#DCE3ED] rounded-2xl">
                 <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
                   <Newspaper className="w-6 h-6" />
                 </span>

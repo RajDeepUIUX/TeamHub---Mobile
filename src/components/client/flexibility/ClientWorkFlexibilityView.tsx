@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, Lock, Pencil, Plus, Send, Sparkles, TrendingUp, X } from 'lucide-react';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
-import { Card, ConfirmSheet } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, ConfirmSheet } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import {
   ArrangementKey,
@@ -37,6 +37,8 @@ interface Props {
   /** Signed-in client contact (stamped on save) */
   userName: string;
   onChange: React.Dispatch<React.SetStateAction<WorkFlexPreferences>>;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 /** Desktop page loader "Loading preferences…" */
@@ -52,7 +54,7 @@ const PageSkeleton: React.FC = () => (
   <div className="px-4 mt-4 space-y-3" aria-busy="true" aria-label="Loading preferences">
     <StaffSkeleton className="w-full h-20 rounded-2xl" />
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-11 h-11 rounded-xl" />
           <div className="flex-1 space-y-1.5">
@@ -89,7 +91,7 @@ const StaffTag: React.FC<{ staff: WorkFlexStaff; onRemove?: () => void }> = ({ s
   </span>
 );
 
-export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userName, onChange }) => {
+export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userName, onChange, onBack }) => {
   // Without `is_edit` the page is view only (desktop shows the form, saves are refused)
   const readOnly = !useClientPermission('work-flexibility').edit;
   const [loading, setLoading] = useState(true);
@@ -378,13 +380,10 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Work Flexibility Preferences" onBack={onBack} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Work Flexibility Preferences</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Work Flexibility Preferences</h1>
-          <p className="mt-2.5 inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] text-slate-500">
+          <p className="inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] text-slate-500">
             {prefs.savedAt ? (
               <>
                 <span className="w-6 h-6 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center shrink-0" aria-hidden="true">

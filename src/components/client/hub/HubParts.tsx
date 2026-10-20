@@ -23,7 +23,7 @@ export const DomainTile: React.FC<{ domain: string }> = ({ domain }) => {
 export const HubListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading resumes">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center gap-2">
           <StaffSkeleton className="w-7 h-7" />
           <StaffSkeleton className="w-32 h-3" />
@@ -50,15 +50,4 @@ export const HubListSkeleton: React.FC = () => (
       </div>
     ))}
   </div>
-);
-
-/** Skills in one swipeable row (all skills are listed on the resume page) */
-export const SkillChips: React.FC<{ skills: string[] }> = ({ skills }) => (
-  <ul className="-mx-3.5 px-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar" aria-label="Skills">
-    {skills.map((s) => (
-      <li key={s} className="shrink-0 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-600 whitespace-nowrap">
-        {s}
-      </li>
-    ))}
-  </ul>
 );

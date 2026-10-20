@@ -1,20 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  BadgeCheck,
-  Briefcase,
-  CalendarCheck,
-  ChevronRight,
-  ClipboardCheck,
-  FileCog,
-  FileSignature,
-  FolderOpen,
-  GraduationCap,
-  Mail,
-  MonitorSmartphone,
-  UserRound,
-  UsersRound,
-} from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import type { TniRequest } from '../data/clientTrainingNeedData';
 import { ClientStaffMember, STAFF_PROFILE_TABS, StaffProfileTab, formatStaffDate } from '../data/clientStaffData';
 import {
@@ -31,7 +16,7 @@ import {
   type StaffWorkMode,
 } from '../data/clientStaffProfileData';
 import { StaffAvatar, StaffStatusPill } from './ClientStaffParts';
-import { InfoCard, TabTitle } from './tabs/StaffTabParts';
+import { InfoCard } from './tabs/StaffTabParts';
 import { StaffReportingToTab } from './tabs/StaffReportingToTab';
 import { StaffAttendanceLeaveTab } from './tabs/StaffAttendanceLeaveTab';
 import { StaffSkillsTab } from './tabs/StaffSkillsTab';
@@ -41,18 +26,19 @@ import { StaffSystemTab } from './tabs/StaffSystemTab';
 import { StaffAssessmentsTab } from './tabs/StaffAssessmentsTab';
 import { StaffSopTab } from './tabs/StaffSopTab';
 
-const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
-  'Personal Information': UserRound,
-  'Work Information': Briefcase,
-  'Reporting To': UsersRound,
-  'Attendance & Leave': CalendarCheck,
-  'Skills & Qualification': BadgeCheck,
-  'Employee Documents': FolderOpen,
-  'Terms of Employment': FileSignature,
-  'Training & Development': GraduationCap,
-  'System & IT Details': MonitorSmartphone,
-  Assessments: ClipboardCheck,
-  SOP: FileCog,
+const dateParts = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00`);
+  return { day: String(d.getDate()).padStart(2, '0'), month: d.toLocaleDateString('en-US', { month: 'short' }), year: d.getFullYear() };
+};
+/** Desktop Personal Information date: "15 Nov, 1996" */
+const formatBirthDate = (iso: string) => {
+  const { day, month, year } = dateParts(iso);
+  return `${day} ${month}, ${year}`;
+};
+/** Desktop Work Information date: "Jan, 01 2023" */
+const formatStartDate = (iso: string) => {
+  const { day, month, year } = dateParts(iso);
+  return `${month}, ${day} ${year}`;
 };
 
 interface ClientStaffDetailViewProps {
@@ -100,7 +86,6 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
       case 'Personal Information':
         return (
           <>
-            <TabTitle title="Personal Information" />
             <InfoCard
               groups={[
                 {
@@ -108,7 +93,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
                   fields: [
                     { label: 'Full Name', value: member.name },
                     { label: 'Gender', value: member.gender },
-                    { label: 'Date of Birth', value: formatStaffDate(member.dateOfBirth) },
+                    { label: 'Date of Birth', value: formatBirthDate(member.dateOfBirth) },
                     { label: 'Nationality', value: member.nationality },
                     { label: 'Marital Status', value: member.maritalStatus },
                   ],
@@ -116,10 +101,10 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
                 {
                   title: 'Address Details',
                   fields: [
-                    { label: 'Current City', value: member.currentCity },
-                    { label: 'Time Zone', value: member.timeZone },
+                    { label: 'Current City', value: member.currentCity, wide: true },
                     { label: 'Permanent Address', value: member.permanentAddress, wide: true },
                     { label: 'Correspondence Address', value: member.correspondenceAddress, wide: true },
+                    { label: 'Time Zone', value: member.timeZone },
                   ],
                 },
               ]}
@@ -129,7 +114,6 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
       case 'Work Information':
         return (
           <>
-            <TabTitle title="Work Information" />
             <InfoCard
               groups={[
                 {
@@ -138,8 +122,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
                     { label: 'Designation', value: member.designation, wide: true },
                     { label: 'Department', value: work.department },
                     { label: 'Reporting Manager', value: work.reportingManager },
-                    { label: 'Engagement Type', value: member.engagementType },
-                    { label: 'Employment Start Date', value: formatStaffDate(work.employmentStartDate) },
+                    { label: 'Employment Start Date', value: formatStartDate(work.employmentStartDate) },
                   ],
                 },
                 {
@@ -164,30 +147,24 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
       case 'Terms of Employment':
         return (
           <>
-            <TabTitle title="Terms of Employment" />
             <InfoCard
               groups={[
                 {
                   title: 'Terms of Employment',
                   fields: [
                     { label: 'Notice Period', value: terms.noticePeriod },
-                    { label: 'Probation Period', value: terms.probationPeriod },
                     { label: 'Minimum Employment Period', value: terms.minimumEmploymentPeriod },
                     { label: 'Employment Start Date', value: formatStaffDate(terms.employmentStartDate) },
-                    { label: 'Joining Bonus', value: terms.joiningBonus },
-                    { label: 'Buy Out Notice Period', value: terms.buyOutNoticePeriod },
-                    { label: 'Next Appraisal Date', value: formatStaffDate(terms.nextAppraisalDate) },
                     { label: 'Base Location', value: terms.baseLocation },
                     { label: 'Branch Name', value: terms.branchName },
-                    { label: 'OT Availability', value: terms.otAvailability },
                     { label: 'Employment Type', value: terms.employmentType },
                   ],
                 },
                 {
                   title: 'Shift',
                   fields: [
-                    { label: `Available Up To (${member.timeZone})`, value: terms.availableUpTo },
-                    { label: `Tax Season Available Up To (${member.timeZone})`, value: terms.taxSeasonAvailableUpTo },
+                    { label: `Available Up To (${terms.shiftTimeZone})`, value: terms.availableUpTo },
+                    { label: `Tax Season Available Up To (${terms.shiftTimeZone})`, value: terms.taxSeasonAvailableUpTo },
                   ],
                 },
               ]}
@@ -199,7 +176,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
       case 'System & IT Details':
         return <StaffSystemTab devices={devices} access={access} />;
       case 'Assessments':
-        return <StaffAssessmentsTab assessments={assessments} staffName={member.name} />;
+        return <StaffAssessmentsTab assessments={assessments} />;
       case 'SOP':
         return <StaffSopTab staffName={member.name} clientName={clientName} sops={sops} onChange={setSops} />;
     }
@@ -221,36 +198,26 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 min-w-0">
-            <span className="shrink-0">Human Resources</span>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <button type="button" onClick={onBack} className="shrink-0 hover:text-[#2F68FE] cursor-pointer">
-              My Staff
-            </button>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <span className="text-slate-600 truncate">{member.name}</span>
-          </p>
-
-          <section className="mt-2.5 bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs">
-            <div className="flex items-center gap-3.5">
-              <StaffAvatar name={member.name} tint={tint} size="lg" />
+          <section className="bg-white border border-[#DCE3ED] rounded-2xl px-3.5 py-3 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)]">
+            <div className="flex items-center gap-3">
+              <StaffAvatar name={member.name} tint={tint} />
               <div className="flex-1 min-w-0">
-                <h2 className="text-[17px] font-extrabold leading-tight truncate">{member.name}</h2>
-                <p className="mt-0.5 text-xs text-slate-500 leading-snug">{member.designation}</p>
-                <div className="mt-1.5">
-                  <StaffStatusPill status={member.status} full />
+                <div className="flex items-center gap-2">
+                  <h2 className="flex-1 min-w-0 text-[15px] font-extrabold leading-tight truncate">{member.name}</h2>
+                  <StaffStatusPill status={member.status} />
                 </div>
+                <p className="mt-0.5 text-[11.5px] text-slate-500 leading-snug truncate">{member.designation}</p>
+                <a
+                  href={`mailto:${member.email}`}
+                  className="mt-1 inline-flex max-w-full items-center gap-1.5 text-[11.5px] font-semibold text-[#2F68FE] active:opacity-70"
+                >
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{member.email}</span>
+                </a>
               </div>
             </div>
-            <a
-              href={`mailto:${member.email}`}
-              className="mt-3.5 h-10 px-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-xs font-semibold text-slate-600 active:bg-slate-100"
-            >
-              <Mail className="w-4 h-4 text-[#2F68FE] shrink-0" />
-              <span className="truncate">{member.email}</span>
-            </a>
             {leaving && (
-              <p className="mt-2.5 px-3 py-2 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800">
+              <p className="mt-2.5 px-3 py-1.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800">
                 Last working day: <strong className="font-bold">{formatStaffDate(member.lastWorkingDay!)}</strong>
               </p>
             )}
@@ -262,7 +229,6 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
           <div ref={tabsRef} className="flex gap-1.5 overflow-x-auto no-scrollbar px-4" role="tablist">
             {STAFF_PROFILE_TABS.map((t) => {
               const on = t === tab;
-              const Icon = TAB_ICONS[t];
               return (
                 <button
                   key={t}
@@ -270,11 +236,10 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
                   role="tab"
                   aria-selected={on}
                   onClick={() => setTab(t)}
-                  className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                  className={`h-9 px-3.5 rounded-full flex items-center text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                     on ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]' : 'bg-white border border-slate-200 text-slate-600'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
                   {t}
                 </button>
               );

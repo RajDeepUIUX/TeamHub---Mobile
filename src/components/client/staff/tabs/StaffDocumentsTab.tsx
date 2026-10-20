@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BadgeCheck, Download, Eye, FileText, FolderOpen } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
 import type { StaffDocument, StaffDocumentGroup } from '../../data/clientStaffProfileData';
-import { Card, EmptyCard, SheetHeader, TabTitle, useNotice } from './StaffTabParts';
+import { Card, EmptyCard, SheetHeader, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
 
 const GROUPS: StaffDocumentGroup[] = ['Employee Document', 'Government Documents', 'Background Verification'];
@@ -21,7 +21,6 @@ export const StaffDocumentsTab: React.FC<{ documents: StaffDocument[]; staffName
   return (
     <>
       {notice}
-      <TabTitle title="Employee Document" />
       {documents.length === 0 ? (
         <div className="mt-2.5">
           <EmptyCard icon={FolderOpen} title="No documents uploaded yet." />

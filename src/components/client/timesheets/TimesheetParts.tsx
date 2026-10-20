@@ -4,72 +4,19 @@ import { BottomSheet } from '../../common/BottomSheet';
 import { SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 
-/** Staff Utilization Report buckets: ≤50, 51–70, 71–90, ≥90 % */
-export const utilizationTone = (pct: number) =>
-  pct >= 90
-    ? { ring: '#10B981', text: 'text-[#10B981]', pill: 'bg-[#E8F8F0] text-[#10B981]' }
-    : pct > 70
-      ? { ring: '#2F68FE', text: 'text-[#2F68FE]', pill: 'bg-[#EFF6FF] text-[#1D4ED8]' }
-      : pct > 50
-        ? { ring: '#D97706', text: 'text-[#D97706]', pill: 'bg-[#FEF8E7] text-[#D97706]' }
-        : { ring: '#E11D48', text: 'text-rose-600', pill: 'bg-[#FEF2F2] text-rose-600' };
-
-export const utilizationPct = (working: number, available: number) => (available > 0 ? Math.round((working / available) * 100) : 0);
-
-export const UtilizationRing: React.FC<{ pct: number }> = ({ pct }) => (
-  <span
-    className="w-[76px] h-[76px] rounded-full flex items-center justify-center shrink-0"
-    style={{ background: `conic-gradient(${utilizationTone(pct).ring} ${Math.min(100, pct) * 3.6}deg, #E2E8F0 0deg)` }}
-    role="img"
-    aria-label={`${pct}% of available hours worked`}
-  >
-    <span className="w-[62px] h-[62px] rounded-full bg-white flex flex-col items-center justify-center">
-      <span className="text-[17px] font-extrabold text-[#1E293B] tabular-nums leading-none">{pct}%</span>
-      <span className="mt-0.5 text-[9.5px] font-semibold text-slate-400">Utilized</span>
-    </span>
-  </span>
-);
-
-/** Working vs available: blue up to available, amber for extra hours */
-export const HoursBar: React.FC<{ working: number; available: number; className?: string }> = ({ working, available, className = '' }) => {
-  if (available <= 0) return null;
-  const max = Math.max(working, available);
-  const within = (Math.min(working, available) / max) * 100;
-  const extra = working > available ? ((working - available) / max) * 100 : 0;
-  return (
-    <span className={`flex h-1.5 rounded-full bg-slate-100 overflow-hidden ${className}`} aria-hidden="true">
-      <span className="h-full bg-[#2F68FE]" style={{ width: `${within}%` }} />
-      {extra > 0 && <span className="h-full bg-[#F59E0B] border-l border-white" style={{ width: `${extra}%` }} />}
-    </span>
-  );
-};
-
 export const TimesheetListSkeleton: React.FC = () => (
-  <div className="space-y-4" aria-busy="true" aria-label="Loading timesheets">
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 flex items-center gap-4">
-      <div className="flex-1 space-y-2">
-        <StaffSkeleton className="w-24 h-3" />
-        <StaffSkeleton className="w-36 h-7" />
-        <StaffSkeleton className="w-40 h-3" />
-      </div>
-      <StaffSkeleton className="w-[76px] h-[76px] rounded-full" />
-    </div>
-    <StaffSkeleton className="w-full h-10 rounded-2xl" />
-    {[0, 1].map((g) => (
-      <div key={g} className="space-y-2">
-        <StaffSkeleton className="w-40 h-3.5" />
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl divide-y divide-slate-100">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="p-3.5 flex items-center gap-3">
-              <StaffSkeleton className="w-9 h-9 rounded-full" />
-              <div className="flex-1 space-y-1.5">
-                <StaffSkeleton className="w-28 h-3.5" />
-                <StaffSkeleton className="w-full h-1.5" />
-              </div>
-              <StaffSkeleton className="w-12 h-5" />
+  <div className="space-y-3" aria-busy="true" aria-label="Loading timesheets">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
+        <div className="grid grid-cols-2 gap-4">
+          {[0, 1, 2, 3].map((j) => (
+            <div key={j} className="space-y-1.5">
+              <StaffSkeleton className="w-20 h-2.5" />
+              <StaffSkeleton className="w-24 h-3.5" />
             </div>
           ))}
         </div>
+        <StaffSkeleton className="w-full h-9 rounded-xl" />
       </div>
     ))}
   </div>

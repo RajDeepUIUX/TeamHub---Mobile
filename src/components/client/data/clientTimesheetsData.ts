@@ -38,7 +38,6 @@ export const CLIENT_IS_MOS = false;
 
 /** Rows per page on the By Date view, staff per page on By Staff (desktop pages the table) */
 export const TIMESHEET_PAGE_SIZE = 15;
-export const TIMESHEET_STAFF_PAGE_SIZE = 6;
 
 /* ---------------------------------- Dates --------------------------------- */
 
@@ -65,25 +64,6 @@ export const latestTimesheetStart = (today = new Date()) => {
 export const defaultTimesheetRange = (today = new Date()): TimesheetRange => {
   const from = latestTimesheetStart(today);
   return { from, to: addDays(from, 6) };
-};
-
-export interface TimesheetPreset extends TimesheetRange {
-  id: string;
-  label: string;
-}
-
-/** Quick ranges in the filter sheet (Added by designer) */
-export const timesheetPresets = (today = new Date()): TimesheetPreset[] => {
-  const last = defaultTimesheetRange(today);
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const prevMonthEnd = new Date(firstOfMonth);
-  prevMonthEnd.setDate(0);
-  const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
-  return [
-    { id: 'last-week', label: 'Last Week', ...last },
-    { id: 'last-2-weeks', label: 'Last 2 Weeks', from: addDays(last.from, -7), to: last.to },
-    { id: 'last-month', label: 'Last Month', from: isoOf(prevMonthStart), to: isoOf(prevMonthEnd) },
-  ];
 };
 
 export const sameRange = (a: TimesheetRange, b: TimesheetRange) => a.from === b.from && a.to === b.to;

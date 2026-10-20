@@ -1,402 +1,235 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  BadgePercent,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  Clock3,
-  Headset,
-  House,
-  Info,
-  Landmark,
-  Table2,
-  UsersRound,
-} from 'lucide-react';
-import { Card, EmptyCard, Pill } from '../staff/tabs/StaffTabParts';
+import React, { useEffect, useState } from 'react';
+import { Briefcase, ChevronDown, Info, Landmark, Table2, TrendingDown, Users } from 'lucide-react';
+import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
-import {
-  ClientMgmtFeeStructure,
-  MosFeeStructure,
-  OtherFeeStructure,
-  bracketIndexFor,
-  formatFee,
-} from '../data/clientMgmtFeeData';
-import { MgmtFeeTableSheet } from './MgmtFeeTableSheet';
+import { ClientMgmtFeeStructure, MosFeeStructure, OtherFeeStructure, formatFee } from '../data/clientMgmtFeeData';
 
 interface Props {
   structure: ClientMgmtFeeStructure;
-  /** Current staff count (My Staff, everyone except Inactive) */
-  teamSize: number;
-  /** Current staff per level number */
-  staffByLevel: Record<number, number>;
-  companyName: string;
   onContactManager: () => void;
-  onOpenMyStaff?: () => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 const LOAD_MS = 500;
 
+const TH = 'px-2 py-2.5 text-[10.5px] font-bold text-slate-500 whitespace-nowrap';
+const TD_BASE = 'px-2 py-3 text-[12px] whitespace-nowrap tabular-nums';
+const TD = `${TD_BASE} text-[#1E293B]`;
+
 const PageSkeleton: React.FC = () => (
-  <div className="px-4 mt-4 space-y-3" aria-busy="true" aria-label="Loading fee structure">
-    <StaffSkeleton className="w-full h-28 rounded-2xl" />
-    <div className="flex gap-1.5">
-      {[0, 1, 2, 3].map((i) => (
-        <StaffSkeleton key={i} className="w-16 h-8 rounded-full" />
-      ))}
-    </div>
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl divide-y divide-slate-100">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="p-3.5 flex items-center gap-3">
-          <StaffSkeleton className="w-10 h-10 rounded-xl" />
-          <div className="flex-1 space-y-1.5">
-            <StaffSkeleton className="w-20 h-3.5" />
-            <StaffSkeleton className="w-24 h-3" />
-          </div>
-          <StaffSkeleton className="w-14 h-4" />
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const SectionTitle: React.FC<{ title: string; subtitle?: string; action?: React.ReactNode }> = ({ title, subtitle, action }) => (
-  <div className="flex items-end justify-between gap-3 px-1">
-    <div className="min-w-0">
-      <h2 className="text-sm font-extrabold text-[#1E293B]">{title}</h2>
-      {subtitle && <p className="text-[11px] text-slate-500">{subtitle}</p>}
-    </div>
-    {action}
-  </div>
-);
-
-const ContactCard: React.FC<{ onContact: () => void }> = ({ onContact }) => (
-  <Card className="p-4 flex items-center gap-3">
-    <span className="w-10 h-10 rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
-      <Headset className="w-5 h-5" />
-    </span>
-    <div className="flex-1 min-w-0">
-      <p className="text-[13px] font-bold text-[#1E293B]">Questions about your fees?</p>
-      <p className="text-[11px] text-slate-500">Your Account Manager can walk you through it.</p>
-    </div>
-    <button
-      type="button"
-      onClick={onContact}
-      className="h-9 px-3.5 rounded-xl bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold active:bg-[#DBEAFE] shrink-0 cursor-pointer"
-    >
-      Contact
-    </button>
-  </Card>
-);
-
-/** Your team (Added by designer): current My Staff count + the team size band it falls in */
-const TeamCard: React.FC<{ teamSize: number; sizeLabel: string; onOpenMyStaff?: () => void; children?: React.ReactNode }> = ({
-  teamSize,
-  sizeLabel,
-  onOpenMyStaff,
-  children,
-}) => (
-  <Card className="p-4 border-[#BFDBFE]">
-    <div className="flex items-center gap-3">
-      <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-        <UsersRound className="w-5 h-5" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-bold text-[#1E293B]">Your team: {teamSize} current staff</p>
-        <p className="text-[11px] text-slate-500">
-          Falls in the <span className="font-bold text-[#2F68FE]">{sizeLabel} staff</span> team size
-        </p>
+  <div className="bg-white border border-[#DCE3ED] rounded-2xl divide-y divide-slate-100" aria-busy="true" aria-label="Loading fee structure">
+    {[0, 1, 2, 3, 4, 5].map((i) => (
+      <div key={i} className="p-3 flex items-center gap-3">
+        <StaffSkeleton className="w-16 h-4" />
+        <div className="flex-1" />
+        <StaffSkeleton className="w-12 h-4" />
+        <StaffSkeleton className="w-12 h-4" />
       </div>
-      {onOpenMyStaff && (
-        <button
-          type="button"
-          onClick={onOpenMyStaff}
-          className="h-8 pl-2 pr-1 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] shrink-0 cursor-pointer"
-        >
-          My Staff <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      )}
-    </div>
-    {children}
-  </Card>
+    ))}
+  </div>
 );
 
-/* ------------------------------- MOS tab ------------------------------- */
-
-const MosTab: React.FC<{
-  data: MosFeeStructure;
-  teamSize: number;
-  staffByLevel: Record<number, number>;
-  onOpenMyStaff?: () => void;
-  onOpenTable: () => void;
-}> = ({ data, teamSize, staffByLevel, onOpenMyStaff, onOpenTable }) => {
-  const teamBracket = bracketIndexFor(data.brackets, teamSize);
-  const [selected, setSelected] = useState(teamBracket);
-  const [openLevel, setOpenLevel] = useState<number | null>(null);
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
-
-  const breakdown = data.levels
-    .filter((l) => staffByLevel[l.level])
-    .map((l) => ({ level: l.level, count: staffByLevel[l.level], fee: l.fees[teamBracket] }));
-  const estimate = breakdown.reduce((sum, r) => sum + r.count * r.fee, 0);
-  const isOwnBracket = selected === teamBracket;
+/** Desktop table 1 (Level · US Experience · "Staff Member As Per Team Size"): pick a team size → per-level fee list; full matrix in a collapsible compare card */
+const LevelTable: React.FC<{ data: MosFeeStructure }> = ({ data }) => {
+  const [sel, setSel] = useState(0);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const fees = data.levels.map((l) => l.fees[sel]);
+  const min = Math.min(...fees);
+  const max = Math.max(...fees);
+  const bracket = data.brackets[sel];
 
   return (
-    <div className="space-y-4">
-      <TeamCard teamSize={teamSize} sizeLabel={data.brackets[teamBracket].label} onOpenMyStaff={onOpenMyStaff}>
-        {breakdown.length > 0 && (
-          <>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-slate-500">Estimated monthly fee</p>
-                <p className="text-2xl font-extrabold text-[#1E293B] tabular-nums leading-tight">
-                  {formatFee(estimate)}
-                  <span className="ml-1 text-xs font-semibold text-slate-400">/ month</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-expanded={breakdownOpen}
-                onClick={() => setBreakdownOpen((v) => !v)}
-                className="h-8 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-1 active:bg-[#EFF6FF] shrink-0 cursor-pointer"
-              >
-                {breakdownOpen ? 'Hide' : 'Breakdown'}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${breakdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
-            {breakdownOpen && (
-              <ul className="mt-2.5 rounded-xl bg-slate-50 divide-y divide-slate-100 animate-in fade-in duration-200">
-                {breakdown.map((r) => (
-                  <li key={r.level} className="px-3 py-2 flex items-center justify-between gap-3 text-[12px] tabular-nums">
-                    <span className="text-slate-600">
-                      <span className="font-bold text-[#1E293B]">Level {r.level}</span> · {r.count} × {formatFee(r.fee)}
-                    </span>
-                    <span className="font-bold text-[#1E293B]">{formatFee(r.count * r.fee)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="mt-2 text-[10.5px] text-slate-400 leading-snug">
-              Estimate only, based on current staff levels. Your invoice shows the final amount.
-            </p>
-          </>
-        )}
-      </TeamCard>
-
-      <section className="space-y-2.5">
-        <SectionTitle
-          title="Fee per staff member"
-          subtitle="Monthly, by level and team size"
-          action={
-            <button
-              type="button"
-              onClick={onOpenTable}
-              className="h-8 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-1 active:bg-[#EFF6FF] shrink-0 cursor-pointer"
-            >
-              <Table2 className="w-3.5 h-3.5" /> Full table
-            </button>
-          }
-        />
-
-        <div>
-          <p className="px-1 text-[10.5px] font-bold uppercase tracking-wide text-slate-400">Staff Member As Per Team Size</p>
-          <div className="-mx-4 mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-1" role="group" aria-label="Team size">
-            {data.brackets.map((b, i) => {
-              const on = i === selected;
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setSelected(i)}
-                  className={`shrink-0 h-8 px-3 rounded-full text-[11.5px] font-semibold flex items-center gap-1.5 tabular-nums transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                  }`}
-                >
-                  {b.label}
-                  {i === teamBracket && (
-                    <span className={`px-1.5 h-4.5 rounded-full text-[9.5px] font-bold flex items-center ${on ? 'bg-white text-[#2F68FE]' : 'bg-[#EFF6FF] text-[#2F68FE]'}`}>
-                      You
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {!isOwnBracket && (
-            <p className="mt-1.5 px-1 text-[11px] text-slate-500">
-              Showing fees for a {data.brackets[selected].label} team.{' '}
-              <button type="button" onClick={() => setSelected(teamBracket)} className="font-bold text-[#2F68FE] cursor-pointer">
-                Back to your team
-              </button>
-            </p>
-          )}
+    <>
+      <section className="rounded-2xl p-4 text-white bg-gradient-to-br from-[#2F68FE] to-[#1D4ED8] shadow-[0_8px_20px_-8px_rgba(47,104,254,0.55)]">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-100">
+          <Users className="w-3.5 h-3.5" />
+          Staff Member As Per Team Size
         </div>
-
-        <Card className="overflow-hidden">
-          <ul className="divide-y divide-slate-100">
-            {data.levels.map((row) => {
-              const open = openLevel === row.level;
-              const staffCount = staffByLevel[row.level] ?? 0;
-              const max = Math.max(...row.fees);
-              const first = row.fees[0];
-              const last = row.fees[row.fees.length - 1];
-              const saving = first > 0 ? Math.round(((first - last) / first) * 100) : 0;
-              return (
-                <li key={row.level}>
-                  <button
-                    type="button"
-                    aria-expanded={open}
-                    onClick={() => setOpenLevel(open ? null : row.level)}
-                    className="w-full p-3.5 flex items-center gap-3 text-left active:bg-slate-50 cursor-pointer"
-                  >
-                    <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] text-[12px] font-extrabold flex items-center justify-center shrink-0">
-                      L{row.level}
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-bold text-[#1E293B]">Level {row.level}</span>
-                        {staffCount > 0 && <Pill tone="indigo">{staffCount} staff</Pill>}
-                      </span>
-                      <span className="block text-[11px] text-slate-500">US experience: {row.usExperience}</span>
-                    </span>
-                    <span className="text-right shrink-0">
-                      <span className="block text-[15px] font-extrabold text-[#1E293B] tabular-nums">{formatFee(row.fees[selected])}</span>
-                      <span className="block text-[10px] text-slate-400">/ month</span>
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-                  </button>
-                  {open && (
-                    <div className="px-3.5 pb-3.5 animate-in fade-in duration-200">
-                      <div className="rounded-xl bg-slate-50 p-3">
-                        <p className="text-[10.5px] font-bold uppercase tracking-wide text-slate-400">Across team sizes</p>
-                        <ul className="mt-2 space-y-1.5">
-                          {row.fees.map((fee, i) => (
-                            <li key={data.brackets[i].id} className="flex items-center gap-2.5">
-                              <span
-                                className={`w-12 text-[11px] tabular-nums shrink-0 ${i === selected ? 'font-bold text-[#2F68FE]' : 'font-semibold text-slate-500'}`}
-                              >
-                                {data.brackets[i].label}
-                              </span>
-                              <span className="flex-1 h-2 rounded-full bg-slate-200/70 overflow-hidden">
-                                <span
-                                  className={`block h-full rounded-full ${i === selected ? 'bg-[#2F68FE]' : 'bg-slate-300'}`}
-                                  style={{ width: `${(fee / max) * 100}%` }}
-                                />
-                              </span>
-                              <span
-                                className={`w-14 text-right text-[11.5px] tabular-nums shrink-0 ${i === selected ? 'font-bold text-[#1E293B]' : 'font-semibold text-slate-600'}`}
-                              >
-                                {formatFee(fee)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        {saving > 0 && (
-                          <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#059669]">
-                            <BadgePercent className="w-3.5 h-3.5 shrink-0" />
-                            {saving}% lower per staff at {data.brackets[data.brackets.length - 1].label} team size
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
+        <div className="mt-1.5 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[22px] leading-7 font-extrabold tabular-nums">
+              {formatFee(min)}
+              {min !== max && <span className="text-blue-200 font-bold"> – {formatFee(max)}</span>}
+            </p>
+            <p className="text-[11px] text-blue-100">per staff member / month</p>
+          </div>
+          <span className="shrink-0 h-6 px-2.5 rounded-full bg-white/15 text-[11px] font-bold tabular-nums flex items-center">
+            {bracket.label} staff
+          </span>
+        </div>
+        <div
+          className="mt-3.5 p-1 rounded-xl bg-white/15 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${data.brackets.length}, minmax(0, 1fr))` }}
+          role="tablist"
+          aria-label="Team size"
+        >
+          {data.brackets.map((b, i) => {
+            const on = i === sel;
+            return (
+              <button
+                key={b.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setSel(i)}
+                className={`h-8 rounded-lg text-[11.5px] font-bold tabular-nums transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-white ${
+                  on ? 'bg-white text-[#2F68FE] shadow-sm' : 'text-white/90 active:bg-white/10'
+                }`}
+              >
+                {b.label}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
-      <Card className="p-4">
-        <h2 className="flex items-center gap-1.5 text-[13px] font-bold text-[#1E293B]">
-          <Info className="w-4 h-4 text-[#2F68FE]" /> How it works
-        </h2>
-        <ul className="mt-2 space-y-1.5 text-[11.5px] text-slate-600 leading-relaxed list-disc pl-5">
-          <li>A fixed management fee is charged for each staff member every month.</li>
-          <li>The fee depends on the staff member's level (US experience).</li>
-          <li>The bigger your team, the lower the fee per staff member.</li>
-        </ul>
-      </Card>
-    </div>
-  );
-};
-
-/* ------------------------------ Other tab ------------------------------ */
-
-const OtherTab: React.FC<{ data: OtherFeeStructure; teamSize: number; onOpenMyStaff?: () => void }> = ({ data, teamSize, onOpenMyStaff }) => {
-  const hourlyBracket = data.hourly ? bracketIndexFor(data.hourly.map((h) => h.bracket), teamSize) : -1;
-  return (
-    <div className="space-y-4">
-      {data.hourly && <TeamCard teamSize={teamSize} sizeLabel={data.hourly[hourlyBracket].bracket.label} onOpenMyStaff={onOpenMyStaff} />}
-      {data.workMode && (
-        <section className="space-y-2.5">
-          <SectionTitle title="Fee by work mode" subtitle="Fixed monthly fee per staff member" />
-          <div className="grid grid-cols-2 gap-3">
-            {data.workMode.map((w) => {
-              const office = w.mode === 'Work From Office';
-              const Icon = office ? Building2 : House;
-              return (
-                <Card key={w.mode} className="p-4">
-                  <span
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${office ? 'bg-[#EFF6FF] text-[#2F68FE]' : 'bg-[#E8F8F0] text-[#10B981]'}`}
-                  >
-                    <Icon className="w-5 h-5" />
+      <Card className="divide-y divide-slate-100 overflow-hidden">
+        {data.levels.map((row) => {
+          const fee = row.fees[sel];
+          const saved = row.fees[0] - fee;
+          return (
+            <div key={`${bracket.id}-${row.level}`} className="px-3.5 py-3 flex items-center gap-3 animate-in fade-in duration-200">
+              <span className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#2F68FE] flex flex-col items-center justify-center shrink-0 leading-none">
+                <span className="text-[8.5px] font-bold uppercase tracking-wide text-[#2F68FE]/70">Lvl</span>
+                <span className="text-[14px] font-extrabold mt-0.5">{row.level}</span>
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-[#1E293B]">Level {row.level}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+                  <Briefcase className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="truncate">{row.usExperience}</span>
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[15px] font-extrabold text-[#1E293B] tabular-nums">
+                  {formatFee(fee)}
+                  <span className="text-[10.5px] font-semibold text-slate-400">/mo</span>
+                </p>
+                {saved > 0 && (
+                  <span className="mt-0.5 inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold tabular-nums">
+                    <TrendingDown className="w-3 h-3" />
+                    {formatFee(saved)}
                   </span>
-                  <p className="mt-3 text-[11.5px] font-semibold text-slate-500">{w.mode}</p>
-                  <p className="text-xl font-extrabold text-[#1E293B] tabular-nums leading-tight">{formatFee(w.monthlyFee)}</p>
-                  <p className="text-[10.5px] text-slate-400">per staff / month</p>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </Card>
 
-      {data.hourly && (
-        <section className="space-y-2.5">
-          <SectionTitle title="Fee by team size" subtitle="Fixed per hour, by no. of staff" />
-          <Card className="overflow-hidden">
-            <ul className="divide-y divide-slate-100">
-              {data.hourly.map((h, i) => {
-                const own = i === hourlyBracket;
-                return (
-                  <li key={h.bracket.id} className={`p-3.5 flex items-center gap-3 ${own ? 'bg-[#EFF6FF]' : ''}`}>
-                    <span
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${own ? 'bg-white text-[#2F68FE]' : 'bg-slate-100 text-slate-500'}`}
+      <Card className="overflow-hidden">
+        <button
+          type="button"
+          aria-expanded={compareOpen}
+          aria-controls="mgmt-fee-compare"
+          onClick={() => setCompareOpen((o) => !o)}
+          className="w-full px-3.5 py-3 flex items-center gap-3 text-left cursor-pointer active:bg-slate-50"
+        >
+          <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+            <Table2 className="w-4 h-4" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[12.5px] font-bold text-[#1E293B]">Compare all team sizes</span>
+            <span className="block text-[10.5px] text-slate-500">Full level-wise fee table</span>
+          </span>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${compareOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {compareOpen && (
+          <div id="mgmt-fee-compare" className="border-t border-[#EBF0F7] overflow-x-auto no-scrollbar animate-in fade-in duration-200">
+            <table className="min-w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-[#EBF0F7]">
+                  <th scope="col" className={`${TH} sticky left-0 z-10 bg-slate-50 pl-3.5 border-r border-[#EBF0F7]`}>
+                    Level
+                  </th>
+                  {data.brackets.map((b, i) => (
+                    <th
+                      key={b.id}
+                      scope="col"
+                      aria-label={`Team size ${b.label}`}
+                      className={`px-2 py-2.5 text-[10.5px] font-bold whitespace-nowrap last:pr-3.5 text-right tabular-nums ${i === sel ? 'bg-[#EAF0FF] text-[#2F68FE]' : 'text-slate-500'}`}
                     >
-                      <Clock3 className="w-5 h-5" />
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-bold text-[#1E293B] tabular-nums">{h.bracket.label} staff</span>
-                        {own && (
-                          <span className="px-2 py-0.5 rounded-md bg-[#2F68FE] text-white text-[10px] font-bold whitespace-nowrap">Your team</span>
-                        )}
-                      </span>
-                      <span className="block text-[11px] text-slate-500">
-                        {h.bracket.max === null ? `Teams of ${h.bracket.min} or more staff` : `Teams of ${h.bracket.min} to ${h.bracket.max} staff`}
-                      </span>
-                    </span>
-                    <span className="text-right shrink-0">
-                      <span className="block text-[15px] font-extrabold text-[#1E293B] tabular-nums">{formatFee(h.hourlyFee, 2)}</span>
-                      <span className="block text-[10px] text-slate-400">/ hour</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        </section>
-      )}
-    </div>
+                      {b.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {data.levels.map((row) => (
+                  <tr key={row.level}>
+                    <th scope="row" className="sticky left-0 z-10 bg-white pl-3.5 pr-2 py-2.5 border-r border-[#EBF0F7] text-left font-normal">
+                      <span className="block text-[12px] font-bold text-[#1E293B] whitespace-nowrap">Level {row.level}</span>
+                      <span className="block text-[10px] text-slate-500 whitespace-nowrap">{row.usExperience}</span>
+                    </th>
+                    {row.fees.map((fee, i) => (
+                      <td
+                        key={data.brackets[i].id}
+                        className={`${TD_BASE} last:pr-3.5 text-right ${i === sel ? 'bg-[#F4F7FF] text-[#2F68FE] font-bold' : 'text-slate-600 font-medium'}`}
+                      >
+                        {formatFee(fee)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <p className="px-1 flex gap-1.5 text-[10.5px] leading-relaxed text-slate-400">
+        <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
+        <span>
+          Fixed monthly fee per staff member, based on your total team size. Green tags show the saving vs. the {data.brackets[0].label} rate.
+        </span>
+      </p>
+    </>
   );
 };
 
-/* -------------------------------- View --------------------------------- */
+/** Desktop tables 2 and 3: two plain columns */
+const TwoColumnTable: React.FC<{ head: [string, string]; rows: { id: string; label: string; value: string }[] }> = ({ head, rows }) => (
+  <Card className="overflow-hidden">
+    <table className="w-full text-left border-collapse">
+      <thead>
+        <tr className="bg-slate-50 border-b border-[#EBF0F7]">
+          <th scope="col" className={`${TH} pl-3.5`}>{head[0]}</th>
+          <th scope="col" className={`${TH} pr-3.5 text-right whitespace-normal`}>{head[1]}</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {rows.map((r) => (
+          <tr key={r.id}>
+            <th scope="row" className={`${TD} pl-3.5 font-semibold text-left`}>{r.label}</th>
+            <td className={`${TD} pr-3.5 text-right font-bold`}>{r.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Card>
+);
 
-export const ClientMgmtFeeView: React.FC<Props> = ({ structure, teamSize, staffByLevel, companyName, onContactManager, onOpenMyStaff }) => {
+const OtherTables: React.FC<{ data: OtherFeeStructure }> = ({ data }) => (
+  <>
+    {data.workMode && (
+      <TwoColumnTable
+        head={['Work Mode', 'Fixed Monthly Fee Per Staff Member']}
+        rows={data.workMode.map((w) => ({ id: w.mode, label: w.mode, value: formatFee(w.monthlyFee) }))}
+      />
+    )}
+    {data.hourly && (
+      <TwoColumnTable
+        head={['No. of Staff', 'Fixed Per Hour']}
+        rows={data.hourly.map((h) => ({ id: h.bracket.id, label: h.bracket.label, value: formatFee(h.hourlyFee, 2) }))}
+      />
+    )}
+  </>
+);
+
+/** Human Resources › Management Fee Structure (desktop `management_fee_structure`): one read-only table per client, else "No Data Found" */
+export const ClientMgmtFeeView: React.FC<Props> = ({ structure, onContactManager, onBack }) => {
   const [loading, setLoading] = useState(true);
-  const [tableOpen, setTableOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), LOAD_MS);
@@ -405,61 +238,37 @@ export const ClientMgmtFeeView: React.FC<Props> = ({ structure, teamSize, staffB
 
   const mos = structure.mos;
   const other = structure.other && (structure.other.workMode || structure.other.hourly) ? structure.other : null;
-  const teamBracket = useMemo(() => (mos ? bracketIndexFor(mos.brackets, teamSize) : 0), [mos, teamSize]);
-
-  const empty = (
-    <EmptyCard
-      icon={Landmark}
-      title="No Data Found"
-      text="Your management fee structure hasn't been shared yet."
-      action={
-        <button
-          type="button"
-          onClick={onContactManager}
-          className="mt-4 h-10 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
-        >
-          Contact Account Manager
-        </button>
-      }
-    />
-  );
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Human Resources <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Management Fee Structure</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Management Fee Structure</h1>
-          <p className="mt-1 text-[11.5px] text-slate-500">
-            {companyName} <span className="text-slate-300">·</span> All amounts in USD
-          </p>
-        </div>
-
+      <ScreenHeader title="Management Fee Structure" onBack={onBack} />
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6">
         {loading ? (
           <PageSkeleton />
         ) : (
-          <div className="px-4 mt-4 space-y-4 animate-in fade-in duration-200">
+          <div className="space-y-3 animate-in fade-in duration-200">
             {mos ? (
-              <MosTab
-                data={mos}
-                teamSize={teamSize}
-                staffByLevel={staffByLevel}
-                onOpenMyStaff={onOpenMyStaff}
-                onOpenTable={() => setTableOpen(true)}
-              />
+              <LevelTable data={mos} />
             ) : other ? (
-              <OtherTab data={other} teamSize={teamSize} onOpenMyStaff={onOpenMyStaff} />
+              <OtherTables data={other} />
             ) : (
-              empty
+              <EmptyCard
+                icon={Landmark}
+                title="No Data Found"
+                action={
+                  <button
+                    type="button"
+                    onClick={onContactManager}
+                    className="mt-4 h-10 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+                  >
+                    Contact Account Manager
+                  </button>
+                }
+              />
             )}
-            {(mos || other) && <ContactCard onContact={onContactManager} />}
           </div>
         )}
       </div>
-
-      {mos && <MgmtFeeTableSheet isOpen={tableOpen} structure={mos} teamBracket={teamBracket} onClose={() => setTableOpen(false)} />}
     </div>
   );
 };

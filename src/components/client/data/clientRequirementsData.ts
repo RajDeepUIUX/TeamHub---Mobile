@@ -214,11 +214,35 @@ export const draftOf = (r: StaffRequirement): RequirementDraft => {
   return draft;
 };
 
+/** Desktop "Add Requirement" opens with Hiring Type / No. of Staff on "Select" and Available Upto at 22:00 */
+export const newRequirementDraft = (locations: string[]): RequirementDraft => ({
+  ...EMPTY_REQUIREMENT_DRAFT,
+  hiringType: '',
+  staffCount: 0,
+  availableUpto: '22:00',
+  locations,
+});
+
+/** Desktop saves one requirement per head */
+export const requirementsFromDraft = (draft: RequirementDraft, createdOn: string): StaffRequirement[] => {
+  const stamp = Date.now();
+  return Array.from({ length: draft.staffCount }, (_, i) => ({
+    ...draft,
+    id: `rq-${stamp}-${i}`,
+    staffCount: 1,
+    status: 'In Progress',
+    editable: true,
+    createdOn,
+    comments: [],
+  }));
+};
+
 export type DraftErrors = Partial<Record<keyof RequirementDraft, string>>;
 
 /** Step 1 (Core Details) required fields: desktop jQuery-validate rules */
 export const validateCore = (d: RequirementDraft): DraftErrors => {
   const e: DraftErrors = {};
+  if (!d.hiringType) e.hiringType = 'Hiring Type is required.';
   if (!d.domain) e.domain = 'Domain is required.';
   if (!d.profile) e.profile = 'Profile is required.';
   if (!d.hoursPerWeek) e.hoursPerWeek = 'Hours/Week is required.';
@@ -228,6 +252,7 @@ export const validateCore = (d: RequirementDraft): DraftErrors => {
   }
   if (!d.timeline) e.timeline = 'Onboarding Timeline is required.';
   if (!d.startDate) e.startDate = 'Expected Start Date is required.';
+  if (!d.staffCount) e.staffCount = 'No. of Staff is required.';
   if (!d.timezone) e.timezone = 'Time zone is required.';
   if (!d.availableUpto) e.availableUpto = 'Preferred Available Upto Time is required.';
   return e;

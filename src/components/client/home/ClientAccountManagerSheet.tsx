@@ -67,7 +67,7 @@ export const ClientAccountManagerSheet: React.FC<ClientAccountManagerSheetProps>
         </div>
 
         <p className="mt-5 mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Chat</p>
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl divide-y divide-slate-100">
+        <div className="bg-white border border-[#DCE3ED] rounded-2xl divide-y divide-slate-100">
           {channels.map(({ label, value, href, icon: Icon, tint }) => (
             <a key={label} href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 active:bg-slate-50">
               <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tint}`}>

@@ -5,7 +5,7 @@ import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { RangeCalendar, formatShortDate } from '../../../design-system/components/RangeCalendar';
 import { SheetHeader } from '../staff/tabs/StaffTabParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
-import { InvoiceDateRange, invoicePresets } from '../data/clientInvoicesData';
+import { INVOICE_STATUS_CHIPS, InvoiceDateRange, InvoiceStatusChip } from '../data/clientInvoicesData';
 import { isoOf, parseIso } from '../data/clientTimesheetsData';
 
 export interface InvoiceFilters {
@@ -13,11 +13,14 @@ export interface InvoiceFilters {
   range: InvoiceDateRange;
   /** Empty = all staff (desktop Staff multi-select, `project_ids`) */
   staffIds: string[];
+  /** Desktop Payment Status (All / Paid / Unpaid; Unpaid also matches Partially Paid) */
+  status: InvoiceStatusChip;
 }
 
-export const EMPTY_INVOICE_FILTERS: InvoiceFilters = { range: { from: null, to: null }, staffIds: [] };
+export const EMPTY_INVOICE_FILTERS: InvoiceFilters = { range: { from: null, to: null }, staffIds: [], status: 'All' };
 
-export const invoiceFilterCount = (f: InvoiceFilters) => f.staffIds.length + (f.range.from || f.range.to ? 1 : 0);
+export const invoiceFilterCount = (f: InvoiceFilters) =>
+  f.staffIds.length + (f.range.from || f.range.to ? 1 : 0) + (f.status !== 'All' ? 1 : 0);
 
 interface Props {
   isOpen: boolean;
@@ -27,7 +30,7 @@ interface Props {
   onApply: (filters: InvoiceFilters) => void;
 }
 
-/** Desktop filter bar: From Date, To Date (each limits the other), Staff; Search / Clear All */
+/** Desktop filter bar: From Date, To Date (each limits the other), Staff, Payment Status; Clear All / Search */
 export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, onClose, onApply }) => {
   const [draft, setDraft] = useState<InvoiceFilters>(filters);
   const [activeField, setActiveField] = useState<'start' | 'end' | null>(null);
@@ -39,7 +42,6 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
   }, [isOpen, filters]);
 
   const todayKey = isoOf(new Date());
-  const presets = useMemo(() => invoicePresets(), []);
 
   const staffOptions = useMemo(
     () =>
@@ -87,7 +89,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
             <span className="flex items-center gap-2 min-w-0">
               <Calendar className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
               <span className={`truncate ${value ? 'text-slate-700 font-semibold' : 'text-slate-400'}`}>
-                {value ? formatShortDate(parseIso(value)) : 'Any date'}
+                {value ? formatShortDate(parseIso(value)) : 'Select date'}
               </span>
             </span>
             {!value && (
@@ -111,33 +113,11 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[88%]">
-      <SheetHeader title="Filter Invoices" subtitle="Invoice date and staff" onClose={onClose} />
+      <SheetHeader title="Filter Invoices" subtitle="Invoice Created On, Staff and Payment Status" onClose={onClose} />
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
         <div className="space-y-2">
-          <span className="block text-[11px] font-semibold text-slate-500">Invoice Created On</span>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick ranges">
-            {presets.map((p) => {
-              const on = from === p.from && to === p.to;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    setRange(on ? { from: null, to: null } : { from: p.from, to: p.to });
-                    setActiveField(null);
-                  }}
-                  className={`h-8 px-3 rounded-full text-[11.5px] font-semibold transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-2 gap-3">
             {dateField('start', 'From Date', from)}
             {dateField('end', 'To Date', to)}
           </div>
@@ -161,7 +141,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
 
         <MultiSelectDropdown
           label="Staff"
-          placeholder="All staff"
+          placeholder="Nothing selected"
           options={staffOptions}
           selected={draft.staffIds}
           onChange={(next) => setDraft((d) => ({ ...d, staffIds: next }))}
@@ -172,6 +152,29 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
         {draft.staffIds.length > 0 && (
           <p className="-mt-2 px-0.5 text-[10.5px] text-slate-400">Amounts show the selected staff's share of each invoice.</p>
         )}
+
+        <div>
+          <span className="block mb-1.5 text-xs font-bold text-[#1E293B]">Payment Status</span>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Payment Status">
+            {INVOICE_STATUS_CHIPS.map((c) => {
+              const on = draft.status === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setDraft((d) => ({ ...d, status: c }))}
+                  className={`h-10 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+                    on ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
@@ -187,7 +190,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
           onClick={() => onApply(draft)}
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
         >
-          {draftCount ? `Apply Filters (${draftCount})` : 'Apply Filters'}
+          {draftCount ? `Search (${draftCount})` : 'Search'}
         </button>
       </div>
     </BottomSheet>

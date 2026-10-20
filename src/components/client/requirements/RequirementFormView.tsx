@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, CalendarClock, CalendarDays, Check, ClipboardList, Clock3, FileText, Globe, GraduationCap, Info, Loader2, Lock, MessageSquare, Minus, Plus, Sparkles, Upload, Wallet, X } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { AlertCircle, CalendarDays, ChevronDown, Clock3, FileText, Info, Loader2, Lock, Sparkles, Upload, X } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { DatePickerSheet } from '../../common/DatePickerSheet';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
@@ -49,11 +48,20 @@ const JD_MAX_MB = 5;
 const AI_MS = 1200;
 const SAVE_MS = 800;
 
-const Field: React.FC<{ label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode }> = ({ label, required, error, hint, children }) => (
-  <div className="space-y-1.5">
-    <span className="block text-xs font-bold text-[#1E293B]">
-      {label}
-      {required && <span className="text-rose-500"> *</span>}
+const Field: React.FC<{ label: React.ReactNode; required?: boolean; error?: string; hint?: string; className?: string; children: React.ReactNode }> = ({
+  label,
+  required,
+  error,
+  hint,
+  className = '',
+  children,
+}) => (
+  <div className={`min-w-0 space-y-1.5 ${className}`}>
+    <span className="flex items-center gap-1 text-[12.5px] font-medium text-[#344054]">
+      <span>
+        {label}
+        {required && <span className="text-rose-500">*</span>}
+      </span>
     </span>
     {children}
     {hint && !error && <p className="px-0.5 text-[11px] text-slate-400">{hint}</p>}
@@ -65,19 +73,19 @@ const Field: React.FC<{ label: string; required?: boolean; error?: string; hint?
   </div>
 );
 
-const Section: React.FC<{ icon: LucideIcon; title: string; subtitle?: string; children: React.ReactNode }> = ({ icon: Icon, title, subtitle, children }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4" aria-label={title}>
-    <div className="flex items-center gap-2.5 pb-3 mb-4 border-b border-slate-100">
-      <span className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4" />
-      </span>
-      <div className="min-w-0">
-        <h2 className="text-[13px] font-bold text-[#1E293B] leading-tight">{title}</h2>
-        {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{subtitle}</p>}
-      </div>
-    </div>
-    <div className="space-y-4">{children}</div>
+/** Desktop steps are one plain form; groups only space the fields */
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <section className="space-y-4" aria-label={title}>
+    {children}
   </section>
+);
+
+/** Desktop "Nothing selected" select before its parent field is chosen */
+const EmptySelect: React.FC<{ label: string; placeholder?: string }> = ({ label, placeholder = 'Nothing selected' }) => (
+  <div aria-label={label} aria-disabled="true" className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-400 flex items-center justify-between gap-2">
+    <span className="truncate">{placeholder}</span>
+    <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+  </div>
 );
 
 const LockedValue: React.FC<{ value: string; placeholder?: string }> = ({ value, placeholder = '-' }) => (
@@ -215,204 +223,153 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
     </Field>
   );
 
-  const stepper = (n: number) => (
-    <div className="flex items-center justify-center gap-2 shrink-0">
-      <button
-        type="button"
-        onClick={() => set('staffCount', Math.max(1, n - 1))}
-        disabled={n <= 1}
-        aria-label="Decrease staff count"
-        className="w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 flex items-center justify-center active:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <span className="min-w-10 text-center text-base font-extrabold text-[#1E293B] tabular-nums" aria-live="polite">
-        {n}
-      </span>
-      <button
-        type="button"
-        onClick={() => set('staffCount', Math.min(REQUIREMENT_STAFF_MAX, n + 1))}
-        disabled={n >= REQUIREMENT_STAFF_MAX}
-        aria-label="Increase staff count"
-        className="w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 flex items-center justify-center active:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
-  );
-
-  const dateButton = (
-    <button
-      type="button"
-      onClick={() => setDateOpen(true)}
-      aria-label="Expected Start Date"
-      aria-invalid={Boolean(errors.startDate)}
-      className={`${fieldInputClass(errors.startDate)} flex items-center justify-between gap-2 text-left cursor-pointer`}
-    >
-      <span className={`truncate ${draft.startDate ? '' : 'text-slate-400'}`}>{draft.startDate ? formatShortDate(draft.startDate) : 'Select date'}</span>
-      <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-    </button>
+  const select = (label: string, value: string | null, options: string[], onChange: (v: string) => void, placeholder = 'Nothing selected') => (
+    <Dropdown size="md" ariaLabel={label} sheetTitle={label} value={value} placeholder={placeholder} options={options} onChange={onChange} />
   );
 
   /* ------------------------------- Step 1 ------------------------------- */
   const core = (
-    <>
-      <Section icon={Briefcase} title="Role Details" subtitle="What kind of staff you need">
-        <Field label="Hiring Type" required>
-          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] text-xs font-bold">
-            <Check className="w-3.5 h-3.5" strokeWidth={3} />
-            {HIRING_TYPE}
-          </span>
-        </Field>
+    <section aria-label="Core Details" className="grid grid-cols-2 gap-x-3 gap-y-4">
+      <Field label="Hiring Type" required error={errors.hiringType}>
+        {isEdit ? <LockedValue value={draft.hiringType} /> : select('Hiring Type', draft.hiringType || null, [HIRING_TYPE], (v) => set('hiringType', v), 'Select')}
+      </Field>
 
-        <Field label="Domain" required error={errors.domain}>
-          {isEdit ? (
-            <LockedValue value={draft.domain} />
-          ) : (
-            <Dropdown ariaLabel="Domain" sheetTitle="Domain" value={draft.domain || null} placeholder="Select domain" options={REQUIREMENT_DOMAINS.map((d) => d.name)} onChange={setDomain} />
-          )}
-        </Field>
-
-        <Field label="Profile" required error={errors.profile}>
-          {isEdit ? (
-            <LockedValue value={draft.profile} />
-          ) : draft.domain ? (
-            <Dropdown
-              ariaLabel="Profile"
-              sheetTitle="Profile"
-              value={draft.profile || null}
-              placeholder="Select profile"
-              options={profilesOfDomain(draft.domain).map((p) => p.name)}
-              onChange={setProfile}
-            />
-          ) : (
-            <LockedValue value="" placeholder="Select a domain first" />
-          )}
-        </Field>
-
-        <Field label="Level">
-          {isEdit ? (
-            <LockedValue value={draft.level} />
-          ) : levels.length > 0 ? (
-            <Dropdown ariaLabel="Level" sheetTitle="Level" value={draft.level || null} placeholder="Select level" options={levels} onChange={setLevel} />
-          ) : (
-            <LockedValue value="" placeholder="Select a profile first" />
-          )}
-        </Field>
-      </Section>
-
-      <Section icon={Wallet} title="Hours & Pricing" subtitle="Weekly commitment and budget">
-        <Field label="Hours/Week" required error={errors.hoursPerWeek}>
-          {isEdit ? (
-            <LockedValue value={`${draft.hoursPerWeek} Hours/Week`} />
-          ) : (
-            <Dropdown
-              ariaLabel="Hours per week"
-              sheetTitle="Hours/Week"
-              value={draft.hoursPerWeek || null}
-              placeholder="Select hours"
-              options={HOURS_OPTIONS.map((h) => ({ value: h, label: h === 40 ? '40 Hours/Week (Full time)' : `${h} Hours/Week` }))}
-              onChange={(h) => set('hoursPerWeek', h)}
-            />
-          )}
-        </Field>
-
-        <Field label="Tentative Price" required hint="Based on the profile and level. Final pricing is confirmed by your account manager.">
-          {draft.pricing ? (
-            <div className="w-full min-h-11 px-3.5 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between gap-2">
-              <span className="text-sm font-extrabold text-[#2F68FE] truncate">{draft.pricing}</span>
-              <Lock className="w-3.5 h-3.5 text-[#93B4FF] shrink-0" />
-            </div>
-          ) : (
-            <LockedValue value="" placeholder="Shown once a level is selected" />
-          )}
-        </Field>
-
-        <Field label="Budget Hourly Rate" error={errors.budgetRate} hint={`Optional. Minimum $${BUDGET_RATE_MIN}.`}>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">$</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={draft.budgetRate}
-              onChange={(e) => set('budgetRate', e.target.value.replace(/[^\d.]/g, ''))}
-              placeholder="Budget Hourly Rate"
-              aria-label="Budget Hourly Rate"
-              aria-invalid={Boolean(errors.budgetRate)}
-              className={`${fieldInputClass(errors.budgetRate)} pl-7`}
-            />
-          </div>
-        </Field>
-      </Section>
-
-      <Section icon={CalendarClock} title="Timeline & Team" subtitle="When and how many">
-        <Field label="Onboarding Timeline" required error={errors.timeline}>
-          {isEdit ? (
-            <LockedValue value={draft.timeline} />
-          ) : (
-            <Dropdown ariaLabel="Onboarding Timeline" value={draft.timeline || null} placeholder="Select timeline" options={TIMELINE_OPTIONS} onChange={(v) => set('timeline', v)} />
-          )}
-        </Field>
-
-        <Field label="Expected Start Date" required error={errors.startDate}>
-          {isEdit ? <LockedValue value={draft.startDate ? formatShortDate(draft.startDate) : ''} /> : dateButton}
-        </Field>
-
+      <Field label="Domain" required error={errors.domain}>
         {isEdit ? (
-          <Field label="No. of Staff" required>
-            <LockedValue value={String(draft.staffCount)} />
-          </Field>
+          <LockedValue value={draft.domain} />
         ) : (
-          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-            <div className="min-w-0">
-              <span className="block text-xs font-bold text-[#1E293B]">
-                No. of Staff<span className="text-rose-500"> *</span>
-              </span>
-              <p className="mt-0.5 text-[11px] text-slate-400 leading-snug">One requirement is created for each staff.</p>
-            </div>
-            {stepper(draft.staffCount)}
-          </div>
+          select('Domain', draft.domain || null, REQUIREMENT_DOMAINS.map((d) => d.name), setDomain, 'Select')
         )}
-      </Section>
+      </Field>
 
-      <Section icon={Globe} title="Work Preferences" subtitle="Availability and location">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Time Zone" required error={errors.timezone}>
-            <Dropdown ariaLabel="Time zone" sheetTitle="Time Zone" value={draft.timezone || null} placeholder="Select" options={TIMEZONES} onChange={(v) => set('timezone', v)} />
-          </Field>
-          <Field label="Available Upto" required error={errors.availableUpto}>
-            <button
-              type="button"
-              onClick={() => setTimeOpen(true)}
-              aria-label="Preferred Available Upto Time"
-              aria-invalid={Boolean(errors.availableUpto)}
-              className={`${fieldInputClass(errors.availableUpto)} flex items-center justify-between gap-2 text-left cursor-pointer`}
-            >
-              <span className={`truncate ${draft.availableUpto ? '' : 'text-slate-400'}`}>{draft.availableUpto ? formatTime12(draft.availableUpto) : 'Select time'}</span>
-              <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
-            </button>
-          </Field>
+      <Field label="Profile" required error={errors.profile}>
+        {isEdit ? (
+          <LockedValue value={draft.profile} />
+        ) : draft.domain ? (
+          select('Profile', draft.profile || null, profilesOfDomain(draft.domain).map((p) => p.name), setProfile)
+        ) : (
+          <EmptySelect label="Profile" />
+        )}
+      </Field>
+
+      <Field label="Hours/Week" required error={errors.hoursPerWeek}>
+        {isEdit ? (
+          <LockedValue value={String(draft.hoursPerWeek)} />
+        ) : (
+          <Dropdown
+            size="md"
+            ariaLabel="Hours/Week"
+            sheetTitle="Hours/Week"
+            value={draft.hoursPerWeek || null}
+            placeholder="Nothing selected"
+            options={HOURS_OPTIONS}
+            onChange={(h) => set('hoursPerWeek', h)}
+          />
+        )}
+      </Field>
+
+      <Field label="Level">
+        {isEdit ? <LockedValue value={draft.level} /> : levels.length > 0 ? select('Level', draft.level || null, levels, setLevel) : <EmptySelect label="Level" />}
+      </Field>
+
+      <Field label="Tentative Price" required>
+        <div className="w-full h-11 px-3.5 rounded-xl bg-[#E9ECEF] border border-slate-200 flex items-center text-xs font-semibold text-[#1E293B]" aria-label="Tentative Price" aria-readonly="true">
+          <span className="truncate">{draft.pricing}</span>
         </div>
+      </Field>
 
-        <Field label="Work Mode Preference">
-          <Dropdown ariaLabel="Work Mode Preference" value={draft.workMode} options={WORK_MODE_OPTIONS} onChange={(v) => set('workMode', v)} />
-        </Field>
+      <Field label="Budget Hourly Rate" error={errors.budgetRate}>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={draft.budgetRate}
+          onChange={(e) => set('budgetRate', e.target.value.replace(/[^\d.]/g, ''))}
+          placeholder="Budget Hourly Rate"
+          aria-label="Budget Hourly Rate"
+          aria-invalid={Boolean(errors.budgetRate)}
+          className={fieldInputClass(errors.budgetRate)}
+        />
+      </Field>
 
+      <Field label="Onboarding Timeline" required error={errors.timeline}>
+        {isEdit ? (
+          <LockedValue value={draft.timeline} />
+        ) : (
+          select('Onboarding Timeline', draft.timeline || null, TIMELINE_OPTIONS, (v) => set('timeline', v), 'Select Onboarding Timeline')
+        )}
+      </Field>
+
+      <Field label="Expected Start Date" required error={errors.startDate}>
+        {isEdit ? (
+          <LockedValue value={draft.startDate ? formatShortDate(draft.startDate) : ''} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDateOpen(true)}
+            aria-label="Expected Start Date"
+            aria-invalid={Boolean(errors.startDate)}
+            className={`${fieldInputClass(errors.startDate)} flex items-center gap-2 text-left cursor-pointer`}
+          >
+            <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className={`truncate ${draft.startDate ? '' : 'text-slate-400'}`}>{draft.startDate ? formatShortDate(draft.startDate) : 'Expected Start Date'}</span>
+          </button>
+        )}
+      </Field>
+
+      <Field label="No. of Staff" required error={errors.staffCount}>
+        {isEdit ? (
+          <LockedValue value={String(draft.staffCount)} />
+        ) : (
+          <Dropdown
+            size="md"
+            ariaLabel="No. of Staff"
+            sheetTitle="No. of Staff"
+            value={draft.staffCount || null}
+            placeholder="Select"
+            options={Array.from({ length: REQUIREMENT_STAFF_MAX }, (_, i) => i + 1)}
+            onChange={(n) => set('staffCount', n)}
+          />
+        )}
+      </Field>
+
+      <Field label="Preferred Available Upto Time" required error={errors.timezone || errors.availableUpto} className="col-span-2">
+        <div className="flex items-stretch">
+          <div className="w-[104px] shrink-0 [&_button]:rounded-r-none [&_button]:bg-[#E2E8F0]">
+            {select('Time Zone', draft.timezone || null, TIMEZONES, (v) => set('timezone', v), 'Select')}
+          </div>
+          <button
+            type="button"
+            onClick={() => setTimeOpen(true)}
+            aria-label="Preferred Available Upto Time"
+            aria-invalid={Boolean(errors.availableUpto)}
+            className={`${fieldInputClass(errors.availableUpto)} -ml-px rounded-l-none flex items-center justify-between gap-2 text-left cursor-pointer`}
+          >
+            <span className={`truncate tabular-nums ${draft.availableUpto ? '' : 'text-slate-400'}`}>{draft.availableUpto || '--:--'}</span>
+            <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
+          </button>
+        </div>
+      </Field>
+
+      <Field label="Work Mode Preference" className="col-span-2">
+        {select('Work Mode Preference', draft.workMode, WORK_MODE_OPTIONS, (v) => set('workMode', v as RequirementDraft['workMode']))}
+      </Field>
+
+      <div className="col-span-2">
         <MultiSelectDropdown
           label="Offshore Location Preference"
-          placeholder="Select locations"
+          placeholder="Nothing selected"
           options={OFFSHORE_LOCATIONS.map((l) => ({ value: l, label: l }))}
           selected={draft.locations}
           onChange={(v) => set('locations', v)}
         />
-      </Section>
-    </>
+      </div>
+    </section>
   );
 
   /* ------------------------------- Step 2 ------------------------------- */
   const additional = (
     <>
-      <Section icon={MessageSquare} title="Working Style" subtitle="Communication and reporting">
+      <Section title="Working Style">
         {yesNo('Do you want staff to directly communicate with your clients?', 'endClientComm')}
 
         <Field label="Reporting To">
@@ -446,14 +403,14 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
         </Field>
       </Section>
 
-      <Section icon={ClipboardList} title="Hiring Process" subtitle="Interview and sign-off">
+      <Section title="Hiring Process">
         {yesNo('Interview Required?', 'interviewRequired')}
         {yesNo('Technical Assessment Required?', 'technicalAssessment')}
         {domain?.signsTaxReturn && yesNo('Do the staff required to sign Tax Return?', 'signTaxReturn')}
         {domain?.signsAuditReport && yesNo('Do the staff required to sign Audit Report?', 'signAuditReport')}
       </Section>
 
-      <Section icon={GraduationCap} title="Skills & Qualifications" subtitle="Tasks, tools and background">
+      <Section title="Skills & Qualifications">
         <MultiSelectDropdown
           label="Type of Task to be Handled"
           placeholder="Select"
@@ -488,7 +445,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
         />
       </Section>
 
-      <Section icon={FileText} title="Additional Notes">
+      <Section title="Additional Notes">
         <Field label="Anything specific you would like to add">
           <textarea
             rows={4}
@@ -508,7 +465,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   /* ------------------------------- Step 3 ------------------------------- */
   const description = (
     <>
-      <Section icon={Sparkles} title="Generate with AI" subtitle="Draft a job description from your details">
+      <Section title="Generate with AI">
         <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
           <Info className="w-4 h-4 shrink-0 mt-px" />
           To generate an AI-powered Job Description, complete: No. of Staff, Domain, Work Mode, Technical Skills and Software Skills
@@ -532,7 +489,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
         )}
       </Section>
 
-      <Section icon={FileText} title="Job Description" subtitle="Upload a file or write it yourself">
+      <Section title="Job Description">
         <div className="space-y-1.5">
           <span className="block text-xs font-bold text-[#1E293B]">Upload Job Description</span>
           <input ref={fileRef} type="file" accept={JD_ACCEPT} className="hidden" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
@@ -587,43 +544,55 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const lastLabel = isEdit ? 'Update' : 'Submit';
 
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
-      <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
-        <button type="button" onClick={back} aria-label="Back to Staff Requirements" className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-base font-bold screen-title">{isEdit ? 'Edit Requirement' : 'Add Requirement'}</h1>
-      </header>
-      <RequirementStepper step={step} />
-
-      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-6">
-        {isEdit && step === 1 && (
-          <p className="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800 leading-snug">
-            <Lock className="w-4 h-4 shrink-0 mt-px" />
-            Domain, profile, hours, level, timeline, start date and staff count can&rsquo;t be changed. Contact your account manager if they need to change.
-          </p>
-        )}
-        <div className="space-y-3">{step === 1 ? core : step === 2 ? additional : description}</div>
-      </div>
-
-      <div className="shrink-0 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 pb-5 grid grid-cols-2 gap-3">
+    <div className="relative flex-1 min-h-0 flex flex-col bg-white text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
+      <header className="shrink-0 bg-[#2F68FE] h-14 pl-4 pr-3 flex items-center justify-between gap-3">
+        <h1 className="text-base font-bold text-white truncate">{isEdit ? 'Edit Requirement' : 'Add Requirement'}</h1>
         <button
           type="button"
-          onClick={() => (step === 1 ? back() : setStep((s) => (s - 1) as 1 | 2))}
-          disabled={saving}
-          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 disabled:opacity-50 cursor-pointer"
+          onClick={back}
+          aria-label="Close"
+          className="w-9 h-9 rounded-lg bg-white/95 text-[#1E293B] flex items-center justify-center active:bg-white shrink-0 cursor-pointer"
         >
-          {step === 1 ? 'Cancel' : 'Previous'}
+          <X className="w-5 h-5" />
+        </button>
+      </header>
+
+      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-3 pb-6">
+        <RequirementStepper step={step} />
+        {step === 1 && !isEdit && (
+          <p className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-slate-600 leading-snug">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            To schedule the interview, please provide a few role-specific details. These help us clearly define your hiring requirement, align this candidate
+            accurately, and identify any additional suitable candidates for the same role. Once completed, you can proceed to select the interview date and
+            available time slots.
+          </p>
+        )}
+        {isEdit && step === 1 && (
+          <p className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800 leading-snug">
+            <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            Hiring type, domain, profile, hours, level, timeline, start date and staff count can&rsquo;t be changed. Contact your account manager if they need to change.
+          </p>
+        )}
+        <div className="mt-4 space-y-4">{step === 1 ? core : step === 2 ? additional : description}</div>
+      </div>
+
+      <div className="shrink-0 bg-white border-t border-[#EBF0F7] px-4 py-3 pb-5 flex items-center justify-end gap-2.5">
+        <button
+          type="button"
+          onClick={() => setStep((s) => (s - 1) as 1 | 2)}
+          disabled={saving || step === 1}
+          className="h-11 min-w-[104px] px-4 rounded-lg border border-[#2F68FE]/50 text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          Previous
         </button>
         <button
           type="button"
           onClick={next}
           disabled={saving || aiBusy}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-wait cursor-pointer"
+          className="h-11 min-w-[104px] px-4 rounded-lg bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-wait cursor-pointer"
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Saving…' : step === 3 ? lastLabel : 'Next'}
-          {!saving && step < 3 && <ArrowRight className="w-4 h-4" />}
         </button>
       </div>
 

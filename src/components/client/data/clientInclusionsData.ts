@@ -296,29 +296,3 @@ export const filterInclusions = (query: string): { section: InclusionSection; it
     return items.length > 0 ? [{ section, items }] : [];
   });
 };
-
-export const INCLUSION_GROUPS = ['All', 'Workplace', 'Talent & HR', 'Legal & Pay', 'Tech & Security'] as const;
-export type InclusionGroup = (typeof INCLUSION_GROUPS)[number];
-
-const GROUP_OF: Record<string, Exclude<InclusionGroup, 'All'>> = {
-  workspace: 'Workplace',
-  administration: 'Workplace',
-  support: 'Workplace',
-  engagement: 'Workplace',
-  talent: 'Talent & HR',
-  'hr-policies': 'Talent & HR',
-  learning: 'Talent & HR',
-  'staff-benefits': 'Talent & HR',
-  'employment-terms': 'Talent & HR',
-  'tax-legal': 'Legal & Pay',
-  payroll: 'Legal & Pay',
-  'ai-hrms': 'Tech & Security',
-  it: 'Tech & Security',
-  'data-security': 'Tech & Security',
-  compliance: 'Tech & Security',
-};
-
-export const inGroup = (s: InclusionSection, group: InclusionGroup) => group === 'All' || GROUP_OF[s.id] === group;
-
-export const groupCounts = (): Record<InclusionGroup, number> =>
-  Object.fromEntries(INCLUSION_GROUPS.map((g) => [g, INCLUSION_SECTIONS.filter((s) => inGroup(s, g)).length])) as Record<InclusionGroup, number>;

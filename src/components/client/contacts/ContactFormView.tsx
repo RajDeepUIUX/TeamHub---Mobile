@@ -45,7 +45,7 @@ const todayIso = () => {
 };
 
 const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+  <section className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
     <h2 className="px-4 py-3 bg-[#F8FAFC] border-b border-[#EBF0F7] text-sm font-bold text-[#1E293B]">{title}</h2>
     <div className="p-4 space-y-4">{children}</div>
   </section>

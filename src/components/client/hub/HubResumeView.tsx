@@ -2,25 +2,26 @@ import React, { useState } from 'react';
 import {
   ArrowLeft,
   BadgeCheck,
-  Banknote,
   Bookmark,
   BookmarkCheck,
-  Briefcase,
   CalendarClock,
   Check,
   ChevronDown,
-  ChevronRight,
+  Clock3,
   Download,
+  Globe,
   GraduationCap,
   Info,
-  Laptop,
   Lock,
+  MapPin,
   Play,
+  TimerReset,
   UserRound,
   UsersRound,
+  Wallet,
 } from 'lucide-react';
-import { Card, FieldGrid, Pill } from '../staff/tabs/StaffTabParts';
-import { FileButton, Section, Tags, TextBlock } from '../interviews/CandidateResumeView';
+import { Card, FieldGrid } from '../staff/tabs/StaffTabParts';
+import { FileButton, TextBlock } from '../interviews/CandidateResumeView';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
 import { formatExperience, formatMonthYear, formatShortDate } from '../data/clientInterviewsData';
 import { HubProfile, costBreakdownOf, joiningLabel, rateLabel } from '../data/clientStaffHubData';
@@ -43,6 +44,7 @@ interface Props {
 }
 
 const COURSES_SHOWN = 5;
+const LOCKED_TEXT = 'Visible once the candidate is shortlisted.';
 
 const Money: React.FC<{ label: string; value: number; strong?: boolean }> = ({ label, value, strong }) => (
   <div className={`flex items-center justify-between gap-3 py-2 ${strong ? 'text-[13px] font-extrabold text-[#1E293B]' : 'text-[12px] text-slate-600'}`}>
@@ -51,10 +53,71 @@ const Money: React.FC<{ label: string; value: number; strong?: boolean }> = ({ l
   </div>
 );
 
+/** Desktop section heading: title, a thin rule and a short blue bar on the right */
+const ResumeSection: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, action, children }) => (
+  <Card className="mt-3 p-4">
+    <div className="flex items-center gap-2.5">
+      <h3 className="shrink-0 text-[14px] font-bold text-[#1E293B]">{title}</h3>
+      <span className="flex-1 h-[3px] rounded-full bg-slate-100 relative" aria-hidden="true">
+        <span className="absolute right-0 top-0 h-[3px] w-8 rounded-full bg-[#2F68FE]" />
+      </span>
+      {action}
+    </div>
+    <div className="mt-3">{children}</div>
+  </Card>
+);
+
+/** Icon + label + value row (desktop left column: Talent Cost, Availability, Hiring Details) */
+const IconRow: React.FC<{ icon: React.ElementType; label: string; children: React.ReactNode; aside?: React.ReactNode }> = ({ icon: Icon, label, children, aside }) => (
+  <div className="flex items-start gap-3 py-2">
+    <span className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0" aria-hidden="true">
+      <Icon className="w-[18px] h-[18px]" />
+    </span>
+    <div className="flex-1 min-w-0">
+      <p className="text-[11px] text-slate-500">{label}</p>
+      <div className="mt-0.5 text-[13.5px] font-medium text-[#1E293B] leading-snug">{children}</div>
+    </div>
+    {aside}
+  </div>
+);
+
+const InfoToggle: React.FC<{ open: boolean; onToggle: () => void; label: string }> = ({ open, onToggle, label }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-expanded={open}
+    aria-label={label}
+    className={`w-8 h-8 -my-1 rounded-full flex items-center justify-center shrink-0 transition-colors cursor-pointer ${open ? 'text-[#2F68FE] bg-[#EFF6FF]' : 'text-[#2F68FE] active:bg-slate-100'}`}
+  >
+    <Info className="w-4 h-4" />
+  </button>
+);
+
+const InfoNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="mt-1 mb-1 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-[11px] text-slate-600 leading-snug" role="note">
+    {children}
+  </p>
+);
+
+/** Two-column bullet list (desktop Technical / Software Skills) */
+const BulletList: React.FC<{ items: string[]; label: string }> = ({ items, label }) => (
+  <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 list-disc pl-4 marker:text-slate-400" aria-label={label}>
+    {items.map((s) => (
+      <li key={s} className="text-[12.5px] text-slate-700 leading-snug break-words">
+        {s}
+      </li>
+    ))}
+  </ul>
+);
+
+/** Desktop shows the monthly talent cost as "$851/Month" in the chip row */
+const rateChip = (p: HubProfile) => (CLIENT_IS_MOS ? `$${p.monthlyCost}/Month` : `$${p.resume.hourlyRate}/Hr`);
+
 /**
- * Desktop "View Resume" (`staffingMarketplace&task=viewDetails`): profile highlight, talent cost, hiring details, psychometric
- * download, summary, experience, skills, evaluation notes, certificates, courses and assessments. The video is locked until
- * the candidate is shortlisted. Actions: Shortlist Candidate and Save / Remove from Saved Resumes.
+ * Desktop "View Resume" (`staffingMarketplace&task=viewDetails`). Left column: level, profile (Resume ID), Shortlist Candidate +
+ * Save, rate / work mode / joining chips, Talent Cost, Availability, Hiring Details. Right column: Professional Summary,
+ * Technical Skills, Software Skills, Certificate, Courses, then experience, evaluation notes and assessments. Certificates,
+ * course certificates and the video stay locked until the candidate is shortlisted.
  */
 export const HubResumeView: React.FC<Props> = ({
   profile,
@@ -70,6 +133,8 @@ export const HubResumeView: React.FC<Props> = ({
   onNotice,
 }) => {
   const [costOpen, setCostOpen] = useState(false);
+  const [costInfo, setCostInfo] = useState(false);
+  const [tillInfo, setTillInfo] = useState(false);
   const [allCourses, setAllCourses] = useState(false);
   const r = profile.resume;
 
@@ -83,6 +148,7 @@ export const HubResumeView: React.FC<Props> = ({
   const courses = allCourses ? r.courses : r.courses.slice(0, COURSES_SHOWN);
   const cost = CLIENT_IS_MOS ? costBreakdownOf(profile) : null;
   const buyout = profile.buyoutDays && profile.buyoutDays > 0 ? profile.buyoutDays : 0;
+  const unlocked = shortlisted && canDownload;
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
@@ -100,67 +166,275 @@ export const HubResumeView: React.FC<Props> = ({
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
         <div className="px-4 pt-3">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 min-w-0">
-            <span className="shrink-0">Hire New Staff</span>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <button type="button" onClick={onBack} className="shrink-0 hover:text-[#2F68FE] cursor-pointer">
-              {fromLabel}
-            </button>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <span className="text-slate-600 truncate tabular-nums">{profile.resumeId}</span>
-          </p>
-
-          <Card className="mt-2.5 overflow-hidden">
-            <div className="h-16 bg-gradient-to-r from-[#2F68FE] to-[#6366F1]" aria-hidden="true" />
-            <div className="px-4 pb-4 -mt-8">
+          {/* Profile highlight */}
+          <Card className="p-3.5">
+            <div className="flex items-start gap-3">
               <span
-                className={`w-16 h-16 rounded-2xl border-4 border-white shadow-sm flex items-center justify-center ${r.gender === 'Female' ? 'bg-[#FDF2F8] text-[#DB2777]' : 'bg-[#EFF6FF] text-[#2F68FE]'}`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${r.gender === 'Female' ? 'bg-[#FDF2F8] text-[#DB2777]' : 'bg-[#EFF6FF] text-[#2F68FE]'}`}
                 aria-hidden="true"
               >
-                <UserRound className="w-7 h-7" />
+                <UserRound className="w-5 h-5" />
               </span>
-              <h2 className="mt-2.5 text-[17px] font-extrabold text-[#1E293B] leading-snug">{profile.profile}</h2>
-              <p className="mt-0.5 text-[11.5px] text-slate-500 tabular-nums">Resume ID {profile.resumeId}</p>
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                <Pill tone="indigo">{r.level}</Pill>
-                {r.backgroundVerified && (
-                  <Pill tone="green">
-                    <BadgeCheck className="w-3 h-3" />
-                    Background verified
-                  </Pill>
-                )}
-                {shortlisted && (
-                  <Pill tone="amber">
-                    <Check className="w-3 h-3" />
-                    Shortlisted
-                  </Pill>
-                )}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[15px] font-bold text-[#1E293B] leading-snug">
+                  {profile.profile} <span className="tabular-nums">({profile.resumeId})</span>
+                </h2>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span className="px-1.5 py-0.5 rounded border border-[#C7D2FE] bg-[#EEF2FF] text-[10.5px] font-bold text-[#3730A3] leading-none">{r.level}</span>
+                  {r.backgroundVerified && (
+                    <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold text-[#059669]">
+                      <BadgeCheck className="w-3 h-3" />
+                      Verified
+                    </span>
+                  )}
+                  {shortlisted && (
+                    <span className="inline-flex items-center gap-0.5 text-[10.5px] font-semibold text-[#D97706]">
+                      <Check className="w-3 h-3" />
+                      Shortlisted
+                    </span>
+                  )}
+                </div>
               </div>
-              <dl className="mt-4 grid grid-cols-2 gap-2.5">
-                {[
-                  { label: CLIENT_IS_MOS ? 'Talent Cost' : 'Hourly Charges', value: rateLabel(profile), icon: Banknote, tint: 'bg-[#EEF2FF] text-[#4F46E5]' },
-                  { label: 'Work', value: r.workType, icon: Briefcase, tint: 'bg-[#E8F8F0] text-[#10B981]' },
-                  { label: 'Work Mode', value: profile.workMode, icon: Laptop, tint: 'bg-[#EFF6FF] text-[#2F68FE]' },
-                  { label: 'Joining', value: joiningLabel(profile.noticeDays), icon: CalendarClock, tint: 'bg-[#FEF8E7] text-[#D97706]' },
-                ]
-                  .filter((f) => f.value)
-                  .map(({ label, value, icon: Icon, tint }) => (
-                    <div key={label} className="min-w-0 flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${tint}`}>
-                        <Icon className="w-4 h-4" />
-                      </span>
-                      <span className="min-w-0">
-                        <dt className="text-[10.5px] text-slate-400">{label}</dt>
-                        <dd className="text-[12.5px] font-bold text-[#1E293B] leading-snug tabular-nums">{value}</dd>
-                      </span>
+            </div>
+
+            <ul className="mt-2.5 flex flex-wrap gap-1" aria-label="Rate, work mode and joining">
+              {[rateChip(profile), profile.workMode, joiningLabel(profile.noticeDays)].map((c) => (
+                <li key={c} className="px-2 py-1 rounded-full bg-slate-100 text-[11px] text-slate-700 leading-none tabular-nums">
+                  {c}
+                </li>
+              ))}
+            </ul>
+
+            {shortlisted
+              ? onOpenShortlisted && (
+                  <button
+                    type="button"
+                    onClick={onOpenShortlisted}
+                    className="mt-3 w-full h-9 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100 cursor-pointer"
+                  >
+                    <UsersRound className="w-4 h-4" />
+                    View Shortlisted
+                  </button>
+                )
+              : canAdd && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <button type="button" onClick={onShortlist} className="flex-1 h-9 rounded-lg bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
+                      Shortlist Candidate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onToggleSave}
+                      aria-pressed={saved}
+                      aria-label={saved ? 'Remove from Saved Resumes' : 'Save resume'}
+                      className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                        saved ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50'
+                      }`}
+                    >
+                      {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
+          </Card>
+
+          {/* Talent Cost */}
+          <Card className="mt-3 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[15px] font-bold text-[#1E293B]">{cost ? 'Talent Cost' : 'Hourly Charges'}</h3>
+              <InfoToggle open={costInfo} onToggle={() => setCostInfo((o) => !o)} label={cost ? 'About talent cost' : 'About hourly charges'} />
+            </div>
+            {costInfo && (
+              <InfoNote>
+                {cost
+                  ? 'Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.'
+                  : 'Hourly charges for this resume, billed on the hours worked.'}
+              </InfoNote>
+            )}
+            {cost ? (
+              <>
+                <button type="button" onClick={() => setCostOpen((o) => !o)} aria-expanded={costOpen} className="mt-1 w-full text-left cursor-pointer">
+                  <IconRow icon={Wallet} label="Compensation Package" aside={<ChevronDown className={`mt-3 w-4 h-4 text-slate-500 transition-transform ${costOpen ? 'rotate-180' : ''}`} />}>
+                    <span className="font-bold tabular-nums">{rateLabel(profile)}</span>
+                  </IconRow>
+                </button>
+                {costOpen && (
+                  <div className="mt-2 pt-2 border-t border-slate-100">
+                    <Money label="Total Fixed Cost" value={cost.fixed} strong />
+                    <div className="mt-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-[12px] font-bold text-[#1E293B]">Variable Components</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">
+                        Variable pay components shown here are indicative only and calculated on estimated figures. Actual payouts may differ based on individual performance.
+                      </p>
+                      <div className="mt-1 divide-y divide-slate-100">
+                        <Money label="Night Allowance" value={cost.night} />
+                        <Money label="Productivity Bonus" value={cost.bonus} />
+                        <Money label="PTO Encashment" value={cost.pto} />
+                        <Money label="OT Encashment" value={cost.ot} />
+                      </div>
+                      <Money label="Total Variable Cost" value={cost.variable} strong />
                     </div>
-                  ))}
-              </dl>
+                    <Money label="Total Talent Cost" value={cost.total} strong />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="mt-1">
+                <IconRow icon={Wallet} label="Hourly Charges">
+                  <span className="font-bold tabular-nums">{rateLabel(profile)}</span>
+                </IconRow>
+              </div>
+            )}
+          </Card>
+
+          {/* Availability */}
+          <Card className="mt-3 p-4">
+            <h3 className="text-[15px] font-bold text-[#1E293B]">Availability</h3>
+            <div className="mt-1">
+              <IconRow
+                icon={Clock3}
+                label="Available Till"
+                aside={<InfoToggle open={tillInfo} onToggle={() => setTillInfo((o) => !o)} label="About Available Till" />}
+              >
+                <span className="tabular-nums">{profile.availableTill}</span>
+              </IconRow>
+              {tillInfo && <InfoNote>The latest time the candidate can work each day, shown in your time zone.</InfoNote>}
+              <IconRow icon={CalendarClock} label="Availability (per week)">
+                <span className="tabular-nums">{r.availableHoursPerDay * 5} Hours/Week</span>
+              </IconRow>
+              <IconRow icon={TimerReset} label="Overtime Availability (per week)">
+                <span className="tabular-nums">{profile.overtimeHoursPerWeek ? `${profile.overtimeHoursPerWeek} Hours/Week` : '-'}</span>
+              </IconRow>
             </div>
           </Card>
 
+          {/* Hiring Details */}
+          <Card className="mt-3 p-4">
+            <h3 className="text-[15px] font-bold text-[#1E293B]">Hiring Details</h3>
+            <div className="mt-1">
+              <IconRow icon={Globe} label="Domain">
+                {profile.domain}
+              </IconRow>
+              <IconRow icon={GraduationCap} label="Qualifications">
+                {r.qualifications.map((q) => (
+                  <span key={q} className="block">
+                    {q}
+                  </span>
+                ))}
+              </IconRow>
+              <IconRow icon={MapPin} label="Location">
+                {profile.location}
+              </IconRow>
+              {buyout > 0 && (
+                <IconRow icon={CalendarClock} label="Notice Buyout Eligibility">
+                  {profile.noticeDays > 0 ? `${profile.noticeDays} | ` : ''}Buyout: {buyout} {buyout === 1 ? 'Day' : 'Days'}
+                </IconRow>
+              )}
+            </div>
+            {profile.hasPsychometricFile && canDownload && (
+              <div className="mt-2">
+                <FileButton icon={Download} label="Download Psychometric Test" onClick={() => onNotice('Psychometric test downloaded')} />
+              </div>
+            )}
+          </Card>
+
+          {r.summary && (
+            <ResumeSection title="Professional Summary">
+              <p className="text-[12.5px] text-slate-600 leading-relaxed">{r.summary}</p>
+            </ResumeSection>
+          )}
+
+          {r.technicalSkills.length > 0 && (
+            <ResumeSection title="Technical Skills">
+              <BulletList items={r.technicalSkills} label="Technical Skills" />
+            </ResumeSection>
+          )}
+
+          {r.softwareSkills.length > 0 && (
+            <ResumeSection title="Software Skills">
+              <BulletList items={r.softwareSkills} label="Software Skills" />
+            </ResumeSection>
+          )}
+
+          {r.certificates.length > 0 && (
+            <ResumeSection title="Certificate">
+              <div className="-mx-4 border-y border-slate-100">
+                <div className="grid grid-cols-[1fr_1fr] gap-3 px-4 py-2.5 bg-[#EEF2FF] text-[11.5px] font-bold text-[#1E293B]">
+                  <span>Certificate Name</span>
+                  <span>Certificate</span>
+                </div>
+                <ul className="divide-y divide-slate-100">
+                  {r.certificates.map((c) => (
+                    <li key={c} className="grid grid-cols-[1fr_1fr] gap-3 items-center px-4 py-2.5 text-[12px]">
+                      <span className="text-slate-700 leading-snug">{c}</span>
+                      {unlocked ? (
+                        <span>
+                          <FileButton icon={Download} label="Download" onClick={() => onNotice(`${c} certificate downloaded`)} />
+                        </span>
+                      ) : (
+                        <span className="font-bold text-[#1E293B] leading-snug">{LOCKED_TEXT}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </ResumeSection>
+          )}
+
+          {r.courses.length > 0 && (
+            <ResumeSection title="Courses">
+              <ul className="-mx-4 border-y border-slate-100 divide-y divide-slate-100">
+                {courses.map((c) => (
+                  <li key={c.name} className="px-4 py-3">
+                    <p className="text-[12.5px] font-semibold text-[#1E293B] leading-snug">{c.name}</p>
+                    <dl className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                      <div>
+                        <dt className="text-slate-500">Duration</dt>
+                        <dd className="mt-0.5 text-[#1E293B] tabular-nums">{c.duration || 'NA'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Date of Completion</dt>
+                        <dd className="mt-0.5 text-[#1E293B] tabular-nums">{c.completedOn ? formatShortDate(c.completedOn) : 'NA'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Certificate</dt>
+                        <dd className="mt-0.5">
+                          {!c.hasCertificate ? (
+                            <span className="text-[#1E293B]">NA</span>
+                          ) : unlocked ? (
+                            <button
+                              type="button"
+                              onClick={() => onNotice(`${c.name} certificate downloaded`)}
+                              className="inline-flex items-center gap-1 font-bold text-[#2F68FE] cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-start gap-1 font-bold text-[#1E293B] leading-snug">
+                              <Lock className="w-3 h-3 mt-0.5 shrink-0" />
+                              {LOCKED_TEXT}
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+              {r.courses.length > COURSES_SHOWN && (
+                <button
+                  type="button"
+                  onClick={() => setAllCourses((v) => !v)}
+                  aria-expanded={allCourses}
+                  className="mt-3 h-9 w-full rounded-xl border border-slate-200 text-[11.5px] font-bold text-[#2F68FE] active:bg-slate-50 cursor-pointer"
+                >
+                  {allCourses ? 'Show fewer courses' : `Show all ${r.courses.length} courses`}
+                </button>
+              )}
+            </ResumeSection>
+          )}
+
           {r.hasVideo && (
-            <Section title="Video Summary">
+            <ResumeSection title="Video Summary">
               {shortlisted ? (
                 <button
                   type="button"
@@ -180,105 +454,25 @@ export const HubResumeView: React.FC<Props> = ({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[12.5px] font-bold text-[#1E293B]">Video is locked</span>
-                    <span className="block text-[11.5px] text-slate-500 leading-snug">Visible once the candidate is shortlisted.</span>
+                    <span className="block text-[11.5px] text-slate-500 leading-snug">{LOCKED_TEXT}</span>
                   </span>
                 </div>
               )}
-            </Section>
-          )}
-
-          <Section title="Talent Cost">
-            {cost ? (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setCostOpen((o) => !o)}
-                  aria-expanded={costOpen}
-                  className="w-full flex items-center gap-3 text-left cursor-pointer"
-                >
-                  <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
-                    <Banknote className="w-4 h-4" />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[11px] text-slate-400">Compensation Package</span>
-                    <span className="block text-[13px] font-bold text-[#1E293B] tabular-nums">{rateLabel(profile)}</span>
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${costOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {costOpen && (
-                  <div className="mt-3 pt-2 border-t border-slate-100">
-                    <Money label="Total Fixed Cost" value={cost.fixed} strong />
-                    <div className="mt-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                      <p className="text-[12px] font-bold text-[#1E293B]">Variable Components</p>
-                      <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">
-                        Variable pay components shown here are indicative only and calculated on estimated figures. Actual payouts may differ based on individual performance.
-                      </p>
-                      <div className="mt-1 divide-y divide-slate-100">
-                        <Money label="Night Allowance" value={cost.night} />
-                        <Money label="Productivity Bonus" value={cost.bonus} />
-                        <Money label="PTO Encashment" value={cost.pto} />
-                        <Money label="OT Encashment" value={cost.ot} />
-                      </div>
-                      <Money label="Total Variable Cost" value={cost.variable} strong />
-                    </div>
-                    <Money label="Total Talent Cost" value={cost.total} strong />
-                  </div>
-                )}
-                <p className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-snug">
-                  <Info className="w-3.5 h-3.5 shrink-0 mt-px text-[#2F68FE]" />
-                  Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.
-                </p>
-              </div>
-            ) : (
-              <FieldGrid compact fields={[{ label: 'Hourly Charges', value: rateLabel(profile) }]} />
-            )}
-          </Section>
-
-          <Section title="Hiring Details">
-            <FieldGrid
-              compact
-              fields={[
-                { label: 'Domain', value: profile.domain },
-                { label: 'Location', value: profile.location },
-                { label: 'Qualifications', value: r.qualifications.join(', '), wide: true },
-                {
-                  label: 'Notice Buyout Eligibility',
-                  value: buyout ? `${profile.noticeDays > 0 ? `${profile.noticeDays} | ` : ''}Buyout: ${buyout} ${buyout === 1 ? 'Day' : 'Days'}` : null,
-                  wide: true,
-                },
-              ]}
-            />
-            {buyout > 0 && (
-              <p className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-snug">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-px text-[#2F68FE]" />
-                The candidate is eligible for a notice buyout of up to {buyout} {buyout === 1 ? 'day' : 'days'}.
-              </p>
-            )}
-            {profile.hasPsychometricFile && canDownload && (
-              <div className="mt-3">
-                <FileButton icon={Download} label="Download Psychometric Test" onClick={() => onNotice('Psychometric test downloaded')} />
-              </div>
-            )}
-          </Section>
-
-          {r.summary && (
-            <Section title="Professional Summary">
-              <p className="text-[12.5px] text-slate-600 leading-relaxed">{r.summary}</p>
-            </Section>
+            </ResumeSection>
           )}
 
           {experience.length > 0 && (
-            <Section title="Total Experience">
+            <ResumeSection title="Total Experience">
               <FieldGrid compact fields={experience.map((e) => ({ label: e.label, value: e.value }))} />
-            </Section>
+            </ResumeSection>
           )}
 
           {r.jobs.length > 0 && (
-            <Section title="Work History">
+            <ResumeSection title="Work History">
               <ul className="space-y-3.5">
                 {r.jobs.map((j) => (
                   <li key={`${j.company}-${j.from}`} className="flex gap-3">
-                    <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
+                    <span className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
                       <CalendarClock className="w-4 h-4" />
                     </span>
                     <span className="flex-1 min-w-0">
@@ -292,74 +486,22 @@ export const HubResumeView: React.FC<Props> = ({
                   </li>
                 ))}
               </ul>
-            </Section>
-          )}
-
-          {r.technicalSkills.length > 0 && (
-            <Section title="Technical Skills">
-              <Tags items={r.technicalSkills} />
-            </Section>
-          )}
-          {r.softwareSkills.length > 0 && (
-            <Section title="Software Skills">
-              <Tags items={r.softwareSkills} />
-            </Section>
+            </ResumeSection>
           )}
 
           {hasNotes && (
-            <Section title="Evaluation Notes">
+            <ResumeSection title="Evaluation Notes">
               <div className="space-y-3.5">
                 {r.backgroundVerified && <TextBlock title="Background Verification" text={r.backgroundNote} />}
                 <TextBlock title="Psychometric Evaluations" text={r.psychometric} />
                 <TextBlock title="Communication Skills" text={r.communication} />
                 <TextBlock title="Technical Skills" text={r.technicalNote} />
               </div>
-            </Section>
-          )}
-
-          {r.certificates.length > 0 && (
-            <Section title="Certificate">
-              <ul className="space-y-2">
-                {r.certificates.map((c) => (
-                  <li key={c} className="flex items-center gap-2.5 text-[12.5px] font-semibold text-[#1E293B]">
-                    <GraduationCap className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-
-          {r.courses.length > 0 && (
-            <Section title="Courses">
-              <ul className="divide-y divide-slate-100 -my-2">
-                {courses.map((c) => (
-                  <li key={c.name} className="py-2.5 flex items-center gap-3">
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-[12.5px] font-bold text-[#1E293B]">{c.name}</span>
-                      <span className="block text-[11px] text-slate-500 tabular-nums">
-                        {c.duration} · Completed {formatShortDate(c.completedOn)}
-                      </span>
-                    </span>
-                    {canDownload && c.hasCertificate && <FileButton icon={Download} label="Certificate" onClick={() => onNotice(`${c.name} certificate downloaded`)} />}
-                  </li>
-                ))}
-              </ul>
-              {r.courses.length > COURSES_SHOWN && (
-                <button
-                  type="button"
-                  onClick={() => setAllCourses((v) => !v)}
-                  aria-expanded={allCourses}
-                  className="mt-2.5 h-9 w-full rounded-xl border border-slate-200 text-[11.5px] font-bold text-[#2F68FE] active:bg-slate-50 cursor-pointer"
-                >
-                  {allCourses ? 'Show fewer courses' : `Show all ${r.courses.length} courses`}
-                </button>
-              )}
-            </Section>
+            </ResumeSection>
           )}
 
           {r.assessments.length > 0 && (
-            <Section title="Assessments">
+            <ResumeSection title="Assessments">
               <ul className="space-y-3">
                 {r.assessments.map((a) => (
                   <li key={a.name} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -381,50 +523,10 @@ export const HubResumeView: React.FC<Props> = ({
                   </li>
                 ))}
               </ul>
-            </Section>
+            </ResumeSection>
           )}
         </div>
       </div>
-
-      {shortlisted ? (
-        <div className="shrink-0 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-4 py-3 flex items-center gap-3">
-          <span className="flex-1 min-w-0 flex items-center gap-2 text-[12.5px] font-bold text-[#059669]">
-            <span className="w-8 h-8 rounded-full bg-[#E8F8F0] flex items-center justify-center shrink-0">
-              <Check className="w-4 h-4" strokeWidth={3} />
-            </span>
-            Shortlisted
-          </span>
-          {onOpenShortlisted && (
-            <button
-              type="button"
-              onClick={onOpenShortlisted}
-              className="h-12 px-4 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 active:bg-blue-100 cursor-pointer"
-            >
-              <UsersRound className="w-4 h-4" />
-              View Shortlisted
-            </button>
-          )}
-        </div>
-      ) : (
-        canAdd && (
-          <div className="shrink-0 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-4 py-3 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onToggleSave}
-              aria-pressed={saved}
-              aria-label={saved ? 'Remove from Saved Resumes' : 'Save resume'}
-              className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                saved ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-500 active:bg-slate-50'
-              }`}
-            >
-              {saved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-            </button>
-            <button type="button" onClick={onShortlist} className="flex-1 h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
-              Shortlist Candidate
-            </button>
-          </div>
-        )
-      )}
     </div>
   );
 };

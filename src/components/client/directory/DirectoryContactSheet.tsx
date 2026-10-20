@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CalendarClock, Check, ChevronRight, Copy, Headset, Mail, MessageSquareText, Phone } from 'lucide-react';
+import { CalendarClock, Check, ChevronRight, Copy, Headset, Mail, Phone } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar } from '../staff/ClientStaffParts';
@@ -12,6 +12,18 @@ interface Props {
   onClose: () => void;
   onOpenAccountManager: () => void;
 }
+
+/** Desktop "Chat Channel" column icon (Microsoft Teams) */
+export const TeamsIcon: React.FC<{ className?: string }> = ({ className = 'w-4.5 h-4.5' }) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+    <circle cx="19.2" cy="5.6" r="2.2" fill="#5059C9" />
+    <rect x="15.4" y="9" width="7.1" height="9" rx="3" fill="#5059C9" />
+    <circle cx="12.2" cy="4.8" r="3" fill="#7B83EB" />
+    <rect x="6.2" y="9" width="11" height="11.5" rx="3.5" fill="#7B83EB" />
+    <rect x="1.5" y="6.5" width="11" height="11" rx="1.6" fill="#4B53BC" />
+    <path d="M4.2 9.3h5.6v1.5H7.8v5.2H6.2v-5.2h-2z" fill="#FFFFFF" />
+  </svg>
+);
 
 /** Contact details (Added by designer): every desktop column in one place + copy */
 export const DirectoryContactSheet: React.FC<Props> = ({ contact, product, onClose, onOpenAccountManager }) => {
@@ -35,7 +47,7 @@ export const DirectoryContactSheet: React.FC<Props> = ({ contact, product, onClo
   const rows: { key: string; icon: React.ElementType; label: string; value?: string; href?: string; external?: boolean; copyable?: boolean }[] = [
     { key: 'email', icon: Mail, label: 'Mail', value: c.email, href: c.email ? `mailto:${c.email}` : undefined, copyable: true },
     { key: 'phone', icon: Phone, label: c.phoneLabel === 'VOIP' ? 'VOIP' : 'Phone Number', value: c.phone, href: c.phone ? telHref(c.phone) : undefined, copyable: true },
-    { key: 'teams', icon: MessageSquareText, label: 'Chat Channel', value: c.teamsUrl ? 'Microsoft Teams' : undefined, href: c.teamsUrl, external: true },
+    { key: 'teams', icon: TeamsIcon, label: 'Chat Channel', value: c.teamsUrl ? 'Microsoft Teams' : undefined, href: c.teamsUrl, external: true },
   ];
 
   return (
@@ -119,11 +131,11 @@ export const DirectoryContactSheet: React.FC<Props> = ({ contact, product, onClo
             rel="noreferrer"
             className="h-12 rounded-xl border border-slate-200 text-xs font-bold text-[#1E293B] flex items-center justify-center gap-2 active:bg-slate-50"
           >
-            <MessageSquareText className="w-4 h-4" /> Chat
+            <TeamsIcon className="w-4.5 h-4.5" /> Chat
           </a>
         ) : (
           <span className="h-12 rounded-xl bg-slate-100 text-xs font-bold text-slate-400 flex items-center justify-center gap-2">
-            <MessageSquareText className="w-4 h-4" /> No chat
+            <TeamsIcon className="w-4.5 h-4.5 grayscale opacity-50" /> No chat
           </span>
         )}
         {c.meetingUrl ? (

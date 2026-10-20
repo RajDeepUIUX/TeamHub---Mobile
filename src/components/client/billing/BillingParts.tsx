@@ -1,15 +1,13 @@
 import React from 'react';
-import { Check, Landmark, Lock, Pencil, Trash2, Zap } from 'lucide-react';
+import { Check, Landmark, Lock, Pencil, Plus, Trash2, Zap } from 'lucide-react';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import {
   BillingBankAccount,
-  BillingCountry,
   BillingCreditCard,
   CARD_BRAND,
   PaymentType,
   bankNameOf,
-  cardExpiryState,
   formatExpiry,
   maskedLast4,
 } from '../data/clientBillingData';
@@ -53,30 +51,32 @@ const IconButton: React.FC<{ icon: React.ElementType; label: string; danger?: bo
   </button>
 );
 
-/** Desktop `hrms-bank-info-card`; rows the client's country doesn't use are left out (desktop shows "-") */
+/** Label / value row like desktop `hrmsBicRow` */
+export const LabelRow: React.FC<{ label: string; children: React.ReactNode; muted?: boolean }> = ({ label, children, muted }) => (
+  <div className="flex items-start justify-between gap-3 py-2 border-b border-slate-100 last:border-b-0">
+    <dt className="text-[11.5px] font-medium text-slate-500 shrink-0">{label}</dt>
+    <dd className={`text-[12.5px] font-bold text-right tabular-nums break-all ${muted ? 'text-slate-400' : 'text-[#1E293B]'}`}>{children}</dd>
+  </div>
+);
+
+/** Desktop `hrms-bank-info-card`: bank name, account type, edit / delete, holder, then every number row ("-" when empty) */
 export const BankAccountCard: React.FC<{
   bank: BillingBankAccount;
-  country: BillingCountry;
   revealed: boolean;
-  mappedCount: number;
   onEdit?: () => void;
   onDelete?: () => void;
-}> = ({ bank, country, revealed, mappedCount, onEdit, onDelete }) => {
-  const show = (v?: string) => (v ? (revealed ? v : maskedLast4(v)) : null);
+}> = ({ bank, revealed, onEdit, onDelete }) => {
+  const show = (v?: string) => (v ? (revealed ? v : maskedLast4(v)) : '-');
   const rows = [
     { label: 'Account No', value: show(bank.accountNumber) },
-    ...(country === 'CA' || country === null
-      ? [
-          { label: 'Institution No', value: bank.institutionNumber ?? null },
-          { label: 'Transit No', value: show(bank.transitNumber) },
-        ]
-      : []),
-    ...(country === 'US' || country === null ? [{ label: 'Routing No', value: show(bank.bankRouting) }] : []),
-    ...(country === 'UK' || country === null ? [{ label: 'Sort Code', value: bank.sortCode ?? null }] : []),
-  ].filter((r) => r.value);
+    { label: 'Institution No', value: bank.institutionNumber || '-' },
+    { label: 'Transit No', value: show(bank.transitNumber) },
+    { label: 'Routing No', value: show(bank.bankRouting) },
+    { label: 'Sort Code', value: bank.sortCode || '-' },
+  ];
 
   return (
-    <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5">
+    <li className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] p-3.5">
       <div className="flex items-start gap-3">
         <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
           <Landmark className="w-[18px] h-[18px]" />
@@ -84,88 +84,60 @@ export const BankAccountCard: React.FC<{
         <span className="flex-1 min-w-0">
           <span className="block text-[13px] font-bold text-[#1E293B] break-words">{bankNameOf(bank)}</span>
           <span className="block text-[11px] text-slate-500 break-words">{bank.accountName}</span>
-          <span className="mt-1 flex flex-wrap items-center gap-1.5">
-            <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
-            <Pill tone={mappedCount ? 'blue' : 'amber'}>{mappedCount ? `${mappedCount} staff mapped` : 'Not mapped'}</Pill>
-          </span>
         </span>
-        {(onEdit || onDelete) && (
-          <span className="flex items-center gap-1.5 shrink-0">
-            {onEdit && <IconButton icon={Pencil} label={`Edit ${bankNameOf(bank)}`} onClick={onEdit} />}
-            {onDelete && <IconButton icon={Trash2} label={`Delete ${bankNameOf(bank)}`} danger onClick={onDelete} />}
-          </span>
-        )}
+        <span className="flex items-center gap-1.5 shrink-0">
+          <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
+          {onEdit && <IconButton icon={Pencil} label={`Edit ${bankNameOf(bank)}`} onClick={onEdit} />}
+          {onDelete && <IconButton icon={Trash2} label={`Delete ${bankNameOf(bank)}`} danger onClick={onDelete} />}
+        </span>
       </div>
-      <dl className="mt-3 p-3 rounded-xl bg-slate-50 grid grid-cols-2 gap-x-4 gap-y-2.5">
+      <dl className="mt-3 px-3 py-1 rounded-xl bg-slate-50">
         {rows.map((r) => (
-          <div key={r.label} className="min-w-0">
-            <dt className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{r.label}</dt>
-            <dd className={`mt-0.5 text-[12.5px] font-semibold tabular-nums break-all ${revealed ? 'text-[#1E293B]' : 'text-slate-600 tracking-wide'}`}>
-              {r.value}
-            </dd>
-          </div>
+          <LabelRow key={r.label} label={r.label} muted={r.value === '-'}>
+            {r.value}
+          </LabelRow>
         ))}
       </dl>
     </li>
   );
 };
 
-/** Desktop `Card_Img` tile; number always masked (HRMS returns the last 4 digits only) */
-export const CreditCardTile: React.FC<{ card: BillingCreditCard; mappedCount: number; onDelete?: () => void }> = ({ card, mappedCount, onDelete }) => {
+/** Desktop `Card_Img` tile (brand, card name, masked number, remove) with the card's fields labelled; HRMS returns the last 4 digits only */
+export const CreditCardTile: React.FC<{ card: BillingCreditCard; onDelete?: () => void }> = ({ card, onDelete }) => {
   const brand = CARD_BRAND[card.cardType];
-  const expiry = cardExpiryState(card.expiry);
   return (
-    <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-2.5">
-      <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-[#1E293B] to-[#334155] text-white">
-        <span className="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10" aria-hidden="true" />
-        <div className="relative flex items-start justify-between gap-3">
-          <span className="w-9 h-6 rounded-md bg-gradient-to-br from-amber-200 to-amber-400" aria-hidden="true" />
-          <span className={`h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
-            {brand.mark}
-          </span>
-        </div>
-        <p className="relative mt-4 text-[16px] font-bold tabular-nums tracking-[0.14em]">•••• •••• •••• {card.lastFour}</p>
-        <div className="relative mt-3 flex items-end justify-between gap-3">
-          <span className="min-w-0">
-            <span className="block text-[9px] font-semibold tracking-wider text-white/50">CARD HOLDER</span>
-            <span className="block text-[12.5px] font-semibold truncate">{card.cardName}</span>
-          </span>
-          <span className="text-right shrink-0">
-            <span className="block text-[9px] font-semibold tracking-wider text-white/50">EXPIRES</span>
-            <span className="block text-[12.5px] font-semibold tabular-nums">{formatExpiry(card.expiry)}</span>
-          </span>
-        </div>
-      </div>
-      <div className="mt-2.5 px-1 flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] text-slate-500">{card.cardType}</span>
-        <span className="flex items-center gap-1.5">
-          {expiry !== 'ok' && <Pill tone={expiry === 'expired' ? 'rose' : 'amber'}>{expiry === 'expired' ? 'Expired' : 'Expires soon'}</Pill>}
-          <Pill tone={mappedCount ? 'blue' : 'amber'}>{mappedCount ? `${mappedCount} staff mapped` : 'Not mapped'}</Pill>
+    <li className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] p-3.5">
+      <div className="flex items-center gap-3">
+        <span className={`w-12 h-8 rounded-md flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
+          {brand.mark}
         </span>
-        {onDelete && (
-          <span className="ml-auto">
-            <IconButton icon={Trash2} label={`Delete ${card.cardType} ending ${card.lastFour}`} danger onClick={onDelete} />
-          </span>
-        )}
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-bold text-[#1E293B] truncate">{card.cardName}</span>
+          <span className="block text-[11.5px] text-slate-500 tabular-nums">**** - **** - **** - {card.lastFour}</span>
+        </span>
+        {onDelete && <IconButton icon={Trash2} label={`Delete ${card.cardType} ending ${card.lastFour}`} danger onClick={onDelete} />}
       </div>
+      <dl className="mt-3 px-3 py-1 rounded-xl bg-slate-50">
+        <LabelRow label="Card Name">{card.cardName}</LabelRow>
+        <LabelRow label="Card Number">**** - **** - **** - {card.lastFour}</LabelRow>
+        <LabelRow label="Card Type">{card.cardType}</LabelRow>
+        <LabelRow label="Expiry Date">{formatExpiry(card.expiry)}</LabelRow>
+      </dl>
     </li>
   );
 };
 
 /** Dashed "Add Bank" / "Add Payment Method" tile */
-export const AddTile: React.FC<{ icon: React.ElementType; label: string; hint: string; onClick: () => void }> = ({ icon: Icon, label, hint, onClick }) => (
+export const AddTile: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className="w-full p-3.5 rounded-2xl border-2 border-dashed border-[#BFDBFE] bg-[#F8FBFF] flex items-center gap-3 text-left active:bg-[#EFF6FF] transition-colors cursor-pointer"
+    className="w-full p-3.5 rounded-2xl border-2 border-dashed border-[#BFDBFE] bg-[#F8FBFF] flex items-center justify-center gap-2.5 active:bg-[#EFF6FF] transition-colors cursor-pointer"
   >
-    <span className="w-10 h-10 rounded-full bg-[#EBEEFD] text-[#2F68FE] flex items-center justify-center shrink-0">
-      <Icon className="w-5 h-5" />
+    <span className="w-8 h-8 rounded-full bg-[#EBEEFD] text-[#2F68FE] flex items-center justify-center shrink-0">
+      <Plus className="w-4 h-4" />
     </span>
-    <span className="min-w-0">
-      <span className="block text-[13px] font-bold text-[#2F68FE]">{label}</span>
-      <span className="block text-[11px] text-slate-500">{hint}</span>
-    </span>
+    <span className="text-[13px] font-bold text-[#2F68FE]">{label}</span>
   </button>
 );
 
@@ -269,11 +241,11 @@ export const BillingSkeleton: React.FC = () => (
   <div className="px-4 pt-4 space-y-3" aria-busy="true" aria-label="Loading billing details">
     <StaffSkeleton className="w-36 h-3" />
     <StaffSkeleton className="w-44 h-7" />
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
       <StaffSkeleton className="w-full h-10" />
       <StaffSkeleton className="w-full h-2" />
     </div>
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
       <StaffSkeleton className="w-48 h-5" />
       <StaffSkeleton className="w-full h-10 rounded-2xl" />
       {[0, 1].map((i) => (
@@ -286,7 +258,7 @@ export const BillingSkeleton: React.FC = () => (
         </div>
       ))}
     </div>
-    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
       <StaffSkeleton className="w-40 h-5" />
       <StaffSkeleton className="w-full h-16" />
     </div>

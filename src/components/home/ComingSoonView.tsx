@@ -1,14 +1,26 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 
 interface ComingSoonViewProps {
   title: string;
   onGoHome: () => void;
+  /** Header back arrow; omitted → title only */
+  onBack?: () => void;
 }
 
-export const ComingSoonView: React.FC<ComingSoonViewProps> = ({ title, onGoHome }) => (
+export const ComingSoonView: React.FC<ComingSoonViewProps> = ({ title, onGoHome, onBack }) => (
   <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
     <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to Dashboard"
+          className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
       <h1 className="text-base font-bold screen-title">{title}</h1>
     </header>
     <div className="flex-1 flex flex-col items-center justify-center text-center px-10">

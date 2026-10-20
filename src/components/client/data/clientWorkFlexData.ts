@@ -265,36 +265,18 @@ export const formatFlexDate = (iso: string) =>
 
 /* --------------------------------- Seed ---------------------------------- */
 
-const ids = WORK_FLEX_STAFF.map((s) => s.id);
-
-/** Previously saved preferences (desktop loads them from `tblclient_work_preferance`) */
+/** Previously saved preferences (desktop loads them from `tblclient_work_preferance`) — none submitted yet, matching desktop */
 export const WORK_FLEX_SEED: WorkFlexPreferences = {
   modes: {
-    hyb: {
-      offer: 'yes',
-      arrangements: {
-        ...emptyArrangements(),
-        permanent: { [ids[0]]: 'days', [ids[1]]: 'hours' },
-        seasonal: { [ids[2]]: 'days' },
-      },
-    },
+    hyb: { offer: null, arrangements: emptyArrangements() },
     wfh: { offer: null, arrangements: emptyArrangements() },
   },
   flex: {
-    early_shift: {
-      ...emptyFlexState(),
-      default: 'yes',
-      perStaff: Object.fromEntries(ids.map((id, i) => [id, i === 3 || i === 4 ? 'no' : 'yes'])),
-    },
-    late_avail: {
-      ...emptyFlexState(),
-      default: 'yes',
-      timing: 'round_year',
-      perStaffByTiming: { round_year: { [ids[0]]: 'yes', [ids[1]]: 'yes' }, seasonal: { [ids[2]]: 'yes' } },
-    },
+    early_shift: emptyFlexState(),
+    late_avail: emptyFlexState(),
     early_fridays: emptyFlexState(),
     reduced_week: emptyFlexState(),
   },
-  savedAt: '2026-10-08',
-  savedBy: 'Jamie Brooks',
+  savedAt: null,
+  savedBy: null,
 };

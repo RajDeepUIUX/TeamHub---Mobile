@@ -3,11 +3,28 @@ import { KeyRound, Laptop, Monitor, Headphones, Keyboard } from 'lucide-react';
 import { SegmentedTabs } from '../../../../design-system/components/SegmentedTabs';
 import { formatStaffDate } from '../../data/clientStaffData';
 import type { AssignedDevice, SystemAccess } from '../../data/clientStaffProfileData';
-import { Card, EmptyCard, FieldGrid, Pill, TabTitle } from './StaffTabParts';
+import { Card, EmptyCard, FieldGrid, Pill, Tone } from './StaffTabParts';
 
 type View = 'devices' | 'access';
 
-const DEVICE_ICON: Record<string, React.ElementType> = { Laptop, Monitor, Headset: Headphones, 'Keyboard & Mouse': Keyboard };
+const DEVICE_ICON: Record<string, React.ElementType> = { Laptop, Monitor, Headset: Headphones, Headphones, 'Keyboard & Mouse': Keyboard };
+
+/** Card heading: desktop column label above its value */
+const LabeledValue: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex-1 min-w-0">
+    <p className="text-[10.5px] text-slate-400">{label}</p>
+    <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] truncate tabular-nums">{value}</p>
+  </div>
+);
+
+const StatusCell: React.FC<{ tone: Tone; status: string }> = ({ tone, status }) => (
+  <div className="shrink-0 text-right">
+    <p className="text-[10.5px] text-slate-400">Status</p>
+    <div className="mt-0.5">
+      <Pill tone={tone}>{status}</Pill>
+    </div>
+  </div>
+);
 
 /** Desktop "System & IT Details" tab (system_details.tpl): Assigned Devices + System Access */
 export const StaffSystemTab: React.FC<{ devices: AssignedDevice[]; access: SystemAccess[] }> = ({ devices, access }) => {
@@ -15,7 +32,6 @@ export const StaffSystemTab: React.FC<{ devices: AssignedDevice[]; access: Syste
 
   return (
     <>
-      <TabTitle title="System & IT Details" />
       <div className="mt-2.5">
         <SegmentedTabs<View>
           ariaLabel="System details"
@@ -31,7 +47,7 @@ export const StaffSystemTab: React.FC<{ devices: AssignedDevice[]; access: Syste
       <div className="mt-3">
         {view === 'devices' ? (
           devices.length === 0 ? (
-            <EmptyCard icon={Laptop} title="No devices assigned." />
+            <EmptyCard icon={Laptop} title="No Data Found" />
           ) : (
             <ul className="space-y-2.5">
               {devices.map((d) => {
@@ -39,22 +55,19 @@ export const StaffSystemTab: React.FC<{ devices: AssignedDevice[]; access: Syste
                 return (
                   <li key={d.id}>
                     <Card className="p-3.5">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
                           <Icon className="w-4 h-4" />
                         </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-bold text-[#1E293B] truncate">
-                            {d.assetGroup} · {d.brand}
-                          </p>
-                          <p className="text-[11px] text-slate-400 tabular-nums">{d.assetCode}</p>
-                        </div>
-                        <Pill tone={d.status === 'Assigned' ? 'green' : 'slate'}>{d.status}</Pill>
+                        <LabeledValue label="Asset Code" value={d.assetCode} />
+                        <StatusCell tone={d.status === 'Assigned' ? 'green' : 'slate'} status={d.status} />
                       </div>
                       <FieldGrid
                         compact
                         fields={[
+                          { label: 'Asset Group', value: d.assetGroup },
                           { label: 'Desk No', value: d.deskNo },
+                          { label: 'Asset Brand', value: d.brand },
                           { label: 'Date of Assignment', value: formatStaffDate(d.assignedOn) },
                         ]}
                       />
@@ -65,18 +78,18 @@ export const StaffSystemTab: React.FC<{ devices: AssignedDevice[]; access: Syste
             </ul>
           )
         ) : access.length === 0 ? (
-          <EmptyCard icon={KeyRound} title="No system access given." />
+          <EmptyCard icon={KeyRound} title="No Data Found" />
         ) : (
           <ul className="space-y-2.5">
             {access.map((a) => (
               <li key={a.id}>
                 <Card className="p-3.5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
                       <KeyRound className="w-4 h-4" />
                     </span>
-                    <p className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] truncate">{a.software}</p>
-                    <Pill tone={a.status === 'Active' ? 'green' : 'slate'}>{a.status}</Pill>
+                    <LabeledValue label="Software Name" value={a.software} />
+                    <StatusCell tone={a.status === 'Active' ? 'green' : 'slate'} status={a.status} />
                   </div>
                   <FieldGrid
                     compact

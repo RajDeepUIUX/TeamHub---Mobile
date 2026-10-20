@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, KeyRound, Loader2, Mail, Pencil, Phone, Plus, SearchX, UserRoundPlus } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { Card, ChipRow, ConfirmSheet, EmptyCard, Pill, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, ChipRow, ConfirmSheet, EmptyCard, Pill, SearchField } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { isoOfDate } from '../data/clientInterviewsData';
@@ -21,6 +21,8 @@ interface Props {
   company: ContactCompanyAddress;
   /** Contacts live in ClientApp so Company Profile stays in sync and changes survive module switches */
   onChange: (next: ClientContact[]) => void;
+  /** Header back arrow (Dashboard) */
+  onBack?: () => void;
 }
 
 type Chip = 'All' | 'Portal Login' | 'No Login';
@@ -32,7 +34,7 @@ const SEND_MS = 900;
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading contacts">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">
@@ -51,7 +53,7 @@ const ListSkeleton: React.FC = () => (
  * Edit form, Add New Contact and Send Partner Portal Credential (only while the contact has no username).
  * Desktop has no delete, so none is offered.
  */
-export const ClientContactsView: React.FC<Props> = ({ contacts, company, onChange }) => {
+export const ClientContactsView: React.FC<Props> = ({ contacts, company, onChange, onBack }) => {
   // `is_add` = Add New Contact; `is_edit` = Edit and Send Credentials; `is_view` = details
   const { add: canAdd, edit: canEdit } = useClientPermission('client-contacts');
   const [notice, showNotice] = useTimesheetNotice();
@@ -251,15 +253,12 @@ export const ClientContactsView: React.FC<Props> = ({ contacts, company, onChang
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Client Contacts" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-4">
-          <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
-            Account <ChevronRight className="w-3 h-3" /> <span className="text-slate-600">Client Contacts</span>
-          </p>
-          <h1 className="mt-0.5 mb-1.5 text-xl font-extrabold leading-tight">Client Contacts</h1>
 
-          <div className="mt-2 flex items-center justify-between gap-3 min-h-9">
+          <div className="flex items-center justify-between gap-3 min-h-9">
             <span className="text-xs font-semibold text-slate-500 tabular-nums">
               {loading ? '' : `${results.length} contact${results.length === 1 ? '' : 's'}`}
               {!loading && pendingCount > 0 && !isFiltered && <span className="text-[#D97706]"> · {pendingCount} without login</span>}

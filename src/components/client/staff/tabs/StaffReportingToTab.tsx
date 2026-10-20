@@ -4,7 +4,6 @@ import { BottomSheet } from '../../../common/BottomSheet';
 import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { avatarTint, initialsOf } from '../../../home/celebrationUtils';
 import type { MappedContact } from '../../data/clientStaffProfileData';
-import { formatStaffDate } from '../../data/clientStaffData';
 import { Card, DateField, EmptyCard, Pill, SheetHeader, TabTitle, TextField, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
 
@@ -55,7 +54,7 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
       onChange(contacts.map((c) => (c.id === editingId ? { ...c, ...clean } : c)));
       showNotice('Contact updated successfully.');
     } else {
-      onChange([...contacts, { ...clean, id: `mc-${Date.now()}`, designation: 'Client Contact' }]);
+      onChange([...contacts, { ...clean, id: `mc-${Date.now()}`, designation: '' }]);
       showNotice('Contact mapped successfully.');
     }
     setEditing(null);
@@ -86,52 +85,60 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
         {contacts.length === 0 ? (
           <EmptyCard icon={UsersRound} title="No contacts mapped yet." text={`Map a contact ${staffName} reports to.`} />
         ) : (
-          contacts.map((c, idx) => (
+          contacts.map((c, idx) => {
+            const name = `${c.firstName} ${c.lastName}`.trim();
+            return (
             <Card key={c.id} className="p-3.5">
               <div className="flex items-center gap-3">
                 <span className={`w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${avatarTint(idx + 3)}`}>
-                  {initialsOf(`${c.firstName} ${c.lastName}`)}
+                  {initialsOf(name || c.email)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-bold text-[#1E293B] truncate">
-                    {c.firstName} {c.lastName}
-                  </p>
-                  <p className="text-[11.5px] text-slate-500 truncate">{c.designation}</p>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Contact Name</p>
+                  <p className="text-[13.5px] font-bold text-[#1E293B] truncate">{name || '-'}</p>
                 </div>
                 <Pill tone={c.status === 'Active' ? 'green' : 'slate'}>{c.status}</Pill>
-                {perm.edit && (
+              </div>
+              <dl className="mt-3 rounded-xl bg-slate-50 border border-slate-100 divide-y divide-slate-100">
+                {[
+                  { label: 'Designation', value: c.designation, href: undefined, Icon: null },
+                  { label: 'Phone No', value: c.phone, href: c.phone ? `tel:${c.phone.replace(/[^\d+]/g, '')}` : undefined, Icon: Phone },
+                  { label: 'Email', value: c.email, href: `mailto:${c.email}`, Icon: Mail },
+                ].map(({ label, value, href, Icon }) => (
+                  <div key={label} className="px-3 py-2 flex items-center gap-3 min-w-0">
+                    <dt className="w-[84px] shrink-0 text-[11px] text-slate-400">{label}</dt>
+                    <dd className="flex-1 min-w-0 text-[12px] font-semibold text-[#1E293B]">
+                      {value && href ? (
+                        <a href={href} className="inline-flex max-w-full items-center gap-1.5 text-[#2F68FE] active:opacity-70">
+                          {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                          <span className="break-all tabular-nums">{value}</span>
+                        </a>
+                      ) : (
+                        value || '-'
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {perm.edit && (
                 <button
                   type="button"
                   onClick={() => setEditing(c)}
-                  aria-label={`Edit ${c.firstName} ${c.lastName}`}
-                  className="w-9 h-9 rounded-xl border border-slate-200 text-slate-500 flex items-center justify-center active:bg-slate-50 shrink-0 cursor-pointer"
+                  aria-label={`Edit ${name || c.email}`}
+                  className="mt-3 w-full h-10 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
+                  Edit
                 </button>
-                )}
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <a
-                  href={c.phone ? `tel:${c.phone.replace(/[^\d+]/g, '')}` : undefined}
-                  aria-disabled={!c.phone}
-                  className={`h-9 px-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-[11.5px] font-semibold min-w-0 ${
-                    c.phone ? 'text-slate-600 active:bg-slate-100' : 'text-slate-300 pointer-events-none'
-                  }`}
-                >
-                  <Phone className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />
-                  <span className="truncate tabular-nums">{c.phone || '--'}</span>
-                </a>
-                <a
-                  href={`mailto:${c.email}`}
-                  className="min-h-9 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-[11.5px] font-semibold text-slate-600 active:bg-slate-100 min-w-0"
-                >
-                  <Mail className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />
-                  <span className="min-w-0 break-all">{c.email}</span>
-                </a>
-              </div>
-              {c.birthDate && <p className="mt-2 text-[11px] text-slate-400">Birth Date: {formatStaffDate(c.birthDate)}</p>}
+              )}
             </Card>
-          ))
+            );
+          })
+        )}
+        {contacts.length > 0 && (
+          <p className="px-1 text-xs text-slate-500">
+            Showing <span className="font-bold text-[#1E293B]">{contacts.length}</span> Of <span className="font-bold text-[#1E293B]">{contacts.length}</span> Records
+          </p>
         )}
       </div>
 

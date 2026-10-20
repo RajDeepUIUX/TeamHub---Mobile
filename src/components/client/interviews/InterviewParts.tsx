@@ -10,7 +10,7 @@ export const CandidateStatusPill: React.FC<{ status: CandidateStatus }> = ({ sta
 export const CandidateListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading candidates">
     {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">

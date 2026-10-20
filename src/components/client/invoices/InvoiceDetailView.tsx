@@ -181,18 +181,8 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
       ) : (
         <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
           <div className="px-4 pt-3">
-            <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 min-w-0">
-              <span className="shrink-0">Invoices</span>
-              <ChevronRight className="w-3 h-3 shrink-0" />
-              <button type="button" onClick={onBack} className="shrink-0 hover:text-[#2F68FE] cursor-pointer">
-                Invoices
-              </button>
-              <ChevronRight className="w-3 h-3 shrink-0" />
-              <span className="text-slate-600 truncate">{invoice.invoiceNo}</span>
-            </p>
-
             {/* Invoice summary */}
-            <Card className="mt-2.5 p-4">
+            <Card className="p-4">
               <div className="flex items-start gap-3">
                 <span
                   className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
@@ -362,7 +352,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
             <button
               type="button"
               onClick={onContactManager}
-              className="mt-3 w-full p-3.5 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs flex items-center gap-3 text-left active:bg-slate-50 cursor-pointer"
+              className="mt-3 w-full p-3.5 rounded-2xl bg-white border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] flex items-center gap-3 text-left active:bg-slate-50 cursor-pointer"
             >
               <span className="w-10 h-10 rounded-xl bg-[#E8F8F0] text-[#10B981] flex items-center justify-center shrink-0">
                 <Headset className="w-5 h-5" />

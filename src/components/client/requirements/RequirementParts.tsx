@@ -10,7 +10,7 @@ export const RequirementStatusPill: React.FC<{ status: RequirementStatus }> = ({
 export const RequirementListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading requirements">
     {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 space-y-3">
+      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex-1 space-y-1.5">
             <StaffSkeleton className="w-44 h-3.5" />
@@ -30,25 +30,25 @@ export const RequirementListSkeleton: React.FC = () => (
 
 const STEPS = ['Core Details', 'Additional Details', 'Job Description'];
 
-/** Desktop "Core Details → Additional Details → Job Description" header (current / completed states) */
+/** Desktop "1 Core Details ---- 2 Additional Details ---- 3 Job Description" box (current / completed states) */
 export const RequirementStepper: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => (
-  <ol className="flex items-start px-4 pt-4 pb-3.5 bg-white border-b border-[#EBF0F7]" aria-label="Requirement steps">
+  <ol className="flex items-start px-2 py-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]" aria-label="Requirement steps">
     {STEPS.map((title, i) => {
       const n = i + 1;
       const done = n < step;
       const current = n === step;
       return (
         <React.Fragment key={title}>
-          {i > 0 && <li aria-hidden="true" className={`flex-1 h-0.5 mt-[17px] mx-1 rounded-full transition-colors ${n <= step ? 'bg-[#2F68FE]' : 'bg-slate-200'}`} />}
-          <li className="flex flex-col items-center gap-2 w-[84px]" aria-current={current ? 'step' : undefined}>
+          {i > 0 && <li aria-hidden="true" className={`flex-1 mt-[15px] border-t border-dashed transition-colors ${n <= step ? 'border-[#2F68FE]' : 'border-slate-400'}`} />}
+          <li className="flex flex-col items-center gap-1.5 w-[82px]" aria-current={current ? 'step' : undefined}>
             <span
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                done || current ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-400'
-              } ${current ? 'shadow-[0_4px_10px_rgba(47,104,254,0.35)]' : ''}`}
+              className={`w-[30px] h-[30px] rounded-full flex items-center justify-center text-[13px] font-semibold border transition-colors ${
+                done || current ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-600 text-slate-700'
+              }`}
             >
               {done ? <Check className="w-4 h-4" strokeWidth={3} /> : n}
             </span>
-            <span className={`text-[11px] leading-tight text-center ${current ? 'font-bold text-[#1E293B]' : done ? 'font-semibold text-[#2F68FE]' : 'font-medium text-slate-500'}`}>{title}</span>
+            <span className={`text-[11px] leading-tight text-center ${current || done ? 'font-semibold text-[#2F68FE]' : 'font-medium text-slate-600'}`}>{title}</span>
           </li>
         </React.Fragment>
       );
