@@ -11,6 +11,8 @@ interface MobileDeviceFrameProps {
   onToggleThumbZone?: () => void;
   showTouchHitboxOverlay?: boolean;
   onToggleTouchHitbox?: () => void;
+  /** Real phone: fill the screen with no bezel or fake status bar (the phone shows its own) */
+  bare?: boolean;
 }
 
 export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
@@ -18,8 +20,22 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   activeDevice = 'iphone16',
   showThumbZoneOverlay = false,
   showTouchHitboxOverlay = false,
+  bare = false,
 }) => {
   const [currentTime] = useState('9:41');
+
+  if (bare) {
+    return (
+      <div
+        className="relative w-full h-dvh bg-[#F8FAFC] text-[#1E293B] flex flex-col overflow-hidden"
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="relative flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
+        {/* Portal target for all bottom sheets */}
+        <div id="mobile-sheet-portal" className="absolute inset-0 z-40 pointer-events-none overflow-hidden" />
+      </div>
+    );
+  }
 
   // Device dimensions
   const deviceSpecs = {

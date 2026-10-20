@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart2, ChevronRight, X, LayoutGrid, Briefcase, Users, Inbox, Timer, Eye } from 'lucide-react';
+import { BarChart2, ChevronRight, X, LayoutGrid, Briefcase, Inbox, Timer, Eye } from 'lucide-react';
 import { OTRequest } from '../../types/overtime';
 import { OT_DOMAINS, otPendingHours } from '../../data/overtimeData';
 import { BottomSheet } from '../common/BottomSheet';
@@ -16,11 +16,13 @@ const totalPending = (list: OTRequest[]) => list.reduce((n, r) => n + otPendingH
 
 /* ------------------------------ Summary sheet ------------------------------ */
 
-const TeamOTSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests: OTRequest[] }> = ({
-  isOpen,
-  onClose,
-  requests,
-}) => {
+const TeamOTSummarySheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  requests: OTRequest[];
+  /** Tapping a tile filters the list by it */
+  onPick: (selection: FilterSelection) => void;
+}> = ({ isOpen, onClose, requests, onPick }) => {
   const count = (fn: (r: OTRequest) => boolean) => requests.filter(fn).length;
   const members = Array.from(new Set(requests.map((r) => r.staffName))).sort();
 
@@ -33,12 +35,36 @@ const TeamOTSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; reque
       {children}
     </div>
   );
-  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-slate-700' }) => (
-    <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs">
-      <span className="text-slate-600 font-medium truncate">{label}</span>
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${color}`}>{value}</span>
-    </div>
-  );
+  /** With `pick` the tile is a link (arrow) that filters the list; without it, it's just a number */
+  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string; pick?: FilterSelection }> = ({
+    label,
+    value,
+    color = 'text-slate-700',
+    pick,
+  }) => {
+    const body = (
+      <>
+        <span className="text-slate-600 font-medium truncate">{label}</span>
+        <span className="flex items-center gap-1 shrink-0">
+          <span className={`text-sm font-bold tabular-nums ${color}`}>{value}</span>
+          {pick && <ChevronRight className="w-3.5 h-3.5 text-slate-300" />}
+        </span>
+      </>
+    );
+    const cls = 'bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs text-left';
+    return pick ? (
+      <button
+        type="button"
+        onClick={() => onPick(pick)}
+        className={`${cls} active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer`}
+        aria-label={`Show ${label.toLowerCase()}`}
+      >
+        {body}
+      </button>
+    ) : (
+      <div className={cls}>{body}</div>
+    );
+  };
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
@@ -63,8 +89,8 @@ const TeamOTSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; reque
         <Section icon={<LayoutGrid className="w-4 h-4 text-[#2F68FE]" />} title="Overview">
           <div className="grid grid-cols-2 gap-2 pt-1">
             <Tile label="Team members" value={members.length} color="text-[#1E293B]" />
-            <Tile label="Existing clients" value={count((r) => r.clientType === 'Existing')} />
-            <Tile label="New clients" value={count((r) => r.clientType === 'New')} />
+            <Tile label="Existing clients" value={count((r) => r.clientType === 'Existing')} pick={{ clientType: ['Existing'] }} />
+            <Tile label="New clients" value={count((r) => r.clientType === 'New')} pick={{ clientType: ['New'] }} />
           </div>
         </Section>
         <Section icon={<Timer className="w-4 h-4 text-[#D97706]" />} title="Hours">
@@ -77,24 +103,8 @@ const TeamOTSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; reque
         <Section icon={<Briefcase className="w-4 h-4 text-[#7C3AED]" />} title="By Domain">
           <div className="grid grid-cols-2 gap-2 pt-1">
             {OT_DOMAINS.map((d) => (
-              <Tile key={d} label={d} value={count((r) => r.domain === d)} />
+              <Tile key={d} label={d} value={count((r) => r.domain === d)} pick={{ domain: [d] }} />
             ))}
-          </div>
-        </Section>
-        <Section icon={<Users className="w-4 h-4 text-[#10B981]" />} title="By Team Member">
-          <div className="space-y-2 pt-1">
-            {members.map((name) => {
-              const mine = requests.filter((r) => r.staffName === name);
-              return (
-                <div
-                  key={name}
-                  className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs"
-                >
-                  <span className="text-slate-700 font-semibold truncate">{name}</span>
-                  <span className="text-[11px] font-bold text-slate-700 tabular-nums shrink-0">{totalExtra(mine)} extra hrs</span>
-                </div>
-              );
-            })}
           </div>
         </Section>
       </div>
@@ -211,7 +221,15 @@ export const TeamOTRequestView: React.FC<TeamOTRequestViewProps> = ({ requests }
           setIsFilterOpen(false);
         }}
       />
-      <TeamOTSummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} requests={requests} />
+      <TeamOTSummarySheet
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        requests={requests}
+        onPick={(selection) => {
+          setFilters(selection);
+          setIsSummaryOpen(false);
+        }}
+      />
     </div>
   );
 };

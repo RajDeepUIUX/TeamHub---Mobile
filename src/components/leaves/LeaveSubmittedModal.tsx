@@ -4,7 +4,6 @@ import { LeaveRequest } from '../../types/leaves';
 
 interface LeaveSubmittedModalProps {
   request: LeaveRequest | null;
-  requestCode: string;
   appliedAt: string;
   onDone: () => void;
   autoCloseMs?: number;
@@ -24,12 +23,11 @@ const CONFETTI = [
 
 export const LeaveSubmittedModal: React.FC<LeaveSubmittedModalProps> = ({
   request,
-  requestCode,
   appliedAt,
   onDone,
-  autoCloseMs = 3000,
+  autoCloseMs = 2000,
 }) => {
-  // Auto-navigate back to the leave listing after a few seconds
+  // Simple popup: closes on its own after 2 seconds (or on tap outside)
   useEffect(() => {
     if (!request) return;
     const timer = setTimeout(onDone, autoCloseMs);
@@ -76,8 +74,7 @@ export const LeaveSubmittedModal: React.FC<LeaveSubmittedModalProps> = ({
               <Calendar className="w-4.5 h-4.5" />
             </div>
             <div className="min-w-0">
-              <span className="block text-xs font-bold">{request.type}</span>
-              <span className="block text-[11px] text-slate-500 truncate">{request.dateRange}</span>
+              <span className="block text-xs font-bold truncate">{request.dateRange}</span>
             </div>
           </div>
           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F8F0] text-[#10B981] shrink-0">
@@ -87,10 +84,6 @@ export const LeaveSubmittedModal: React.FC<LeaveSubmittedModalProps> = ({
 
         {/* Details */}
         <div className="mt-3 space-y-2.5 text-xs px-1">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-500">Request ID</span>
-            <span className="font-bold">{requestCode}</span>
-          </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-500">Applied On</span>
             <span className="font-bold">{appliedAt}</span>
@@ -103,17 +96,6 @@ export const LeaveSubmittedModal: React.FC<LeaveSubmittedModalProps> = ({
           </div>
         </div>
 
-        {/* Auto-redirect hint with progress */}
-        <div className="mt-4 space-y-1.5">
-          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#2F68FE] rounded-full origin-left"
-              style={{ animation: `leave-submitted-progress ${autoCloseMs}ms linear forwards` }}
-            />
-          </div>
-          <p className="text-center text-[10px] text-slate-400">Returning to your leaves…</p>
-        </div>
-        <style>{`@keyframes leave-submitted-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }`}</style>
       </div>
     </div>
   );

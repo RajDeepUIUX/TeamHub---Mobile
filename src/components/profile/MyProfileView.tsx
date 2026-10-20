@@ -5,12 +5,10 @@ import {
   MapPin,
   Clock3,
   Phone,
-  UserRound,
   User,
   BriefcaseBusiness,
   Sparkles,
   GraduationCap,
-  Handshake,
   CalendarClock,
   Video,
   Pencil,
@@ -46,6 +44,7 @@ import {
   ProfileValues,
   tenureFrom,
 } from '../../data/profileData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 interface MyProfileViewProps {
   profile: MyProfileData;
@@ -65,7 +64,6 @@ const TAB_ICONS: Record<ProfileTabId, React.ElementType> = {
   professional: BriefcaseBusiness,
   skills: Sparkles,
   learning: GraduationCap,
-  clients: Handshake,
   availability: CalendarClock,
   video: Video,
 };
@@ -326,7 +324,7 @@ const TimeField: React.FC<{ label: string; value: string; error: boolean; onChan
 
 /** Pick a document; only the file name is kept in this prototype */
 const FileField: React.FC<{ value: string; onChange: (name: string) => void }> = ({ value, onChange }) => {
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<AttachmentInputHandle>(null);
   const [error, setError] = useState('');
   return (
     <div className="space-y-1.5">
@@ -343,11 +341,9 @@ const FileField: React.FC<{ value: string; onChange: (name: string) => void }> =
           <Upload className="w-3.5 h-3.5" />
           {value ? 'Replace' : 'Upload'}
         </button>
-        <input
+        <AttachmentInput
           ref={ref}
-          type="file"
           accept="application/pdf,image/png,image/jpeg"
-          className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = '';
@@ -529,11 +525,10 @@ const FieldInput: React.FC<{
                   type="button"
                   aria-pressed={on}
                   onClick={() => onChange(slots.filter((x) => (x === slot ? !on : picked.includes(x))))}
-                  className={`h-10 rounded-xl border flex items-center justify-center gap-1.5 text-[12px] font-semibold tabular-nums transition-colors cursor-pointer ${
+                  className={`h-10 rounded-xl border flex items-center justify-center text-[12px] font-semibold tabular-nums transition-colors cursor-pointer ${
                     on ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
                   }`}
                 >
-                  {on && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                   {slotShort(slot)}
                 </button>
               );
@@ -1018,6 +1013,18 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Tabs are transparent at rest; once pinned to the top they get a backdrop so content doesn't show through
+  const tabsSentinelRef = useRef<HTMLDivElement>(null);
+  const [tabsStuck, setTabsStuck] = useState(false);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = tabsSentinelRef.current;
+    if (!root || !sentinel) return;
+    const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const v = profile.values;
   const current = PROFILE_TABS.find((t) => t.id === tab)!;
@@ -1136,40 +1143,54 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Identity card */}
-        <section className="m-4 mb-3 bg-white rounded-3xl p-4 border border-white shadow-[0_12px_32px_-16px_rgba(79,70,229,0.3)]">
-          <div className="flex items-center gap-3.5">
+        {/* Identity card: who (avatar, name, role, department) over three quick facts */}
+        <section className="m-4 mb-3 bg-white rounded-3xl border border-[#EBF0F7] overflow-hidden">
+          <div className="p-4 flex items-center gap-3.5">
             <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5 shrink-0">
               <ProfileAvatar name={v.fullName as string} photoUrl={photoUrl} className="w-full h-full rounded-[14px]" textClassName="text-lg" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h2 className="text-lg font-extrabold leading-tight truncate">{v.fullName as string}</h2>
+                <h2 className="text-[17px] font-extrabold leading-tight truncate">{v.fullName as string}</h2>
                 <BadgeCheck className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
               </div>
-              <p className="text-[11.5px] text-slate-500 leading-snug mt-0.5">
-                {v.designation as string} · {v.department as string} · {v.employeeId as string}
-              </p>
+              <p className="mt-0.5 text-[12px] font-medium text-slate-500 truncate">{v.designation as string}</p>
+              {v.department && (
+                <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[10.5px] font-semibold text-[#2F68FE]">
+                  <BriefcaseBusiness className="w-3 h-3" />
+                  {v.department as string}
+                </span>
+              )}
             </div>
           </div>
-          <div className="mt-3.5 flex flex-wrap gap-1.5">
+
+          <div className="grid grid-cols-3 border-t border-slate-100 bg-slate-50/50 divide-x divide-slate-100">
             {[
-              { icon: MapPin, text: v.location as string },
-              { icon: Clock3, text: `Tenure: ${tenureFrom(v.joiningDate as string)}` },
-              { icon: Phone, text: v.mobile as string },
-              { icon: UserRound, text: `Reports to ${v.reportingManager as string}` },
-            ].map(({ icon: Icon, text }) => (
-              <span key={text} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/80 text-[11px] font-medium text-slate-600">
-                <Icon className="w-3 h-3 text-slate-400" />
-                {text}
-              </span>
+              { icon: MapPin, label: 'Location', value: (v.location as string)?.split(',')[0] },
+              { icon: Clock3, label: 'Tenure', value: tenureFrom(v.joiningDate as string).replace(/\s*Years?/i, ' yr').replace(/\s*Months?/i, ' mo') },
+              { icon: Phone, label: 'Mobile', value: v.mobile as string },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="px-3 py-2.5 min-w-0">
+                <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                  <Icon className="w-3 h-3 shrink-0" />
+                  {label}
+                </span>
+                <span className="mt-0.5 block text-[12px] font-semibold text-[#1E293B] truncate">{value || '—'}</span>
+              </div>
             ))}
           </div>
         </section>
 
         {/* Tabs (sticky) */}
-        <nav className="sticky top-0 z-10 bg-[#F5F7FB]/95 backdrop-blur-md pt-1 pb-2" aria-label="Profile sections">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-4" role="tablist">
+        {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
+        <div ref={tabsSentinelRef} className="h-px -mb-px" aria-hidden="true" />
+        <nav
+          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 transition-colors duration-200 ${
+            tabsStuck ? 'bg-[#F5F7FB]/95 backdrop-blur-md' : 'bg-transparent'
+          }`}
+          aria-label="Profile sections"
+        >
+          <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
             {PROFILE_TABS.map((t) => {
               const Icon = TAB_ICONS[t.id];
               const on = t.id === tab;
@@ -1187,20 +1208,23 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     if (editing) return setLockedTabHint(true);
                     setTab(t.id);
                   }}
-                  className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on
-                      ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]'
-                      : `bg-white border border-slate-200 text-slate-600 ${editing ? 'opacity-45' : ''}`
+                  className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE]' : `text-slate-500 active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4" />
                   {PROFILE_TAB_SHORT[t.id]}
+                  <span
+                    className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
+                      on ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                 </button>
               );
             })}
           </div>
           {lockedTabHint && (
-            <p className="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
+            <p className="mx-4 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
               Save or cancel your changes before switching tabs.
             </p>
           )}

@@ -21,6 +21,7 @@ import { APP_VERSION } from '../auth/AuthFlow';
 import { ChangePasswordSheet } from './ChangePasswordSheet';
 import { ProfileAvatar } from './ProfileAvatar';
 import { BottomSheet } from '../common/BottomSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 interface ProfileViewProps {
   name: string;
@@ -112,7 +113,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPhotoSheetOpen, setIsPhotoSheetOpen] = useState(false);
   const [photoError, setPhotoError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<AttachmentInputHandle>(null);
 
   const pickPhoto = () => {
     setIsPhotoSheetOpen(false);
@@ -227,11 +228,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <Camera className="w-3 h-3" />
                 </span>
               </button>
-              <input
+              <AttachmentInput cameraFacing="user"
+          title="Update Profile Photo"
                 ref={fileInputRef}
-                type="file"
                 accept="image/png,image/jpeg,image/webp"
-                className="hidden"
                 onChange={handlePhotoSelected}
               />
               <div className="flex-1 min-w-0">

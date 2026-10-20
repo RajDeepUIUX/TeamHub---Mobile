@@ -1,6 +1,6 @@
 import React from 'react';
 import { AttendanceKPIs } from '../../types/attendance';
-import { X, Briefcase, Calendar, DollarSign, Umbrella } from 'lucide-react';
+import { X, Briefcase, Calendar, ChevronRight, DollarSign, Umbrella } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 
 interface KPISummarySheetProps {
@@ -8,13 +8,19 @@ interface KPISummarySheetProps {
   onClose: () => void;
   kpis: AttendanceKPIs;
   monthTitle: string;
+  /** Tapping a tile that maps to a list filter closes the sheet and filters the days by that status */
+  onPick: (status: 'All' | 'Absent') => void;
 }
+
+/** Tappable tile look: same card plus press feedback */
+const pickCls = 'text-left active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer';
 
 export const KPISummarySheet: React.FC<KPISummarySheetProps> = ({
   isOpen,
   onClose,
   kpis,
   monthTitle,
+  onPick,
 }) => {
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90vh]">
@@ -64,12 +70,20 @@ export const KPISummarySheet: React.FC<KPISummarySheetProps> = ({
                   {kpis.presentDays}
                 </span>
               </div>
-              <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs">
-                <span className="text-[11px] text-slate-500 block mb-0.5">Total Days</span>
+              <button
+                type="button"
+                onClick={() => onPick('All')}
+                className={`bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-2xs ${pickCls} text-center`}
+                aria-label="Show all days"
+              >
+                <span className="text-[11px] text-slate-500 flex items-center justify-center gap-0.5 mb-0.5">
+                  Total Days
+                  <ChevronRight className="w-3 h-3 text-slate-300" />
+                </span>
                 <span className="text-base font-bold text-slate-700 tabular-nums">
                   {kpis.totalDays}
                 </span>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -80,12 +94,18 @@ export const KPISummarySheet: React.FC<KPISummarySheetProps> = ({
               <span>Leaves, Holidays &amp; Absences</span>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs">
+              <button
+                type="button"
+                onClick={() => onPick('Absent')}
+                className={`bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs ${pickCls}`}
+                aria-label="Show absent days"
+              >
                 <span className="text-slate-600 font-medium">Absent Days</span>
-                <span className="text-sm font-bold text-[#F43F5E] tabular-nums">
-                  {kpis.absentDays}
+                <span className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-[#F43F5E] tabular-nums">{kpis.absentDays}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
                 </span>
-              </div>
+              </button>
               <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs">
                 <span className="text-slate-600 font-medium">Leave Days</span>
                 <span className="text-sm font-bold text-[#F59E0B] tabular-nums">
@@ -120,12 +140,18 @@ export const KPISummarySheet: React.FC<KPISummarySheetProps> = ({
                   {kpis.salaryDays}
                 </span>
               </div>
-              <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs">
+              <button
+                type="button"
+                onClick={() => onPick('Absent')}
+                className={`bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs ${pickCls}`}
+                aria-label="Show deduction days"
+              >
                 <span className="text-slate-600 font-medium">Deduction Days</span>
-                <span className="text-base font-bold text-slate-700 tabular-nums">
-                  {kpis.deductionDays}
+                <span className="flex items-center gap-1">
+                  <span className="text-base font-bold text-slate-700 tabular-nums">{kpis.deductionDays}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
                 </span>
-              </div>
+              </button>
             </div>
           </div>
         </div>

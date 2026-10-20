@@ -98,7 +98,7 @@ export const LeaveReviewSheet: React.FC<LeaveReviewSheetProps> = ({ requests, de
                 <div className="flex-1 min-w-0">
                   <span className="block text-xs font-bold text-[#1E293B] truncate">{r.staffName}</span>
                   <span className="block text-[10.5px] text-slate-400 truncate">
-                    {r.type} · {r.dateRange}
+                    {r.dateRange}
                   </span>
                 </div>
                 <span className="text-[11px] font-bold text-[#2F68FE] tabular-nums shrink-0">

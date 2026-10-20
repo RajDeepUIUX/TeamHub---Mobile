@@ -1,26 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  CalendarDays,
-  Check,
-  ChevronDown,
-  FileBarChart,
-  Globe,
-  GraduationCap,
-  Award,
-  Laptop,
-  MessageSquareText,
-  Wrench,
-  Lock,
-  Plus,
-  Info,
-  RotateCcw,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, FileBarChart, Globe, GraduationCap, Award, Laptop, MessageSquareText, Wrench, Lock, Plus, Info, RotateCcw, Trash2, X, Wand2 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { DatePickerSheet } from '../common/DatePickerSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
@@ -404,6 +383,21 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
 
   const cycle = cycles.find((c) => c.id === cycleId) ?? openCycle;
   const readOnly = cycle.status === 'Submitted';
+
+  // Demo helper: rates every skill section; qualifications and responsibilities are left as they are
+  const quickFill = () => {
+    setForm((prev) => ({
+      ...prev,
+      technical: [
+        newSkillRow({ item: '1040 Preparation', current: 'Intermediate', future: 'Advance', remarks: 'Handled 120+ returns this season.' }),
+        newSkillRow({ item: 'US Accounting - Intermediate', current: 'Average', future: 'Intermediate', remarks: '' }),
+      ],
+      software: [newSkillRow({ item: 'Xero', current: 'Intermediate', future: 'Advance', remarks: 'Daily use for client books.' })],
+      communication: { ...prev.communication, current: 'Intermediate', future: 'Advance', remarks: 'Leading weekly client calls.' },
+      domain: [newSkillRow({ item: DOMAINS[0], current: 'Average', future: 'Intermediate', remarks: '' })],
+    }));
+    setErrors({});
+  };
   const shownForm = readOnly ? cycle.form : form;
   const dirty = !readOnly && JSON.stringify(form) !== JSON.stringify(openCycle.form);
 
@@ -547,15 +541,24 @@ export const AnnualReviewView: React.FC<AnnualReviewViewProps> = ({ cycles, onBa
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold screen-title">Annual Review</h1>
-          <button
-            type="button"
-            onClick={() => setInstructionsOpen(true)}
-            className="ml-auto -mr-1 h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-[#2F68FE] text-[11.5px] font-bold active:bg-blue-50 cursor-pointer"
-          >
-            <BookOpen className="w-4 h-4" />
-            Instructions
-          </button>
+          <h1 className="text-base font-bold screen-title screen-title-tight">Annual Review</h1>
+          <div className="ml-auto flex items-center gap-1">
+            {!readOnly && (
+              <button type="button" onClick={quickFill} className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer">
+                <Wand2 className="w-3.5 h-3.5" />
+                Quick Fill
+              </button>
+            )}
+            {/* Icon only, so Quick Fill fits beside the title */}
+            <button
+              type="button"
+              onClick={() => setInstructionsOpen(true)}
+              className="w-8 h-8 -mr-1 rounded-lg flex items-center justify-center text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+              aria-label="Instructions"
+            >
+              <BookOpen className="w-4.5 h-4.5" />
+            </button>
+          </div>
         </div>
         <div className="px-4 pb-3 space-y-3">
           <div className="flex items-center gap-2">

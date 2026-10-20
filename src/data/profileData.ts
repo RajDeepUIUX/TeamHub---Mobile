@@ -101,7 +101,7 @@ export interface ProfileSection {
   video?: boolean;
 }
 
-export type ProfileTabId = 'personal' | 'professional' | 'skills' | 'learning' | 'clients' | 'availability' | 'video';
+export type ProfileTabId = 'personal' | 'professional' | 'skills' | 'learning' | 'availability' | 'video';
 
 export interface ProfileTab {
   id: ProfileTabId;
@@ -528,33 +528,6 @@ export const PROFILE_TABS: ProfileTab[] = [
   },
   { id: 'learning', label: 'Learning & Growth', sections: [] },
   {
-    id: 'clients',
-    label: 'Client Exposure',
-    sections: [
-      {
-        title: 'Client Exposure & Communication Readiness',
-        description: 'Set by your manager or taken from system records, so they can’t be edited here.',
-        fields: [
-          { key: 'clientTypes', label: 'Type of Clients Worked With', type: 'text', locked: true },
-          { key: 'workedAs', label: 'Worked As', type: 'text', locked: true },
-          { key: 'communicationSkills', label: 'Communication Skills', type: 'text', locked: true },
-          { key: 'eligibleAssociate', label: 'Eligible for Associate', type: 'text', locked: true },
-          { key: 'eligibleFace', label: 'Eligible for Face', type: 'text', locked: true },
-          {
-            key: 'clientInterviewRejections',
-            label: 'Rejections in Client Interview',
-            type: 'auto',
-            compute: (v) => String(v.clientInterviewRejections ?? 0),
-          },
-          { key: 'managingEndClients', label: 'Managing End Clients', type: 'text', locked: true },
-          { key: 'endClientInteractionQuality', label: 'End Client Interaction Quality', type: 'text', locked: true },
-          { key: 'endClientInteraction', label: 'End Client Interaction', type: 'text', locked: true },
-          { key: 'smootherOnboarding', label: 'Helped Smoother Onboarding', type: 'text', locked: true },
-        ],
-      },
-    ],
-  },
-  {
     id: 'availability',
     label: 'Availability & Work Preferences',
     sections: [
@@ -670,7 +643,6 @@ export const PROFILE_TAB_SHORT: Record<ProfileTabId, string> = {
   professional: 'Professional',
   skills: 'Skill Set',
   learning: 'Learning',
-  clients: 'Clients',
   availability: 'Availability',
   video: 'Intro Video',
 };
@@ -723,18 +695,6 @@ export const MY_PROFILE_SEED: MyProfileData = {
     introVideoName: '',
     introVideoUrl: '',
     introVideoAddedOn: '',
-
-    // Client Exposure (manager / system managed)
-    clientTypes: '',
-    workedAs: '',
-    communicationSkills: '',
-    eligibleAssociate: '',
-    eligibleFace: '',
-    clientInterviewRejections: '0',
-    managingEndClients: '',
-    endClientInteractionQuality: '',
-    endClientInteraction: '',
-    smootherOnboarding: '',
 
     ptinStatus: '',
     ptinNumber: '',

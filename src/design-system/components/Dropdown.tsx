@@ -23,6 +23,8 @@ interface DropdownProps<T extends string | number> {
   menuMinWidth?: number;
   /** Title of the search sheet used for long lists (defaults to ariaLabel) */
   sheetTitle?: string;
+  /** Always open as a bottom sheet, even for a short list (e.g. inside another sheet) */
+  forceSheet?: boolean;
 }
 
 interface MenuPosition {
@@ -49,7 +51,7 @@ const normalize = <T extends string | number>(opt: T | DropdownOption<T>): Dropd
 
 /* ------------------------- Search sheet (long lists) ------------------------ */
 
-function SearchSelectSheet<T extends string | number>({
+export function SearchSelectSheet<T extends string | number>({
   isOpen,
   title,
   items,
@@ -93,30 +95,31 @@ function SearchSelectSheet<T extends string | number>({
           <X className="w-5 h-5" />
         </button>
       </div>
+      {/* Search only helps on long lists; a short forced-sheet list is just the options */}
       {items.length > SHEET_THRESHOLD && (
-        <div className="px-4 pb-2 shrink-0">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${items.length} options`}
-              aria-label={`Search ${title}`}
-              className="w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-                aria-label="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+      <div className="px-4 pb-2 shrink-0">
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${items.length} options`}
+            aria-label={`Search ${title}`}
+            className="w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
+      </div>
       )}
       <div ref={listRef} role="listbox" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-3 pb-6">
         {shown.map((opt) => {
@@ -170,11 +173,11 @@ export function Dropdown<T extends string | number>({
   ariaLabel,
   menuMinWidth = 0,
   sheetTitle,
+  forceSheet = false,
 }: DropdownProps<T>) {
   const items = options.map(normalize);
   const selected = items.find((o) => o.value === value);
-  const sheetMode = useDropdownSheetMode();
-  const useSheet = sheetMode || items.length > SHEET_THRESHOLD;
+  const useSheet = items.length > SHEET_THRESHOLD;
 
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<MenuPosition | null>(null);

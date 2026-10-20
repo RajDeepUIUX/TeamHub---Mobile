@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { MultiSelectDropdown } from '../common/MultiSelectDropdown';
-import { RangeCalendar, formatShortDate, toDateKey } from '../../design-system/components/RangeCalendar';
+import { toDateKey } from '../../design-system/components/RangeCalendar';
+import { DateRangeFields } from '../common/DateRangeFields';
 import { BRANCHES, TEAM_CYCLE, TEAM_REPORTING_MANAGERS, branchOf } from '../../data/teamAttendanceData';
 
 export interface TeamAttendanceFilters {
@@ -65,60 +66,14 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
   onApply,
 }) => {
   const [draft, setDraft] = useState<TeamAttendanceFilters>(filters);
-  const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setDraft(filters);
-      setActiveDateField(null);
     }
   }, [isOpen, filters]);
 
   const parse = (iso: string) => (iso ? new Date(`${iso}T00:00:00`) : null);
-  const fromDate = parse(draft.from);
-  const toDate = parse(draft.to);
-
-  // Same flow as the staff attendance filter: pick start, then end
-  const handleDaySelect = (day: Date) => {
-    const key = toDateKey(day);
-    if (activeDateField === 'start') {
-      setDraft((prev) => ({ ...prev, from: key, to: prev.to && key > prev.to ? '' : prev.to }));
-      setActiveDateField('end');
-    } else if (activeDateField === 'end') {
-      if (draft.from && key < draft.from) {
-        setDraft((prev) => ({ ...prev, from: key, to: '' }));
-      } else {
-        setDraft((prev) => ({ ...prev, to: key }));
-        setActiveDateField(null);
-      }
-    }
-  };
-
-  const dateField = (field: 'start' | 'end', label: string, value: Date | null) => {
-    const isActive = activeDateField === field;
-    return (
-      <div>
-        <span className="block mb-1.5 text-xs font-bold text-[#1E293B]">{label}</span>
-        <button
-          type="button"
-          onClick={() => setActiveDateField(isActive ? null : field)}
-          className={`w-full h-11 px-3 rounded-xl border bg-white flex items-center justify-between text-xs font-medium transition-all cursor-pointer shadow-2xs ${
-            isActive ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-slate-200'
-          }`}
-        >
-          <span className="flex items-center gap-2 min-w-0">
-            <Calendar className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-            <span className={`truncate ${value ? 'text-slate-700 font-semibold' : 'text-slate-400'}`}>
-              {value ? formatShortDate(value) : 'Select date'}
-            </span>
-          </span>
-          <ChevronDown
-            className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isActive ? 'rotate-180 text-[#2F68FE]' : 'text-slate-400'}`}
-          />
-        </button>
-      </div>
-    );
-  };
 
   const set = <K extends keyof TeamAttendanceFilters>(key: K, value: TeamAttendanceFilters[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -214,28 +169,14 @@ export const TeamAttendanceFilterSheet: React.FC<TeamAttendanceFilterSheetProps>
           searchable
         />
 
-        {/* Date range */}
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
-            {dateField('start', 'Start Date', fromDate)}
-            {dateField('end', 'End Date', toDate)}
-          </div>
-          {activeDateField && (
-            <div className="pt-1 space-y-2">
-              <p className="text-[11px] text-slate-500 font-medium px-0.5">
-                {activeDateField === 'start' ? 'Select a start date' : 'Select an end date'}
-              </p>
-              <RangeCalendar
-                key={activeDateField}
-                start={fromDate}
-                end={toDate}
-                activeField={activeDateField}
-                onSelect={handleDaySelect}
-                maxDate={new Date()}
-              />
-            </div>
-          )}
-        </div>
+        {/* Date range (shared filter design) */}
+        <DateRangeFields
+          start={parse(draft.from)}
+          end={parse(draft.to)}
+          onChange={(from, to) => setDraft((prev) => ({ ...prev, from: from ? toDateKey(from) : '', to: to ? toDateKey(to) : '' }))}
+          maxDate={new Date()}
+          resetKey={isOpen}
+        />
 
         {/* Edit requests only */}
         <button

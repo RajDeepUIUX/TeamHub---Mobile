@@ -18,7 +18,6 @@ import {
   Plus,
   Repeat,
   Square,
-  Users,
   X,
 } from 'lucide-react';
 import { SegmentedTabs } from '../../design-system/components/SegmentedTabs';
@@ -245,10 +244,15 @@ const CabKPIs: React.FC<{ requests: CabRequest[]; onViewSummary?: () => void }> 
   );
 };
 
-const CabSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests: CabRequest[] }> = ({ isOpen, onClose, requests }) => {
+const CabSummarySheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  requests: CabRequest[];
+  /** Tapping a tile filters the list by it */
+  onPick: (selection: FilterSelection) => void;
+}> = ({ isOpen, onClose, requests, onPick }) => {
   const count = (fn: (r: CabRequest) => boolean) => requests.filter(fn).length;
   const today = todayIso();
-  const members = Array.from(new Set(requests.map((r) => r.staffName))).sort();
 
   const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
@@ -259,12 +263,36 @@ const CabSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests
       {children}
     </div>
   );
-  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-slate-700' }) => (
-    <div className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs">
-      <span className="text-slate-600 font-medium truncate">{label}</span>
-      <span className={`text-sm font-bold tabular-nums shrink-0 ${color}`}>{value}</span>
-    </div>
-  );
+  /** With `pick` the tile is a link (arrow) that filters the list; without it, it's just a number */
+  const Tile: React.FC<{ label: string; value: React.ReactNode; color?: string; pick?: FilterSelection }> = ({
+    label,
+    value,
+    color = 'text-slate-700',
+    pick,
+  }) => {
+    const body = (
+      <>
+        <span className="text-slate-600 font-medium truncate">{label}</span>
+        <span className="flex items-center gap-1 shrink-0">
+          <span className={`text-sm font-bold tabular-nums ${color}`}>{value}</span>
+          {pick && <ChevronRight className="w-3.5 h-3.5 text-slate-300" />}
+        </span>
+      </>
+    );
+    const cls = 'bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 shadow-2xs text-left';
+    return pick ? (
+      <button
+        type="button"
+        onClick={() => onPick(pick)}
+        className={`${cls} active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer`}
+        aria-label={`Show ${label.toLowerCase()}`}
+      >
+        {body}
+      </button>
+    ) : (
+      <div className={cls}>{body}</div>
+    );
+  };
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[90%]">
@@ -286,36 +314,20 @@ const CabSummarySheet: React.FC<{ isOpen: boolean; onClose: () => void; requests
       <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 no-scrollbar text-xs">
         <Section icon={<LayoutGrid className="w-4 h-4 text-[#2F68FE]" />} title="Requests Overview">
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <Tile label="Total Requests" value={requests.length} color="text-[#1E293B]" />
-            <Tile label="Pending" value={count((r) => r.status === 'Pending')} color="text-[#D97706]" />
-            <Tile label="Approved" value={count((r) => r.status === 'Approved')} color="text-[#10B981]" />
-            <Tile label="Rejected" value={count((r) => r.status === 'Rejected')} color="text-rose-500" />
-            <Tile label="Cancelled" value={count((r) => r.status === 'Cancelled')} color="text-slate-500" />
-            <Tile label="Stopped" value={count((r) => r.status === 'Terminated')} color="text-violet-600" />
+            <Tile label="Total Requests" value={requests.length} color="text-[#1E293B]" pick={{}} />
+            <Tile label="Pending" value={count((r) => r.status === 'Pending')} color="text-[#D97706]" pick={{ status: ['Pending'] }} />
+            <Tile label="Approved" value={count((r) => r.status === 'Approved')} color="text-[#10B981]" pick={{ status: ['Approved'] }} />
+            <Tile label="Rejected" value={count((r) => r.status === 'Rejected')} color="text-rose-500" pick={{ status: ['Rejected'] }} />
+            <Tile label="Cancelled" value={count((r) => r.status === 'Cancelled')} color="text-slate-500" pick={{ status: ['Cancelled'] }} />
+            <Tile label="Stopped" value={count((r) => r.status === 'Terminated')} color="text-violet-600" pick={{ status: ['Terminated'] }} />
           </div>
         </Section>
         <Section icon={<Car className="w-4 h-4 text-cyan-600" />} title="By Request Type">
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <Tile label="One Time" value={count((r) => r.cabFor === 'One Time')} />
+            <Tile label="One Time" value={count((r) => r.cabFor === 'One Time')} pick={{ cabFor: ['One Time'] }} />
             <Tile label="Daily · Temporary" value={count((r) => r.requestType === 'Temporary')} />
             <Tile label="Daily · Permanent" value={count((r) => r.requestType === 'Permanent')} />
             <Tile label="Running daily" value={count((r) => isRunningDaily(r, today))} color="text-[#10B981]" />
-          </div>
-        </Section>
-        <Section icon={<Users className="w-4 h-4 text-[#10B981]" />} title="By Team Member">
-          <div className="space-y-2 pt-1">
-            {members.map((name) => {
-              const pending = count((r) => r.staffName === name && r.status === 'Pending');
-              return (
-                <div key={name} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between shadow-2xs">
-                  <span className="text-slate-700 font-semibold truncate">{name}</span>
-                  <span className="flex items-center gap-2 text-[11px] shrink-0">
-                    {pending > 0 && <span className="px-1.5 py-0.5 rounded-md bg-[#FEF8E7] text-[#D97706] font-bold">{pending} pending</span>}
-                    <span className="font-bold text-slate-700 tabular-nums">{count((r) => r.staffName === name)} total</span>
-                  </span>
-                </div>
-              );
-            })}
           </div>
         </Section>
       </div>
@@ -579,7 +591,15 @@ const TeamCabList: React.FC<{
           setIsFilterOpen(false);
         }}
       />
-      <CabSummarySheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} requests={requests} />
+      <CabSummarySheet
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        requests={requests}
+        onPick={(selection) => {
+          setFilters(selection);
+          setIsSummaryOpen(false);
+        }}
+      />
       <ReviewSheet
         request={requests.find((r) => r.id === reviewing?.id)}
         decision={reviewing?.decision ?? lastDecision}

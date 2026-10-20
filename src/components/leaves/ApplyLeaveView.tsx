@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -7,11 +7,13 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Wand2,
 } from 'lucide-react';
 import { LeaveDurationType, LeaveDayItem, LeaveRequest } from '../../types/leaves';
-import { SelectDateRangeSheet } from './SelectDateRangeSheet';
+import { SelectDateRangeSheet, formatLeaveDate, parseLeaveDate } from './SelectDateRangeSheet';
 import { SelectDurationSheet } from './SelectDurationSheet';
 import { SelectReasonSheet } from './SelectReasonSheet';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 export const LEAVE_REASONS = [
   'Medical (Personal)',
@@ -87,6 +89,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
   // Description & Attachment
   const [description, setDescription] = useState(initialRequest?.description ?? '');
   const [attachment, setAttachment] = useState<string | null>(initialRequest?.attachmentName ?? null);
+  const attachmentRef = useRef<AttachmentInputHandle>(null);
 
   // Sheets
   const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
@@ -99,23 +102,15 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
     setDaysCount(count);
     setHasSelectedDates(true);
 
-    // Generate day items for range
-    const days: LeaveDayItem[] = [];
+    // One item per calendar day in the range (crosses month / year ends)
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    
-    // Parse start day number e.g. "20 Oct 2026"
-    const startNum = parseInt(start.split(' ')[0], 10) || 20;
-    for (let i = 0; i < count; i++) {
-      const curNum = startNum + i;
-      const d = new Date(2026, 9, curNum);
-      const dayName = weekdays[d.getDay()];
-      days.push({
-        date: `${curNum} Oct 2026`,
-        dayOfWeek: dayName,
-        duration: masterDuration,
-      });
-    }
-    setDayItems(days);
+    const first = parseLeaveDate(start) ?? new Date();
+    setDayItems(
+      Array.from({ length: count }, (_, i) => {
+        const d = new Date(first.getFullYear(), first.getMonth(), first.getDate() + i);
+        return { date: formatLeaveDate(d), dayOfWeek: weekdays[d.getDay()], duration: masterDuration };
+      })
+    );
   };
 
   const handleMasterDurationChange = (dur: LeaveDurationType) => {
@@ -135,6 +130,18 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
     if (e.target.files && e.target.files[0]) {
       setAttachment(e.target.files[0].name);
     }
+  };
+
+  // Demo helper: fills every field with realistic sample data (same as the Reimbursement form)
+  const handleQuickFill = () => {
+    // Monday to Thursday of next week, so it's never in the past
+    const now = new Date();
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((8 - now.getDay()) % 7 || 7));
+    const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+    handleApplyDateRange(formatLeaveDate(monday), formatLeaveDate(thursday), 4);
+    setSelectedReason('Travel/Vacation');
+    setDescription('Family trip to Goa, planned in advance. Work is handed over to Naveen Das.');
+    setAttachment('travel-itinerary.pdf');
   };
 
   const handleContinueOrSubmit = () => {
@@ -172,10 +179,20 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
           </button>
-          <h1 className="text-base font-bold text-[#1E293B] screen-title">
+          <h1 className={`text-base font-bold text-[#1E293B] screen-title ${isEditMode ? '' : 'screen-title-tight'}`}>
             {isEditMode ? 'Edit Leave Request' : 'Apply for Leave'}
           </h1>
         </div>
+        {!isEditMode && (
+          <button
+            type="button"
+            onClick={handleQuickFill}
+            className="h-8 px-2.5 rounded-full bg-indigo-50 text-[#4F46E5] text-[11px] font-semibold flex items-center gap-1 active:bg-indigo-100 cursor-pointer"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Fill
+          </button>
+        )}
       </div>
 
       {/* Form Body */}
@@ -187,7 +204,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#1E293B]">{initialRequest?.type ?? 'PTO'}</h2>
+              <h2 className="text-base font-bold text-[#1E293B]">Leave Request</h2>
               {hasSelectedDates && (
                 <p className="text-xs text-slate-500 font-medium">
                   {startDate} – {endDate}
@@ -346,7 +363,12 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         {/* Attachment Card */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">Attachment</label>
-          <label className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-colors block">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => attachmentRef.current?.click()}
+            className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-50/60 cursor-pointer transition-colors"
+          >
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
               <Paperclip className="w-4.5 h-4.5" />
             </div>
@@ -367,7 +389,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
+                  e.stopPropagation();
                   setAttachment(null);
                 }}
                 className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200"
@@ -375,13 +397,8 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleAttachmentUpload}
-              accept=".pdf,.jpg,.jpeg,.png"
-            />
-          </label>
+          </div>
+          <AttachmentInput ref={attachmentRef} title="Add Attachment" accept=".pdf,.jpg,.jpeg,.png" onChange={handleAttachmentUpload} />
         </div>
       </div>
 
@@ -408,8 +425,8 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
       <SelectDateRangeSheet
         isOpen={isDateSheetOpen}
         onClose={() => setIsDateSheetOpen(false)}
-        initialStartDate={startDate}
-        initialEndDate={endDate}
+        initialStartDate={hasSelectedDates ? startDate : undefined}
+        initialEndDate={hasSelectedDates ? endDate : undefined}
         onApply={handleApplyDateRange}
       />
 

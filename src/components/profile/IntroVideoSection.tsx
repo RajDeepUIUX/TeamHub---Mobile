@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { ProfileValue, ProfileValues } from '../../data/profileData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /* Values kept in the profile (session-only for uploads: the file lives as an object URL) */
 const K = {
@@ -73,7 +74,7 @@ const AddVideoSheet: React.FC<{
   const [link, setLink] = useState('');
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<AttachmentInputHandle>(null);
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -176,7 +177,7 @@ const AddVideoSheet: React.FC<{
 
         {kind === 'upload' ? (
           <div className="space-y-2">
-            <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,.mp4,.mov" className="hidden" onChange={pickFile} />
+            <AttachmentInput title="Upload Intro Video" ref={inputRef} accept="video/mp4,video/quicktime,.mp4,.mov" onChange={pickFile} />
             {file ? (
               <div className="rounded-2xl border border-slate-200 p-3.5">
                 <div className="flex items-center gap-3">

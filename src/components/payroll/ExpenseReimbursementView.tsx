@@ -19,6 +19,7 @@ import {
   emptyExpenseItem,
   formatRupees,
 } from '../../data/reimbursementData';
+import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /* ------------------------------ Illustrations ------------------------------ */
 
@@ -110,7 +111,7 @@ const ExpenseItemCard: React.FC<{
   onChange: (patch: Partial<ExpenseItem>) => void;
   onRemove: () => void;
 }> = ({ index, item, withDate, errors, canRemove, onChange, onRemove }) => {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<AttachmentInputHandle>(null);
   const [isDateOpen, setIsDateOpen] = useState(false);
   const label = (text: string, required = false) => (
     <span className="block text-[11px] font-semibold text-slate-600 mb-1">
@@ -272,10 +273,9 @@ const ExpenseItemCard: React.FC<{
             Upload receipt
           </button>
         )}
-        <input
+        <AttachmentInput
+          title="Upload Receipt"
           ref={fileRef}
-          type="file"
-          className="hidden"
           accept=".pdf,.jpg,.jpeg,.png"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -826,6 +826,10 @@ const TeamRequests: React.FC<{
   const [filters, setFilters] = useState<FilterSelection>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const pickFromSummary = (selection: FilterSelection) => {
+    setFilters(selection);
+    setIsSummaryOpen(false);
+  };
   const [detail, setDetail] = useState<ExpenseRequest | null>(null);
   const [review, setReview] = useState<{ request: ExpenseRequest; decision: ExpenseDecision } | null>(null);
 
@@ -901,19 +905,36 @@ const TeamRequests: React.FC<{
       <BottomSheet isOpen={isSummaryOpen} onClose={() => setIsSummaryOpen(false)} maxHeight="max-h-[85%]">
         <SheetTop title="Team Requests Summary" subtitle="Advances & reimbursements" onClose={() => setIsSummaryOpen(false)} />
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3 text-xs">
+          {/* Each row filters the list by its status / type */}
           {STATUS_OPTIONS.map((st) => (
-            <div key={st} className="flex items-center justify-between bg-[#F8FAFC] border border-[#EBF0F7] rounded-xl px-3.5 py-3">
+            <button
+              key={st}
+              type="button"
+              onClick={() => pickFromSummary({ status: [st] })}
+              className="w-full flex items-center justify-between bg-[#F8FAFC] border border-[#EBF0F7] rounded-xl px-3.5 py-3 text-left active:bg-slate-100 active:border-[#2F68FE]/40 transition-colors cursor-pointer"
+            >
               <span className="font-semibold text-slate-600">
                 {st} <span className="text-slate-400 font-medium">({count(st)})</span>
               </span>
-              <span className="font-extrabold text-[#1E293B] tabular-nums">{formatRupees(amount(st))}</span>
-            </div>
+              <span className="flex items-center gap-1">
+                <span className="font-extrabold text-[#1E293B] tabular-nums">{formatRupees(amount(st))}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              </span>
+            </button>
           ))}
           {(['advance', 'reimbursement'] as const).map((k) => (
-            <div key={k} className="flex items-center justify-between bg-white border border-[#EBF0F7] rounded-xl px-3.5 py-3">
+            <button
+              key={k}
+              type="button"
+              onClick={() => pickFromSummary({ type: [EXPENSE_KIND_LABEL[k]] })}
+              className="w-full flex items-center justify-between bg-white border border-[#EBF0F7] rounded-xl px-3.5 py-3 text-left active:bg-slate-50 active:border-[#2F68FE]/40 transition-colors cursor-pointer"
+            >
               <span className="font-semibold text-slate-600">{EXPENSE_KIND_LABEL[k]} requests</span>
-              <span className="font-extrabold text-[#1E293B] tabular-nums">{ofKind.filter((r) => r.kind === k).length}</span>
-            </div>
+              <span className="flex items-center gap-1">
+                <span className="font-extrabold text-[#1E293B] tabular-nums">{ofKind.filter((r) => r.kind === k).length}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              </span>
+            </button>
           ))}
         </div>
         <div className="p-4 pt-2 pb-6 border-t border-slate-100 shrink-0">

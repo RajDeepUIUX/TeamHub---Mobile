@@ -39,8 +39,6 @@ export interface TeamMemberRecord {
   joiningDate: string; // ISO
   status: StaffStatus;
   role: string;
-  /** Annual CTC in INR — only shown after the manager verifies their password */
-  ctc: number;
   availableFte: number;
   leaves: MemberLeaves;
   pastReviews: PastReview[];
@@ -62,21 +60,21 @@ const email = (name: string) => `${name.toLowerCase().replace(/\s+/g, '.')}@my-c
 
 // Per-person HR details (everything else comes from the reporting hierarchy)
 const DETAILS: Record<string, Omit<TeamMemberRecord, 'staffName' | 'staffCode' | 'email' | 'branch' | 'reportingManager' | 'pastReviews'>> = {
-  'John Smith': { joiningDate: '2024-12-02', status: 'Active', role: 'Team Lead', ctc: 1140000, availableFte: 1, leaves: lv([9, 12], [0, 0], [0, 0]) },
-  'Ananya Kulkarni': { joiningDate: '2023-06-14', status: 'Active', role: 'Senior Associate', ctc: 820000, availableFte: 1, leaves: lv([4.5, 12], [2, 4]) },
-  'Vikram Rao': { joiningDate: '2025-02-10', status: 'Active', role: 'Associate', ctc: 540000, availableFte: 0.5, leaves: lv([4, 6]) },
-  'Kunal Desai': { joiningDate: '2022-09-01', status: 'Notice', role: 'Senior Associate', ctc: 880000, availableFte: 0, leaves: lv([2, 12]) },
-  'Nidhi Purohit': { joiningDate: '2024-03-18', status: 'Maternity', role: 'Associate', ctc: 600000, availableFte: 0, leaves: lv([0, 12], [0, 0], [0, 26]) },
-  'Pooja Bhatt': { joiningDate: '2025-07-21', status: 'Active', role: 'Associate', ctc: 480000, availableFte: 1, leaves: lv([5, 5], [0, 0], [2, 2]) },
-  'Rohan Mehta': { joiningDate: '2021-11-08', status: 'Red Flag', role: 'Team Lead', ctc: 1260000, availableFte: 0.75, leaves: lv([1.5, 12], [2, 2]) },
-  'Sneha Joshi': { joiningDate: '2023-01-16', status: 'Sabbatical Leave', role: 'Senior Associate', ctc: 790000, availableFte: 0, leaves: lv([0, 12]) },
-  'Farhan Shaikh': { joiningDate: '2026-06-26', status: 'Active', role: 'Associate', ctc: 450000, availableFte: 1, leaves: lv([9.5, 9.5]) },
+  'John Smith': { joiningDate: '2024-12-02', status: 'Active', role: 'Team Lead', availableFte: 1, leaves: lv([9, 12], [0, 0], [0, 0]) },
+  'Ananya Kulkarni': { joiningDate: '2023-06-14', status: 'Active', role: 'Senior Associate', availableFte: 1, leaves: lv([4.5, 12], [2, 4]) },
+  'Vikram Rao': { joiningDate: '2025-02-10', status: 'Active', role: 'Associate', availableFte: 0.5, leaves: lv([4, 6]) },
+  'Kunal Desai': { joiningDate: '2022-09-01', status: 'Notice', role: 'Senior Associate', availableFte: 0, leaves: lv([2, 12]) },
+  'Nidhi Purohit': { joiningDate: '2024-03-18', status: 'Maternity', role: 'Associate', availableFte: 0, leaves: lv([0, 12], [0, 0], [0, 26]) },
+  'Pooja Bhatt': { joiningDate: '2025-07-21', status: 'Active', role: 'Associate', availableFte: 1, leaves: lv([5, 5], [0, 0], [2, 2]) },
+  'Rohan Mehta': { joiningDate: '2021-11-08', status: 'Red Flag', role: 'Team Lead', availableFte: 0.75, leaves: lv([1.5, 12], [2, 2]) },
+  'Sneha Joshi': { joiningDate: '2023-01-16', status: 'Sabbatical Leave', role: 'Senior Associate', availableFte: 0, leaves: lv([0, 12]) },
+  'Farhan Shaikh': { joiningDate: '2026-06-26', status: 'Active', role: 'Associate', availableFte: 1, leaves: lv([9.5, 9.5]) },
 };
 
 // Reporting managers also sit under the signed-in manager
-const MANAGER_DETAILS: Record<string, { code: string; branch: string; joiningDate: string; ctc: number; role: string }> = {
-  'Aryan Sharma': { code: 'A01980', branch: 'Atulyaksh - Ahmedabad', joiningDate: '2019-04-05', ctc: 2150000, role: 'Manager' },
-  'Meera Iyer': { code: 'A02104', branch: 'Sadra - Surat', joiningDate: '2020-01-13', ctc: 1980000, role: 'Manager' },
+const MANAGER_DETAILS: Record<string, { code: string; branch: string; joiningDate: string; role: string }> = {
+  'Aryan Sharma': { code: 'A01980', branch: 'Atulyaksh - Ahmedabad', joiningDate: '2019-04-05', role: 'Manager' },
+  'Meera Iyer': { code: 'A02104', branch: 'Sadra - Surat', joiningDate: '2020-01-13', role: 'Manager' },
 };
 
 const reviewsFor = (name: string, reviewer: string, joiningDate: string): PastReview[] => {
@@ -126,7 +124,6 @@ export const MY_TEAM_SEED: TeamMemberRecord[] = [
     joiningDate: d.joiningDate,
     status: 'Active' as StaffStatus,
     role: d.role,
-    ctc: d.ctc,
     availableFte: 1,
     leaves: lv([5, 12], [1, 1]),
     pastReviews: reviewsFor(name, 'Naveen Das', d.joiningDate),
@@ -137,7 +134,6 @@ export const MY_TEAM_SEED: TeamMemberRecord[] = [
 export const MY_TEAM_MANAGERS = ['Naveen Das', ...TEAM_REPORTING_MANAGERS.map((m) => m.name).filter((n) => n !== 'Naveen Das')];
 
 /** ₹ 11,40,000 */
-export const formatCtc = (n: number) => `₹ ${n.toLocaleString('en-IN')}`;
 
 /**
  * Profile the manager edits from "Edit Details". HR fields come from the team record;
