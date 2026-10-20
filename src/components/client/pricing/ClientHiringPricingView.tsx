@@ -27,8 +27,8 @@ interface Props {
   onCreateRequirements?: (created: StaffRequirement[]) => void;
   /** Offshore locations preselected in a new requirement */
   defaultLocations?: string[];
-  /** "View Available Resumes" after a requirement is saved */
-  onOpenHub?: () => void;
+  /** "View Available Resumes" after a requirement is saved (filtered to its profile) */
+  onOpenHub?: (profile?: string) => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -327,7 +327,7 @@ export const ClientHiringPricingView: React.FC<Props> = ({ country, onCreateRequ
           onOpenHub
             ? () => {
                 setSaved(null);
-                onOpenHub();
+                onOpenHub(saved?.profile);
               }
             : undefined
         }

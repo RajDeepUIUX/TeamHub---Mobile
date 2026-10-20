@@ -22,6 +22,8 @@ interface Props {
   workModeOf?: (staffId: string) => StaffWorkMode | undefined;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
+  /** Tab to open first (amend-request notification → Attendance Amend) */
+  initialTab?: Tab;
 }
 
 type Tab = 'attendance' | 'amend';
@@ -56,16 +58,15 @@ interface Filters {
   status: string[];
 }
 
-/** Desktop default: 1st of the current month → today */
-const defaultFilters = (): Filters => {
+/** Desktop default: 1st of the current month → today (an earlier `from` keeps older pending amend requests in range) */
+const defaultFilters = (from?: string): Filters => {
   const today = new Date();
-  return { from: isoOf(new Date(today.getFullYear(), today.getMonth(), 1)), to: isoOf(today), staff: [], workMode: [], status: [] };
+  const monthStart = isoOf(new Date(today.getFullYear(), today.getMonth(), 1));
+  return { from: from && from < monthStart ? from : monthStart, to: isoOf(today), staff: [], workMode: [], status: [] };
 };
 
-const filterCount = (f: Filters) => {
-  const d = defaultFilters();
-  return (f.from !== d.from || f.to !== d.to ? 1 : 0) + f.staff.length + f.workMode.length + f.status.length;
-};
+const filterCount = (f: Filters, d: Filters = defaultFilters()) =>
+  (f.from !== d.from || f.to !== d.to ? 1 : 0) + f.staff.length + f.workMode.length + f.status.length;
 
 const parse = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00`) : null);
 /** Desktop range text "01-10-2026" */
@@ -91,11 +92,13 @@ const amendTimes = (r: AmendRequest) => {
 const AttendanceFilterSheet: React.FC<{
   isOpen: boolean;
   filters: Filters;
+  /** Clear All target for the open tab */
+  defaults: Filters;
   staff: ClientStaffMember[];
   showStatus: boolean;
   onClose: () => void;
   onApply: (f: Filters) => void;
-}> = ({ isOpen, filters, staff, showStatus, onClose, onApply }) => {
+}> = ({ isOpen, filters, defaults, staff, showStatus, onClose, onApply }) => {
   const [draft, setDraft] = useState(filters);
   const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
 
@@ -108,7 +111,7 @@ const AttendanceFilterSheet: React.FC<{
   const from = parse(draft.from);
   const to = parse(draft.to || null);
   const rangeIncomplete = !draft.to;
-  const count = filterCount(draft);
+  const count = filterCount(draft, defaults);
 
   const selectDay = (day: Date) => {
     const key = toDateKey(day);
@@ -201,7 +204,7 @@ const AttendanceFilterSheet: React.FC<{
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
         <button
           type="button"
-          onClick={() => onApply(defaultFilters())}
+          onClick={() => onApply(defaults)}
           className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer"
         >
           Clear All
@@ -255,11 +258,16 @@ interface Row {
 /* ---------------------------------- View ---------------------------------- */
 
 /** Human Resources › Attendance Management (desktop `attendancemanagement`): Attendance + Attendance Amend tabs */
-export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecide, workModeOf, onBack }) => {
+export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecide, workModeOf, onBack, initialTab = 'attendance' }) => {
   const { edit: canDecide } = useClientPermission('attendance');
   const [notice, showNotice] = useTimesheetNotice();
-  const [tab, setTab] = useState<Tab>('attendance');
-  const [filters, setFilters] = useState<Record<Tab, Filters>>(() => ({ attendance: defaultFilters(), amend: defaultFilters() }));
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Pending requests from last month stay in the default Attendance Amend range (they're counted on the tab badge)
+  const [defaults] = useState<Record<Tab, Filters>>(() => ({
+    attendance: defaultFilters(),
+    amend: defaultFilters(requests.filter((r) => r.status === 'Pending').reduce<string | undefined>((min, r) => (!min || r.date < min ? r.date : min), undefined)),
+  }));
+  const [filters, setFilters] = useState<Record<Tab, Filters>>(defaults);
   const [filterOpen, setFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [shown, setShown] = useState(PAGE);
@@ -317,7 +325,8 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
   const pendingShown = amends.filter((r) => r.status === 'Pending');
 
   const total = tab === 'attendance' ? rows.length : amends.length;
-  const isDefault = filterCount(f) === 0;
+  const activeFilters = filterCount(f, defaults[tab]);
+  const isDefault = activeFilters === 0;
 
   const switchTab = (next: Tab) => {
     if (next === tab) return;
@@ -491,7 +500,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               </span>
               <Calendar className="w-4 h-4 text-slate-400" />
             </button>
-            <FilterIconButton count={filterCount(f)} onClick={() => setFilterOpen(true)} label="Filter attendance" />
+            <FilterIconButton count={activeFilters} onClick={() => setFilterOpen(true)} label="Filter attendance" />
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2">
@@ -499,7 +508,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               {loading ? 'Loading…' : `${total} record${total === 1 ? '' : 's'}`}
             </p>
             {!isDefault && (
-              <button type="button" onClick={() => apply(defaultFilters())} className="text-xs font-bold text-[#2F68FE] cursor-pointer">
+              <button type="button" onClick={() => apply(defaults[tab])} className="text-xs font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
               </button>
             )}
@@ -538,7 +547,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 !isDefault ? (
                   <button
                     type="button"
-                    onClick={() => apply(defaultFilters())}
+                    onClick={() => apply(defaults[tab])}
                     className="mt-4 h-10 px-5 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
                   >
                     Clear All
@@ -566,6 +575,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
       <AttendanceFilterSheet
         isOpen={filterOpen}
         filters={f}
+        defaults={defaults[tab]}
         staff={sortedStaff}
         showStatus={tab === 'attendance'}
         onClose={() => setFilterOpen(false)}

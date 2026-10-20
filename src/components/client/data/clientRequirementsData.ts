@@ -6,7 +6,7 @@
  */
 import type { ThreadComment } from '../../../types/comments';
 import { hourlyRateForLevel } from './clientHiringPricingData';
-import type { HubProfile } from './clientStaffHubData';
+import type { HubProfile, HubRequirement } from './clientStaffHubData';
 import type { ShortlistedCandidate } from './clientInterviewsData';
 
 /* --------------------------------- Types ---------------------------------- */
@@ -236,6 +236,36 @@ export const requirementsFromDraft = (draft: RequirementDraft, createdOn: string
     comments: [],
   }));
 };
+
+/** Onboarding Timeline that fits a start date (months from today) */
+const timelineFor = (startDate: string, today: string) => {
+  const months = (new Date(`${startDate}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / (30 * 86_400_000);
+  return months <= 3 ? TIMELINE_OPTIONS[0] : months <= 6 ? TIMELINE_OPTIONS[1] : months <= 12 ? TIMELINE_OPTIONS[2] : TIMELINE_OPTIONS[3];
+};
+
+/** Available Staff Hub "Add Staff Requirement": domain / profile / level / work mode / location come from the resume */
+export const requirementsFromHub = (p: HubProfile, req: HubRequirement, createdOn: string): StaffRequirement[] =>
+  requirementsFromDraft(
+    {
+      ...EMPTY_REQUIREMENT_DRAFT,
+      domain: p.domain,
+      profile: p.profile,
+      level: p.resume.level,
+      pricing: tentativePricing(p.domain, p.resume.level),
+      hoursPerWeek: req.hoursPerWeek,
+      timeline: timelineFor(req.startDate, createdOn),
+      startDate: req.startDate,
+      staffCount: req.staffCount,
+      availableUpto: '22:00',
+      workMode: p.workMode,
+      locations: [p.location],
+    },
+    createdOn,
+  );
+
+/** Desktop `profilewise_timesheet_ajax`: an open requirement for the profile skips "Add Staff Requirement" */
+export const hasOpenRequirementFor = (requirements: StaffRequirement[], profile: string) =>
+  requirements.some((r) => r.status === 'In Progress' && r.profile === profile);
 
 export type DraftErrors = Partial<Record<keyof RequirementDraft, string>>;
 

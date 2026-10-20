@@ -49,7 +49,7 @@ import { ClientTrainingNeedView } from './training/ClientTrainingNeedView';
 import { TNI_REQUESTS_SEED, TniRequest } from './data/clientTrainingNeedData';
 import { ClientMandatoryLearningView } from './learning/ClientMandatoryLearningView';
 import { MANDATORY_COURSES_SEED } from './data/clientMandatoryLearningData';
-import { BillingDetails, billingSeedFor } from './data/clientBillingData';
+import { BillingDetails, billableStaffOf, billingSeedFor, unmappedStaffIds } from './data/clientBillingData';
 import type { TimesheetRange } from './data/clientTimesheetsData';
 import { DIRECTORY_POC_SEED, DIRECTORY_PRIMARY_SEED } from './data/clientDirectoryData';
 import {
@@ -139,9 +139,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   // One inbox for every Client Hub module (bell in the header)
   const [notifications, setNotifications] = useState<ClientNotification[]>(CLIENT_NOTIFICATIONS_SEED);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  // Only notifications for modules the role can open
-  const visibleNotifications = notifications.filter((n) => !n.link || n.link === 'updates' || canList(n.link));
-  const unreadNotifications = visibleNotifications.filter((n) => !n.read).length;
 
   // My Staff: the seed list plus candidates hired in Shortlisted Candidates (every staff-based module reads this list)
   const [staff, setStaff] = useState<ClientStaffMember[]>(MY_STAFF_SEED);
@@ -150,8 +147,9 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const offshoreStaff = useMemo(() => offshoreStaffFrom(staff), [staff]);
   const workFlexStaff = useMemo(() => workFlexStaffFrom(staff), [staff]);
 
-  // Attendance Management > Attendance Amend (requests staff raise; the notification follows it)
+  // Attendance Management > Attendance Amend (requests staff raise; the notification follows it and opens that tab)
   const [amends, setAmends] = useState<AmendRequest[]>(AMEND_SEED);
+  const [amendFocus, setAmendFocus] = useState(false);
 
   // Staff Work Flexibility (kept while switching modules, like desktop's saved preferences)
   const [workFlex, setWorkFlex] = useState<WorkFlexPreferences>(WORK_FLEX_SEED);
@@ -162,6 +160,30 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
 
   // Billing Details (payment methods + staff mapping; kept while switching modules)
   const [billing, setBilling] = useState<BillingDetails>(() => billingSeedFor(MY_STAFF_SEED));
+  // Staff without a payment method in the last submitted mapping (new hires join this list)
+  const unmappedBillingNames = useMemo(
+    () =>
+      unmappedStaffIds({ ...billing, mappings: billing.submittedMappings }, billableStaffOf(staff).map((s) => s.id)).map(
+        (id) => staff.find((s) => s.id === id)?.name ?? id,
+      ),
+    [billing, staff],
+  );
+
+  // Only notifications for modules the role can open; the payment-method reminder follows Billing Details
+  const visibleNotifications = notifications
+    .filter((n) => !n.link || n.link === 'updates' || canList(n.link))
+    .map((n) => {
+      if (n.id !== 'cn-15') return n;
+      const left = unmappedBillingNames.length;
+      if (left === 0) return { ...n, read: true, actionRequired: false, title: 'Every staff member has a payment method' };
+      const names = left > 1 ? `${unmappedBillingNames.slice(0, -1).join(', ')} and ${unmappedBillingNames[left - 1]}` : unmappedBillingNames[0];
+      return {
+        ...n,
+        title: `${left} staff need a payment method`,
+        body: `${names} ${left === 1 ? "isn't" : "aren't"} mapped to a bank account, card or Direct Pay yet. Map them in Billing Details.`,
+      };
+    });
+  const unreadNotifications = visibleNotifications.filter((n) => !n.read).length;
 
   // Invoice opened from a notification (Invoice Details)
   const [invoiceFocus, setInvoiceFocus] = useState<string | null>(null);
@@ -174,6 +196,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
 
   // Hire New Staff › Staff Requirements (created, edited and commented; kept while switching modules)
   const [requirements, setRequirements] = useState<StaffRequirement[]>(REQUIREMENTS_SEED);
+  // Requirement row link → Available Staff Hub / Shortlisted Candidates filtered to its profile
+  const [hiringProfile, setHiringProfile] = useState<string | null>(null);
 
   // Learning & Development › Training Need Identification (TNI requests and their notes; kept while switching modules)
   const [tniRequests, setTniRequests] = useState<TniRequest[]>(TNI_REQUESTS_SEED);
@@ -262,6 +286,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     setStaffFocus(null);
     setIsNotificationsOpen(false);
     setInvoiceFocus(null);
+    setAmendFocus(false);
     setTab(next);
     setMoreModuleId(null);
   };
@@ -273,6 +298,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     setTimesheetPreset({ staffIds: [] });
     setInvoiceFocus(null);
     setStaffFocus(null);
+    setAmendFocus(false);
+    setHiringProfile(null);
     if (id === 'other-modules') return setOverlay('services');
     if (id === 'news-insights') return setOverlay('news');
     if (id === 'account-manager') return setOverlay('manager');
@@ -280,6 +307,12 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     if (mapped) return openTab(mapped);
     setTab('more');
     setMoreModuleId(id);
+  };
+
+  // Staff Requirement / Pricing links: Available Staff Hub or Shortlisted Candidates filtered to one profile
+  const openHiring = (id: 'staff-hub' | 'interviews', profile?: string) => {
+    openModule(id);
+    setHiringProfile(profile ?? null);
   };
 
   const goHome = () => openTab('home');
@@ -301,6 +334,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     }
     openModule(n.link);
     if (n.link === 'invoices' && n.targetId) setInvoiceFocus(n.targetId);
+    if (n.link === 'attendance' && n.targetTab === 'amend') setAmendFocus(true);
     if (n.link === 'my-staff' && n.targetId) setStaffFocus({ staffId: n.targetId, tab: n.targetTab as StaffProfileTab | undefined });
   };
 
@@ -446,6 +480,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             staff={staff}
             onDecide={decideAmends}
             workModeOf={workModeOf}
+            initialTab={amendFocus ? 'amend' : 'attendance'}
           />
         ) : tab === 'timesheets' ? (
           <ClientTimesheetsView onBack={goHome} staff={staff} initialStaffIds={timesheetPreset.staffIds} initialRange={timesheetPreset.range} />
@@ -493,8 +528,11 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
               });
             }}
             onUpdateCandidate={updateCandidate}
+            requirements={requirements}
+            onCreateRequirements={(created) => changeRequirements([...created, ...requirements])}
             onOpenShortlisted={canList('interviews') ? () => openModule('interviews') : undefined}
             onContactManager={() => openModule('account-manager')}
+            initialProfile={hiringProfile}
           />
         ) : tab === 'more' && moreModuleId === 'requirements' ? (
           <ClientRequirementsView
@@ -505,8 +543,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             hubProfiles={HUB_PROFILES_SEED}
             candidates={candidates}
             defaultLocations={OFFSHORE_LOCATIONS.filter((l) => staff.some((m) => m.location === l))}
-            onOpenHub={canList('staff-hub') ? () => openModule('staff-hub') : undefined}
-            onOpenShortlisted={canList('interviews') ? () => openModule('interviews') : undefined}
+            onOpenHub={canList('staff-hub') ? (profile) => openHiring('staff-hub', profile) : undefined}
+            onOpenShortlisted={canList('interviews') ? (profile) => openHiring('interviews', profile) : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'hiring-pricing' ? (
           <ClientHiringPricingView
@@ -514,7 +552,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             country={company.country}
             onCreateRequirements={canList('requirements') && permissionFor(role, 'requirements').add ? (created) => changeRequirements([...created, ...requirements]) : undefined}
             defaultLocations={OFFSHORE_LOCATIONS.filter((l) => staff.some((m) => m.location === l))}
-            onOpenHub={canList('staff-hub') ? () => openModule('staff-hub') : undefined}
+            onOpenHub={canList('staff-hub') ? (profile) => openHiring('staff-hub', profile) : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'interviews' ? (
           <ClientInterviewsView
@@ -522,6 +560,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             candidates={candidates}
             onUpdate={updateCandidate}
             onContactManager={() => openModule('account-manager')}
+            initialProfile={hiringProfile}
           />
         ) : tab === 'more' && moreModuleId === 'training-need' ? (
           <ClientTrainingNeedView onBack={goHome} requests={tniRequests} staff={staff} onChange={changeTni} />

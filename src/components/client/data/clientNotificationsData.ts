@@ -54,7 +54,7 @@ export interface ClientNotification {
   actionRequired?: boolean;
   /** Record opened inside the module (e.g. invoice no. → Invoice Details, staff id → that staff profile) */
   targetId?: string;
-  /** Staff profile tab opened with `targetId` (My Staff) */
+  /** Staff profile tab opened with `targetId` (My Staff), or the Attendance Management tab ('amend') */
   targetTab?: string;
 }
 
@@ -92,6 +92,7 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     createdAt: ago(35),
     read: false,
     link: 'attendance',
+    targetTab: 'amend',
     actionRequired: true,
   },
   {

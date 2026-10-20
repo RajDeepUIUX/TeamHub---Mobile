@@ -35,8 +35,9 @@ interface Props {
   candidates: ShortlistedCandidate[];
   /** Locations of the client's current staff pre-fill "Offshore Location Preference" (desktop `staff_location`) */
   defaultLocations: string[];
-  onOpenHub?: () => void;
-  onOpenShortlisted?: () => void;
+  /** Desktop links open the Hub / Shortlisted Candidates filtered to the requirement's profile */
+  onOpenHub?: (profile?: string) => void;
+  onOpenShortlisted?: (profile?: string) => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -234,7 +235,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                 {resumes > 0 ? (
                   <TableLink
                     label={`${resumes} ${resumes === 1 ? 'Resume' : 'Resumes'}`}
-                    onClick={onOpenHub}
+                    onClick={onOpenHub ? () => onOpenHub(r.profile) : undefined}
                     ariaLabel={`${resumes} available resumes for ${r.profile}`}
                   />
                 ) : (
@@ -246,7 +247,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   <TableLink
                     tone="purple"
                     label={`${shortlisted} Shortlisted`}
-                    onClick={onOpenShortlisted}
+                    onClick={onOpenShortlisted ? () => onOpenShortlisted(r.profile) : undefined}
                     ariaLabel={`${shortlisted} shortlisted candidates for ${r.profile}`}
                   />
                 ) : (
@@ -448,7 +449,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
           onOpenHub
             ? () => {
                 closeSheet();
-                onOpenHub();
+                onOpenHub(saved?.profile);
               }
             : undefined
         }

@@ -73,6 +73,8 @@ interface Props {
   /** Candidates live in ClientApp so changes are kept while switching modules */
   onUpdate: (id: string, patch: Partial<ShortlistedCandidate>) => void;
   onContactManager: () => void;
+  /** Staff Requirement "N Shortlisted" opens the list filtered to that profile (desktop `p_id`) */
+  initialProfile?: string | null;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -129,14 +131,14 @@ const hasResumeOf = (c: ShortlistedCandidate) => (c.source === 'hub' ? Boolean(c
  * list with assessments, View Resume, Interview Feedback, Request / Reschedule / Cancel Interview, Join Interview and
  * bulk "Request Assessment".
  */
-export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, onBack }) => {
+export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, initialProfile, onBack }) => {
   // view = resume / feedback / progress; add = feedback, request interview, assign assessment; edit = reschedule; delete = cancel interview; download = files
   const { view: canView, add: canAdd, edit: canEdit, delete: canDelete, download: canDownload } = useClientPermission('interviews');
 
   const now = useNow();
   const [loading, setLoading] = useState(true);
   const [chip, setChip] = useState<CandidateStatusChip>('All');
-  const [filters, setFilters] = useState<CandidateFilters>(EMPTY_CANDIDATE_FILTERS);
+  const [filters, setFilters] = useState<CandidateFilters>(() => (initialProfile ? { ...EMPTY_CANDIDATE_FILTERS, profile: initialProfile } : EMPTY_CANDIDATE_FILTERS));
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
   const [selectMode, setSelectMode] = useState(false);

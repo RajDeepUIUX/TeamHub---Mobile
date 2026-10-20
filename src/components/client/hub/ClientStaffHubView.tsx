@@ -29,6 +29,8 @@ import {
   totalExperienceMonths,
 } from '../data/clientStaffHubData';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
+import { StaffRequirement, hasOpenRequirementFor, requirementsFromHub } from '../data/clientRequirementsData';
+import { isoOfDate } from '../data/clientInterviewsData';
 import { HubFilterOptions, HubFilterSheet } from './HubFilterSheet';
 import { DomainTile, HubListSkeleton } from './HubParts';
 import { HubRequirementSheet, HubShortlistedSheet, ShortlistNext } from './HubRequirementSheet';
@@ -43,9 +45,14 @@ interface Props {
   onToggleSave: (profileId: string) => void;
   onShortlist: (candidate: ShortlistedCandidate) => void;
   onUpdateCandidate: (id: string, patch: Partial<ShortlistedCandidate>) => void;
+  /** Staff Requirements: an open one for the profile skips "Add Staff Requirement"; the sheet adds rows there */
+  requirements: StaffRequirement[];
+  onCreateRequirements: (created: StaffRequirement[]) => void;
   /** Opens Hire New Staff › Shortlisted Candidates (needs access to that module) */
   onOpenShortlisted?: () => void;
   onContactManager: () => void;
+  /** Staff Requirement "Available Resumes" opens the list filtered to that profile (desktop `selected_profile_id`) */
+  initialProfile?: string | null;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -80,15 +87,21 @@ export const ClientStaffHubView: React.FC<Props> = ({
   onToggleSave,
   onShortlist,
   onUpdateCandidate,
+  requirements,
+  onCreateRequirements,
   onOpenShortlisted,
   onContactManager,
+  initialProfile,
   onBack,
 }) => {
   // view = View Resume; add = Shortlist Candidate and Save / Remove from Saved Resumes; download = psychometric test, certificates, reports
   const { view: canView, add: canAdd, download: canDownload } = useClientPermission('staff-hub');
 
   const [tab, setTab] = useState<Tab>('available');
-  const [tabState, setTabState] = useState<Record<Tab, TabState>>({ available: INITIAL_TAB, saved: INITIAL_TAB });
+  const [tabState, setTabState] = useState<Record<Tab, TabState>>(() => ({
+    available: initialProfile ? { ...INITIAL_TAB, filters: { ...EMPTY_HUB_FILTERS, profiles: [initialProfile] } } : INITIAL_TAB,
+    saved: INITIAL_TAB,
+  }));
   const [loading, setLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
@@ -177,7 +190,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
     setShortlistId(p.id);
     setRequirement(null);
     // Desktop: an open requirement for the profile → straight to the scheduler, otherwise "Add Staff Requirement"
-    setSheet(hasRequirementFor(candidates, p.profile) ? 'schedule' : 'requirement');
+    setSheet(hasOpenRequirementFor(requirements, p.profile) || hasRequirementFor(candidates, p.profile) ? 'schedule' : 'requirement');
   };
 
   const confirmRequirement = (req: HubRequirement, next: ShortlistNext) => {
@@ -188,6 +201,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
       setSheet('schedule');
       return;
     }
+    onCreateRequirements(requirementsFromHub(p, req, isoOfDate(new Date())));
     onShortlist(candidateFromProfile(p));
     setCreatedProfile(`${p.profile} (${p.resumeId})`);
     setSheet('shortlisted');
@@ -197,6 +211,8 @@ export const ClientStaffHubView: React.FC<Props> = ({
     const p = shortlistProfile;
     if (!p) return;
     const candidate = candidateFromProfile(p, { status: 'Interview Scheduled', interview });
+    // The requirement typed in "Add Staff Requirement" is saved once the interview is booked
+    if (requirement) onCreateRequirements(requirementsFromHub(p, requirement, isoOfDate(new Date())));
     onShortlist(candidate);
     setScheduledCandidateId(candidate.id);
     setSheet('scheduled');

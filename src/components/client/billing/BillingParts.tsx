@@ -82,16 +82,20 @@ export const BankAccountCard: React.FC<{
           <Landmark className="w-[18px] h-[18px]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13px] font-bold text-[#1E293B] break-words">{bankNameOf(bank)}</span>
-          <span className="block text-[11px] text-slate-500 break-words">{bank.accountName}</span>
+          <span className="block text-[13.5px] font-bold text-[#1E293B] leading-snug break-words">{bankNameOf(bank)}</span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[11px] text-slate-500 break-words">{bank.accountName}</span>
+            <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
+          </span>
         </span>
-        <span className="flex items-center gap-1.5 shrink-0">
-          <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
-          {onEdit && <IconButton icon={Pencil} label={`Edit ${bankNameOf(bank)}`} onClick={onEdit} />}
-          {onDelete && <IconButton icon={Trash2} label={`Delete ${bankNameOf(bank)}`} danger onClick={onDelete} />}
-        </span>
+        {(onEdit || onDelete) && (
+          <span className="flex items-center gap-1.5 shrink-0">
+            {onEdit && <IconButton icon={Pencil} label={`Edit ${bankNameOf(bank)}`} onClick={onEdit} />}
+            {onDelete && <IconButton icon={Trash2} label={`Delete ${bankNameOf(bank)}`} danger onClick={onDelete} />}
+          </span>
+        )}
       </div>
-      <dl className="mt-3 px-3 py-1 rounded-xl bg-slate-50">
+      <dl className="mt-3 px-3 py-0.5 rounded-xl bg-slate-50 border border-slate-100">
         {rows.map((r) => (
           <LabelRow key={r.label} label={r.label} muted={r.value === '-'}>
             {r.value}
