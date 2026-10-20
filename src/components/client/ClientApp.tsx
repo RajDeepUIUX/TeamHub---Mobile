@@ -412,7 +412,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'client-contacts' ? (
           <ClientContactsView
-            onBack={goHome}
+            onBack={canList('company-profile') ? () => openModule('company-profile') : goHome}
             contacts={contacts}
             company={{
               address: company.address1,

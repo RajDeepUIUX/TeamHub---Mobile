@@ -406,7 +406,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             </dl>
 
             {r.staffNote && (
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="pt-2.5 border-t border-dashed border-slate-200">
                 <p className="text-[11px] text-slate-400">Reason</p>
                 <p className="mt-0.5 text-[12px] text-slate-700 leading-relaxed">{r.staffNote}</p>
               </div>
@@ -425,13 +425,12 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
           </div>
 
           {r.status === 'Pending' && canDecide && (
-            <div className="px-3.5 py-2.5 border-t border-slate-100">
-              <p className="mb-2 text-[11px] text-slate-400">Action</p>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="px-3.5 pb-3.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => open([r.id], 'Rejected')}
-                  className="h-10 rounded-xl border border-rose-200 text-rose-500 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-rose-50 cursor-pointer"
+                  className="h-10 rounded-xl border border-rose-200 bg-white text-rose-500 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-rose-50 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                   Reject

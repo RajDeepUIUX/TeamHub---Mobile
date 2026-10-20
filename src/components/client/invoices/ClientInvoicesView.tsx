@@ -187,14 +187,26 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
     return (
       <li key={inv.id}>
         <Card className="overflow-hidden">
-          <dl className="p-3.5 grid grid-cols-2 gap-x-4 gap-y-3">
-            <Field label="Invoice No.">
-              <span className="font-semibold tabular-nums">{inv.invoiceNo}</span>
-            </Field>
+          <dl className="p-3.5">
+            <div className="flex items-start gap-3">
+              <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden>
+                <ReceiptText className="w-5 h-5" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <dt className="text-[10.5px] font-semibold text-slate-400">Invoice No.</dt>
+                <dd className="mt-0.5 text-[13.5px] font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</dd>
+              </div>
+              <div className="min-w-0 text-right">
+                <dt className="text-[10.5px] font-semibold text-slate-400">Amount</dt>
+                <dd className="mt-0.5 text-[15px] font-bold text-[#1E293B] tabular-nums">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
+              </div>
+            </div>
+
+            <div className="mt-3 p-3 rounded-xl bg-[#F8FAFC] border border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Invoice Created On">
               <span className="tabular-nums">{formatInvoiceDate(inv.createdOn)}</span>
             </Field>
-            <Field label="Period" className="col-span-2">
+            <Field label="Period">
               <span className="tabular-nums">{formatInvoicePeriod(inv)}</span>
             </Field>
             <Field label="Employee">
@@ -209,17 +221,14 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
                 </span>
               )}
             </Field>
-            <Field label="Amount">
-              <span className="font-semibold tabular-nums">{formatMoney(invoiceAmountFor(inv, staffIds))}</span>
-            </Field>
             <Field label="Payment Status">
               <InvoiceStatusPill status={inv.status} />
             </Field>
+            </div>
           </dl>
 
           {(showPdf || showEmployees) && (
-            <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
-              <span className="flex-1 text-[10.5px] font-semibold text-slate-400">Action</span>
+            <div className="px-3.5 pb-3 pt-0.5 flex items-center justify-end gap-2">
               {showPdf && (
                 <button
                   type="button"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Award } from 'lucide-react';
 import type { StaffSkills } from '../../data/clientStaffProfileData';
-import { Card, Pill, TabTitle } from './StaffTabParts';
+import { Card, Pill } from './StaffTabParts';
 
 const ChipList: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
   <div>
@@ -23,8 +23,7 @@ const ChipList: React.FC<{ title: string; items: string[] }> = ({ title, items }
 /** Desktop "Skills & Qualification" tab (skills_qualification.tpl) */
 export const StaffSkillsTab: React.FC<{ skills: StaffSkills }> = ({ skills }) => (
   <>
-    <TabTitle title="Skills & Certifications" />
-    <Card className="mt-2.5 p-4 space-y-4">
+    <Card className="p-4 space-y-4">
       <ChipList title="Technical Skills" items={skills.technical} />
       <div className="pt-4 border-t border-slate-100">
         <ChipList title="Software Skills" items={skills.software} />
