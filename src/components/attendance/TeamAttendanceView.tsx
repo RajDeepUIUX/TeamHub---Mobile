@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart2,
   ChevronRight,
@@ -7,7 +7,6 @@ import {
   Info,
   X,
   Check,
-  List,
   ArrowRight,
   LayoutGrid,
   FileText,
@@ -65,6 +64,10 @@ interface TeamAttendanceViewProps {
   onReview: (id: string, decision: AttendanceDecision, comment: string) => void;
   onBulkReview: (ids: string[], decision: AttendanceDecision, comment: string) => void;
   onViewLogs: (record: AttendanceRecord) => void;
+  /** Tells the parent when a single member is open (V2), so it can hide the My / Team tabs */
+  onMemberFocusChange?: (staffName: string | null) => void;
+  /** True on inner screens (bulk review, V2 member / team records) so the parent hides the My / Team tabs */
+  onInnerScreenChange?: (inner: boolean) => void;
 }
 
 /* ------------------------------ Summary sheet ------------------------------ */
@@ -291,7 +294,7 @@ const MemberHeader: React.FC<{
 
 /* --------------------------------- Screen --------------------------------- */
 
-export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version = 'V1', requests, dailyRecords, onReview, onBulkReview, onViewLogs }) => {
+export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version = 'V1', requests, dailyRecords, onReview, onBulkReview, onViewLogs, onMemberFocusChange, onInnerScreenChange }) => {
   // Bulk review: a focused screen of pending requests (whole team, or one member), all pre-selected
   const [bulk, setBulk] = useState<{ scope: string | null } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -336,7 +339,27 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
   const scoped = version !== 'V1';
   // Banner covers the member on screen (V2 detail, V3) or the whole team
   const bannerScope = scoped && focusStaff ? focusStaff : null;
-  const showMemberList = version === 'V2' && !focusStaff;
+  // V2: a summary tile can open the whole team's records instead of the member list
+  const [teamRecords, setTeamRecords] = useState(false);
+  const showMemberList = version === 'V2' && !focusStaff && !teamRecords;
+  // V2 with a member open: just their records, no date / filter row or summary card
+  const memberDetail = version === 'V2' && Boolean(focusStaff);
+
+  useEffect(() => {
+    onMemberFocusChange?.(memberDetail ? focusStaff : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberDetail, focusStaff]);
+  // Leaving the screen restores the tabs
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    onMemberFocusChange?.(null);
+    onInnerScreenChange?.(false);
+  }, []);
+  const innerScreen = memberDetail || teamRecords || Boolean(bulk);
+  useEffect(() => {
+    onInnerScreenChange?.(innerScreen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [innerScreen]);
   // V2 member detail: their name is already in the header, so cards lead with the date
   const hideStaff = version === 'V2' && Boolean(focusStaff);
   // V2 member detail checkbox: only pending edit requests
@@ -354,8 +377,9 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       any(filters.branches, branchOf(r.staffName)) &&
       any(filters.managers, reportingManagerOf(r.staffName)?.name) &&
       any(filters.staff, r.staffName) &&
-      (!filters.from || r.date >= filters.from) &&
-      (!filters.to || r.date <= filters.to) &&
+      // Pending requests still need a decision, so the date range never hides them (keeps every count in step with the approvals banner)
+      (pendingOnly || !filters.from || r.date >= filters.from) &&
+      (pendingOnly || !filters.to || r.date <= filters.to) &&
       any(filters.status, isEdit ? stateOf(r) : undefined) &&
       any(filters.workMode, r.workMode)
     );
@@ -374,7 +398,8 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       present: days.filter((r) => r.status === 'full_day').length,
       half: days.filter((r) => r.status === 'half_day').length,
       absent: days.filter((r) => r.status === 'absent').length,
-      pending: requests.filter((r) => r.staffName === name && inRange(r) && stateOf(r) === 'Pending').length,
+      // All pending, whatever the dates: same number the approvals banner shows
+      pending: pendingAll.filter((r) => r.staffName === name).length,
     };
   };
   const members = allStaff
@@ -456,7 +481,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
             }}
           />
         </div>
-      ) : (
+      ) : memberDetail ? null : (
       <div className="flex items-center gap-2.5">
         <button
           type="button"
@@ -474,10 +499,13 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
       )}
 
       {/* V2: back to the member list */}
-      {version === 'V2' && focusStaff && (
+      {version === 'V2' && (focusStaff || teamRecords) && (
         <button
           type="button"
-          onClick={() => setFocusStaff(null)}
+          onClick={() => {
+            setFocusStaff(null);
+            setTeamRecords(false);
+          }}
           className="flex items-center gap-1 px-1 text-xs font-semibold text-[#2F68FE] cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -485,7 +513,40 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
         </button>
       )}
 
-      {scoped && focusStaff && <MemberHeader name={focusStaff} code={staffCodes[focusStaff]} stats={memberStats(focusStaff)} />}
+      {scoped && focusStaff && !memberDetail && <MemberHeader name={focusStaff} code={staffCodes[focusStaff]} stats={memberStats(focusStaff)} />}
+
+      {/* KPI card (same pattern as the Attendance summary) — V1, and V2's team list */}
+      {(version === 'V1' || showMemberList) && (
+      <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {[
+            { label: 'Pending', value: countState('Pending'), pill: 'bg-[#F5F3FF] text-[#7C3AED]' },
+            { label: 'Approved', value: countState('Approved'), pill: 'bg-[#E8F8F0] text-[#10B981]' },
+            { label: 'Rejected', value: countState('Rejected'), pill: 'bg-[#FDECEC] text-[#F43F5E]' },
+          ].map(({ label, value, pill }) => (
+            <div key={label} className="flex flex-col items-center">
+              <div className={`w-14 h-9 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${pill}`}>
+                {value}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-[#F1F5F9] mt-3.5 pt-3">
+          <button
+            type="button"
+            onClick={() => setIsSummaryOpen(true)}
+            className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-[#2F68FE]" />
+              View Full Summary
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+      </div>
+      )}
 
       {/* Pending approvals: the way into bulk Approve / Reject */}
       <PendingApprovalsBanner
@@ -540,40 +601,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
             <p className="py-10 text-center text-sm font-bold text-[#1E293B]">No team members match your filters</p>
           )}
         </>
-      )}
-
-      {/* KPI card (same pattern as the Attendance summary) — V1 only */}
-      {version === 'V1' && (
-      <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {[
-            { label: 'Pending', value: countState('Pending'), pill: 'bg-[#F5F3FF] text-[#7C3AED]' },
-            { label: 'Approved', value: countState('Approved'), pill: 'bg-[#E8F8F0] text-[#10B981]' },
-            { label: 'Rejected', value: countState('Rejected'), pill: 'bg-[#FDECEC] text-[#F43F5E]' },
-          ].map(({ label, value, pill }) => (
-            <div key={label} className="flex flex-col items-center">
-              <div className={`w-14 h-9 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${pill}`}>
-                {value}
-              </div>
-              <span className="text-xs text-gray-500 font-medium">{label}</span>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-[#F1F5F9] mt-3.5 pt-3">
-          <button
-            type="button"
-            onClick={() => setIsSummaryOpen(true)}
-            className="w-full flex items-center justify-between text-xs font-semibold text-[#1E293B] cursor-pointer"
-          >
-            <span className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-[#2F68FE]" />
-              View Full Summary
-            </span>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
-      </div>
-
       )}
 
       {!showMemberList && (
@@ -703,10 +730,19 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
                   onViewLogs(r);
                 }}
                 disabled={r.punches.length === 0}
-                className="h-9 px-3 rounded-xl text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-300 flex items-center gap-1.5 active:bg-blue-50 cursor-pointer disabled:cursor-default"
+                aria-label={r.punches.length ? `View punch logs (${r.punches.length})` : 'No punch logs'}
+                className="h-9 pl-1.5 pr-2 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] flex items-center gap-1.5 shrink-0 active:scale-[0.98] transition-transform cursor-pointer disabled:border-slate-100 disabled:bg-slate-50 disabled:cursor-default disabled:active:scale-100"
               >
-                <List className="w-4 h-4" />
-                {r.punches.length ? `View Logs (${r.punches.length})` : 'No logs'}
+                {/* Compact version of the "View Punch Logs" button on daily records */}
+                <span className={`w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-2xs ${r.punches.length ? 'text-[#2F68FE]' : 'text-slate-300'}`}>
+                  <Fingerprint className="w-3.5 h-3.5" />
+                </span>
+                <span className={`text-[11px] font-semibold ${r.punches.length ? 'text-[#2F68FE]' : 'text-slate-400'}`}>
+                  {r.punches.length ? 'Punch Logs' : 'No logs'}
+                </span>
+                {r.punches.length > 0 && (
+                  <span className="px-1.5 py-px rounded-md bg-white text-[10px] font-bold text-[#2F68FE] tabular-nums">{r.punches.length}</span>
+                )}
               </button>
               {state === 'Pending' && (
                 <div className="ml-auto flex items-center gap-2">
@@ -807,6 +843,11 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ version 
             status: pick.status ? [pick.status] : [],
             staff: pick.staff ? [pick.staff] : [],
           });
+          // V2: a member tile opens that member; a status tile lists the whole team's requests
+          if (version === 'V2') {
+            setFocusStaff(pick.staff ?? null);
+            setTeamRecords(!pick.staff);
+          }
           setIsSummaryOpen(false);
         }}
       />

@@ -80,20 +80,15 @@ const Tappable: React.FC<{ id: string; onSelect: (id: string) => void; className
     </button>
   );
 
-const LAYOUTS: { id: OverviewLayout; label: string }[] = [
-  { id: 'grid', label: '2×2 Grid' },
-  { id: 'unified', label: 'Unified' },
-  { id: 'scroll', label: 'Scroll' },
-];
-
 interface OverviewTasksProps {
   onSelect: (label: string) => void;
   /** Controlled by the dashboard (it hides the separate Action Queue card while "Scroll" is on) */
   layout: OverviewLayout;
-  onLayoutChange: (layout: OverviewLayout) => void;
+  /** No longer shown: the Action Queue list is the final layout */
+  onLayoutChange?: (layout: OverviewLayout) => void;
 }
 
-export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, layout, onLayoutChange }) => {
+export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, layout }) => {
   const isQueue = layout === 'scroll';
 
   return (
@@ -105,22 +100,6 @@ export const OverviewTasks: React.FC<OverviewTasksProps> = ({ onSelect, layout, 
             {isQueue ? <CheckSquare className="w-3.5 h-3.5" /> : <BarChart3 className="w-3.5 h-3.5" />}
           </span>
           <h3 className="text-sm font-bold text-[#1E293B]">{isQueue ? 'Action Queue' : 'Overview & Tasks'}</h3>
-        </div>
-        <div className="flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/70" role="tablist">
-          {LAYOUTS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={layout === id}
-              onClick={() => onLayoutChange(id)}
-              className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-colors cursor-pointer ${
-                layout === id ? 'bg-white text-[#2F68FE] shadow-2xs' : 'text-slate-500 active:text-slate-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
 

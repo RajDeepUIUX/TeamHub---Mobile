@@ -40,10 +40,6 @@ export const BulkReviewSheet: React.FC<BulkReviewSheetProps> = ({ records, decis
   const n = active.records.length;
 
   const confirm = () => {
-    if (!isApprove && !comment.trim()) {
-      setError('Please give a reason — it will be shared with every selected staff member.');
-      return;
-    }
     setSaving(true);
     setTimeout(() => onConfirm(active.records.map((r) => r.id), active.decision, comment.trim()), 600);
   };
@@ -106,7 +102,7 @@ export const BulkReviewSheet: React.FC<BulkReviewSheetProps> = ({ records, decis
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">
             {isApprove ? 'Note for all' : 'Reason for rejection'}{' '}
-            {isApprove ? <span className="font-medium text-slate-400">(Optional)</span> : <span className="text-rose-500">*</span>}
+            <span className="font-medium text-slate-400">(Optional)</span>
           </label>
           <div className="relative">
             <textarea

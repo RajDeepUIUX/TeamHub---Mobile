@@ -191,7 +191,12 @@ export const BulkReviewList: React.FC<{
                             { label: 'Office', from: r.totalOfficeTime, to: r.reqOfficeHrs },
                             { label: 'Work', from: r.totalWorkingTime, to: r.reqWorkHrs },
                           ].map((t) => (
-                            <span key={t.label} className="px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span
+                              key={t.label}
+                              className={`px-2 py-1.5 rounded-lg border transition-colors ${
+                                on ? 'bg-white border-blue-100' : 'bg-slate-50 border-slate-100'
+                              }`}
+                            >
                               <span className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{t.label}</span>
                               <span className="flex items-center gap-1 text-[11px]">
                                 <span className="text-slate-500">{t.from}</span>

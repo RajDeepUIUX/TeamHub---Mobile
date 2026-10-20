@@ -1,3 +1,5 @@
+import { ThreadComment } from '../types/comments';
+
 /** Expense Reimbursement (Payroll) — advance requests and reimbursement claims */
 
 export const EXPENSE_CATEGORIES = [
@@ -41,6 +43,21 @@ export const EXPENSE_BRANCHES = [
   'Vijayawada',
 ];
 
+/** Team Outing: picked when "Team Outing" is chosen as the category */
+export interface TeamOutingDetails {
+  /** YYYY-MM-DD */
+  date: string;
+  employees: string[];
+}
+
+/** Team members and their remaining team-outing budget (₹) */
+export const TEAM_OUTING_MEMBERS: { name: string; budget: number }[] = [
+  { name: 'Ananya Kulkarni', budget: 3250 },
+  { name: 'Kunal Desai', budget: 3250 },
+  { name: 'Nidhi Purohit', budget: 3250 },
+  { name: 'Farhan Shaikh', budget: 3250 },
+];
+
 /** One line of an advance request */
 export interface ExpenseItem {
   id: string;
@@ -52,6 +69,8 @@ export interface ExpenseItem {
   quantity: string;
   amount: string;
   receiptName: string | null;
+  /** Team Outing only: who the outing is for, and when */
+  outing?: TeamOutingDetails;
 }
 
 export const emptyExpenseItem = (): ExpenseItem => ({
@@ -96,12 +115,17 @@ export interface ExpenseRequest {
   approvedAmount?: number;
   /** Set once the payout is made */
   paidOn?: string;
+  /** Comment thread between the requester and reviewers */
+  comments?: ThreadComment[];
   /** Reimbursement claimed against an approved advance */
   advanceId?: string;
 }
 
 /** Branch code used in tracking numbers: first two letters, e.g. Ahmedabad → AH */
 export const branchCode = (branch: string | null) => (branch ?? 'HQ').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase();
+
+/** The requester's own branch: sets the tracking-number prefix (AH = Ahmedabad) */
+export const STAFF_BRANCH = 'Ahmedabad';
 
 /** AH/14102026/2 */
 export const makeTrackingNo = (branch: string | null, date: Date, seq: number) => {
@@ -134,6 +158,22 @@ const sum = (items: ExpenseItem[]) => items.reduce((n, it) => n + (parseFloat(it
 /** Other team members' requests, as seen by their reporting manager */
 export const TEAM_EXPENSE_REQUESTS_SEED: ExpenseRequest[] = (
   [
+    // Own Team Outing advances (staff John / manager Naveen), so View shows the outing details
+    ...(['John Smith', 'Naveen Das'] as const).map((staffName, i) => ({
+      id: `exp-outing-${i}`,
+      trackingNo: 'AH/15102026/1',
+      kind: 'advance' as const,
+      staffName,
+      staffCode: i === 0 ? 'A03780' : 'A01120',
+      items: [
+        {
+          ...item('Team Outing', 'Ahmedabad', 'Team lunch and bowling to celebrate the busy-season close.', 1, 13000),
+          outing: { date: '2026-10-24', employees: ['Ananya Kulkarni', 'Kunal Desai', 'Nidhi Purohit', 'Farhan Shaikh'] },
+        },
+      ],
+      status: 'Pending' as const,
+      submittedAt: '2026-10-15T07:30:00.000Z',
+    })),
     {
       id: 'exp-team-1',
       trackingNo: 'AH/10102026/1',

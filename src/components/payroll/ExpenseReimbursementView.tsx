@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Wand2, ArrowLeft, ArrowRight, Check, Inbox, BarChart2, ChevronRight, MessageSquareQuote, Plus, Trash2, Upload, X, FileText, CalendarDays, ChevronDown, ClipboardList, ShieldCheck, Wallet, Eye, Pencil } from 'lucide-react';
+import { Wand2, ArrowLeft, ArrowRight, Check, Inbox, BarChart2, ChevronRight, MessageSquareQuote, Plus, Trash2, Upload, X, FileText, CalendarDays, ChevronDown, ClipboardList, ShieldCheck, Wallet, Eye, Pencil, Users, Image as ImageIcon, CheckCircle2, MessageSquare } from 'lucide-react';
 import { DatePickerSheet } from '../common/DatePickerSheet';
 import { BottomSheet } from '../common/BottomSheet';
 import { FilterSelection, TeamFilterBar, TeamFilterSheet, matchesFilters } from '../common/TeamFilterSheet';
@@ -20,6 +20,8 @@ import {
   formatRupees,
 } from '../../data/reimbursementData';
 import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { TeamOutingSheet, SubmitAttentionSheet, formatOutingDate } from './TeamOutingSheets';
+import { CommentThreadSheet } from '../common/CommentThreadSheet';
 
 /* ------------------------------ Illustrations ------------------------------ */
 
@@ -106,13 +108,16 @@ const ExpenseItemCard: React.FC<{
   item: ExpenseItem;
   /** Reimbursement claims also ask when the expense happened */
   withDate: boolean;
+  /** Advance requests: choosing Team Outing opens the Team Outing sheet */
+  asksOutingDetails?: boolean;
   errors: ItemErrors;
   canRemove: boolean;
   onChange: (patch: Partial<ExpenseItem>) => void;
   onRemove: () => void;
-}> = ({ index, item, withDate, errors, canRemove, onChange, onRemove }) => {
+}> = ({ index, item, withDate, asksOutingDetails = false, errors, canRemove, onChange, onRemove }) => {
   const fileRef = useRef<AttachmentInputHandle>(null);
   const [isDateOpen, setIsDateOpen] = useState(false);
+  const [isOutingOpen, setIsOutingOpen] = useState(false);
   const label = (text: string, required = false) => (
     <span className="block text-[11px] font-semibold text-slate-600 mb-1">
       {text}
@@ -152,7 +157,11 @@ const ExpenseItemCard: React.FC<{
             value={item.category}
             placeholder="Select"
             options={EXPENSE_CATEGORIES}
-            onChange={(v) => onChange({ category: v })}
+            onChange={(v) => {
+              // Advance: Team Outing asks for the outing date and employees first
+              if (asksOutingDetails && v === 'Team Outing') setIsOutingOpen(true);
+              else onChange({ category: v, outing: undefined });
+            }}
           />
           {err(errors.category)}
         </div>
@@ -170,6 +179,32 @@ const ExpenseItemCard: React.FC<{
           {err(errors.branch)}
         </div>
       </div>
+
+      {/* Team Outing: date + employees, set in the sheet */}
+      {item.category === 'Team Outing' && item.outing && (
+        <button
+          type="button"
+          onClick={() => setIsOutingOpen(true)}
+          className="w-full px-3 py-2.5 rounded-xl border border-blue-100 bg-[#F5F8FF] flex items-center gap-2.5 text-left active:bg-[#EEF4FF] cursor-pointer"
+        >
+          <Users className="w-4 h-4 text-[#2F68FE] shrink-0" />
+          <span className="flex-1 min-w-0 text-xs text-[#1E293B] truncate">
+            <span className="font-semibold tabular-nums">{formatOutingDate(item.outing.date)}</span>
+            <span className="text-slate-400"> · </span>
+            {item.outing.employees.join(", ")}
+          </span>
+          <Pencil className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />
+        </button>
+      )}
+      <TeamOutingSheet
+        isOpen={isOutingOpen}
+        initial={item.outing}
+        onClose={() => setIsOutingOpen(false)}
+        onSubmit={(outing) => {
+          onChange({ category: 'Team Outing', outing });
+          setIsOutingOpen(false);
+        }}
+      />
 
       {withDate && (
         <div>
@@ -249,28 +284,65 @@ const ExpenseItemCard: React.FC<{
       <div>
         {label('Receipt', withDate)}
         {item.receiptName ? (
-          <div className="flex items-center gap-2.5 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50">
-            <FileText className="w-4 h-4 text-[#2F68FE] shrink-0" />
-            <span className="flex-1 min-w-0 text-xs font-semibold text-[#1E293B] truncate">{item.receiptName}</span>
-            <button
-              type="button"
-              onClick={() => onChange({ receiptName: null })}
-              className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200 cursor-pointer"
-              aria-label="Remove receipt"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          (() => {
+            const isPdf = /\.pdf$/i.test(item.receiptName);
+            return (
+              <div className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                <span
+                  className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 ${
+                    isPdf ? 'bg-rose-50 text-rose-500' : 'bg-sky-50 text-sky-600'
+                  }`}
+                >
+                  {isPdf ? <FileText className="w-4.5 h-4.5" /> : <ImageIcon className="w-4.5 h-4.5" />}
+                  <span className="text-[8px] font-extrabold uppercase leading-none mt-0.5">
+                    {item.receiptName.split('.').pop()?.slice(0, 4)}
+                  </span>
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-xs font-semibold text-[#1E293B] truncate">{item.receiptName}</span>
+                  <span className="mt-0.5 flex items-center gap-1 text-[10.5px] font-semibold text-emerald-600">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Uploaded
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="h-8 px-2.5 rounded-lg text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange({ receiptName: null })}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 active:text-rose-500 cursor-pointer"
+                  aria-label="Remove receipt"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })()
         ) : (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className={`w-full h-11 px-3.5 rounded-xl border border-dashed flex items-center justify-center gap-2 text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${
-              errors.receiptName ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-blue-50/30'
+            className={`w-full p-3 rounded-xl border-2 border-dashed flex items-center gap-3 text-left transition-colors active:scale-[0.99] cursor-pointer ${
+              errors.receiptName ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-gradient-to-br from-blue-50/70 to-white active:bg-blue-50'
             }`}
           >
-            <Upload className="w-4 h-4" />
-            Upload receipt
+            <span
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+                errors.receiptName ? 'bg-white text-rose-500' : 'bg-white text-[#2F68FE] border border-blue-100'
+              }`}
+            >
+              <Upload className="w-4.5 h-4.5" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className={`block text-xs font-bold ${errors.receiptName ? 'text-rose-600' : 'text-[#2F68FE]'}`}>Upload receipt</span>
+              <span className="block mt-0.5 text-[10.5px] text-slate-400">PDF, JPG or PNG</span>
+            </span>
+            <span className="h-7 px-2.5 rounded-lg bg-[#2F68FE] text-white text-[10.5px] font-bold flex items-center shrink-0">Browse</span>
           </button>
         )}
         <AttachmentInput
@@ -293,9 +365,9 @@ const ExpenseItemCard: React.FC<{
 
 const ExpenseForm: React.FC<{
   mode: FormMode;
-  /** Pre-filled items (editing a pending request) */
+  /** Pre-filled items */
   initialItems?: ExpenseItem[];
-  /** Overrides the header title (e.g. "Edit Request") */
+  /** Overrides the header title (e.g. "Edit AH/20102026/1") */
   title?: string;
   /** Shown under the header, e.g. which advance these expenses settle */
   note?: string;
@@ -308,6 +380,7 @@ const ExpenseForm: React.FC<{
   );
   const [errors, setErrors] = useState<Record<string, ItemErrors>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [isAttentionOpen, setIsAttentionOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const total = items.reduce((n, it) => n + (parseFloat(it.amount) || 0), 0);
@@ -369,6 +442,11 @@ const ExpenseForm: React.FC<{
       );
       return;
     }
+    // Advances are final once sent, so confirm first
+    if (!isClaim) {
+      setIsAttentionOpen(true);
+      return;
+    }
     setSubmitting(true);
     setTimeout(() => onSubmit(items, total), 500);
   };
@@ -387,6 +465,7 @@ const ExpenseForm: React.FC<{
             index={idx}
             item={it}
             withDate={isClaim}
+            asksOutingDetails={!isClaim}
             errors={errors[it.id] ?? {}}
             canRemove={items.length > 1}
             onChange={(patch) => update(it.id, patch)}
@@ -428,6 +507,15 @@ const ExpenseForm: React.FC<{
           </button>
         </div>
       </div>
+      <SubmitAttentionSheet
+        isOpen={isAttentionOpen}
+        onEdit={() => setIsAttentionOpen(false)}
+        onSubmit={() => {
+          setIsAttentionOpen(false);
+          setSubmitting(true);
+          setTimeout(() => onSubmit(items, total), 500);
+        }}
+      />
     </div>
   );
 };
@@ -451,16 +539,20 @@ const RequestCard: React.FC<{
   onView: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Opens the comment thread */
+  onComments?: () => void;
   onAddExpenses?: () => void;
   onDecide?: (decision: ExpenseDecision) => void;
-}> = ({ request: r, showStaff, linkedNote, onView, onEdit, onDelete, onAddExpenses, onDecide }) => {
+}> = ({ request: r, showStaff, linkedNote, onView, onEdit, onDelete, onComments, onAddExpenses, onDecide }) => {
   const categories = Array.from(new Set(r.items.map((it) => it.category).filter(Boolean))).join(', ');
   const isPending = r.status === 'Pending';
-  const actions: { label: string; icon: React.ElementType; onClick: () => void; tone?: string }[] = [
+  const actions: { label: string; icon: React.ElementType; onClick: () => void; badge?: number }[] = [
     { label: 'View', icon: Eye, onClick: onView },
+    ...(onComments ? [{ label: 'Comments', icon: MessageSquare, onClick: onComments, badge: r.comments?.length }] : []),
+    // Pending requests stay editable (saved lines and new ones)
     ...(isPending && onEdit ? [{ label: 'Edit', icon: Pencil, onClick: onEdit }] : []),
     ...(r.kind === 'advance' && r.status === 'Approved' && onAddExpenses ? [{ label: 'Add Expenses', icon: Plus, onClick: onAddExpenses }] : []),
-    ...(isPending && onDelete ? [{ label: 'Delete', icon: Trash2, onClick: onDelete, tone: 'text-rose-500 active:bg-rose-50' }] : []),
+    ...(isPending && onDelete ? [{ label: 'Delete', icon: Trash2, onClick: onDelete }] : []),
   ];
 
   return (
@@ -492,15 +584,20 @@ const RequestCard: React.FC<{
 
         {linkedNote && <p className="text-[10.5px] font-semibold text-orange-700">{linkedNote}</p>}
 
-        <div className="grid grid-cols-3 rounded-xl border border-slate-100 divide-x divide-slate-100 text-center">
+        <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Amount', value: formatRupees(r.total) },
+            { label: 'Amount', value: formatRupees(r.total), lead: true },
             { label: 'Approved', value: r.approvedAmount !== undefined ? formatRupees(r.approvedAmount) : '—' },
-            { label: 'Paid On', value: r.paidOn ?? submittedOn(r.submittedAt) },
-          ].map(({ label, value }) => (
-            <div key={label} className="py-2 px-1 min-w-0">
-              <span className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
-              <span className="block mt-0.5 text-[11.5px] font-bold text-[#1E293B] tabular-nums truncate">{value}</span>
+            { label: 'Uploaded On', value: submittedOn(r.submittedAt) },
+          ].map(({ label, value, lead }) => (
+            <div
+              key={label}
+              className={`px-2.5 py-2 rounded-xl min-w-0 border ${lead ? 'bg-[#EEF4FF] border-[#DBE6FE]' : 'bg-slate-50 border-slate-100'}`}
+            >
+              <span className="block text-[10px] font-semibold text-slate-500">{label}</span>
+              <span className={`block mt-0.5 text-xs font-bold tabular-nums truncate ${lead ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>
+                {value}
+              </span>
             </div>
           ))}
         </div>
@@ -523,22 +620,39 @@ const RequestCard: React.FC<{
         )}
       </div>
 
-      {/* Staff actions */}
+      {/* Staff actions: soft buttons, Delete set apart as an icon */}
       {!onDecide && (
-        <div className="flex items-center border-t border-slate-100 divide-x divide-slate-100">
-          {actions.map(({ label, icon: Icon, onClick, tone }) => (
+        <div className="flex items-center gap-2 px-3.5 pb-3.5">
+          {actions
+            .filter((a) => a.label !== 'Delete')
+            .map(({ label, icon: Icon, onClick, badge }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 active:bg-slate-100 cursor-pointer"
+              >
+                <span className="relative shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-[#2F68FE]" />
+                  {badge ? (
+                    <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 rounded-full bg-[#2F68FE] text-white text-[8.5px] font-bold flex items-center justify-center tabular-nums ring-2 ring-slate-50">
+                      {badge}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="truncate">{label}</span>
+              </button>
+            ))}
+          {actions.some((a) => a.label === 'Delete') && (
             <button
-              key={label}
               type="button"
-              onClick={onClick}
-              className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-[11px] font-semibold cursor-pointer ${
-                tone ?? 'text-[#2F68FE] active:bg-blue-50'
-              }`}
+              onClick={onDelete}
+              aria-label="Delete request"
+              className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0 active:bg-rose-100 cursor-pointer"
             >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
+              <Trash2 className="w-4 h-4" />
             </button>
-          ))}
+          )}
         </div>
       )}
 
@@ -601,40 +715,106 @@ const SheetTop: React.FC<{ title: string; subtitle?: string; onClose: () => void
   </>
 );
 
-/** Item-by-item breakdown */
+const DetailRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-start justify-between gap-4 py-2.5 border-b border-slate-50 last:border-b-0">
+    <span className="text-slate-500 font-medium shrink-0">{label}</span>
+    <span className="font-bold text-[#1E293B] text-right min-w-0 break-words">{children}</span>
+  </div>
+);
+
+/** One expense line: its fields, Team Outing details and receipt */
+const ExpenseItemDetails: React.FC<{ item: ExpenseItem; heading?: string }> = ({ item: it, heading }) => (
+  <div className="space-y-3">
+    <section className="rounded-2xl border border-[#EBF0F7] bg-white p-4 shadow-2xs text-xs">
+      {heading && <h3 className="text-sm font-bold text-[#1E293B] mb-1">{heading}</h3>}
+      <DetailRow label="Category of Expenses">{it.category ?? '—'}</DetailRow>
+      <DetailRow label="For Branch">{it.branch ?? '—'}</DetailRow>
+      {it.expenseDate && <DetailRow label="Expense Date">{formatExpenseDate(it.expenseDate)}</DetailRow>}
+      <DetailRow label="Quantity">{it.quantity || '—'}</DetailRow>
+      <DetailRow label="Amount">{formatRupees(parseFloat(it.amount) || 0)}</DetailRow>
+      <div className="pt-2.5">
+        <span className="block text-slate-500 font-medium">Description</span>
+        {it.description ? (
+          <p className="mt-1.5 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[#334155] font-medium leading-relaxed whitespace-pre-line break-words">
+            {it.description}
+          </p>
+        ) : (
+          <p className="mt-1 text-slate-400 font-medium">—</p>
+        )}
+      </div>
+    </section>
+
+    {/* Team Outing: when it is and who it's for */}
+    {it.category === 'Team Outing' && it.outing && (
+      <section className="rounded-2xl border border-[#EBF0F7] bg-white p-4 shadow-2xs text-xs">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+            <Users className="w-4 h-4" />
+          </span>
+          <h3 className="text-sm font-bold text-[#1E293B]">Team Outing</h3>
+        </div>
+        <DetailRow label="Expense Date">{formatOutingDate(it.outing.date)}</DetailRow>
+        <div className="pt-2.5">
+          <span className="block text-slate-500 font-medium">Employees ({it.outing.employees.length})</span>
+          <ul className="mt-2 space-y-1.5">
+            {it.outing.employees.map((name, i) => (
+              <li key={name} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarTint(i + 1)}`}>
+                  {initialsOf(name)}
+                </span>
+                <span className="font-semibold text-[#1E293B] truncate">{name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    {it.receiptName && (
+      <section className="rounded-2xl border border-[#EBF0F7] bg-white p-3 shadow-2xs flex items-center gap-3">
+        <span
+          className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 ${
+            /\.pdf$/i.test(it.receiptName) ? 'bg-rose-50 text-rose-500' : 'bg-sky-50 text-sky-600'
+          }`}
+        >
+          {/\.pdf$/i.test(it.receiptName) ? <FileText className="w-4.5 h-4.5" /> : <ImageIcon className="w-4.5 h-4.5" />}
+          <span className="text-[8px] font-extrabold uppercase leading-none mt-0.5">{it.receiptName.split('.').pop()?.slice(0, 4)}</span>
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[10.5px] text-slate-400">Receipt</span>
+          <span className="block text-xs font-semibold text-[#1E293B] truncate">{it.receiptName}</span>
+        </span>
+      </section>
+    )}
+  </div>
+);
+
+/** One request: summary up top, then its expense line(s) */
 const RequestDetailSheet: React.FC<{ request: ExpenseRequest | null; onClose: () => void }> = ({ request: r, onClose }) => (
-  <BottomSheet isOpen={Boolean(r)} onClose={onClose} maxHeight="max-h-[88%]">
+  <BottomSheet isOpen={Boolean(r)} onClose={onClose} maxHeight="max-h-[90%]">
     {r && (
       <>
-        <SheetTop title={r.trackingNo} subtitle={`${EXPENSE_KIND_LABEL[r.kind]} · ${r.staffName} · ${submittedOn(r.submittedAt)}`} onClose={onClose} />
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-2.5">
-          {r.items.map((it, i) => (
-            <div key={it.id + i} className="rounded-2xl border border-[#EBF0F7] p-3.5 space-y-1.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-bold text-[#1E293B]">{it.category}</p>
-                  <p className="text-[11px] text-slate-500">
-                    {it.branch}
-                    {it.expenseDate ? ` · ${formatExpenseDate(it.expenseDate)}` : ''} · Qty {it.quantity}
-                  </p>
-                </div>
-                <span className="text-sm font-extrabold text-[#1E293B] tabular-nums shrink-0">{formatRupees(parseFloat(it.amount) || 0)}</span>
-              </div>
-              {it.description && <p className="text-[11.5px] text-slate-600 leading-relaxed">{it.description}</p>}
-              {it.receiptName && (
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#2F68FE]">
-                  <FileText className="w-3.5 h-3.5" />
-                  {it.receiptName}
-                </p>
-              )}
+        <SheetTop title={r.trackingNo} subtitle={`${EXPENSE_KIND_LABEL[r.kind]} · ${submittedOn(r.submittedAt)}`} onClose={onClose} />
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3 bg-[#F8FAFC]">
+          {/* Amount + status */}
+          <div className="rounded-2xl p-4 bg-[#2F68FE] text-white relative overflow-hidden">
+            <span className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" aria-hidden="true" />
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[11px] font-semibold text-blue-100">
+                {r.kind === 'advance' ? 'Requesting Advance Amount' : 'Total Reimbursement Amount'}
+              </p>
+              <span className={`relative px-2.5 py-0.5 rounded-full text-[10.5px] font-bold shrink-0 ${STATUS_CHIP[r.status]}`}>
+                {expenseStatusLabel(r)}
+              </span>
             </div>
-          ))}
-        </div>
-        <div className="shrink-0 px-5 pt-3 pb-6 border-t border-slate-100">
-          <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#EEF2FF]">
-            <span className="text-xs font-bold text-[#1E293B]">Total</span>
-            <span className="text-sm font-extrabold text-[#2F68FE] tabular-nums">{formatRupees(r.total)}</span>
+            <p className="mt-1 text-2xl font-extrabold tracking-tight tabular-nums">{formatRupees(r.total)}</p>
           </div>
+
+          {r.items.length === 1 ? (
+            <ExpenseItemDetails item={r.items[0]} />
+          ) : (
+            r.items.map((it, i) => <ExpenseItemDetails key={it.id + i} item={it} heading={`Expense ${i + 1}`} />)
+          )}
         </div>
       </>
     )}
@@ -977,6 +1157,10 @@ interface ExpenseReimbursementViewProps {
   myRequests: ExpenseRequest[];
   onSubmit: (kind: ExpenseRequestKind, items: ExpenseItem[], total: number, meta: ExpenseSubmitMeta) => void;
   onDelete: (id: string) => void;
+  /** Adds a comment to a request's thread */
+  onComment: (id: string, text: string) => void;
+  /** Your own messages show on the right of the thread */
+  currentUser: string;
   /** Present for managers: enables the "Team's Requests" tab with Approve / Decline */
   team?: {
     requests: ExpenseRequest[];
@@ -987,8 +1171,10 @@ interface ExpenseReimbursementViewProps {
 type FormState = { mode: FormMode; editing?: ExpenseRequest; advance?: ExpenseRequest };
 
 /** Payroll › Expense Reimbursement: Advance and Reimbursement tabs; managers also review their team's */
-export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> = ({ onBack, myRequests, onSubmit, onDelete, team }) => {
+export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> = ({ onBack, myRequests, onSubmit, onDelete, onComment, currentUser, team }) => {
   const [form, setForm] = useState<FormState | null>(null);
+  const [commentsId, setCommentsId] = useState<string | null>(null);
+  const commentsFor = myRequests.find((r) => r.id === commentsId) ?? null;
   const [scope, setScope] = useState<'mine' | 'team'>(team ? 'team' : 'mine');
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -1141,6 +1327,7 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
                 linkedNote={r.advanceId && byId(r.advanceId) ? `Against advance ${byId(r.advanceId)!.trackingNo}` : undefined}
                 onView={() => setDetail(r)}
                 onEdit={() => setForm({ mode: r.kind, editing: r })}
+                onComments={() => setCommentsId(r.id)}
                 onDelete={() => setDeleting(r)}
                 onAddExpenses={() => setForm({ mode: 'reimbursement', advance: r })}
               />
@@ -1175,6 +1362,15 @@ export const ExpenseReimbursementView: React.FC<ExpenseReimbursementViewProps> =
       )}
 
       <RequestDetailSheet request={detail} onClose={() => setDetail(null)} />
+      <CommentThreadSheet
+        isOpen={Boolean(commentsFor)}
+        title="Comments"
+        subtitle={commentsFor ? `${commentsFor.trackingNo} · ${formatRupees(commentsFor.total)}` : ''}
+        comments={commentsFor?.comments ?? []}
+        currentUser={currentUser}
+        onClose={() => setCommentsId(null)}
+        onSend={(text) => commentsId && onComment(commentsId, text)}
+      />
       <DeleteSheet
         request={deleting}
         onClose={() => setDeleting(null)}

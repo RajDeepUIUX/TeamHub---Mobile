@@ -83,7 +83,7 @@ import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
 import { PoliciesView } from './components/more/PoliciesView';
 import { SalaryStructureView } from './components/payroll/SalaryStructureView';
 import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
-import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, formatRupees, makeTrackingNo } from './data/reimbursementData';
+import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, makeTrackingNo, STAFF_BRANCH } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
 import { WorkTimingView } from './components/more/WorkTimingView';
 import { OTRequestView } from './components/more/OTRequestView';
@@ -173,6 +173,8 @@ export default function App() {
 
   // Logged-in user role (Staff by default, or ?role= in the URL); Manager review screens come later
   const [userRole, setUserRole] = useState<UserRole>(initialRole);
+  // Team's Attendance inner screens (V2 member / team records, bulk review) hide the My / Team tabs
+  const [teamMemberOpen, setTeamMemberOpen] = useState(false);
 
   // Auth: splash -> login (or forgot-password flow) -> app
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -2002,7 +2004,7 @@ export default function App() {
                     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))}
                   onSubmit={(kind, items, total, meta) => {
                     if (meta.editId) {
-                      // Edit a pending request in place (it stays pending)
+                      // Edit a pending request in place: saved lines can be changed and new ones added (it stays pending)
                       setExpenseRequests((prev) => prev.map((r) => (r.id === meta.editId ? { ...r, items, total } : r)));
                       showToast('Request updated.');
                       return;
@@ -2010,68 +2012,53 @@ export default function App() {
                     const now = new Date();
                     const todayKey = now.toISOString().slice(0, 10);
                     const seq = expenseRequests.filter((r) => r.staffName === resignationUser.staffName && r.submittedAt.slice(0, 10) === todayKey).length + 1;
-                    const req: ExpenseRequest = {
-                      id: `exp-${Date.now()}`,
-                      trackingNo: makeTrackingNo(items[0]?.branch ?? null, now, seq),
+                    // Each advance line is its own request with its own tracking number (BA/20102026/1, /2…)
+                    const groups = kind === 'advance' ? items.map((it) => [it]) : [items];
+                    const created: ExpenseRequest[] = groups.map((group, i) => ({
+                      id: `exp-${Date.now()}-${i}`,
+                      trackingNo: makeTrackingNo(STAFF_BRANCH, now, seq + i),
                       kind,
                       staffName: resignationUser.staffName,
                       staffCode: resignationUser.staffCode,
-                      items,
-                      total,
+                      items: group,
+                      total: group.reduce((n, it) => n + (parseFloat(it.amount) || 0), 0),
                       status: 'Pending',
-                      submittedAt: now.toISOString(),
+                      // a millisecond apart so the newest-first list keeps /2 above /1
+                      submittedAt: new Date(now.getTime() + i).toISOString(),
                       advanceId: meta.advanceId,
-                    };
-                    setExpenseRequests((prev) => [req, ...prev]);
-                    showToast(`${EXPENSE_KIND_LABEL[kind]} request ${req.trackingNo} sent for approval.`);
-                    if (!isManager) {
-                      pushNotification('Manager', {
-                        category: 'Reimbursement',
-                        title: `New ${EXPENSE_KIND_LABEL[kind].toLowerCase()} request from ${resignationUser.staffName}`,
-                        body: `${req.trackingNo} · ${formatRupees(total)} · ${items.length} ${items.length === 1 ? 'item' : 'items'}. Review it in Team's Requests.`,
-                        link: 'reimbursement',
-                        actionRequired: true,
-                      });
-                    }
+                    }));
+                    setExpenseRequests((prev) => [...created.slice().reverse(), ...prev]);
+                    showToast(
+                      created.length === 1
+                        ? `${EXPENSE_KIND_LABEL[kind]} request ${created[0].trackingNo} submitted.`
+                        : `${created.length} ${EXPENSE_KIND_LABEL[kind].toLowerCase()} requests submitted.`
+                    );
                   }}
                   onDelete={(id) => {
                     setExpenseRequests((prev) => prev.filter((r) => r.id !== id));
                     showToast('Request deleted.');
                   }}
-                  team={
-                    isManager
-                      ? {
-                          requests: expenseRequests.filter((r) => r.staffName !== resignationUser.staffName),
-                          onReview: (id, decision, comment) => {
-                            const reviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-                            const target = expenseRequests.find((r) => r.id === id);
-                            setExpenseRequests((prev) =>
-                              prev.map((r) =>
-                                r.id === id
-                                  ? {
-                                      ...r,
-                                      status: decision,
-                                      reviewedBy: resignationUser.staffName,
-                                      reviewedAt,
-                                      managerComment: comment || undefined,
-                                      approvedAmount: decision === 'Approved' ? r.total : undefined,
-                                    }
-                                  : r
-                              )
-                            );
-                            showToast(decision === 'Approved' ? 'Request approved.' : 'Request declined.');
-                            if (target?.staffName === CURRENT_STAFF.staffName) {
-                              const verb = decision === 'Approved' ? 'approved' : 'declined';
-                              pushNotification('Staff', {
-                                category: 'Reimbursement',
-                                title: `Your ${EXPENSE_KIND_LABEL[target.kind].toLowerCase()} request was ${verb}`,
-                                body: `${target.trackingNo} · ${formatRupees(target.total)} · by ${resignationUser.staffName}${comment ? ` — “${comment}”` : '.'}`,
-                                link: 'reimbursement',
-                              });
+                  currentUser={resignationUser.staffName}
+                  onComment={(id, text) =>
+                    setExpenseRequests((prev) =>
+                      prev.map((r) =>
+                        r.id === id
+                          ? {
+                              ...r,
+                              comments: [
+                                ...(r.comments ?? []),
+                                {
+                                  id: `c-${Date.now()}`,
+                                  author: resignationUser.staffName,
+                                  role: isManager ? 'Manager' : 'Staff',
+                                  text,
+                                  createdAt: new Date().toISOString(),
+                                },
+                              ],
                             }
-                          },
-                        }
-                      : undefined
+                          : r
+                      )
+                    )
                   }
                 />
               ) : appTab === 'more' && moreModule === 'salary-structure-declaration' ? (
@@ -2336,9 +2323,9 @@ export default function App() {
                       {isManager && activeModuleTab === 'Attendance' && attendanceTab === 'team' ? (
                         <div className="screen-title flex items-center gap-2">
                           <h1 className="text-base font-bold text-[#1E293B]">{activeModuleTab}</h1>
-                          {/* Design versions (V1 current, V2 member list, V3 staff picker) */}
+                          {/* Design versions (V1 single list, V2 member list) */}
                           <div className="pointer-events-auto flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/70" role="tablist" aria-label="Design version">
-                            {(['V1', 'V2', 'V3'] as const).map((v) => (
+                            {(['V1', 'V2'] as const).map((v) => (
                               <button
                                 key={v}
                                 type="button"
@@ -2436,7 +2423,7 @@ export default function App() {
                 ) : (
                   <div className="flex-1 min-h-0 flex flex-col">
                   {/* Manager: My Attendance / Team's Attendance (segmented, so it reads as a view switch) */}
-                  {isManager && (
+                  {isManager && !(attendanceTab === 'team' && teamMemberOpen) && (
                     <div className="shrink-0 px-4 pt-3 pb-1 bg-[#F8FAFC]">
                       <SegmentedTabs
                         ariaLabel="Attendance view"
@@ -2464,6 +2451,7 @@ export default function App() {
                       onReview={reviewAttendance}
                       onBulkReview={reviewAttendanceMany}
                       onViewLogs={(rec) => setSelectedPunchRecord(rec)}
+                      onInnerScreenChange={setTeamMemberOpen}
                     />
                   ) : (
                   /* 2. Scrollable Attendance Content */
