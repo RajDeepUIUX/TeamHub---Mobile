@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, Wand2, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
@@ -721,8 +721,6 @@ export const ProfFeesView: React.FC<{
         {/* Staff summary */}
         <dl className="grid grid-cols-2 gap-2.5 p-3 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs text-xs">
           {[
-            { label: 'Staff Name', value: staffName },
-            { label: 'Date Of Joining', value: joiningDate },
             { label: 'Gross Actual Package', value: inr(grossPackage) },
             { label: 'Main Staff Package', value: inr(mainPackage) },
           ].map((x) => (
@@ -737,29 +735,35 @@ export const ProfFeesView: React.FC<{
         <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5 space-y-3">
           <div>
             <h3 className="text-[13px] font-bold text-[#1E293B]">Manage Family Members</h3>
-            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
-              Select family members to add professional fee accounts or{' '}
-              <button
-                type="button"
-                onClick={() => setIsAddOpen(true)}
-                className="font-semibold text-[#2F68FE] underline underline-offset-2 cursor-pointer"
-              >
-                click here
-              </button>{' '}
-              to add new family member.
-            </p>
+            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">Select family members to add professional fee accounts.</p>
           </div>
           <button
             type="button"
             onClick={() => setIsPickerOpen(true)}
             className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs shadow-2xs cursor-pointer active:bg-slate-50"
           >
+            <Users className={`w-4 h-4 shrink-0 ${selectedIds.length ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
             <span className={`flex-1 text-left ${selectedIds.length ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-500'}`}>
               {selectedIds.length
                 ? `${selectedIds.length} member${selectedIds.length > 1 ? 's' : ''} selected`
                 : 'Select members'}
             </span>
             <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+          </button>
+
+          {/* Someone not in the list yet */}
+          <div className="flex items-center gap-2 text-[10.5px] font-semibold text-slate-400">
+            <span className="flex-1 h-px bg-slate-100" />
+            Not in the list?
+            <span className="flex-1 h-px bg-slate-100" />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddOpen(true)}
+            className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 flex items-center justify-center gap-2 text-xs font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Family Member
           </button>
         </section>
 

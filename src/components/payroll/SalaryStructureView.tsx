@@ -441,14 +441,7 @@ export const SalaryStructureView: React.FC<{
             onClick={() => setPanFor(d)}
             className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] transition-transform cursor-pointer"
           >
-            <div className="p-3.5 pb-3">
-              <p className="text-[10.5px] text-slate-500">Staff Name</p>
-              <h3 className="mt-0.5 text-sm font-bold text-[#1E293B]">
-                {d.staffName}
-              </h3>
-            </div>
-
-            <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
+            <dl className="mx-3.5 mt-3.5 grid grid-cols-2 gap-2 text-xs">
               {[
                 { label: 'Effective Month & Year', value: d.effectiveMonth, wide: true },
                 { label: 'Reporting Manager', value: d.reportingManager },

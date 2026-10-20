@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Info, X } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Info, SlidersHorizontal, X } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 
 /* ---------------------------------- Model ---------------------------------- */
@@ -768,22 +768,27 @@ export const SalaryComponentsStep: React.FC<{
 
               {/* Prof. Fees opted in: allocation + link to manage it */}
               {m.id === 'profFees' && choices.optedIn.profFees && (
-                <div className="px-2.5 pb-3 pt-0.5 space-y-2 bg-white border-t border-slate-100 animate-in fade-in duration-200">
-                  <div className="mt-2.5 px-3 py-2.5 rounded-xl bg-[#EEF4FF] border border-[#DBE6FE]">
-                    <p className="text-[10.5px] text-slate-500">Total Prof. Fees Allocation</p>
-                    <p className="mt-0.5 text-sm font-bold text-[#1E293B] tabular-nums">{inr(choices.profFeesAllocation)}</p>
-                  </div>
-                  <p className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 text-center leading-relaxed">
-                    Please{' '}
+                <div className="px-2.5 pb-2.5 pt-2.5 bg-white border-t border-slate-100 animate-in fade-in duration-200">
+                  <div className="rounded-xl border border-[#DBE6FE] overflow-hidden">
+                    <div className="px-3 py-2.5 bg-[#EEF4FF]">
+                      <p className="text-[10.5px] text-slate-500">Total Prof. Fees Allocation</p>
+                      <p className="mt-0.5 text-base font-extrabold text-[#1E293B] tabular-nums">{inr(choices.profFeesAllocation)}</p>
+                    </div>
+                    {/* Whole row is the tap target (a tiny inline link is hard to hit on a phone) */}
                     <button
                       type="button"
                       onClick={onManageProfFees}
-                      className="font-semibold text-[#2F68FE] underline underline-offset-2 cursor-pointer"
+                      className="w-full min-h-12 px-3 py-2.5 bg-white border-t border-[#DBE6FE] flex items-center gap-2.5 text-left active:bg-blue-50 cursor-pointer"
                     >
-                      click here
-                    </button>{' '}
-                    to manage your professional fees.
-                  </p>
+                      <span className="w-8 h-8 rounded-lg bg-blue-50 text-[#2F68FE] flex items-center justify-center shrink-0">
+                        <SlidersHorizontal className="w-4 h-4" />
+                      </span>
+                      <span className="flex-1 min-w-0 text-[11.5px] text-slate-600 leading-snug">
+                        Please <span className="font-bold text-[#2F68FE]">click here</span> to manage your professional fees.
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0" />
+                    </button>
+                  </div>
                 </div>
               )}
 
