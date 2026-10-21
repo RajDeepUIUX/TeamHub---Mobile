@@ -649,6 +649,8 @@ export const ProfFeesView: React.FC<{
     if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250);
   };
   const [accounts, setAccounts] = useState<ProfFeeAccount[]>(initialAccounts);
+  const feesTotal = totalProfFees(accounts);
+  const liveMain = Math.max(0, mainPackage - feesTotal);
   const [errors, setErrors] = useState<Record<string, AccountErrors>>({});
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -719,16 +721,28 @@ export const ProfFeesView: React.FC<{
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
         {/* Staff summary */}
+        {/* Gross stays fixed; professional fees come out of the main (salary) package, live as amounts are typed */}
         <dl className="grid grid-cols-2 gap-2.5 p-3 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs text-xs">
-          {[
-            { label: 'Gross Actual Package', value: inr(grossPackage) },
-            { label: 'Main Staff Package', value: inr(mainPackage) },
-          ].map((x) => (
-            <div key={x.label} className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
-              <dt className="text-[10.5px] text-slate-500">{x.label}</dt>
-              <dd className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums">{x.value}</dd>
-            </div>
-          ))}
+          <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+            <dt className="text-[10.5px] text-slate-500">Gross Actual Package</dt>
+            <dd className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums">{inr(grossPackage)}</dd>
+          </div>
+          <div
+            className={`px-3 py-2 rounded-xl border min-w-0 transition-colors ${
+              feesTotal > 0 ? 'bg-[#EEF4FF] border-[#DBE6FE]' : 'bg-slate-50 border-slate-100'
+            }`}
+          >
+            <dt className="text-[10.5px] text-slate-500">Main Staff Package</dt>
+            <dd key={liveMain} className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums animate-in fade-in duration-300">
+              {inr(liveMain)}
+            </dd>
+          </div>
+          {feesTotal > 0 && (
+            <p className="col-span-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-rose-50/60 border border-rose-100 text-[11px] animate-in fade-in duration-200">
+              <span className="text-slate-600">Professional fees deducted</span>
+              <span className="font-bold text-rose-600 tabular-nums">− {inr(feesTotal)}</span>
+            </p>
+          )}
         </dl>
 
         {/* Manage family members */}

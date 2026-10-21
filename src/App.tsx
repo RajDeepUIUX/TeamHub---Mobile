@@ -81,7 +81,7 @@ import {
 } from './data/notificationsData';
 import { MoreView, MoreModule, MORE_GROUPS } from './components/more/MoreView';
 import { PoliciesView } from './components/more/PoliciesView';
-import { SalaryStructureView } from './components/payroll/SalaryStructureView';
+import { SalaryStructureView, DeclarationRecord } from './components/payroll/SalaryStructureView';
 import { ExpenseReimbursementView } from './components/payroll/ExpenseReimbursementView';
 import { TEAM_EXPENSE_REQUESTS_SEED, ExpenseRequest, EXPENSE_KIND_LABEL, makeTrackingNo, STAFF_BRANCH } from './data/reimbursementData';
 import { SideDrawer } from './components/home/SideDrawer';
@@ -201,6 +201,8 @@ export default function App() {
   };
   // Module opened from the More tab (e.g. 'work-timing'); null shows the module list
   const [moreModule, setMoreModule] = useState<string | null>(null);
+  // Salary Structure Declarations finished this session (both signatures done), listed with View Details
+  const [salarySubmissions, setSalarySubmissions] = useState<{ declarationId: string; record: DeclarationRecord }[]>([]);
   // Side drawer (replaces the More tab). Modules opened from it return to the tab they were opened on
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
@@ -2063,6 +2065,8 @@ export default function App() {
                 />
               ) : appTab === 'more' && moreModule === 'salary-structure-declaration' ? (
                 <SalaryStructureView
+                  submissions={salarySubmissions}
+                  onSubmitted={(declarationId, record) => setSalarySubmissions((prev) => [...prev, { declarationId, record }])}
                   declarations={[
                     {
                       id: 'ssd-2026-10',

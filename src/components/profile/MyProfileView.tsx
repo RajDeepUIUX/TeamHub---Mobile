@@ -23,6 +23,7 @@ import {
   ChevronDown,
   X,
 } from 'lucide-react';
+import { QualificationSheet, parseQualificationData } from './QualificationSheet';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
@@ -569,15 +570,9 @@ const FieldInput: React.FC<{
   }
 };
 
-const SubHeading: React.FC<{ children: React.ReactNode; right?: React.ReactNode; accent?: boolean }> = ({ children, right, accent }) => (
-  <div className="flex items-center gap-2.5 mb-3">
-    <span className={`text-[10.5px] font-bold uppercase tracking-wider ${accent ? 'text-[#2F68FE]' : 'text-slate-500'}`}>{children}</span>
-    <span className="flex-1 h-px bg-slate-100" />
-    {right}
-  </div>
-);
-
 /** 2-column grid of fields (view or edit), with Father / Mother style sub-groups */
+/** Profile value key holding a family member's qualifications & certificates (JSON) */
+const qualKey = (group: string) => `qual${group}`;
 const FieldGrid: React.FC<{
   fields: ProfileField[];
   values: ProfileValues;
@@ -588,6 +583,13 @@ const FieldGrid: React.FC<{
   /** The section already carries an "Auto" tag */
   hideAutoTags?: boolean;
 }> = ({ fields, values, editing, errors, errorKey, onChange, hideAutoTags }) => {
+  // Which family member's Qualification & Certificate sheet is open
+  const [qualFor, setQualFor] = useState<string | null>(null);
+  // e.g. "Robert Smith": the group's Full Name, shown under the sheet title
+  const memberName = (group: string) => {
+    const nameField = fields.find((x) => x.group === group && x.label === 'Full Name');
+    return nameField ? String(values[nameField.key] ?? '') : '';
+  };
   const gap = editing ? 'gap-x-3 gap-y-3.5' : 'gap-x-4 gap-y-3.5';
   const render = (f: ProfileField) => {
     if (f.question) {
@@ -694,7 +696,7 @@ const FieldGrid: React.FC<{
     if (!editing) {
       return (
         <div key={f.key} className={isWide(f) || f.type === 'textarea' || f.type === 'file' ? 'col-span-2' : 'min-w-0'}>
-          <span className="block text-[11px] text-slate-400 leading-snug">{f.label}</span>
+          <span className="block text-[11px] font-medium text-slate-500 leading-snug">{f.label}</span>
           <FieldValue field={f} values={values} />
           {f.hint && <span className="block text-[10.5px] text-slate-400 mt-0.5">{f.hint}</span>}
         </div>
@@ -722,18 +724,110 @@ const FieldGrid: React.FC<{
   };
 
   return (
+    <>
     <div className={`grid grid-cols-2 items-start ${gap}`}>
       {groupRuns(visibleFields(fields, values)).map((run, i) =>
         run.group ? (
-          <div key={`run-${i}`} className="col-span-2 pt-1">
-            <SubHeading>{run.group}</SubHeading>
-            <div className={`grid grid-cols-2 items-start ${gap}`}>{run.fields.map(render)}</div>
+          // Each group (Father, Mother…) is its own card so the people are easy to tell apart (view and edit)
+          <div key={`run-${i}`} className="col-span-2 rounded-2xl border border-slate-200 bg-white overflow-hidden">
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border-b border-slate-200">
+              <span className="w-7 h-7 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                <User className="w-3.5 h-3.5" />
+              </span>
+              <span className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] capitalize truncate">{run.group.toLowerCase()}</span>
+              {/* Yes/no options (e.g. insurance) sit on the right of the person's header */}
+              {run.fields
+                .filter((f) => f.type === 'checkbox')
+                .map((f) => {
+                  const on = Boolean(values[f.key]);
+                  return editing ? (
+                    <button
+                      key={f.key}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      onClick={() => onChange(f.key, !on)}
+                      className="flex items-center gap-1.5 shrink-0 text-[11px] font-semibold text-slate-700 cursor-pointer"
+                    >
+                      <span
+                        className={`w-4.5 h-4.5 rounded-[5px] border-2 flex items-center justify-center ${
+                          on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
+                        }`}
+                      >
+                        {on && <Check className="w-3 h-3 stroke-[3]" />}
+                      </span>
+                      {f.checkboxText ?? f.label}
+                    </button>
+                  ) : (
+                    <span
+                      key={f.key}
+                      className={`flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-[10.5px] font-bold ${
+                        on ? 'bg-emerald-50 text-emerald-600' : 'bg-white border border-slate-200 text-slate-400'
+                      }`}
+                    >
+                      {on && <Check className="w-3 h-3 stroke-[3]" />}
+                      {f.label} {on ? 'opted in' : 'not opted'}
+                    </span>
+                  );
+                })}
+            </div>
+            <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => f.type !== 'checkbox').map(render)}</div>
+            {/* Family member's qualifications & certificates (edited in a sheet, saved with the profile draft) */}
+            {(() => {
+              const group = run.group;
+              const data = parseQualificationData(values[qualKey(group)]);
+              const nq = data.qualifications.length;
+              const nc = data.certifications.length;
+              const summary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
+                .filter(Boolean)
+                .join(' · ');
+              if (!editing && !summary) return null;
+              return (
+                <div className="px-3.5 pb-3.5">
+                  {editing ? (
+                    <button
+                      type="button"
+                      onClick={() => setQualFor(group)}
+                      className={`w-full min-h-11 px-3 py-2 rounded-xl border flex items-center gap-2.5 text-left cursor-pointer ${
+                        summary ? 'border-slate-200 bg-slate-50 active:bg-slate-100' : 'border-dashed border-[#2F68FE]/50 bg-blue-50/40 active:bg-blue-50'
+                      }`}
+                    >
+                      <GraduationCap className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-xs font-bold text-[#2F68FE]">
+                          {summary ? 'Qualification & Certificate' : 'Add Qualification & Certificate'}
+                        </span>
+                        {summary && <span className="block text-[10.5px] text-slate-500 truncate">{summary}</span>}
+                      </span>
+                      {summary ? <Pencil className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" /> : <Plus className="w-4 h-4 text-[#2F68FE] shrink-0" />}
+                    </button>
+                  ) : (
+                    <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600">
+                      <GraduationCap className="w-4 h-4 text-[#2F68FE] shrink-0" />
+                      <span className="font-semibold text-[#1E293B]">Qualification &amp; Certificate</span>
+                      <span className="ml-auto truncate">{summary}</span>
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <React.Fragment key={`run-${i}`}>{run.fields.map(render)}</React.Fragment>
         )
       )}
     </div>
+    <QualificationSheet
+      isOpen={Boolean(qualFor)}
+      subtitle={qualFor ? [qualFor, memberName(qualFor)].filter(Boolean).join(' · ') : ''}
+      initial={parseQualificationData(qualFor ? values[qualKey(qualFor)] : '')}
+      onClose={() => setQualFor(null)}
+      onSave={(data) => {
+        if (qualFor) onChange(qualKey(qualFor), JSON.stringify(data));
+        setQualFor(null);
+      }}
+    />
+    </>
   );
 };
 
@@ -794,52 +888,57 @@ const ListSection: React.FC<{
           <p className="text-[11px] text-slate-400">{editing ? `Tap ${config.addLabel} to get started.` : 'Tap Edit to add one.'}</p>
         </div>
       ) : (
-        <div className="space-y-5">
-          {items.map((item, i) => (
-            <div key={item.id} data-item={item.id}>
-              {items.length === 1 && !item[NEW_FLAG] ? (
-                // A single entry needs no "Qualification 1" heading; edit mode keeps just the Remove action
-                editing && (
-                  <div className="flex justify-end -mt-1 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => onRemove(item.id)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Remove
-                    </button>
-                  </div>
-                )
-              ) : (
-              <SubHeading
-                accent
-                right={
-                  editing && (
-                    <button
-                      type="button"
-                      onClick={() => onRemove(item.id)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-rose-500 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Remove
-                    </button>
-                  )
-                }
+        <div className="space-y-3">
+          {items.map((item, i) => {
+            const isNew = Boolean(item[NEW_FLAG]);
+            // The entry's first field (e.g. the member's name) identifies it in the header
+            const first = config.fields[0];
+            const lead = first && typeof item[first.key] === 'string' ? (item[first.key] as string).trim() : '';
+            return (
+              // Each entry is its own card so where one ends and the next begins is obvious
+              <div
+                key={item.id}
+                data-item={item.id}
+                className={`rounded-2xl border overflow-hidden ${isNew ? 'border-[#2F68FE]/40 ring-2 ring-[#2F68FE]/10' : 'border-slate-200'}`}
               >
-                {item[NEW_FLAG] ? `New ${config.itemLabel.toLowerCase()}` : `${config.itemLabel} ${i + 1}`}
-              </SubHeading>
-              )}
-              <FieldGrid
-                fields={config.fields}
-                values={item}
-                editing={editing}
-                errors={errors}
-                errorKey={(k) => listErrorKey(config.key, item.id, k)}
-                onChange={(k, v) => onChange(item.id, k, v)}
-              />
-            </div>
-          ))}
+                <div className={`flex items-center gap-2.5 px-3.5 py-2.5 border-b ${isNew ? 'bg-blue-50/70 border-blue-100' : 'bg-slate-50 border-slate-200'}`}>
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      isNew ? 'bg-[#2F68FE] text-white' : 'bg-blue-100 text-[#2F68FE]'
+                    }`}
+                  >
+                    {isNew ? <Plus className="w-3.5 h-3.5" /> : i + 1}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-[#1E293B] truncate">
+                      {isNew ? `New ${config.itemLabel.toLowerCase()}` : lead || `${config.itemLabel} ${i + 1}`}
+                    </span>
+                    {!isNew && lead && <span className="block text-[10.5px] text-slate-500">{`${config.itemLabel} ${i + 1}`}</span>}
+                  </span>
+                  {editing && (
+                    <button
+                      type="button"
+                      onClick={() => onRemove(item.id)}
+                      className="h-8 -mr-1 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-rose-500 active:bg-rose-50 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="p-3.5 bg-white">
+                  <FieldGrid
+                    fields={config.fields}
+                    values={item}
+                    editing={editing}
+                    errors={errors}
+                    errorKey={(k) => listErrorKey(config.key, item.id, k)}
+                    onChange={(k, v) => onChange(item.id, k, v)}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
