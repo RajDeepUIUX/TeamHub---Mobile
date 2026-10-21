@@ -252,19 +252,7 @@ export const ClientHiringPricingView: React.FC<Props> = ({ country, onCreateRequ
     <div className="relative flex-1 flex flex-col bg-white text-[#101828] overflow-hidden select-none">
       <ScreenHeader title="Pricing & Hiring" onBack={onBack} />
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {onCreateRequirements && (
-          <div className="px-4 pt-3 flex items-center justify-end">
-            <button
-              type="button"
-              onClick={() => setFormOpen(true)}
-              className="h-9 px-3 rounded-md border border-[#3A58EF] bg-white text-[#3A58EF] text-xs font-semibold flex items-center gap-1.5 shrink-0 active:bg-[#EEF1FE] cursor-pointer"
-            >
-              <UserRoundPlus className="w-4 h-4" /> Add Requirement
-            </button>
-          </div>
-        )}
-
-        <div className="sticky top-0 z-10 mt-2 bg-white/95 backdrop-blur border-b border-[#EAECF0]">
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-[#EAECF0]">
           <div
             ref={tabsRef}
             role="tablist"
@@ -281,10 +269,10 @@ export const ClientHiringPricingView: React.FC<Props> = ({ country, onCreateRequ
                   role="tab"
                   aria-selected={active}
                   onClick={() => setTab(t.id)}
-                  className={`shrink-0 h-9 px-3.5 rounded-full border text-[12.5px] font-semibold whitespace-nowrap flex items-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B5FE9] ${
+                  className={`shrink-0 h-9 px-3.5 rounded-full border text-[12.5px] font-semibold whitespace-nowrap flex items-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
                     active
-                      ? 'bg-[#5B5FE9] border-[#5B5FE9] text-white shadow-[0_6px_14px_-6px_rgba(91,95,233,0.65)]'
-                      : 'bg-white border-[#E4E7EC] text-[#475467] active:bg-[#F4F3FF] active:text-[#5B5FE9]'
+                      ? 'bg-[#2F68FE] border-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.65)]'
+                      : 'bg-white border-[#E4E7EC] text-[#475467] active:bg-[#EFF6FF] active:text-[#2F68FE]'
                   }`}
                 >
                   {t.label}
@@ -316,6 +304,18 @@ export const ClientHiringPricingView: React.FC<Props> = ({ country, onCreateRequ
           </div>
         )}
       </div>
+
+      {onCreateRequirements && (
+        <div className="px-4 py-3 bg-white border-t border-[#EAECF0] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+          <button
+            type="button"
+            onClick={() => setFormOpen(true)}
+            className="w-full h-12 rounded-xl bg-[#3A58EF] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-[0_6px_16px_-6px_rgba(58,88,239,0.6)] active:bg-[#2E47CC] cursor-pointer"
+          >
+            <UserRoundPlus className="w-4 h-4" /> Add Requirement
+          </button>
+        </div>
+      )}
 
       <RequirementSavedSheet
         isOpen={Boolean(saved)}

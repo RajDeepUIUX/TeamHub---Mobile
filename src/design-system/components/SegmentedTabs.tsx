@@ -42,7 +42,7 @@ export function SegmentedTabs<T extends string>({ options, value, onChange, aria
             {badge ? (
               <span
                 className={`min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${
-                  isActive ? 'bg-violet-500 text-white' : 'bg-slate-300/70 text-slate-600'
+                  isActive ? 'bg-[#2F68FE] text-white' : 'bg-slate-300/70 text-slate-600'
                 }`}
               >
                 {badge}

@@ -58,7 +58,7 @@ const ListSkeleton: React.FC = () => (
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="min-w-0">
     <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
-    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
+    <dd className="mt-0.5 text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words">{children}</dd>
   </div>
 );
 
@@ -229,7 +229,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
         <button
           type="button"
           onClick={() => open(s)}
-          className="h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center gap-1.5 active:bg-[#1D4ED8] shrink-0 cursor-pointer"
+          className="h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] shrink-0 cursor-pointer"
         >
           {status === 'In Progress' ? <RotateCw className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
           {status === 'In Progress' ? 'Resume Survey' : 'Start Survey'}
@@ -270,12 +270,12 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                     <button
                       type="button"
                       onClick={() => open(s)}
-                      className="text-left text-[#2F68FE] font-medium underline-offset-2 active:underline cursor-pointer"
+                      className="text-left text-[#2F68FE] font-bold underline-offset-2 active:underline cursor-pointer"
                     >
                       {SURVEY_TYPE_LABEL[s.type]}
                     </button>
                   ) : (
-                    <span className="font-medium text-[#1E293B]">{SURVEY_TYPE_LABEL[s.type]}</span>
+                    <span className="font-bold text-[#1E293B]">{SURVEY_TYPE_LABEL[s.type]}</span>
                   )}
                 </span>
               </span>
@@ -287,7 +287,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
               </span>
             </div>
 
-            <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
+            <dl className="mt-3 p-3 rounded-xl bg-[#F8FAFC] border border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
               <Field label="Staff Name">{s.staffName ?? '-'}</Field>
               <Field label="Submitted By">{s.completed ? s.assignedTo : '-'}</Field>
               <Field label="Period">{s.period ?? '-'}</Field>
@@ -303,7 +303,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
             </dl>
           </div>
 
-          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-end gap-2">
+          <div className="px-3.5 py-2.5 border-t border-slate-100 bg-[#FAFBFD] flex items-center justify-end gap-2">
             {actionButton(s)}
           </div>
         </Card>

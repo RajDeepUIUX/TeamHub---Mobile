@@ -235,7 +235,7 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     id: 'cn-12',
     category: 'Learning',
     title: 'Charvi Nair completed a mandatory course',
-    body: 'Ethics for Tax Professionals (2 CPE hrs). 4 of 5 mandatory courses done.',
+    body: 'Information Security Policy (1 CPE hr). 1 of 2 mandatory courses done.',
     createdAt: ago(60 * 74),
     read: true,
     link: 'mandatory-learning',

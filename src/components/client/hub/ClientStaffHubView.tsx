@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bookmark, BookmarkCheck, Headset, Info, Loader2, SearchX, Store, UsersRound, X } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Headset, Info, Loader2, SearchX, Store, X } from 'lucide-react';
 import { SegmentedTabs } from '../../../design-system/components/SegmentedTabs';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
@@ -272,36 +272,36 @@ export const ClientStaffHubView: React.FC<Props> = ({
             >
               <div className={`flex items-center gap-2 ${canAdd ? 'pr-11' : ''}`}>
                 <DomainTile domain={p.domain} />
-                <span className="text-[12px] font-semibold text-slate-600 truncate">{p.domain}</span>
-              </div>
-
-              <div className="mt-2.5 flex items-start gap-2">
-                <h3 className="flex-1 min-w-0 text-[15px] font-extrabold text-[#1E293B] leading-snug">
-                  {p.profile} <span className="tabular-nums">({p.resumeId})</span>
-                </h3>
-                <span className="shrink-0 mt-px">
+                <span className="flex-1 min-w-0 text-[12px] font-semibold text-slate-500 truncate">{p.domain}</span>
+                <span className="shrink-0">
                   <Pill tone="indigo">{r.level}</Pill>
                 </span>
               </div>
 
-              <dl className={`mt-3 grid ${experience ? 'grid-cols-3' : 'grid-cols-2'} divide-x divide-slate-200 text-[11px]`}>
+              <h3 className="mt-2.5 text-[15px] font-extrabold text-[#1E293B] leading-snug">
+                {p.profile} <span className="tabular-nums font-semibold text-slate-400">({p.resumeId})</span>
+              </h3>
+
+              <dl
+                className={`mt-3 grid ${experience ? 'grid-cols-3' : 'grid-cols-2'} rounded-xl bg-[#F8FAFC] border border-slate-100 py-2.5 divide-x divide-slate-200 text-[11px]`}
+              >
                 {experience && (
-                  <div className="min-w-0 pr-3">
-                    <dt className="text-slate-400">Total Experience</dt>
-                    <dd className="mt-0.5 font-semibold text-[#1E293B] leading-snug">{experience}</dd>
+                  <div className="min-w-0 px-3">
+                    <dt className="text-[10.5px] font-medium text-slate-400">Total Experience</dt>
+                    <dd className="mt-1 font-bold text-[#1E293B] leading-snug">{experience}</dd>
                   </div>
                 )}
-                <div className={`min-w-0 ${experience ? 'px-3' : 'pr-3'}`}>
-                  <dt className="text-slate-400">Joining</dt>
-                  <dd className={`mt-0.5 font-semibold leading-snug ${p.noticeDays === 0 ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{joiningLabel(p.noticeDays)}</dd>
+                <div className="min-w-0 px-3">
+                  <dt className="text-[10.5px] font-medium text-slate-400">Joining</dt>
+                  <dd className={`mt-1 font-bold leading-snug ${p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#1E293B]'}`}>{joiningLabel(p.noticeDays)}</dd>
                 </div>
                 <div className="min-w-0 px-3">
-                  <dt className="text-slate-400">Location</dt>
-                  <dd className="mt-0.5 font-semibold text-[#1E293B] leading-snug truncate">{p.location}</dd>
+                  <dt className="text-[10.5px] font-medium text-slate-400">Location</dt>
+                  <dd className="mt-1 font-bold text-[#1E293B] leading-snug truncate">{p.location}</dd>
                 </div>
               </dl>
 
-              {r.summary && <p className="mt-3 pt-3 border-t border-slate-100 text-[12px] text-slate-600 leading-relaxed line-clamp-2">{r.summary}</p>}
+              {r.summary && <p className="mt-3 text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
             </div>
 
             {canAdd && (
@@ -320,11 +320,11 @@ export const ClientStaffHubView: React.FC<Props> = ({
           </div>
 
           {skills.length > 0 && (
-            <div className="mx-3.5 pt-3 pb-3.5 border-t border-slate-100">
-              <h4 className="text-[13px] font-semibold text-[#1E293B]">Skills</h4>
+            <div className="px-3.5 pt-1 pb-3.5">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Skills</h4>
               <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Skills">
                 {shownSkills.map((s) => (
-                  <li key={s} className="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] font-medium text-slate-600 leading-snug">
+                  <li key={s} className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-medium text-slate-600 leading-snug">
                     {s}
                   </li>
                 ))}
@@ -334,7 +334,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                       type="button"
                       onClick={() => setExpandedSkills((ids) => (skillsOpen ? ids.filter((x) => x !== p.id) : [...ids, p.id]))}
                       aria-expanded={skillsOpen}
-                      className="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] font-semibold text-[#2F68FE] leading-snug active:bg-slate-200 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg border border-[#DBEAFE] bg-[#EFF6FF] text-[11px] font-semibold text-[#2F68FE] leading-snug active:bg-blue-100 cursor-pointer"
                     >
                       {skillsOpen ? 'Show Less' : 'Show More'}
                     </button>
@@ -344,10 +344,10 @@ export const ClientStaffHubView: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="px-3.5 py-3 border-t border-slate-100">
+          <div className="px-3.5 py-3 border-t border-slate-100 bg-[#FAFBFD] rounded-b-2xl">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0 flex items-center gap-1">
-                <p className="text-[14px] font-extrabold text-[#1E293B] tabular-nums">{rateLabel(p)}</p>
+                <p className="text-[16px] font-extrabold text-[#1E293B] tabular-nums">{rateLabel(p)}</p>
                 <button
                   type="button"
                   onClick={() => setInfoId(infoOpen ? null : p.id)}
@@ -363,7 +363,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   type="button"
                   onClick={open}
                   aria-label={`View resume ${p.resumeId}`}
-                  className="h-10 px-5 rounded-lg bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+                  className="h-10 px-5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] cursor-pointer"
                 >
                   View Resume
                 </button>
@@ -413,23 +413,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
 
       <div ref={listRef} inert={Boolean(resumeProfile)} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3">
-          <div className="flex items-center gap-3">
-            <p className="flex-1 min-w-0 text-[12px] text-slate-500 leading-snug">Browse resumes and shortlist candidates to interview.</p>
-            {onOpenShortlisted && (
-              <button
-                type="button"
-                onClick={onOpenShortlisted}
-                aria-label={`Shortlisted Candidates (${candidates.length})`}
-                className="h-8 pl-2.5 pr-1.5 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1 active:bg-blue-100 shrink-0 cursor-pointer"
-              >
-                <UsersRound className="w-3.5 h-3.5" />
-                Shortlisted
-                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{candidates.length}</span>
-              </button>
-            )}
-          </div>
-
-          <div className="mt-3">
+          <div>
             <SegmentedTabs
               ariaLabel="Resume lists"
               value={tab}

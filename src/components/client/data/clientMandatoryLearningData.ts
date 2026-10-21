@@ -50,8 +50,6 @@ export const countsOf = (assignments: MlAssignment[]): MlCounts => {
   };
 };
 
-export const formatHours = (h: number) => `${h} ${h === 1 ? 'hr' : 'hrs'}`;
-
 export const formatMlDate = (iso: string | null) =>
   iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '-';
 
@@ -97,7 +95,8 @@ interface CourseSpec {
 const course = (c: CourseSpec): MandatoryCourse => {
   const assign = (num: number): Pick<MlAssignment, 'staffId' | 'assignedOn'> => {
     const staffId = `ms${num}`;
-    return { staffId, assignedOn: earlier(later(addDays(c.base, num % 4), addDays(joiningOf(staffId), 2)), TODAY) };
+    // Desktop assigns a course to everyone on the same day; later joiners get it a couple of days after they join
+    return { staffId, assignedOn: earlier(later(c.base, addDays(joiningOf(staffId), 2)), TODAY) };
   };
   const assignments: MlAssignment[] = [
     ...c.done.map((num): MlAssignment => {
@@ -118,16 +117,10 @@ const course = (c: CourseSpec): MandatoryCourse => {
 };
 
 /**
- * Staff ids match `MY_STAFF_SEED`. Charvi Nair (ms6) has 5 mandatory courses and 4 done (see the "Learning" notification);
- * Ethics for Tax Professionals is the one she finished most recently.
+ * Mirrors the desktop list: 2 courses, 6 staff each (Information Security Policy 1/6 completed, POSH Training 0/6).
+ * Staff ids match `MY_STAFF_SEED`. Charvi Nair (ms6) is the one who completed Information Security Policy (see the "Learning" notification).
  */
 export const MANDATORY_COURSES_SEED: MandatoryCourse[] = [
-  course({ n: 1, name: 'Ethics for Tax Professionals', hours: 2, base: '2026-08-03', done: [1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 16, 17], progress: [8, 11], todo: [5, 18], doneOn: { 6: '2026-10-13' } }),
-  course({ n: 2, name: 'Information Security Policy', hours: 1, base: '2026-07-06', done: [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 16, 17, 18], progress: [5], todo: [14, 15] }),
-  course({ n: 3, name: 'Data Privacy & Client Confidentiality', hours: 1.5, base: '2026-08-24', done: [1, 3, 6, 7, 9, 12, 13, 16], progress: [2, 4, 10, 17], todo: [5, 8, 11, 14, 15, 18] }),
-  course({ n: 4, name: 'Anti-Money Laundering Awareness', hours: 2, base: '2026-09-07', done: [1, 6, 7, 9, 12], progress: [3, 10, 13, 16], todo: [2, 4, 17] }),
-  course({ n: 5, name: 'Workplace Harassment Prevention', hours: 1, base: '2026-06-15', done: [1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 16, 17], progress: [18], todo: [] }),
-  course({ n: 6, name: 'IRS Circular 230 Overview', hours: 2, base: '2026-09-21', done: [], progress: [6, 10, 17], todo: [1, 3, 7, 12] }),
-  course({ n: 7, name: 'Phishing & Social Engineering Awareness', hours: 1, base: '2026-10-05', done: [1, 7, 9, 12, 13], progress: [2, 3, 16], todo: [4, 10, 17, 18] }),
-  course({ n: 8, name: 'Professional Conduct Refresher', hours: 3, base: '2026-05-18', done: [1, 3, 7, 9, 12, 13], progress: [], todo: [] }),
+  course({ n: 1, name: 'Information Security Policy', hours: 1, base: '2026-10-10', done: [6], progress: [], todo: [1, 3, 7, 9, 12], doneOn: { 6: '2026-10-13' } }),
+  course({ n: 2, name: 'POSH (Prevention of Sexual Harassment) Training', hours: 3, base: '2026-10-10', done: [], progress: [], todo: [1, 3, 6, 7, 9, 12] }),
 ];

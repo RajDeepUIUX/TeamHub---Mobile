@@ -22,6 +22,8 @@ interface MultiSelectDropdownProps {
   disabled?: boolean;
   /** Shown under the field when disabled */
   disabledHint?: string;
+  /** Lists the picks as removable chips in a box under the field */
+  showSelected?: boolean;
 }
 
 const PANEL_HEIGHT = 268;
@@ -49,6 +51,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   searchable = false,
   disabled = false,
   disabledHint,
+  showSelected = false,
 }) => {
   const sheetMode = useDropdownSheetMode();
   const [isOpen, setIsOpen] = useState(false);
@@ -154,6 +157,28 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         )}
         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
+      {showSelected && selected.length > 0 && (
+        <div className="mt-2 p-2 rounded-xl border border-slate-200 bg-slate-50 flex flex-wrap gap-1.5">
+          {selected.map((value) => (
+            <span
+              key={value}
+              className="inline-flex items-center max-w-full h-7 pl-2.5 pr-1 rounded-lg border border-[#DBEAFE] bg-white text-[11.5px] font-semibold text-[#2F68FE]"
+            >
+              <span className="truncate">{labelOf(value)}</span>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => toggle(value)}
+                  aria-label={`Remove ${labelOf(value)}`}
+                  className="ml-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[#2F68FE]/70 active:bg-blue-50 cursor-pointer"
+                >
+                  <X className="w-3 h-3 stroke-[2.5]" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
       {sheetMode && (
         <BottomSheet isOpen={isOpen && !disabled} onClose={() => setIsOpen(false)} maxHeight="max-h-[80%]">
           <div className="pt-3 pb-1 flex justify-center shrink-0">

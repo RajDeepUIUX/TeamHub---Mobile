@@ -53,17 +53,15 @@ const Money: React.FC<{ label: string; value: number; strong?: boolean }> = ({ l
   </div>
 );
 
-/** Desktop section heading: title, a thin rule and a short blue bar on the right */
+/** Section heading strip: blue accent bar + title (action on the right), divided from the content */
 const ResumeSection: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, action, children }) => (
-  <Card className="mt-3 p-4">
-    <div className="flex items-center gap-2.5">
-      <h3 className="shrink-0 text-[14px] font-bold text-[#1E293B]">{title}</h3>
-      <span className="flex-1 h-[3px] rounded-full bg-slate-100 relative" aria-hidden="true">
-        <span className="absolute right-0 top-0 h-[3px] w-8 rounded-full bg-[#2F68FE]" />
-      </span>
+  <Card className="mt-3 overflow-hidden">
+    <div className="flex items-center gap-2.5 min-h-12 px-4 py-2.5 bg-[#F8FAFF] border-b border-slate-100">
+      <span className="w-1 h-4 rounded-full bg-[#2F68FE] shrink-0" aria-hidden="true" />
+      <h3 className="flex-1 min-w-0 truncate text-[14px] font-bold text-[#1E293B]">{title}</h3>
       {action}
     </div>
-    <div className="mt-3">{children}</div>
+    <div className="p-4">{children}</div>
   </Card>
 );
 

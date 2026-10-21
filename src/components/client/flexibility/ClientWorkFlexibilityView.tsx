@@ -383,28 +383,24 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       <ScreenHeader title="Work Flexibility Preferences" onBack={onBack} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-4">
-          <p className="inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] text-slate-500">
-            {prefs.savedAt ? (
-              <>
-                <span className="w-6 h-6 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center shrink-0" aria-hidden="true">
-                  {prefs.savedBy ? initialsOf(prefs.savedBy) : <CheckCircle2 className="w-3.5 h-3.5" />}
-                </span>
-                <span className="truncate">
-                  Saved <span className="font-semibold text-slate-700">{formatFlexDate(prefs.savedAt)}</span>
-                  {prefs.savedBy && (
-                    <>
-                      {' '}· <span className="font-semibold text-slate-700">{prefs.savedBy}</span>
-                    </>
-                  )}
-                </span>
-              </>
-            ) : (
-              <span className="pl-2.5">Not submitted yet</span>
-            )}
-          </p>
+          {prefs.savedAt && (
+            <p className="mb-4 inline-flex max-w-full items-center gap-2 h-8 pl-1 pr-3 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] text-slate-500">
+              <span className="w-6 h-6 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center shrink-0" aria-hidden="true">
+                {prefs.savedBy ? initialsOf(prefs.savedBy) : <CheckCircle2 className="w-3.5 h-3.5" />}
+              </span>
+              <span className="truncate">
+                Saved <span className="font-semibold text-slate-700">{formatFlexDate(prefs.savedAt)}</span>
+                {prefs.savedBy && (
+                  <>
+                    {' '}· <span className="font-semibold text-slate-700">{prefs.savedBy}</span>
+                  </>
+                )}
+              </span>
+            </p>
+          )}
 
           {/* Progress (Added by designer) — one segment per question, tap to jump to it */}
-          <div className="mt-4 p-3 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+          <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between gap-2">
               <span className={`flex items-center gap-1.5 text-[12.5px] font-bold ${allDone ? 'text-[#059669]' : 'text-[#1E293B]'}`}>
                 {allDone && <CheckCircle2 className="w-4 h-4" />}
@@ -508,8 +504,8 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           </p>
         </div>
       ) : (
-      <div className="px-4 py-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0 flex items-center gap-3">
-        <p className="w-[78px] shrink-0 flex items-center gap-1.5 text-[11px] font-semibold leading-tight" aria-live="polite">
+      <div className="px-4 pt-2.5 pb-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+        <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold" aria-live="polite">
           {dirty ? (
             <>
               <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" />
@@ -517,7 +513,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
             </>
           ) : (
             <>
-              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
               <span className="text-slate-500">All changes saved</span>
             </>
           )}
@@ -526,7 +522,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           type="button"
           disabled={loading}
           onClick={() => setReviewOpen(true)}
-          className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#2F68FE] to-[#5B8CFF] shadow-[0_6px_16px_rgba(47,104,254,0.32)] text-white text-sm font-bold flex items-center justify-center gap-2 active:brightness-90 cursor-pointer disabled:bg-none disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+          className="mt-2 w-full h-12 rounded-xl bg-gradient-to-r from-[#2F68FE] to-[#5B8CFF] shadow-[0_6px_16px_rgba(47,104,254,0.32)] text-white text-sm font-bold flex items-center justify-center gap-2 active:brightness-90 cursor-pointer disabled:bg-none disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
         >
           Submit Preferences <Send className="w-4 h-4" />
         </button>
@@ -536,7 +532,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       {toast && (
         <div
           role="status"
-          className="absolute left-4 right-4 bottom-[88px] z-20 flex items-center gap-2 px-3.5 py-3 rounded-xl bg-[#1E293B] text-white text-[12px] font-semibold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="absolute left-4 right-4 bottom-[108px] z-20 flex items-center gap-2 px-3.5 py-3 rounded-xl bg-[#1E293B] text-white text-[12px] font-semibold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           <CheckCircle2 className="w-4 h-4 text-[#34D399] shrink-0" />
           <span className="flex-1">{toast}</span>

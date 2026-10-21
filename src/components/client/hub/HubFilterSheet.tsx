@@ -85,6 +85,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
         </div>
 
         <MultiSelectDropdown
+          showSelected
           label="Profile"
           placeholder="Select Profile"
           options={asOptions(profileNames)}
@@ -95,41 +96,47 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
           disabledHint="No profiles in this domain"
         />
 
-        <MultiSelectDropdown label="Level" placeholder="Select Level" options={asOptions(HUB_LEVELS)} selected={draft.levels} onChange={(next) => set('levels', next)} />
+        <div className="grid grid-cols-2 gap-3 items-start">
+          <MultiSelectDropdown showSelected label="Level" placeholder="Select Level" options={asOptions(HUB_LEVELS)} selected={draft.levels} onChange={(next) => set('levels', next)} />
 
-        <MultiSelectDropdown
-          label="Work Mode"
-          placeholder="Select Work Mode"
-          options={asOptions(HUB_WORK_MODES)}
-          selected={draft.workModes}
-          onChange={(next) => set('workModes', next as HubWorkMode[])}
-        />
-
-        <div className="space-y-1.5">
-          <Label>{rateLabel}</Label>
-          <Dropdown
-            ariaLabel={rateLabel}
-            sheetTitle={rateLabel}
-            value={draft.rate || null}
-            placeholder={rateOptions[0].label}
-            options={rateOptions}
-            onChange={(v) => set('rate', v)}
+          <MultiSelectDropdown
+            showSelected
+            label="Work Mode"
+            placeholder="Select Work Mode"
+            options={asOptions(HUB_WORK_MODES)}
+            selected={draft.workModes}
+            onChange={(next) => set('workModes', next as HubWorkMode[])}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Joining Days</Label>
-          <Dropdown
-            ariaLabel="Joining Days"
-            sheetTitle="Joining Days"
-            value={draft.joining || null}
-            placeholder={joiningOptions[0].label}
-            options={joiningOptions}
-            onChange={(v) => set('joining', v)}
-          />
+        <div className="grid grid-cols-2 gap-3 items-start">
+          <div className="space-y-1.5 min-w-0">
+            <Label>{rateLabel}</Label>
+            <Dropdown
+              ariaLabel={rateLabel}
+              sheetTitle={rateLabel}
+              value={draft.rate || null}
+              placeholder={rateOptions[0].label}
+              options={rateOptions}
+              onChange={(v) => set('rate', v)}
+            />
+          </div>
+
+          <div className="space-y-1.5 min-w-0">
+            <Label>Joining Days</Label>
+            <Dropdown
+              ariaLabel="Joining Days"
+              sheetTitle="Joining Days"
+              value={draft.joining || null}
+              placeholder={joiningOptions[0].label}
+              options={joiningOptions}
+              onChange={(v) => set('joining', v)}
+            />
+          </div>
         </div>
 
         <MultiSelectDropdown
+          showSelected
           label="Software"
           placeholder="Select Software"
           options={asOptions(options.software)}
@@ -139,6 +146,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
         />
 
         <MultiSelectDropdown
+          showSelected
           label="Technical Skills"
           placeholder="Select Technical Skills"
           options={asOptions(options.skills)}
@@ -148,6 +156,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
         />
 
         <MultiSelectDropdown
+          showSelected
           label="Location"
           placeholder="Select Location"
           options={asOptions(options.locations)}
@@ -156,6 +165,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
         />
 
         <MultiSelectDropdown
+          showSelected
           label="Qualification"
           placeholder="Select Qualification"
           options={asOptions(options.qualifications)}

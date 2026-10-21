@@ -119,7 +119,7 @@ const TONE_ICON: Record<StatusTone, string> = {
 /** Desktop table column as a label / value row */
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex items-center justify-between gap-3 py-2.5 min-h-10">
-    <dt className="text-[11.5px] text-slate-500 shrink-0">{label}</dt>
+    <dt className="text-[11.5px] font-medium text-slate-500 shrink-0">{label}</dt>
     <dd className="min-w-0 text-[12.5px] font-semibold text-[#1E293B] text-right flex items-center justify-end gap-2 flex-wrap">{children}</dd>
   </div>
 );
@@ -368,15 +368,17 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               </span>
             </div>
 
-            <div className="mt-3.5">
-              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Profile</p>
+            <div className="mt-3.5 p-3 rounded-xl bg-[#F8FAFF] border border-[#E0EAFF]">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-[#2F68FE]/70">Profile</p>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <span className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{c.profile || '-'}</span>
-                {c.domain && <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10.5px] font-semibold text-slate-600 whitespace-nowrap">{c.domain}</span>}
+                {c.domain && (
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-[#DBEAFE] text-[10.5px] font-semibold text-[#2F68FE] whitespace-nowrap">{c.domain}</span>
+                )}
               </div>
             </div>
 
-            <dl className="mt-3 border-t border-slate-100 divide-y divide-slate-100">
+            <dl className="mt-2.5 px-3 rounded-xl border border-slate-100 bg-[#FAFBFD] divide-y divide-slate-100">
               <Row label={`Interview (${CLIENT_TZ})`}>
                 {iv ? (
                   <>
@@ -446,8 +448,10 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           </div>
 
           {accountManagerNote && (
-            <p className="mx-4 mb-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 leading-snug flex items-center gap-2">
-              <Headset className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+            <p className="mx-4 mb-3 px-3 py-2.5 rounded-xl bg-amber-50/70 border border-amber-100 text-[11px] text-amber-800 leading-snug flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-full bg-white border border-amber-100 flex items-center justify-center shrink-0" aria-hidden="true">
+                <Headset className="w-3.5 h-3.5 text-amber-600" />
+              </span>
               <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
               <button type="button" onClick={onContactManager} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Contact
@@ -489,15 +493,18 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3">
-          <div className="flex items-center justify-end gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
+              {loading ? '' : `${results.length} ${results.length === 1 ? 'candidate' : 'candidates'}`}
+            </span>
             {anySelectable && (
               <button
                 type="button"
                 onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
                 disabled={loading}
                 aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-                className={`h-11 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 shrink-0 cursor-pointer ${
-                  selectMode ? 'border-slate-200 bg-white text-slate-600 active:bg-slate-50' : 'border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] active:bg-blue-100'
+                className={`h-11 px-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors disabled:opacity-60 shrink-0 cursor-pointer ${
+                  selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-slate-200 bg-white text-[#2F68FE] active:bg-slate-50'
                 }`}
               >
                 {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
