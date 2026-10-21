@@ -50,7 +50,7 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
       <SheetHeader title="Review your preferences" subtitle="Check everything before you submit." onClose={saving ? () => undefined : onClose} />
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 space-y-3">
         <section>
-          <h3 className="px-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">Work modes</h3>
+          <h3 className="px-1 text-[12px] font-semibold text-slate-400">Work Modes</h3>
           <ul className="mt-1.5 rounded-2xl border border-[#DCE3ED] divide-y divide-slate-100">
             {WORK_FLEX_MODES.map((m) => {
               const s = prefs.modes[m.key];
@@ -75,7 +75,7 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
         </section>
 
         <section>
-          <h3 className="px-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">Additional flexibilities</h3>
+          <h3 className="px-1 text-[12px] font-semibold text-slate-400">Additional Flexibilities</h3>
           <ul className="mt-1.5 rounded-2xl border border-[#DCE3ED] divide-y divide-slate-100">
             {WORK_FLEX_ITEMS.map((f) => {
               const c = prefs.flex[f.key];

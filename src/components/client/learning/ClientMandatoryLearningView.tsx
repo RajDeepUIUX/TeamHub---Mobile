@@ -87,7 +87,7 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, o
 
   const stat = (label: string, value: React.ReactNode) => (
     <div className="min-w-0 py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-100">
-      <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide truncate">{label}</dt>
+      <dt className="text-[11px] font-semibold text-slate-400 truncate">{label}</dt>
       <dd className="mt-0.5 text-base font-extrabold text-[#1E293B] tabular-nums">{value}</dd>
     </div>
   );
@@ -102,7 +102,7 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, o
               <BookMarked className="w-5 h-5" />
             </span>
             <dl className="flex-1 min-w-0">
-              <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Course Name</dt>
+              <dt className="text-[11px] font-semibold text-slate-400">Course Name</dt>
               <dd className="mt-0.5 text-[13.5px] font-bold text-[#1E293B] leading-snug break-words">{c.name}</dd>
             </dl>
           </div>

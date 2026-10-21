@@ -509,7 +509,7 @@ export const ClientCompanyProfileView: React.FC<{
                         { label: 'Phone', value: profile.phone },
                       ].map(({ label, value }) => (
                         <div key={label} className="px-3 py-2.5 min-w-0">
-                          <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+                          <span className="block text-[11px] font-semibold text-slate-400">{label}</span>
                           <span className="block text-[13px] font-bold text-[#1E293B] truncate mt-0.5 tabular-nums">{value || '—'}</span>
                         </div>
                       ))}
@@ -517,7 +517,7 @@ export const ClientCompanyProfileView: React.FC<{
                     <div className="px-3 py-2.5 border-t border-slate-200/70 flex items-center gap-2 min-w-0">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <div className="min-w-0">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Location</span>
+                        <span className="block text-[11px] font-semibold text-slate-400">Location</span>
                         <span className="block text-[13px] font-bold text-[#1E293B] truncate">
                           {[profile.city, profile.state, profile.country].filter(Boolean).join(', ') || '—'}
                         </span>

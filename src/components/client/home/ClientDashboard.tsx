@@ -227,7 +227,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                 <span className="text-[13px] font-extrabold text-[#1E293B] tabular-nums">{formatHrs(totalHrs)}</span>
               </div>
 
-              <div className="mt-3 flex items-center justify-between px-1 pb-2 border-b border-slate-100 text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">
+              <div className="mt-3 flex items-center justify-between px-1 pb-2 border-b border-slate-100 text-[11px] font-semibold text-slate-400">
                 <span>Staff Name</span>
                 <span>Productive Hrs</span>
               </div>

@@ -75,7 +75,7 @@ export const ContactDetailSheet: React.FC<Props> = ({ contact, tint, canEdit, se
         </div>
 
         <div className="rounded-2xl border border-slate-100 p-4">
-          <p className="mb-3 text-[11px] font-bold tracking-wide text-slate-400 uppercase">Portal Login</p>
+          <p className="mb-3 text-[12px] font-semibold text-slate-400">Portal Login</p>
           {c.username ? (
             <ValueGrid
               rows={[
@@ -89,7 +89,7 @@ export const ContactDetailSheet: React.FC<Props> = ({ contact, tint, canEdit, se
         </div>
 
         <div className="rounded-2xl border border-slate-100 p-4">
-          <p className="mb-3 text-[11px] font-bold tracking-wide text-slate-400 uppercase">Contact</p>
+          <p className="mb-3 text-[12px] font-semibold text-slate-400">Contact</p>
           <ValueGrid
             rows={[
               { label: 'Business Email', value: c.businessEmail, wide: true },
@@ -105,7 +105,7 @@ export const ContactDetailSheet: React.FC<Props> = ({ contact, tint, canEdit, se
         </div>
 
         <div className="rounded-2xl border border-slate-100 p-4">
-          <p className="mb-3 text-[11px] font-bold tracking-wide text-slate-400 uppercase">More</p>
+          <p className="mb-3 text-[12px] font-semibold text-slate-400">More</p>
           <ValueGrid
             rows={[
               { label: 'Date of Birth', value: c.birthDate ? formatContactDate(c.birthDate) : '' },
@@ -122,7 +122,7 @@ export const ContactDetailSheet: React.FC<Props> = ({ contact, tint, canEdit, se
         </div>
 
         <div className="rounded-2xl border border-slate-100 p-4">
-          <p className="mb-3 text-[11px] font-bold tracking-wide text-slate-400 uppercase">Preferences</p>
+          <p className="mb-3 text-[12px] font-semibold text-slate-400">Preferences</p>
           <ValueGrid
             rows={[
               { label: 'Invoices', value: yesNo(c.invoices) },

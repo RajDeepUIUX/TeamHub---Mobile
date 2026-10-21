@@ -369,7 +369,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             </div>
 
             <div className="mt-3.5 p-3 rounded-xl bg-[#F8FAFF] border border-[#E0EAFF]">
-              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-[#2F68FE]/70">Profile</p>
+              <p className="text-[11px] font-semibold text-[#2F68FE]/70">Profile</p>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <span className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{c.profile || '-'}</span>
                 {c.domain && (

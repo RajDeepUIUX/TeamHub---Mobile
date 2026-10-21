@@ -230,7 +230,7 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
       <BottomSheet isOpen={deductionFor !== null} onClose={() => setDeductionFor(null)} maxHeight="max-h-[75%]">
         <SheetHeader title="Leave Deduction Details" subtitle={deductionFor ? `${deductionFor.leaveType} · ${member.name}` : ''} onClose={() => setDeductionFor(null)} />
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-3">
-          <div className="grid grid-cols-3 pb-2 border-b border-slate-100 text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">
+          <div className="grid grid-cols-3 pb-2 border-b border-slate-100 text-[11px] font-semibold text-slate-400">
             <span>Date</span>
             <span className="text-center">Days</span>
             <span className="text-right">Deducted From</span>

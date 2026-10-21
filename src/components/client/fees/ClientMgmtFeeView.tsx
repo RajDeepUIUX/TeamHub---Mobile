@@ -91,7 +91,7 @@ const LevelTable: React.FC<{ data: MosFeeStructure }> = ({ data }) => {
           return (
             <div key={`${bracket.id}-${row.level}`} className="px-3.5 py-3 flex items-center gap-3 animate-in fade-in duration-200">
               <span className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#2F68FE] flex flex-col items-center justify-center shrink-0 leading-none">
-                <span className="text-[8.5px] font-bold uppercase tracking-wide text-[#2F68FE]/70">Lvl</span>
+                <span className="text-[8.5px] font-bold text-[#2F68FE]/70">Lvl</span>
                 <span className="text-[14px] font-extrabold mt-0.5">{row.level}</span>
               </span>
               <div className="flex-1 min-w-0">

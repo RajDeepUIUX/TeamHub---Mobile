@@ -40,11 +40,11 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
         <dl className="flex items-center gap-3">
           {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
           <div className="flex-1 min-w-0">
-            <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">User Name</dt>
+            <dt className="text-[11px] font-semibold text-slate-400">User Name</dt>
             <dd className="mt-0.5 text-[13px] font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</dd>
           </div>
           <div className="shrink-0 text-right">
-            <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Status</dt>
+            <dt className="text-[11px] font-semibold text-slate-400">Status</dt>
             <dd className="mt-0.5">
               <MlStatusPill status={a.status} />
             </dd>
@@ -52,11 +52,11 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
         </dl>
         <dl className="mt-2.5 pt-2.5 border-t border-slate-100 grid grid-cols-2 gap-2">
           <div className="min-w-0">
-            <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Assigned On</dt>
+            <dt className="text-[11px] font-semibold text-slate-400">Assigned On</dt>
             <dd className="mt-0.5 text-[12px] font-semibold text-[#1E293B] tabular-nums">{formatMlDate(a.assignedOn)}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Completed On</dt>
+            <dt className="text-[11px] font-semibold text-slate-400">Completed On</dt>
             <dd className="mt-0.5 text-[12px] font-semibold text-[#1E293B] tabular-nums">{formatMlDate(a.completedOn)}</dd>
           </div>
         </dl>

@@ -284,7 +284,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                     </div>
                     {has && (
                       <div className="px-3 pb-3 pt-2.5 border-t border-dashed border-slate-200 space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Assigned Staff · {members.length}</p>
+                        <p className="text-[11px] font-semibold text-slate-400">Assigned Staff · {members.length}</p>
                         {groups.map((g) => (
                           <div key={g.label || 'all'}>
                             {g.label && (

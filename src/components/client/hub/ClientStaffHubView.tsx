@@ -321,7 +321,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
 
           {skills.length > 0 && (
             <div className="px-3.5 pt-1 pb-3.5">
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Skills</h4>
+              <h4 className="text-[12px] font-semibold text-slate-400">Skills</h4>
               <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Skills">
                 {shownSkills.map((s) => (
                   <li key={s} className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-medium text-slate-600 leading-snug">

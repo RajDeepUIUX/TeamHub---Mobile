@@ -125,7 +125,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   aria-label={`Timesheet hours ${formatHm(l.loggedSeconds)}${canOpenHours ? '. View daily hours' : ''}`}
                   className="px-2.5 py-1.5 min-w-0 text-left active:bg-slate-100 disabled:active:bg-transparent cursor-pointer disabled:cursor-default"
                 >
-                  <span className="flex items-center gap-0.5 text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">
+                  <span className="flex items-center gap-0.5 text-[11px] font-semibold text-slate-400">
                     Timesheet Hrs
                     {canOpenHours && <ChevronRight className="w-3 h-3 text-[#2F68FE]" />}
                   </span>
@@ -134,7 +134,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   </span>
                 </button>
                 <div className="px-2.5 py-1.5 min-w-0">
-                  <span className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide">Invoice Hrs</span>
+                  <span className="block text-[11px] font-semibold text-slate-400">Invoice Hrs</span>
                   <span className="flex items-baseline gap-1 text-[12.5px] font-bold text-[#1E293B] tabular-nums">
                     {formatHm(l.billedSeconds)}
                     {notCharged > 0 && <span className="text-[10px] font-semibold text-slate-400">-{formatHm(notCharged)}</span>}

@@ -94,7 +94,7 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
                   {initialsOf(name || c.email)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Contact Name</p>
+                  <p className="text-[11px] font-semibold text-slate-400">Contact Name</p>
                   <p className="text-[13.5px] font-bold text-[#1E293B] truncate">{name || '-'}</p>
                 </div>
                 <Pill tone={c.status === 'Active' ? 'green' : 'slate'}>{c.status}</Pill>

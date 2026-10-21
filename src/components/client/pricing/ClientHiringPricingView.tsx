@@ -73,7 +73,7 @@ const PricingTable: React.FC<{ rows: PricingRow[] }> = ({ rows }) => (
   <div className="bg-white border border-[#EAECF0] rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(16,24,40,0.05)]" role="table" aria-label="Pricing">
     <div
       role="row"
-      className="grid grid-cols-[76px_1fr_auto] items-center gap-3 px-4 py-2.5 bg-[#F4F3FF] border-b border-[#E4E2FB] text-[10.5px] font-semibold uppercase tracking-wide text-[#5B5FE9]"
+      className="grid grid-cols-[76px_1fr_auto] items-center gap-3 px-4 py-2.5 bg-[#F4F3FF] border-b border-[#E4E2FB] text-[11px] font-semibold text-[#5B5FE9]"
     >
       <span role="columnheader">Level</span>
       <span role="columnheader">Designation</span>
@@ -95,7 +95,7 @@ const PricingTable: React.FC<{ rows: PricingRow[] }> = ({ rows }) => (
           </span>
         </div>
         <div role="cell" className="mt-3 rounded-lg bg-[#F9FAFB] border border-[#F2F4F7] p-2.5" aria-label="Roles">
-          <span className="block mb-2 text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">Roles</span>
+          <span className="block mb-2 text-[11px] font-semibold text-[#98A2B3]">Roles</span>
           <div className="flex flex-wrap gap-1.5">
             {r.roles.map((role) => (
               <span key={role} className="px-2.5 h-[26px] rounded-md bg-white border border-[#E4E7EC] text-[11.5px] font-medium text-[#344054] flex items-center">
@@ -147,7 +147,7 @@ const AdditionalInfo: React.FC = () => {
       <SectionHeading>Hiring Models and Pricing</SectionHeading>
 
       <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-[#F4F3FF] border border-[#E4E2FB]">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-[#5B5FE9]">Hiring Tenure</span>
+        <span className="text-[12px] font-semibold text-[#5B5FE9]">Hiring Tenure</span>
         <span className="text-[13px] font-semibold text-[#101828]">{HIRING_TENURE}</span>
       </div>
 
