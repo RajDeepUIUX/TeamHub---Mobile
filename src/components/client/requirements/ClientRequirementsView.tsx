@@ -51,20 +51,34 @@ const LOAD_MS = 600;
 /** Desktop table column as a label / value pair */
 const Field: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({ label, children, className = '' }) => (
   <div className={`min-w-0 ${className}`}>
-    <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
-    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
+    <dt className="text-[11px] font-medium text-slate-400 leading-tight">{label}</dt>
+    <dd className="mt-1 text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{children}</dd>
+  </div>
+);
+
+/** Linked counts (locations, resumes, shortlisted) as label / value rows */
+const LinkRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-center justify-between gap-3 py-2.5">
+    <dt className="min-w-0 text-[12px] font-medium text-slate-500">{label}</dt>
+    <dd className="shrink-0 text-right text-[12.5px] font-semibold text-[#1E293B]">{children}</dd>
   </div>
 );
 
 /** Blue table link (Profile, N Locations, N Shortlisted); plain text when it can't be opened */
-const TableLink: React.FC<{ label: string; onClick?: () => void; ariaLabel: string; tone?: 'blue' | 'purple' }> = ({ label, onClick, ariaLabel, tone = 'blue' }) => {
+const TableLink: React.FC<{ label: string; onClick?: () => void; ariaLabel: string; tone?: 'blue' | 'purple'; weight?: string }> = ({
+  label,
+  onClick,
+  ariaLabel,
+  tone = 'blue',
+  weight = 'font-semibold',
+}) => {
   const color = tone === 'purple' ? 'text-[#6366F1]' : 'text-[#2F68FE]';
   return onClick ? (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`text-left ${color} font-medium underline-offset-2 active:underline cursor-pointer`}>
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`text-left ${color} ${weight} underline-offset-2 active:underline cursor-pointer`}>
       {label}
     </button>
   ) : (
-    <span className={`${color} font-medium`}>{label}</span>
+    <span className={`${color} ${weight}`}>{label}</span>
   );
 };
 
@@ -199,27 +213,28 @@ export const ClientRequirementsView: React.FC<Props> = ({
     return (
       <li key={r.id}>
         <Card className="overflow-hidden">
-          <div className="p-3.5">
+          <div className="px-4 pt-3.5 pb-1.5">
             <div className="flex items-start gap-3">
               <span className="flex-1 min-w-0">
-                <span className="block text-[10.5px] font-semibold text-slate-400">Profile</span>
-                <span className="block mt-0.5 text-[14px] leading-snug">
+                <span className="block text-[11px] font-medium text-slate-400 leading-tight">Profile</span>
+                <span className="block mt-1 text-[15px] leading-snug">
                   <TableLink
                     label={r.profile}
+                    weight="font-bold"
                     onClick={canView ? () => openSheet('detail', r.id) : undefined}
                     ariaLabel={`View requirement ${r.profile}`}
                   />
                 </span>
               </span>
               <span className="shrink-0 flex flex-col items-end">
-                <span className="text-[10.5px] font-semibold text-slate-400">Status</span>
-                <span className="mt-0.5">
+                <span className="text-[11px] font-medium text-slate-400 leading-tight">Status</span>
+                <span className="mt-1">
                   <RequirementStatusPill status={r.status} />
                 </span>
               </span>
             </div>
 
-            <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
+            <dl className="mt-3.5 p-3 rounded-xl bg-[#F8FAFC] border border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
               <Field label="Pricing">
                 <span className="tabular-nums">{r.pricing || '-'}</span>
               </Field>
@@ -228,10 +243,13 @@ export const ClientRequirementsView: React.FC<Props> = ({
                 <span className="tabular-nums">{r.hoursPerWeek || '-'}</span>
               </Field>
               <Field label="Work Mode">{r.workMode || '-'}</Field>
-              <Field label="Offshore Location">
+            </dl>
+
+            <dl className="mt-1 divide-y divide-slate-100">
+              <LinkRow label="Offshore Location">
                 <LocationValue locations={r.locations} />
-              </Field>
-              <Field label="Available Resumes">
+              </LinkRow>
+              <LinkRow label="Available Resumes">
                 {resumes > 0 ? (
                   <TableLink
                     label={`${resumes} ${resumes === 1 ? 'Resume' : 'Resumes'}`}
@@ -241,8 +259,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
                 ) : (
                   '-'
                 )}
-              </Field>
-              <Field label="Shortlisted Candidates" className="col-span-2">
+              </LinkRow>
+              <LinkRow label="Shortlisted Candidates">
                 {shortlisted > 0 ? (
                   <TableLink
                     tone="purple"
@@ -253,23 +271,23 @@ export const ClientRequirementsView: React.FC<Props> = ({
                 ) : (
                   '-'
                 )}
-              </Field>
+              </LinkRow>
             </dl>
           </div>
 
           {(canView || showEdit) && (
-            <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
+            <div className="px-4 py-3 border-t border-slate-100 bg-[#FBFCFE] flex items-center gap-2">
               {canView && (
                 <button
                   type="button"
                   onClick={() => openSheet('comments', r.id)}
                   aria-label={`Comments on ${r.profile}${r.comments.length > 0 ? `, ${r.comments.length}` : ''}`}
-                  className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                  className="relative flex-1 min-w-0 h-10 px-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
                 >
                   <MessageSquareText className="w-4 h-4 shrink-0" />
                   <span className="truncate">Comments</span>
                   {r.comments.length > 0 && (
-                    <span className="min-w-4 h-4 px-1 rounded-full bg-[#2F68FE] text-white text-[9px] font-bold flex items-center justify-center tabular-nums shrink-0">
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] ring-2 ring-white text-white text-[9.5px] font-bold flex items-center justify-center tabular-nums">
                       {r.comments.length}
                     </span>
                   )}
@@ -280,7 +298,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   type="button"
                   onClick={() => openForm(r.id)}
                   aria-label={`Edit requirement ${r.profile}`}
-                  className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                  className="flex-1 min-w-0 h-10 px-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
                 >
                   <Pencil className="w-4 h-4 shrink-0" />
                   <span className="truncate">Edit</span>
@@ -291,7 +309,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   type="button"
                   onClick={() => openSheet('detail', r.id)}
                   aria-label={`View requirement ${r.profile}`}
-                  className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-[#2F68FE]/10 text-[#2F68FE] text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-[#2F68FE]/20 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                  className="flex-1 min-w-0 h-10 px-1.5 rounded-xl bg-[#2F68FE]/10 text-[#2F68FE] text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-[#2F68FE]/20 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
                 >
                   <Eye className="w-4 h-4 shrink-0" />
                   <span className="truncate">View</span>
@@ -487,12 +505,12 @@ const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={`${locations.length} locations: ${locations.join(', ')}`}
-        className="text-[#2F68FE] font-medium tabular-nums cursor-pointer"
+        className="text-[#2F68FE] font-semibold tabular-nums cursor-pointer"
       >
         {locations.length} Locations
       </button>
       {open && (
-        <span role="tooltip" className="absolute bottom-full left-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
+        <span role="tooltip" className="absolute bottom-full right-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
           <span className="bg-white rounded-xl border border-slate-100 shadow-[0_8px_24px_rgba(15,23,42,0.14)] p-2.5 flex flex-wrap gap-1.5">
             {locations.map((l) => (
               <span key={l} className="px-2.5 py-1 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11.5px] font-medium">
@@ -500,7 +518,7 @@ const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
               </span>
             ))}
           </span>
-          <span aria-hidden="true" className="absolute -bottom-1 left-8 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
+          <span aria-hidden="true" className="absolute -bottom-1 right-8 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
         </span>
       )}
     </span>
