@@ -268,7 +268,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
                     ].map(([label, value], idx) => (
                       <div
                         key={label}
-                        className={`px-2.5 py-2 min-w-0 ${idx % 2 === 1 ? 'border-l border-slate-100' : ''} ${idx > 1 ? 'border-t border-slate-100' : ''} ${idx === 4 ? 'col-span-2' : ''}`}
+                        className={`px-2.5 py-2 min-w-0 ${idx === 4 ? 'col-span-2' : ''}`}
                       >
                         <dt className="text-[9.5px] font-semibold text-slate-400 uppercase tracking-wide truncate">{label}</dt>
                         <dd className="mt-0.5 text-[11.5px] font-semibold text-[#1E293B] truncate tabular-nums">{value}</dd>

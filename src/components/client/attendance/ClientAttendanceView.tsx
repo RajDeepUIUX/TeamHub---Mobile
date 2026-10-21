@@ -368,22 +368,30 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     return (
       <li key={`${member.id}-${day.date}`}>
         <Card className="overflow-hidden">
-          <CardHead
-            member={member}
-            tint={tintOf(member.id)}
-            pill={<span className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>}
-          />
-          <dl className="px-3.5 pb-3.5 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-3 gap-y-2.5">
-            <Field label="Date" value={shortDate(day.date)} />
-            <Field label="Work Mode" value={day.workMode ? WORK_MODE_LABEL[day.workMode] : null} />
-            <Field label="Check In" value={day.checkIn} />
-            <Field label="Check Out" value={day.checkOut} />
-            <Field label="Total Office Time" value={day.officeTime} />
-            <Field label="Overtime" value={day.overtime} accent={hasOt} />
-            <Field label="Level" value={member.level} />
-            <Field label="Status" value={note ? `${STATUS_LABEL[day.status]} (${note})` : STATUS_LABEL[day.status]} />
-            <Field label="Designation" value={member.designation} wide />
-          </dl>
+          <div className="bg-linear-to-r from-[#F5F8FF] to-white border-b border-slate-100">
+            <CardHead
+              member={member}
+              tint={tintOf(member.id)}
+              pill={<span className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>}
+            />
+          </div>
+          <div className="p-3.5 space-y-3">
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-3">
+              <Field label="Date" value={shortDate(day.date)} />
+              <Field label="Work Mode" value={day.workMode ? WORK_MODE_LABEL[day.workMode] : null} />
+            </dl>
+            <dl className="p-3 rounded-xl bg-[#F8FAFC] border border-[#EBF0F7] grid grid-cols-2 gap-x-3 gap-y-3">
+              <Field label="Check In" value={day.checkIn} />
+              <Field label="Check Out" value={day.checkOut} />
+              <Field label="Total Office Time" value={day.officeTime} />
+              <Field label="Overtime" value={day.overtime} accent={hasOt} />
+            </dl>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-3">
+              <Field label="Level" value={member.level} />
+              <Field label="Status" value={note ? `${STATUS_LABEL[day.status]} (${note})` : STATUS_LABEL[day.status]} />
+              <Field label="Designation" value={member.designation} wide />
+            </dl>
+          </div>
         </Card>
       </li>
     );
@@ -396,19 +404,25 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     return (
       <li key={r.id}>
         <Card className="overflow-hidden">
-          <CardHead
-            member={m}
-            tint={tintOf(r.staffId)}
-            pill={<span className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>}
-          />
-          <div className="px-3.5 pb-3.5 pt-3 border-t border-slate-100 space-y-3">
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+          <div className="bg-linear-to-r from-[#F5F8FF] to-white border-b border-slate-100">
+            <CardHead
+              member={m}
+              tint={tintOf(r.staffId)}
+              pill={<span className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>}
+            />
+          </div>
+          <div className="p-3.5 space-y-3">
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-3">
               <Field label="Date" value={shortDate(r.date)} />
               <Field label="Work Mode" value={WORK_MODE_LABEL[r.workMode]} />
+            </dl>
+            <dl className="p-3 rounded-xl bg-[#F8FAFC] border border-[#EBF0F7] grid grid-cols-2 gap-x-3 gap-y-3">
               <Field label="Check In" value={r.requestedIn} />
               <Field label="Check Out" value={r.requestedOut} />
               <Field label="Total Office Time" value={times.office} />
               <Field label="Overtime" value={times.overtime} accent={hasOt} />
+            </dl>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-3">
               <Field label="Designation" value={m?.designation} wide />
               <Field label="Request Type" value={r.reason} />
               <Field label="Recorded As" value={r.recordedStatus} />
