@@ -5,7 +5,7 @@ import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { AssessmentRecord, assessmentScore } from '../../data/clientStaffProfileData';
-import { Card, DateField, EmptyCard, FieldGrid, SheetHeader } from './StaffTabParts';
+import { Card, DateField, EmptyCard, FieldGrid, RowList, SheetHeader } from './StaffTabParts';
 
 const ALL = 'All';
 
@@ -64,7 +64,7 @@ const AssessmentFilterSheet: React.FC<{
 };
 
 /** Desktop "Assessments" tab (assessments_tab.tpl + projects::assessments_list): name / assigned on / completed on filters, results table */
-export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[] }> = ({ assessments }) => {
+export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2?: boolean }> = ({ assessments, v2 }) => {
   const names = Array.from(new Set(assessments.map((a) => a.name)));
   const [filters, setFilters] = useState<AssessmentFilters>(EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -106,7 +106,43 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[] }> 
           />
         ) : (
           <ul className="space-y-2.5">
-            {visible.map((a) => (
+            {visible.map((a) =>
+              v2 ? (
+                <li key={a.id}>
+                  <Card className="overflow-hidden">
+                    <div className="px-4 pt-4 pb-3 flex items-center gap-3.5 bg-linear-to-r from-[#F3F6FF] to-white">
+                      <span className="w-14 h-14 rounded-full bg-white ring-4 ring-[#E0E7FF] flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[10px] font-semibold text-slate-400 leading-none">Score</span>
+                        <span className="mt-0.5 text-[13px] font-extrabold text-[#2F68FE] leading-none tabular-nums">{assessmentScore(a)}</span>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10.5px] text-slate-400">Assessment Name</p>
+                        <p className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{a.name}</p>
+                      </div>
+                    </div>
+                    <RowList
+                      className="px-4 border-t border-slate-100"
+                      rows={[
+                        { label: 'Assigned By', value: a.assignedBy ?? '-' },
+                        { label: 'Assigned On', value: formatStaffDate(a.assignedOn) },
+                        { label: 'Completed On', value: a.completedOn ? formatStaffDate(a.completedOn) : '-' },
+                        { label: 'Action', value: a.reportUrl ? null : '-' },
+                      ]}
+                    />
+                    {a.reportUrl && (
+                      <a
+                        href={a.reportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Download ${a.name} report`}
+                        className="h-11 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#F5F8FF]"
+                      >
+                        <FileDown className="w-4 h-4" /> Download Report
+                      </a>
+                    )}
+                  </Card>
+                </li>
+              ) : (
               <li key={a.id}>
                 <Card className="p-3.5">
                   <div className="flex items-start gap-3">
@@ -143,7 +179,8 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[] }> 
                   )}
                 </Card>
               </li>
-            ))}
+              ),
+            )}
           </ul>
         )}
       </div>

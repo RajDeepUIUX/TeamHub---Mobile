@@ -1,17 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, ChevronRight, CirclePlus, Clock, Info, Luggage } from 'lucide-react';
+import { Calendar, CalendarCheck, ChevronRight, CirclePlus, Clock, Info, Luggage } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
 import { SegmentedTabs } from '../../../../design-system/components/SegmentedTabs';
 import type { ClientStaffMember } from '../../data/clientStaffData';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { LeaveBalance, LeaveRecord, StaffWorkMode, leaveBalancesFor, leavesFor, staffRecordsEnd } from '../../data/clientStaffProfileData';
-import { EmptyCard, SheetHeader } from './StaffTabParts';
+import { Card, EmptyCard, RowList, SheetHeader, SwitchTiles } from './StaffTabParts';
 import { Month, MonthFilterSheet, StaffAttendancePanel } from './StaffAttendancePanel';
 
 interface StaffAttendanceLeaveTabProps {
   member: ClientStaffMember;
   workMode: StaffWorkMode;
+  v2?: boolean;
 }
 
 type View = 'attendance' | 'leave';
@@ -25,11 +26,11 @@ const BALANCE_STYLE: Record<LeaveBalance['label'], { icon: React.ElementType; ti
   'Additional Leave': { icon: CirclePlus, tile: 'bg-[#F0FBF6] border-[#D1FAE5]', text: 'text-[#10B981]', bar: 'bg-[#10B981]' },
 };
 
-const LEAVE_STYLE: Record<LeaveRecord['leaveType'], { tile: string }> = {
-  'Paid Leave': { tile: 'bg-[#EFF6FF] text-[#1D4ED8]' },
-  'Half Paid Leave': { tile: 'bg-[#FFF7ED] text-[#C2410C]' },
-  'Sick Leave': { tile: 'bg-[#FEF8E7] text-[#B45309]' },
-  'Unpaid Leave': { tile: 'bg-[#FEF2F2] text-rose-600' },
+const LEAVE_STYLE: Record<LeaveRecord['leaveType'], { tile: string; accent: string }> = {
+  'Paid Leave': { tile: 'bg-[#EFF6FF] text-[#1D4ED8]', accent: 'bg-[#1D4ED8]' },
+  'Half Paid Leave': { tile: 'bg-[#FFF7ED] text-[#C2410C]', accent: 'bg-[#EA580C]' },
+  'Sick Leave': { tile: 'bg-[#FEF8E7] text-[#B45309]', accent: 'bg-[#F59E0B]' },
+  'Unpaid Leave': { tile: 'bg-[#FEF2F2] text-rose-600', accent: 'bg-rose-500' },
 };
 
 const parse = (iso: string) => new Date(`${iso}T00:00:00`);
@@ -38,7 +39,7 @@ const monthStart = (m: Month) => `${m.y}-${pad(m.m + 1)}-01`;
 const monthEnd = (m: Month) => `${m.y}-${pad(m.m + 1)}-${pad(new Date(m.y, m.m + 1, 0).getDate())}`;
 
 /** Desktop "Attendance & Leave" tab (attendance-leave.tpl): monthly attendance + KPIs, leave balances + leave list */
-export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode }) => {
+export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode, v2 }) => {
   const [view, setView] = useState<View>('attendance');
   const [month, setMonth] = useState<Month | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -59,6 +60,17 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
   return (
     <>
       <div className="mt-2.5">
+        {v2 ? (
+          <SwitchTiles<View>
+            label="Attendance or leave"
+            options={[
+              { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+              { id: 'leave', label: 'Leave', icon: Luggage },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+        ) : (
         <SegmentedTabs<View>
           ariaLabel="Attendance or leave"
           options={[
@@ -68,10 +80,140 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
           value={view}
           onChange={setView}
         />
+        )}
       </div>
 
       {view === 'attendance' ? (
-        <StaffAttendancePanel member={member} workMode={workMode} />
+        <StaffAttendancePanel member={member} workMode={workMode} v2={v2} />
+      ) : v2 ? (
+        <div className="mt-3 space-y-3.5">
+          {/* Leave balance: total on a gradient band, one progress row per balance */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3.5 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px] font-bold">Leave Balance</span>
+                <button
+                  type="button"
+                  onClick={() => setShowInfo((v) => !v)}
+                  aria-label="About leave balance"
+                  aria-expanded={showInfo}
+                  className="w-6 h-6 rounded-full text-white/80 flex items-center justify-center active:bg-white/15 cursor-pointer"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <span className="text-right">
+                <span className="block text-[20px] font-extrabold leading-none tabular-nums">{totalLeft.toFixed(2)}</span>
+                <span className="block mt-0.5 text-[10.5px] font-semibold text-white/80">days left</span>
+              </span>
+            </div>
+            {showInfo && (
+              <p className="mx-4 mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-[#2F68FE] leading-relaxed animate-in fade-in duration-200">
+                Each balance shows leave used / total balance for {member.name}.
+              </p>
+            )}
+            <ul className="px-4 py-1 divide-y divide-slate-100">
+              {balances.map((b) => {
+                const style = BALANCE_STYLE[b.label];
+                const Icon = style.icon;
+                const pct = b.balance > 0 ? Math.min(100, (b.used / b.balance) * 100) : 0;
+                return (
+                  <li key={b.label} className="py-3 flex items-center gap-3">
+                    <span className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${style.tile} ${style.text}`}>
+                      <Icon className="w-4 h-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[12px] font-semibold text-[#1E293B] truncate">{b.label}</span>
+                        <span className="text-[13px] font-extrabold text-[#1E293B] tabular-nums shrink-0">
+                          {b.used.toFixed(2)}
+                          <span className="text-[11px] font-bold text-slate-400"> / {b.balance.toFixed(2)}</span>
+                        </span>
+                      </div>
+                      <span className="mt-1.5 block h-1.5 rounded-full bg-slate-100 overflow-hidden" role="img" aria-label={`${Math.round(pct)}% of ${b.label} used`}>
+                        <span className={`block h-full rounded-full ${style.bar}`} style={{ width: `${pct}%` }} />
+                      </span>
+                      <span className="mt-1 block text-[10px] text-slate-400">Used / Balance</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+
+          <div className="flex items-center justify-between px-1 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-1 h-3.5 rounded-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden="true" />
+              <h4 className="text-sm font-bold text-[#1E293B]">Leaves</h4>
+              <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{visibleLeaves.length}</span>
+              {month && (
+                <span className="text-[11px] font-semibold text-slate-500 truncate">
+                  {MONTHS[month.m].slice(0, 3)} {month.y}
+                </span>
+              )}
+            </div>
+            <FilterIconButton count={month ? 1 : 0} onClick={() => setFilterOpen(true)} label="Filter leaves" />
+          </div>
+
+          {visibleLeaves.length === 0 ? (
+            <EmptyCard
+              icon={Luggage}
+              title="No Data Found"
+              text={month ? `No leaves in ${MONTHS[month.m]} ${month.y}.` : 'Leaves taken by this staff will show up here.'}
+              action={
+                month ? (
+                  <button type="button" onClick={() => setMonth(null)} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
+                    Clear All
+                  </button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {visibleLeaves.map((l) => {
+                const total = l.deductions.reduce((n, d) => n + d.days, 0);
+                const multi = l.endDate !== l.startDate;
+                const style = LEAVE_STYLE[l.leaveType];
+                return (
+                  <Card key={l.id} className="relative overflow-hidden">
+                    <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${style.accent}`} />
+                    <div className="pl-4 pr-3.5 pt-3.5">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[10.5px] font-bold ${style.tile}`}>{l.leaveType}</span>
+                          <p className="mt-1.5 text-[13px] font-bold text-[#1E293B] tabular-nums">
+                            {formatStaffDate(l.startDate)}
+                            {multi && ` – ${formatStaffDate(l.endDate)}`}
+                          </p>
+                        </div>
+                        <span className="shrink-0 w-12 h-12 rounded-full bg-[#F8FAFC] border border-[#EBF0F7] flex flex-col items-center justify-center">
+                          <span className="text-[15px] font-extrabold text-[#1E293B] leading-none tabular-nums">{total}</span>
+                          <span className="mt-0.5 text-[10px] font-semibold text-slate-400 leading-none">{total === 1 ? 'day' : 'days'}</span>
+                        </span>
+                      </div>
+                      <RowList
+                        className="mt-2.5 border-t border-slate-100"
+                        rows={[
+                          { label: 'Deducted From', value: l.deductedFrom },
+                          { label: 'Applied On', value: formatStaffDate(l.appliedOn) },
+                          { label: 'Reason', value: <span className="font-medium text-slate-600">{l.reason}</span>, wide: true },
+                        ]}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeductionFor(l)}
+                      className="w-full h-11 px-4 border-t border-slate-100 bg-[#FAFBFF] flex items-center justify-between text-[12px] font-bold text-[#2F68FE] active:bg-[#F5F8FF] cursor-pointer"
+                    >
+                      View Deduction Details
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="mt-3 space-y-4">
           {/* Leave balance: Staff Leaves card with desktop "used / balance" values */}

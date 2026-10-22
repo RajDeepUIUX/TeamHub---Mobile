@@ -21,6 +21,110 @@ export const FieldGrid: React.FC<{ fields: Field[]; compact?: boolean }> = ({ fi
   </dl>
 );
 
+export type Row = { label: string; value: React.ReactNode; wide?: boolean };
+
+/** V2 detail rows: label left, value right, hairline dividers; `wide` values drop under the label; empty values hidden */
+export const RowList: React.FC<{ rows: Row[]; className?: string }> = ({ rows, className = '' }) => (
+  <dl className={`divide-y divide-slate-100 ${className}`}>
+    {rows
+      .filter((r) => r.value !== null && r.value !== undefined && r.value !== '')
+      .map((r) => (
+        <div key={r.label} className={`py-2.5 ${r.wide ? '' : 'flex items-start justify-between gap-4'}`}>
+          <dt className="min-w-0 text-[11px] text-slate-400 leading-snug">{r.label}</dt>
+          <dd className={`min-w-0 text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words tabular-nums ${r.wide ? 'mt-0.5' : 'text-right'}`}>
+            {r.value}
+          </dd>
+        </div>
+      ))}
+  </dl>
+);
+
+/** V2 card heading: gradient icon tile + title (+ optional trailing node) */
+export const CardHeading: React.FC<{ icon: React.ElementType; title: React.ReactNode; sub?: React.ReactNode; trailing?: React.ReactNode }> = ({
+  icon: Icon,
+  title,
+  sub,
+  trailing,
+}) => (
+  <div className="flex items-center gap-3">
+    <span className="w-9 h-9 rounded-xl bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)]" aria-hidden="true">
+      <Icon className="w-4 h-4" />
+    </span>
+    <div className="flex-1 min-w-0">
+      <p className="text-[13px] font-bold text-[#1E293B] leading-snug break-words">{title}</p>
+      {sub && <p className="text-[11px] text-slate-400 leading-snug truncate">{sub}</p>}
+    </div>
+    {trailing}
+  </div>
+);
+
+/** V2 two-way switch: large tiles with icon, label and optional count (replaces the segmented control) */
+export function SwitchTiles<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { id: T; label: string; icon: React.ElementType; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+  label: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2" role="tablist" aria-label={label}>
+      {options.map((o) => {
+        const on = o.id === value;
+        const Icon = o.icon;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(o.id)}
+            className={`h-13 px-3 rounded-2xl flex items-center gap-2.5 text-left transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+              on
+                ? 'bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white shadow-[0_8px_18px_-10px_rgba(47,104,254,0.9)]'
+                : 'bg-white border border-[#DCE3ED] text-slate-600 active:bg-slate-50'
+            }`}
+          >
+            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${on ? 'bg-white/20' : 'bg-[#EEF2FF] text-[#2F68FE]'}`} aria-hidden="true">
+              <Icon className="w-4 h-4" />
+            </span>
+            <span className="flex-1 min-w-0 text-[12.5px] font-bold leading-tight">{o.label}</span>
+            {o.count !== undefined && (
+              <span
+                className={`min-w-6 h-6 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums ${
+                  on ? 'bg-white text-[#2F68FE]' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {o.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** V2 card with a coloured status strip on the left edge */
+export const AccentCard: React.FC<{ accent: string; children: React.ReactNode; className?: string }> = ({ accent, children, className = '' }) => (
+  <Card className={`relative overflow-hidden ${className}`}>
+    <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${accent}`} />
+    {children}
+  </Card>
+);
+
+export const ACCENT: Record<Tone, string> = {
+  green: 'bg-[#10B981]',
+  amber: 'bg-[#F59E0B]',
+  rose: 'bg-rose-500',
+  blue: 'bg-[#2F68FE]',
+  indigo: 'bg-[#4F46E5]',
+  slate: 'bg-slate-300',
+};
+
 /** Section title + optional action; title is left out where the tab pill already names the section */
 export const TabTitle: React.FC<{ title?: string; action?: React.ReactNode }> = ({ title, action }) => (
   <div className={`flex items-center gap-3 min-h-9 ${title ? 'justify-between' : 'justify-end'}`}>

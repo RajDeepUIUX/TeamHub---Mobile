@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft,
   BriefcaseBusiness,
   CalendarCheck,
+  CalendarX,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
+  Clock,
   FileSignature,
   FileText,
   GraduationCap,
+  LayoutGrid,
   Laptop,
   ListChecks,
   Mail,
+  MapPin,
   Sparkles,
   User,
   UserCheck,
@@ -30,7 +36,8 @@ import {
   type StaffWorkMode,
 } from '../data/clientStaffProfileData';
 import { StaffAvatar, StaffStatusPill } from './ClientStaffParts';
-import { InfoCard } from './tabs/StaffTabParts';
+import { BottomSheet } from '../../common/BottomSheet';
+import { Card, CardHeading, DesignVersion, Field, InfoCard, RowList, ScreenHeader, SheetHeader } from './tabs/StaffTabParts';
 import { StaffReportingToTab } from './tabs/StaffReportingToTab';
 import { StaffAttendanceLeaveTab } from './tabs/StaffAttendanceLeaveTab';
 import { StaffSkillsTab } from './tabs/StaffSkillsTab';
@@ -54,7 +61,23 @@ const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
   SOP: ListChecks,
 };
 
-const dateParts =(iso: string) => {
+const DESIGN_VERSIONS = ['V1', 'V2'] as const;
+
+type InfoGroup = { title: string; icon: React.ElementType; fields: Field[] };
+
+/** V2 info section: one card per group, gradient icon heading, label / value rows (long values drop under the label) */
+const InfoListV2: React.FC<{ groups: InfoGroup[] }> = ({ groups }) => (
+  <div className="mt-2.5 space-y-3">
+    {groups.map((g) => (
+      <Card key={g.title} className="px-4 pt-4 pb-1">
+        <CardHeading icon={g.icon} title={g.title} />
+        <RowList className="mt-3 border-t border-slate-100" rows={g.fields} />
+      </Card>
+    ))}
+  </div>
+);
+
+const dateParts = (iso: string) => {
   const d = new Date(`${iso}T00:00:00`);
   return { day: String(d.getDate()).padStart(2, '0'), month: d.toLocaleDateString('en-US', { month: 'short' }), year: d.getFullYear() };
 };
@@ -82,15 +105,32 @@ interface ClientStaffDetailViewProps {
   onOpenTrainingNeed?: () => void;
   /** Work mode set in Staff Work Flexibility */
   workModeOverride?: StaffWorkMode;
+  /** Follows the My Staff V1 / V2 switch */
+  version?: DesignVersion;
+  onVersionChange?: (v: DesignVersion) => void;
 }
 
 /** Staff details (desktop eye icon in My Staff): profile header + desktop tabs */
-export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ member, tint, clientName, onBack, initialTab, tniRequests, onOpenTrainingNeed, workModeOverride }) => {
+export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
+  member,
+  tint,
+  clientName,
+  onBack,
+  initialTab,
+  tniRequests,
+  onOpenTrainingNeed,
+  workModeOverride,
+  version = 'V1',
+  onVersionChange,
+}) => {
+  const v2 = version === 'V2';
   const [tab, setTab] = useState<StaffProfileTab>(initialTab ?? 'Personal Information');
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabsSentinelRef = useRef<HTMLDivElement>(null);
   const [tabsStuck, setTabsStuck] = useState(false);
+  // V2 "All sections" sheet
+  const [sectionsOpen, setSectionsOpen] = useState(false);
   const leaving = member.status !== 'Active' && member.status !== 'Replacement In-Progress' && member.lastWorkingDay;
 
   useEffect(() => {
@@ -104,7 +144,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
     const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, []);
+  }, [v2]);
 
   const work = useMemo(() => {
     const info = workInfoFor(member);
@@ -121,120 +161,258 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
   const [contacts, setContacts] = useState(() => mappedContactsFor(member));
   const [sops, setSops] = useState(() => sopsFor(member));
 
+  const info = (groups: InfoGroup[]) => (v2 ? <InfoListV2 groups={groups} /> : <InfoCard groups={groups} />);
+
   const panel = () => {
     switch (tab) {
       case 'Personal Information':
-        return (
-          <>
-            <InfoCard
-              groups={[
-                {
-                  title: 'Basic Details',
-                  fields: [
-                    { label: 'Full Name', value: member.name },
-                    { label: 'Gender', value: member.gender },
-                    { label: 'Date of Birth', value: formatBirthDate(member.dateOfBirth) },
-                    { label: 'Nationality', value: member.nationality },
-                    { label: 'Marital Status', value: member.maritalStatus },
-                  ],
-                },
-                {
-                  title: 'Address Details',
-                  fields: [
-                    { label: 'Current City', value: member.currentCity, wide: true },
-                    { label: 'Permanent Address', value: member.permanentAddress, wide: true },
-                    { label: 'Correspondence Address', value: member.correspondenceAddress, wide: true },
-                    { label: 'Time Zone', value: member.timeZone },
-                  ],
-                },
-              ]}
-            />
-          </>
-        );
+        return info([
+          {
+            title: 'Basic Details',
+            icon: User,
+            fields: [
+              { label: 'Full Name', value: member.name },
+              { label: 'Gender', value: member.gender },
+              { label: 'Date of Birth', value: formatBirthDate(member.dateOfBirth) },
+              { label: 'Nationality', value: member.nationality },
+              { label: 'Marital Status', value: member.maritalStatus },
+            ],
+          },
+          {
+            title: 'Address Details',
+            icon: MapPin,
+            fields: [
+              { label: 'Current City', value: member.currentCity, wide: true },
+              { label: 'Permanent Address', value: member.permanentAddress, wide: true },
+              { label: 'Correspondence Address', value: member.correspondenceAddress, wide: true },
+              { label: 'Time Zone', value: member.timeZone },
+            ],
+          },
+        ]);
       case 'Work Information':
-        return (
-          <>
-            <InfoCard
-              groups={[
-                {
-                  title: 'Job Details',
-                  fields: [
-                    { label: 'Designation', value: member.designation, wide: true },
-                    { label: 'Department', value: work.department },
-                    { label: 'Reporting Manager', value: work.reportingManager },
-                    { label: 'Employment Start Date', value: formatStartDate(work.employmentStartDate) },
-                  ],
-                },
-                {
-                  title: 'Work Modes',
-                  fields: [
-                    { label: 'Current Mode', value: work.currentMode },
-                    { label: `Shift Timing Preferences (${member.timeZone})`, value: `${work.shiftFrom} - ${work.shiftTo}` },
-                  ],
-                },
-              ]}
-            />
-          </>
-        );
+        return info([
+          {
+            title: 'Job Details',
+            icon: BriefcaseBusiness,
+            fields: [
+              { label: 'Designation', value: member.designation, wide: true },
+              { label: 'Department', value: work.department },
+              { label: 'Reporting Manager', value: work.reportingManager },
+              { label: 'Employment Start Date', value: formatStartDate(work.employmentStartDate) },
+            ],
+          },
+          {
+            title: 'Work Modes',
+            icon: Clock,
+            fields: [
+              { label: 'Current Mode', value: work.currentMode },
+              { label: `Shift Timing Preferences (${member.timeZone})`, value: `${work.shiftFrom} - ${work.shiftTo}` },
+            ],
+          },
+        ]);
       case 'Reporting To':
-        return <StaffReportingToTab staffName={member.name} contacts={contacts} onChange={setContacts} />;
+        return <StaffReportingToTab staffName={member.name} contacts={contacts} onChange={setContacts} v2={v2} />;
       case 'Attendance & Leave':
-        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} />;
+        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} v2={v2} />;
       case 'Skills & Qualification':
-        return <StaffSkillsTab skills={skills} />;
+        return <StaffSkillsTab skills={skills} v2={v2} />;
       case 'Employee Documents':
-        return <StaffDocumentsTab documents={documents} staffName={member.name} />;
+        return <StaffDocumentsTab documents={documents} staffName={member.name} v2={v2} />;
       case 'Terms of Employment':
-        return (
-          <>
-            <InfoCard
-              groups={[
-                {
-                  title: 'Terms of Employment',
-                  fields: [
-                    { label: 'Notice Period', value: terms.noticePeriod },
-                    { label: 'Minimum Employment Period', value: terms.minimumEmploymentPeriod },
-                    { label: 'Employment Start Date', value: formatStaffDate(terms.employmentStartDate) },
-                    { label: 'Base Location', value: terms.baseLocation },
-                    { label: 'Branch Name', value: terms.branchName },
-                    { label: 'Employment Type', value: terms.employmentType },
-                  ],
-                },
-                {
-                  title: 'Shift',
-                  fields: [
-                    { label: `Available Up To (${terms.shiftTimeZone})`, value: terms.availableUpTo },
-                    { label: `Tax Season Available Up To (${terms.shiftTimeZone})`, value: terms.taxSeasonAvailableUpTo },
-                  ],
-                },
-              ]}
-            />
-          </>
-        );
+        return info([
+          {
+            title: 'Terms of Employment',
+            icon: FileSignature,
+            fields: [
+              { label: 'Notice Period', value: terms.noticePeriod },
+              { label: 'Minimum Employment Period', value: terms.minimumEmploymentPeriod },
+              { label: 'Employment Start Date', value: formatStaffDate(terms.employmentStartDate) },
+              { label: 'Base Location', value: terms.baseLocation },
+              { label: 'Branch Name', value: terms.branchName },
+              { label: 'Employment Type', value: terms.employmentType },
+            ],
+          },
+          {
+            title: 'Shift',
+            icon: Clock,
+            fields: [
+              { label: `Available Up To (${terms.shiftTimeZone})`, value: terms.availableUpTo },
+              { label: `Tax Season Available Up To (${terms.shiftTimeZone})`, value: terms.taxSeasonAvailableUpTo },
+            ],
+          },
+        ]);
       case 'Training & Development':
-        return <StaffTrainingTab trainings={trainings} tniRequests={tniRequests} onOpenTrainingNeed={onOpenTrainingNeed} />;
+        return <StaffTrainingTab trainings={trainings} tniRequests={tniRequests} onOpenTrainingNeed={onOpenTrainingNeed} v2={v2} />;
       case 'System & IT Details':
-        return <StaffSystemTab devices={devices} access={access} />;
+        return <StaffSystemTab devices={devices} access={access} v2={v2} />;
       case 'Assessments':
-        return <StaffAssessmentsTab assessments={assessments} />;
+        return <StaffAssessmentsTab assessments={assessments} v2={v2} />;
       case 'SOP':
-        return <StaffSopTab staffName={member.name} clientName={clientName} sops={sops} onChange={setSops} />;
+        return <StaffSopTab staffName={member.name} clientName={clientName} sops={sops} onChange={setSops} v2={v2} />;
     }
   };
 
+  const header = (
+    <ScreenHeader
+      title="Staff Details"
+      onBack={onBack}
+      backLabel="Back to My Staff"
+      version={onVersionChange ? { versions: DESIGN_VERSIONS, value: version, onChange: onVersionChange } : undefined}
+    />
+  );
+
+  if (v2) {
+    const idx = STAFF_PROFILE_TABS.indexOf(tab);
+    const CurrentIcon = TAB_ICONS[tab];
+    const go = (t: StaffProfileTab) => {
+      setTab(t);
+      setSectionsOpen(false);
+      // Keep the section bar pinned: jump back to the top of the content when it was scrolled past
+      if (tabsStuck) tabsSentinelRef.current?.scrollIntoView({ block: 'start' });
+    };
+    return (
+      <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
+        {header}
+
+        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
+          {/* Full-width profile hero */}
+          <section className="relative overflow-hidden px-4 pt-6 pb-11 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white">
+            <span aria-hidden="true" className="absolute -top-14 -right-10 w-44 h-44 rounded-full bg-white/10 pointer-events-none" />
+            <span aria-hidden="true" className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
+            <div className="relative flex flex-col items-center text-center">
+              <span className="rounded-full ring-4 ring-white/25 shadow-[0_10px_24px_-10px_rgba(15,23,42,0.6)]">
+                <StaffAvatar name={member.name} tint={tint} size="lg" />
+              </span>
+              <h2 className="mt-3 text-[18px] font-extrabold leading-tight break-words">{member.name}</h2>
+              <p className="mt-0.5 text-[12px] text-white/80 leading-snug break-words">{member.designation}</p>
+              <span className="mt-2.5 flex">
+                <StaffStatusPill status={member.status} full />
+              </span>
+              <a
+                href={`mailto:${member.email}`}
+                className="mt-3.5 max-w-full h-9 px-3.5 rounded-full bg-white/15 ring-1 ring-inset ring-white/25 inline-flex items-center gap-1.5 text-[12px] font-semibold active:bg-white/25 transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{member.email}</span>
+              </a>
+            </div>
+          </section>
+
+          {/* Content sheet overlapping the hero */}
+          <div className="relative -mt-6 rounded-t-[28px] bg-[#F8FAFC] pt-4">
+            {leaving && (
+              <div className="mx-4 mb-1 px-3.5 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-lg bg-white text-[#D97706] flex items-center justify-center shrink-0" aria-hidden="true">
+                  <CalendarX className="w-4 h-4" />
+                </span>
+                <p className="text-[11.5px] text-amber-800">
+                  Last working day: <strong className="font-bold">{formatStaffDate(member.lastWorkingDay!)}</strong>
+                </p>
+              </div>
+            )}
+
+            {/* Desktop tab bar → section stepper (prev / current · all sections / next) */}
+            <div ref={tabsSentinelRef} className="h-px" aria-hidden="true" />
+            <nav
+              className={`sticky top-0 z-10 px-4 py-2.5 transition-colors duration-200 ${
+                tabsStuck ? 'bg-[#F8FAFC]/95 backdrop-blur-md border-b border-slate-200/80' : 'border-b border-transparent'
+              }`}
+              aria-label="Staff profile sections"
+            >
+              <div className="flex items-center gap-1 p-1.5 bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)]">
+                <button
+                  type="button"
+                  onClick={() => go(STAFF_PROFILE_TABS[idx - 1])}
+                  disabled={idx === 0}
+                  aria-label="Previous section"
+                  className="w-9 h-10 rounded-xl flex items-center justify-center text-slate-500 active:bg-slate-100 disabled:opacity-30 disabled:active:bg-transparent cursor-pointer disabled:cursor-default"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSectionsOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-label={`${tab}. Show all sections`}
+                  className="flex-1 min-w-0 h-10 px-1.5 rounded-xl flex items-center gap-2.5 text-left active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                >
+                  <span className="w-8 h-8 rounded-lg bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white flex items-center justify-center shrink-0" aria-hidden="true">
+                    <CurrentIcon className="w-4 h-4" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[10px] font-semibold text-slate-400 tabular-nums leading-tight">
+                      {idx + 1} / {STAFF_PROFILE_TABS.length}
+                    </span>
+                    <span className="block text-[13px] font-bold text-[#1E293B] leading-tight truncate">{tab}</span>
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go(STAFF_PROFILE_TABS[idx + 1])}
+                  disabled={idx === STAFF_PROFILE_TABS.length - 1}
+                  aria-label="Next section"
+                  className="w-9 h-10 rounded-xl flex items-center justify-center text-slate-500 active:bg-slate-100 disabled:opacity-30 disabled:active:bg-transparent cursor-pointer disabled:cursor-default"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mt-2 mx-1 h-1 rounded-full bg-slate-200/80 overflow-hidden" aria-hidden="true">
+                <span
+                  className="block h-full rounded-full bg-linear-to-r from-[#2F68FE] to-[#4F46E5] transition-[width] duration-300"
+                  style={{ width: `${((idx + 1) / STAFF_PROFILE_TABS.length) * 100}%` }}
+                />
+              </div>
+            </nav>
+
+            <div key={tab} className="px-4 animate-in fade-in slide-in-from-bottom-1 duration-200" role="region" aria-label={tab}>
+              {panel()}
+            </div>
+          </div>
+        </div>
+
+        <BottomSheet isOpen={sectionsOpen} onClose={() => setSectionsOpen(false)} maxHeight="max-h-[85%]">
+          <SheetHeader title="Staff Profile Sections" subtitle={member.name} onClose={() => setSectionsOpen(false)} />
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-6">
+            <div className="grid grid-cols-3 gap-2.5">
+              {STAFF_PROFILE_TABS.map((t) => {
+                const Icon = TAB_ICONS[t];
+                const on = t === tab;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => go(t)}
+                    aria-current={on ? 'true' : undefined}
+                    className={`min-h-[92px] px-2 py-3 rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                      on ? 'bg-[#EEF2FF] ring-2 ring-[#2F68FE]' : 'bg-[#F8FAFC] border border-[#EBF0F7] active:bg-slate-100'
+                    }`}
+                  >
+                    <span
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        on ? 'bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white' : 'bg-white text-[#2F68FE] shadow-2xs'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <span className={`text-[11px] font-semibold leading-tight ${on ? 'text-[#2F68FE]' : 'text-slate-600'}`}>{t}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+              <LayoutGrid className="w-3.5 h-3.5" /> {STAFF_PROFILE_TABS.length} sections
+            </p>
+          </div>
+        </BottomSheet>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
-      <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back to My Staff"
-          className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-base font-bold screen-title">Staff Details</h1>
-      </header>
+      {header}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3">

@@ -7,7 +7,7 @@ import { TniRequest, formatTniDate } from '../../data/clientTrainingNeedData';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
-import { Card, EmptyCard, FieldGrid, Pill, SearchField, SheetHeader } from './StaffTabParts';
+import { ACCENT, AccentCard, Card, CardHeading, EmptyCard, FieldGrid, Pill, RowList, SearchField, SheetHeader, Tone } from './StaffTabParts';
 
 type TypeFilter = 'All' | TrainingType;
 
@@ -59,10 +59,11 @@ const TrainingFilterSheet: React.FC<{
 };
 
 /** Desktop "Training & Development" tab (training_development.tpl): type filter + search, training list */
-export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniRequests?: TniRequest[]; onOpenTrainingNeed?: () => void }> = ({
+export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniRequests?: TniRequest[]; onOpenTrainingNeed?: () => void; v2?: boolean }> = ({
   trainings,
   tniRequests = [],
   onOpenTrainingNeed,
+  v2,
 }) => {
   const [type, setType] = useState<TypeFilter>('All');
   const [query, setQuery] = useState('');
@@ -77,7 +78,38 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
   return (
     <>
       <div className="mt-2.5 space-y-3">
-        {tniRequests.length > 0 && (
+        {tniRequests.length > 0 && v2 && (
+          <Card className="p-4">
+            <CardHeading
+              icon={ScanSearch}
+              title="Training Need Identification"
+              trailing={
+                onOpenTrainingNeed && (
+                  <button
+                    type="button"
+                    onClick={onOpenTrainingNeed}
+                    className="h-8 pl-3 pr-2 rounded-full bg-[#EEF2FF] text-[11px] font-bold text-[#2F68FE] flex items-center active:bg-[#E0E7FF] cursor-pointer"
+                  >
+                    View all
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )
+              }
+            />
+            <ul className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
+              {tniRequests.map((r) => (
+                <li key={r.id} className="py-2.5 flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
+                    <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
+                  </span>
+                  <TniStatusPill status={r.status} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+        {tniRequests.length > 0 && !v2 && (
           <Card className="p-3.5">
             <div className="flex items-center justify-between gap-2">
               <p className="flex items-center gap-1.5 text-[13px] font-bold text-[#1D4ED8]">
@@ -140,7 +172,32 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
           />
         ) : (
           <ul className="space-y-2.5">
-            {visible.map((t) => (
+            {visible.map((t) => {
+              const tone: Tone = t.status === 'Completed' ? 'green' : t.status === 'In Progress' ? 'indigo' : 'amber';
+              return v2 ? (
+                <li key={t.id}>
+                  <AccentCard accent={ACCENT[tone]} className="pl-4 pr-3.5 pt-3.5 pb-1">
+                    <div className="flex items-start gap-3">
+                      <span className="w-10 h-10 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+                        <BookOpen className="w-4.5 h-4.5" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10.5px] text-slate-400">Training Name</p>
+                        <p className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{t.name}</p>
+                      </div>
+                      <Pill tone={tone}>{t.status}</Pill>
+                    </div>
+                    <RowList
+                      className="mt-2.5 border-t border-slate-100"
+                      rows={[
+                        { label: 'Type', value: t.type },
+                        { label: 'Duration', value: t.duration },
+                        { label: 'Start Date', value: formatStaffDate(t.startDate) },
+                      ]}
+                    />
+                  </AccentCard>
+                </li>
+              ) : (
               <li key={t.id}>
                 <Card className="p-3.5">
                   <div className="flex items-start gap-3">
@@ -151,7 +208,7 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
                     <div className="shrink-0 text-right">
                       <p className="text-[10.5px] text-slate-400">Status</p>
                       <div className="mt-0.5">
-                        <Pill tone={t.status === 'Completed' ? 'green' : t.status === 'In Progress' ? 'indigo' : 'amber'}>{t.status}</Pill>
+                        <Pill tone={tone}>{t.status}</Pill>
                       </div>
                     </div>
                   </div>
@@ -165,7 +222,8 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
                   />
                 </Card>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>

@@ -4,13 +4,14 @@ import { BottomSheet } from '../../../common/BottomSheet';
 import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { avatarTint, initialsOf } from '../../../home/celebrationUtils';
 import type { MappedContact } from '../../data/clientStaffProfileData';
-import { Card, DateField, EmptyCard, Pill, SheetHeader, TabTitle, TextField, useNotice } from './StaffTabParts';
+import { ACCENT, AccentCard, Card, DateField, EmptyCard, Pill, RowList, SheetHeader, TabTitle, TextField, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
 
 interface StaffReportingToTabProps {
   staffName: string;
   contacts: MappedContact[];
   onChange: (next: MappedContact[]) => void;
+  v2?: boolean;
 }
 
 type Draft = Pick<MappedContact, 'firstName' | 'lastName' | 'email' | 'phone' | 'birthDate' | 'status'>;
@@ -20,7 +21,7 @@ const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 /** Desktop "Reporting To" tab (mapped_contacts.tpl): mapped client contacts, Map Contact + edit */
-export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffName, contacts, onChange }) => {
+export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffName, contacts, onChange, v2 }) => {
   const perm = useClientPermission('my-staff');
   const [editing, setEditing] = useState<MappedContact | 'new' | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -87,6 +88,60 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
         ) : (
           contacts.map((c, idx) => {
             const name = `${c.firstName} ${c.lastName}`.trim();
+            if (v2) {
+              const tel = c.phone ? `tel:${c.phone.replace(/[^\d+]/g, '')}` : undefined;
+              return (
+                <AccentCard key={c.id} accent={ACCENT[c.status === 'Active' ? 'green' : 'slate']} className="pl-4 pr-3.5 py-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className={`w-11 h-11 rounded-2xl flex items-center justify-center text-[13px] font-bold shrink-0 ${avatarTint(idx + 3)}`}>
+                      {initialsOf(name || c.email)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10.5px] font-semibold text-slate-400">Contact Name</p>
+                      <p className="text-[14px] font-bold text-[#1E293B] leading-snug break-words">{name || '-'}</p>
+                      <span className="mt-1 inline-flex">
+                        <Pill tone={c.status === 'Active' ? 'green' : 'slate'}>{c.status}</Pill>
+                      </span>
+                    </div>
+                    {perm.edit && (
+                      <button
+                        type="button"
+                        onClick={() => setEditing(c)}
+                        aria-label={`Edit ${name || c.email}`}
+                        className="w-9 h-9 rounded-full bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center active:bg-[#E0E7FF] shrink-0 cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <RowList
+                    className="mt-2.5 border-t border-slate-100"
+                    rows={[
+                      { label: 'Designation', value: c.designation || '-' },
+                      { label: 'Phone No', value: c.phone || '-' },
+                      { label: 'Email', value: <span className="break-all">{c.email}</span> },
+                    ]}
+                  />
+                  <div className="mt-1 grid grid-cols-2 gap-2">
+                    {tel ? (
+                      <a href={tel} className="h-10 rounded-xl bg-[#E8F8F0] text-[#10B981] text-xs font-bold flex items-center justify-center gap-1.5 active:opacity-80">
+                        <Phone className="w-4 h-4" /> Call
+                      </a>
+                    ) : (
+                      <span className="h-10 rounded-xl bg-slate-50 text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5" aria-hidden="true">
+                        <Phone className="w-4 h-4" /> Call
+                      </span>
+                    )}
+                    <a
+                      href={`mailto:${c.email}`}
+                      className="h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:opacity-80"
+                    >
+                      <Mail className="w-4 h-4" /> Email
+                    </a>
+                  </div>
+                </AccentCard>
+              );
+            }
             return (
             <Card key={c.id} className="p-3.5">
               <div className="flex items-center gap-3">

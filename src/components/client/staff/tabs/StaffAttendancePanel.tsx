@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Building2, Calendar, CalendarX2, ChevronLeft, ChevronRight, Coffee, House, PartyPopper, Plane } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, Calendar, CalendarX2, ChevronLeft, ChevronRight, Coffee, House, PartyPopper, Plane } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
@@ -20,6 +20,7 @@ import { StaffSkeleton } from '../ClientStaffParts';
 interface StaffAttendancePanelProps {
   member: ClientStaffMember;
   workMode: StaffWorkMode;
+  v2?: boolean;
 }
 
 /** Readable labels for desktop status codes */
@@ -144,6 +145,90 @@ const DayCard: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = ({ 
   );
 };
 
+const STATUS_DOT: Record<AttendanceStatus, string> = {
+  'Full day': 'bg-[#10B981]',
+  'Half Day': 'bg-[#F59E0B]',
+  'Half PL': 'bg-[#EA580C]',
+  PL: 'bg-[#1D4ED8]',
+  Absent: 'bg-rose-500',
+  WO: 'bg-slate-300',
+  Holiday: 'bg-[#4F46E5]',
+};
+
+/** V2 day row: date block on the left, check-in → check-out line, time chips, Level / Designation rows */
+const DayCardV2: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = ({ day, member }) => {
+  const d = parse(day.date);
+  const worked = Boolean(day.checkIn);
+  const ModeIcon = day.workMode === 'WFH' ? House : Building2;
+  const modeLabel = day.workMode === 'WFH' ? 'Work From Home' : day.workMode === 'Office' ? 'Work From Office' : '--';
+  const hasOt = Boolean(day.overtime && day.overtime !== '00:00');
+  return (
+    <div className="relative bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
+      <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${STATUS_DOT[day.status]}`} />
+      <div className="pl-4 pr-3.5 py-3.5 flex gap-3">
+        <div className={`w-14 shrink-0 rounded-xl py-2 flex flex-col items-center justify-center ${STATUS_PILL[day.status]}`}>
+          <span className="text-[10px] font-bold uppercase leading-none">{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+          <span className="mt-1 text-[20px] font-extrabold leading-none tabular-nums">{String(d.getDate()).padStart(2, '0')}</span>
+          <span className="mt-1 text-[10px] font-bold uppercase leading-none">{MONTHS[d.getMonth()].slice(0, 3)}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-[#1E293B] tabular-nums">
+                {d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+              </p>
+              <p className="text-[11px] text-slate-400">{d.toLocaleDateString('en-US', { weekday: 'long' })}</p>
+            </div>
+            <span className={`text-[10.5px] font-bold px-2 py-0.5 rounded-md shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
+          </div>
+          {worked ? (
+            <>
+              <div className="mt-2.5 flex items-center gap-2 text-[12.5px] font-bold text-[#1E293B] tabular-nums">
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-semibold text-slate-400">Check In</span>
+                  {day.checkIn ?? '--'}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-3" />
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-semibold text-slate-400">Check Out</span>
+                  {day.checkOut ?? '--'}
+                </span>
+                <span className="ml-auto mt-3 h-6 px-2 rounded-full bg-[#F8FAFC] border border-[#EBF0F7] text-[10.5px] font-semibold text-slate-500 flex items-center gap-1 min-w-0">
+                  <ModeIcon className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{modeLabel}</span>
+                </span>
+              </div>
+              <dl className="mt-2.5 grid grid-cols-3 gap-1.5">
+                {[
+                  ['Total Office Time', day.officeTime, 'text-[#1E293B]'],
+                  ['Break Time', day.breakTime, 'text-[#1E293B]'],
+                  ['Overtime', day.overtime, hasOt ? 'text-[#4F46E5]' : 'text-[#1E293B]'],
+                ].map(([label, value, color]) => (
+                  <div key={label} className="min-w-0 rounded-lg bg-[#F8FAFC] px-2 py-1.5">
+                    <dt className="text-[10px] text-slate-400 truncate">{label}</dt>
+                    <dd className={`text-[12px] font-bold tabular-nums ${color}`}>{value ?? '--'}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          ) : (
+            <div className="mt-2.5">
+              <InfoBanner day={day} />
+            </div>
+          )}
+        </div>
+      </div>
+      <dl className="px-4 py-2 border-t border-slate-100 bg-[#FAFBFF] flex items-center gap-3 text-[11px]">
+        <dt className="text-slate-400">Level</dt>
+        <dd className="font-semibold text-[#1E293B]">{member.level}</dd>
+        <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" aria-hidden="true" />
+        <dt className="text-slate-400 shrink-0">Designation</dt>
+        <dd className="font-semibold text-[#1E293B] truncate">{member.designation}</dd>
+      </dl>
+    </div>
+  );
+};
+
 /** Desktop "Select Month" field (+ optional Status dropdown), applied with Search. Shared by Attendance and Leave. */
 export const MonthFilterSheet: React.FC<{
   isOpen: boolean;
@@ -259,7 +344,7 @@ export const MonthFilterSheet: React.FC<{
 /* ---------------------------------- Panel --------------------------------- */
 
 /** Attendance view of the staff "Attendance & Leave" tab (desktop attendance-leave.tpl): KPIs, month + status filter, daily records */
-export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode }) => {
+export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode, v2 }) => {
   const joined = parse(member.joiningDate);
   // Staff who already left open on their last month (no records after the last working day)
   const end = parse(staffRecordsEnd(member));
@@ -291,10 +376,10 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
   };
   const clearAll = () => apply(max, ALL);
 
-  const kpis: { label: string; value: number; tile: string }[] = [
-    { label: 'Present Days', value: summary.present, tile: 'bg-[#E8F8F0] text-[#10B981]' },
-    { label: 'Absent Days', value: summary.absent, tile: 'bg-[#FDECEC] text-[#F43F5E]' },
-    { label: 'Leave Days', value: summary.leave, tile: 'bg-[#FEF8E7] text-[#F59E0B]' },
+  const kpis: { label: string; value: number; tile: string; text: string }[] = [
+    { label: 'Present Days', value: summary.present, tile: 'bg-[#E8F8F0] text-[#10B981]', text: 'text-[#10B981]' },
+    { label: 'Absent Days', value: summary.absent, tile: 'bg-[#FDECEC] text-[#F43F5E]', text: 'text-[#F43F5E]' },
+    { label: 'Leave Days', value: summary.leave, tile: 'bg-[#FEF8E7] text-[#F59E0B]', text: 'text-[#F59E0B]' },
   ];
   const totals: { label: string; value: number }[] = [
     { label: 'Working Days', value: summary.working },
@@ -302,6 +387,111 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
     { label: 'Total Days', value: summary.total },
     { label: 'Salary Days', value: summary.salary },
   ];
+
+  const records = (
+    <>
+      {loading ? (
+        <div className="space-y-3" aria-hidden="true">
+          <StaffSkeleton className="w-full h-40 rounded-[20px]" />
+          <StaffSkeleton className="w-full h-40 rounded-[20px]" />
+        </div>
+      ) : visibleDays.length === 0 ? (
+        <EmptyCard
+          icon={CalendarX2}
+          title="No Data Found"
+          text={status === ALL ? `Nothing recorded for ${MONTHS[month.m]} ${month.y}.` : `No ${status} days in ${MONTHS[month.m]} ${month.y}.`}
+          action={
+            !isDefault ? (
+              <button type="button" onClick={clearAll} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
+                Clear All
+              </button>
+            ) : undefined
+          }
+        />
+      ) : (
+        visibleDays.map((d) => (v2 ? <DayCardV2 key={d.date} day={d} member={member} /> : <DayCard key={d.date} day={d} member={member} />))
+      )}
+    </>
+  );
+
+  const filterSheet = (
+    <MonthFilterSheet
+      isOpen={filterOpen}
+      title="Filter Attendance"
+      month={month}
+      status={status}
+      statusOptions={ATTENDANCE_STATUSES.map((s) => STATUS_LABEL[s])}
+      min={min}
+      max={max}
+      onClose={() => setFilterOpen(false)}
+      onApply={apply}
+      onClear={clearAll}
+    />
+  );
+
+  if (v2) {
+    return (
+      <div className="mt-3 space-y-3.5">
+        {/* Month summary: gradient card with the month picker, KPIs and totals */}
+        <section className="relative overflow-hidden rounded-2xl p-4 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white shadow-[0_10px_24px_-12px_rgba(47,104,254,0.7)]">
+          <span aria-hidden="true" className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+          <div className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFilterOpen(true)}
+              className="flex-1 min-w-0 h-11 px-3 rounded-xl bg-white/15 ring-1 ring-inset ring-white/20 flex items-center gap-2.5 text-left active:bg-white/25 transition-colors cursor-pointer"
+            >
+              <Calendar className="w-4 h-4 shrink-0" />
+              <span className="flex-1 min-w-0 text-[14px] font-extrabold truncate">
+                {MONTHS[month.m]} {month.y}
+              </span>
+              <ChevronRight className="w-4 h-4 shrink-0 opacity-70" />
+            </button>
+            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} label="Filter attendance" />
+          </div>
+          {loading ? (
+            <div className="relative mt-4 space-y-2" aria-busy="true" aria-label="Loading attendance">
+              <span className="block h-14 rounded-xl bg-white/15 animate-pulse" />
+              <span className="block h-10 rounded-xl bg-white/10 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <div className="relative mt-4 grid grid-cols-3 gap-2">
+                {kpis.map((k) => (
+                  <div key={k.label} className="rounded-xl bg-white p-2.5 text-center">
+                    <p className={`text-[20px] font-extrabold leading-none tabular-nums ${k.text}`}>{k.value}</p>
+                    <p className="mt-1.5 text-[10.5px] font-semibold text-slate-500 leading-tight">{k.label}</p>
+                  </div>
+                ))}
+              </div>
+              <dl className="relative mt-2 grid grid-cols-4 rounded-xl bg-white/15 ring-1 ring-inset ring-white/15 divide-x divide-white/15">
+                {totals.map((t) => (
+                  <div key={t.label} className="py-2 px-1 flex flex-col items-center text-center min-w-0">
+                    <dd className="text-[15px] font-extrabold tabular-nums leading-none">{t.value}</dd>
+                    <dt className="mt-1 text-[10px] font-medium text-white/80 leading-tight">{t.label}</dt>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
+        </section>
+
+        <div className="flex items-center justify-between px-1 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-1 h-3.5 rounded-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden="true" />
+            <span className="font-bold text-sm text-[#1E293B]">
+              {MONTHS[month.m]} {month.y}
+            </span>
+            {!loading && <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{visibleDays.length}</span>}
+          </div>
+          {status !== ALL && <span className="text-[11px] font-semibold text-slate-500 truncate">Status: {status}</span>}
+        </div>
+
+        <div className="space-y-2.5">{records}</div>
+        {filterSheet}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-3 space-y-3.5">
@@ -366,41 +556,10 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
           )}
         </div>
 
-        {loading ? (
-          <div className="space-y-3" aria-hidden="true">
-            <StaffSkeleton className="w-full h-40 rounded-[20px]" />
-            <StaffSkeleton className="w-full h-40 rounded-[20px]" />
-          </div>
-        ) : visibleDays.length === 0 ? (
-          <EmptyCard
-            icon={CalendarX2}
-            title="No Data Found"
-            text={status === ALL ? `Nothing recorded for ${MONTHS[month.m]} ${month.y}.` : `No ${status} days in ${MONTHS[month.m]} ${month.y}.`}
-            action={
-              !isDefault ? (
-                <button type="button" onClick={clearAll} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
-                  Clear All
-                </button>
-              ) : undefined
-            }
-          />
-        ) : (
-          visibleDays.map((d) => <DayCard key={d.date} day={d} member={member} />)
-        )}
+        {records}
       </div>
 
-      <MonthFilterSheet
-        isOpen={filterOpen}
-        title="Filter Attendance"
-        month={month}
-        status={status}
-        statusOptions={ATTENDANCE_STATUSES.map((s) => STATUS_LABEL[s])}
-        min={min}
-        max={max}
-        onClose={() => setFilterOpen(false)}
-        onApply={apply}
-        onClear={clearAll}
-      />
+      {filterSheet}
     </div>
   );
 };
