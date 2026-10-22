@@ -264,7 +264,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
         {/* What's Happening Around! */}
         <section className="pt-1">
           <h2 className="px-1 text-base font-extrabold text-[#1E293B]">What's Happening Around!</h2>
-          <div ref={tabsRef} className="-mx-4 mt-2.5 flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-1" role="tablist" aria-label="Update categories">
+          <div ref={tabsRef} className="-mx-4 mt-1 flex gap-1 overflow-x-auto no-scrollbar px-2 border-b border-slate-200/80" role="tablist" aria-label="Update categories">
             {CLIENT_FEED_TABS.map((t) => {
               const on = t === tab;
               const unread = unreadIn(t);
@@ -275,20 +275,21 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                   role="tab"
                   aria-selected={on}
                   onClick={() => selectTab(t)}
-                  className={`shrink-0 h-8 pl-3 ${unread ? 'pr-1.5' : 'pr-3'} rounded-full text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
+                  className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                   }`}
                 >
                   {t}
                   {unread > 0 && (
-                    <span
-                      className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
-                        on ? 'bg-white text-[#2F68FE]' : 'bg-[#2F68FE] text-white'
-                      }`}
-                    >
+                    <span className="min-w-5 h-5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
                       {unread}
                     </span>
                   )}
+                  <span
+                    className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
+                      on ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                 </button>
               );
             })}

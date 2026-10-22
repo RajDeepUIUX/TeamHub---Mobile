@@ -81,6 +81,15 @@ const TAB_TO_MODULE: Record<Exclude<ClientTab, 'more'>, string> = {
   invoices: 'invoices',
 };
 
+/** Where Back returns to after a cross-module link (restores the profile tab, invoice or hiring filter that was open) */
+interface BackTarget {
+  moduleId: string;
+  staffFocus?: { staffId: string; tab?: StaffProfileTab };
+  invoiceNo?: string;
+  hiringProfile?: string | null;
+  notifications?: boolean;
+}
+
 /** Mock load time of the dashboard when the app opens */
 const DASHBOARD_LOAD_MS = 700;
 
@@ -188,6 +197,9 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   // Invoice opened from a notification (Invoice Details)
   const [invoiceFocus, setInvoiceFocus] = useState<string | null>(null);
 
+  // Screens left by a link inside a module (or a notification); Back reopens the last one instead of the Dashboard
+  const [backStack, setBackStack] = useState<BackTarget[]>([]);
+
   // Hire New Staff › Shortlisted Candidates (interviews, feedback and assessments; kept while switching modules)
   const [candidates, setCandidates] = useState<ShortlistedCandidate[]>(SHORTLISTED_SEED);
 
@@ -283,6 +295,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   }, [dashLoading]);
 
   const openTab = (next: ClientTab) => {
+    setBackStack([]);
     setStaffFocus(null);
     setIsNotificationsOpen(false);
     setInvoiceFocus(null);
@@ -303,6 +316,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     if (id === 'other-modules') return setOverlay('services');
     if (id === 'news-insights') return setOverlay('news');
     if (id === 'account-manager') return setOverlay('manager');
+    setBackStack([]);
     const mapped = MODULE_TO_TAB[id];
     if (mapped) return openTab(mapped);
     setTab('more');
@@ -310,12 +324,35 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   };
 
   // Staff Requirement / Pricing links: Available Staff Hub or Shortlisted Candidates filtered to one profile
-  const openHiring = (id: 'staff-hub' | 'interviews', profile?: string) => {
-    openModule(id);
-    setHiringProfile(profile ?? null);
-  };
+  const openHiring = (id: 'staff-hub' | 'interviews', profile?: string) =>
+    openFrom(here(), () => {
+      openModule(id);
+      setHiringProfile(profile ?? null);
+    });
 
   const goHome = () => openTab('home');
+
+  // The current screen as a Back target
+  const here = (extra?: Partial<BackTarget>): BackTarget => ({ moduleId: currentModuleId, hiringProfile, ...extra });
+
+  // Opens another module from inside this one; its Back returns here
+  const openFrom = (from: BackTarget, open: () => void) => {
+    const stack = [...backStack, from];
+    open();
+    setBackStack(stack);
+  };
+
+  const goBack = () => {
+    const target = backStack[backStack.length - 1];
+    if (!target) return goHome();
+    const rest = backStack.slice(0, -1);
+    openModule(target.moduleId);
+    setBackStack(rest);
+    if (target.staffFocus) setStaffFocus(target.staffFocus);
+    if (target.invoiceNo) setInvoiceFocus(target.invoiceNo);
+    if (target.hiringProfile) setHiringProfile(target.hiringProfile);
+    if (target.notifications) setIsNotificationsOpen(true);
+  };
 
   const closeOverlay = () => setOverlay(null);
 
@@ -332,7 +369,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
       setOverlay('updates');
       return;
     }
-    openModule(n.link);
+    const link = n.link;
+    openFrom(here({ notifications: true }), () => openModule(link));
     if (n.link === 'invoices' && n.targetId) setInvoiceFocus(n.targetId);
     if (n.link === 'attendance' && n.targetTab === 'amend') setAmendFocus(true);
     if (n.link === 'my-staff' && n.targetId) setStaffFocus({ staffId: n.targetId, tab: n.targetTab as StaffProfileTab | undefined });
@@ -389,7 +427,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             }}
           />
         ) : !canList(currentModuleId) ? (
-          <ClientNoAccessView onBack={goHome} title={screenTitle} roleName={role.name} onGoHome={() => openTab('home')} />
+          <ClientNoAccessView onBack={goBack} title={screenTitle} roleName={role.name} onGoHome={() => openTab('home')} />
         ) : tab === 'home' ? (
           <ClientDashboard
             userName={userName}
@@ -406,25 +444,30 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'staff' ? (
           <ClientMyStaffView
-            onBack={goHome}
+            onBack={goBack}
             staff={staff}
             clientName={userName}
             focus={staffFocus}
             tniRequests={tniRequests}
-            onOpenTrainingNeed={canList('training-need') ? () => openModule('training-need') : undefined}
+            onOpenTrainingNeed={
+              canList('training-need')
+                ? (staffId) => openFrom(here({ staffFocus: { staffId, tab: 'Training & Development' } }), () => openModule('training-need'))
+                : undefined
+            }
             workModeOf={(id) => workModeFromPrefs(workFlex, id)}
             onOpenTimesheets={
               canList('timesheets')
-                ? (m) => {
-                    openModule('timesheets');
-                    setTimesheetPreset({ staffIds: [m.id] });
-                  }
+                ? (m) =>
+                    openFrom(here(), () => {
+                      openModule('timesheets');
+                      setTimesheetPreset({ staffIds: [m.id] });
+                    })
                 : undefined
             }
           />
         ) : tab === 'more' && moreModuleId === 'user-profile' ? (
           <ClientUserProfileView
-            onBack={goHome}
+            onBack={goBack}
             profile={profile}
             photoUrl={profilePhoto}
             companyName={companyName}
@@ -434,19 +477,19 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'company-profile' ? (
           <ClientCompanyProfileView
-            onBack={goHome}
+            onBack={goBack}
             profile={company}
             logoUrl={companyLogo}
             agreements={CLIENT_AGREEMENTS_SEED}
             contacts={firmContacts}
             onSave={setCompany}
             onLogoChange={setCompanyLogo}
-            onOpenContacts={canList('client-contacts') ? () => openModule('client-contacts') : undefined}
+            onOpenContacts={canList('client-contacts') ? () => openFrom(here(), () => openModule('client-contacts')) : undefined}
             onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'client-contacts' ? (
           <ClientContactsView
-            onBack={canList('company-profile') ? () => openModule('company-profile') : goHome}
+            onBack={backStack.length || !canList('company-profile') ? goBack : () => openModule('company-profile')}
             contacts={contacts}
             company={{
               address: company.address1,
@@ -459,24 +502,24 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             onChange={setContacts}
           />
         ) : tab === 'more' && moreModuleId === 'work-flexibility' ? (
-          <ClientWorkFlexibilityView onBack={goHome} prefs={workFlex} staff={workFlexStaff} userName={userName} onChange={setWorkFlex} />
+          <ClientWorkFlexibilityView onBack={goBack} prefs={workFlex} staff={workFlexStaff} userName={userName} onChange={setWorkFlex} />
         ) : tab === 'more' && moreModuleId === 'mgmt-fee' ? (
           <ClientMgmtFeeView
-            onBack={goHome}
+            onBack={goBack}
             charts={MGMT_FEE_CHARTS}
             initialChartId="level-wise"
             onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'directories' ? (
           <ClientDirectoryView
-            onBack={goHome}
+            onBack={goBack}
             primaryContacts={DIRECTORY_PRIMARY_SEED}
             products={DIRECTORY_POC_SEED}
             onOpenAccountManager={() => openModule('account-manager')}
           />
         ) : tab === 'approvals' ? (
           <ClientAttendanceView
-            onBack={goHome}
+            onBack={goBack}
             requests={amends}
             staff={staff}
             onDecide={decideAmends}
@@ -484,37 +527,38 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             initialTab={amendFocus ? 'amend' : 'attendance'}
           />
         ) : tab === 'timesheets' ? (
-          <ClientTimesheetsView onBack={goHome} staff={staff} initialStaffIds={timesheetPreset.staffIds} initialRange={timesheetPreset.range} />
+          <ClientTimesheetsView onBack={goBack} staff={staff} initialStaffIds={timesheetPreset.staffIds} initialRange={timesheetPreset.range} />
         ) : tab === 'invoices' ? (
           <ClientInvoicesView
-            onBack={goHome}
+            onBack={goBack}
             staff={staff}
             initialInvoiceNo={invoiceFocus}
             onOpenTimesheets={
               canList('timesheets')
-                ? (staffIds, range) => {
-                    openModule('timesheets');
-                    setTimesheetPreset({ staffIds, range });
-                  }
+                ? (staffIds, range, invoiceNo) =>
+                    openFrom(here({ invoiceNo }), () => {
+                      openModule('timesheets');
+                      setTimesheetPreset({ staffIds, range });
+                    })
                 : undefined
             }
             onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'billing-details' ? (
           <ClientBillingDetailsView
-            onBack={goHome}
+            onBack={goBack}
             billing={billing}
             staff={staff}
             country={company.country}
             userName={userName}
             onChange={setBilling}
-            onOpenInvoices={canList('invoices') ? () => openTab('invoices') : undefined}
+            onOpenInvoices={canList('invoices') ? () => openFrom(here(), () => openTab('invoices')) : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'inclusions' ? (
-          <ClientInclusionsView onBack={goHome} />
+          <ClientInclusionsView onBack={goBack} />
         ) : tab === 'more' && moreModuleId === 'staff-hub' ? (
           <ClientStaffHubView
-            onBack={goHome}
+            onBack={goBack}
             profiles={HUB_PROFILES_SEED}
             candidates={candidates}
             savedIds={hubSaved}
@@ -531,13 +575,13 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             onUpdateCandidate={updateCandidate}
             requirements={requirements}
             onCreateRequirements={(created) => changeRequirements([...created, ...requirements])}
-            onOpenShortlisted={canList('interviews') ? () => openModule('interviews') : undefined}
+            onOpenShortlisted={canList('interviews') ? () => openFrom(here(), () => openModule('interviews')) : undefined}
             onContactManager={() => openModule('account-manager')}
             initialProfile={hiringProfile}
           />
         ) : tab === 'more' && moreModuleId === 'requirements' ? (
           <ClientRequirementsView
-            onBack={goHome}
+            onBack={goBack}
             requirements={requirements}
             onChange={changeRequirements}
             userName={userName}
@@ -549,7 +593,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'hiring-pricing' ? (
           <ClientHiringPricingView
-            onBack={goHome}
+            onBack={goBack}
             country={company.country}
             onCreateRequirements={canList('requirements') && permissionFor(role, 'requirements').add ? (created) => changeRequirements([...created, ...requirements]) : undefined}
             defaultLocations={OFFSHORE_LOCATIONS.filter((l) => staff.some((m) => m.location === l))}
@@ -557,26 +601,26 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           />
         ) : tab === 'more' && moreModuleId === 'interviews' ? (
           <ClientInterviewsView
-            onBack={goHome}
+            onBack={goBack}
             candidates={candidates}
             onUpdate={updateCandidate}
             onContactManager={() => openModule('account-manager')}
             initialProfile={hiringProfile}
           />
         ) : tab === 'more' && moreModuleId === 'training-need' ? (
-          <ClientTrainingNeedView onBack={goHome} requests={tniRequests} staff={staff} onChange={changeTni} />
+          <ClientTrainingNeedView onBack={goBack} requests={tniRequests} staff={staff} onChange={changeTni} />
         ) : tab === 'more' && moreModuleId === 'mandatory-learning' ? (
-          <ClientMandatoryLearningView onBack={goHome} courses={MANDATORY_COURSES_SEED} staff={staff} />
+          <ClientMandatoryLearningView onBack={goBack} courses={MANDATORY_COURSES_SEED} staff={staff} />
         ) : tab === 'more' && moreModuleId === 'feedback-evaluation' ? (
           <ClientFeedbackView
-            onBack={goHome}
+            onBack={goBack}
             surveys={surveys}
             userName={userName}
             companyName={companyName}
             onUpdate={(id, patch) => setSurveys((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))}
           />
         ) : (
-          <ComingSoonView title={screenTitle} onGoHome={goHome} onBack={goHome} />
+          <ComingSoonView title={screenTitle} onGoHome={goHome} onBack={goBack} />
         )}
       </div>
       {/* Hidden on Notifications, like Staff / Manager */}

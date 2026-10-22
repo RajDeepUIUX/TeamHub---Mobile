@@ -28,7 +28,7 @@ interface ClientInvoicesViewProps {
   /** Notification deep link: opens this invoice's details */
   initialInvoiceNo?: string | null;
   /** Invoice staff row → Reports › Timesheets (staff + invoice period); hidden without Timesheets access */
-  onOpenTimesheets?: (staffIds: string[], range: TimesheetRange) => void;
+  onOpenTimesheets?: (staffIds: string[], range: TimesheetRange, invoiceNo: string) => void;
   onContactManager: () => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
@@ -168,7 +168,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
         tintOf={tintOf}
         canDownload={canDownload}
         onBack={() => setOpenId(null)}
-        onOpenTimesheets={onOpenTimesheets}
+        onOpenTimesheets={onOpenTimesheets ? (ids, r) => onOpenTimesheets(ids, r, current.invoiceNo) : undefined}
         onContactManager={onContactManager}
       />
     );

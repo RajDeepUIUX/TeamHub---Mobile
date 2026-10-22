@@ -27,7 +27,8 @@ interface ClientMyStaffViewProps {
   onOpenTimesheets?: (member: ClientStaffMember) => void;
   /** TNI requests raised for staff (shown on the Training & Development tab) */
   tniRequests?: TniRequest[];
-  onOpenTrainingNeed?: () => void;
+  /** Training Need Identification, opened from this staff profile (Back returns to it) */
+  onOpenTrainingNeed?: (staffId: string) => void;
   /** Work mode chosen in Staff Work Flexibility; overrides the default shown in Work Information */
   workModeOf?: (staffId: string) => StaffWorkMode | undefined;
   /** Opens this staff profile straight away (e.g. from a notification), optionally on a given tab */
@@ -134,7 +135,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         clientName={clientName}
         initialTab={focus?.staffId === selected.id ? focus.tab : undefined}
         tniRequests={tniRequests?.filter((r) => r.staffId === selected.id)}
-        onOpenTrainingNeed={onOpenTrainingNeed}
+        onOpenTrainingNeed={onOpenTrainingNeed ? () => onOpenTrainingNeed(selected.id) : undefined}
         workModeOverride={workModeOf?.(selected.id)}
         onBack={() => setSelectedId(null)}
       />
