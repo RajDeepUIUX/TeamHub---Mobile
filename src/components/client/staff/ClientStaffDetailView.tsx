@@ -276,30 +276,31 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
           {/* Full-width profile hero */}
-          <section className="relative overflow-hidden px-4 pt-6 pb-11 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white">
-            <span aria-hidden="true" className="absolute -top-14 -right-10 w-44 h-44 rounded-full bg-white/10 pointer-events-none" />
-            <span aria-hidden="true" className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-            <div className="relative flex flex-col items-center text-center">
-              <span className="rounded-full ring-4 ring-white/25 shadow-[0_10px_24px_-10px_rgba(15,23,42,0.6)]">
-                <StaffAvatar name={member.name} tint={tint} size="lg" />
+          <section className="relative overflow-hidden px-4 pt-3.5 pb-8 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white">
+            <span aria-hidden="true" className="absolute -top-12 -right-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+            <div className="relative flex items-center gap-3">
+              <span className="rounded-full ring-2 ring-white/30 shrink-0">
+                <StaffAvatar name={member.name} tint={tint} />
               </span>
-              <h2 className="mt-3 text-[18px] font-extrabold leading-tight break-words">{member.name}</h2>
-              <p className="mt-0.5 text-[12px] text-white/80 leading-snug break-words">{member.designation}</p>
-              <span className="mt-2.5 flex">
-                <StaffStatusPill status={member.status} full />
-              </span>
-              <a
-                href={`mailto:${member.email}`}
-                className="mt-3.5 max-w-full h-9 px-3.5 rounded-full bg-white/15 ring-1 ring-inset ring-white/25 inline-flex items-center gap-1.5 text-[12px] font-semibold active:bg-white/25 transition-colors"
-              >
-                <Mail className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{member.email}</span>
-              </a>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="flex-1 min-w-0 text-[15px] font-extrabold leading-tight truncate">{member.name}</h2>
+                  <StaffStatusPill status={member.status} />
+                </div>
+                <p className="mt-0.5 text-[11.5px] text-white/80 leading-snug truncate">{member.designation}</p>
+                <a
+                  href={`mailto:${member.email}`}
+                  className="mt-1 inline-flex max-w-full items-center gap-1.5 text-[11.5px] font-semibold text-white active:opacity-70"
+                >
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{member.email}</span>
+                </a>
+              </div>
             </div>
           </section>
 
           {/* Content sheet overlapping the hero */}
-          <div className="relative -mt-6 rounded-t-[28px] bg-[#F8FAFC] pt-4">
+          <div className="relative -mt-5 rounded-t-[24px] bg-[#F8FAFC] pt-3">
             {leaving && (
               <div className="mx-4 mb-1 px-3.5 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-lg bg-white text-[#D97706] flex items-center justify-center shrink-0" aria-hidden="true">
