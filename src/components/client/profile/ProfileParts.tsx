@@ -1,11 +1,49 @@
 import React from 'react';
-import { Lock, X } from 'lucide-react';
+import { Info, Lock, X } from 'lucide-react';
+import { BottomSheet } from '../../common/BottomSheet';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
-import { Card } from '../staff/tabs/StaffTabParts';
+import { Card, SheetHeader } from '../staff/tabs/StaffTabParts';
 
 /* Shared by User Profile and Company Profile */
 
-export type Row = { label: string; value: string; wide?: boolean; locked?: boolean; href?: string };
+export type Row = { label: string; value: string; wide?: boolean; locked?: boolean; href?: string; onInfo?: () => void };
+
+/** Desktop green ⓘ (tooltip there) — opens a FieldInfoSheet on mobile */
+export const InfoButton: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      onClick();
+    }}
+    aria-label={`About ${label}`}
+    className="w-8 h-8 -my-2 -mr-2 flex items-center justify-center rounded-full text-[#0E9F6E] active:bg-emerald-50 cursor-pointer"
+  >
+    <Info className="w-4 h-4" />
+  </button>
+);
+
+/** Bottom drawer carrying the desktop tooltip copy */
+export const FieldInfoSheet: React.FC<{ info: { title: string; text: string } | null; onClose: () => void }> = ({ info, onClose }) => (
+  <BottomSheet isOpen={Boolean(info)} onClose={onClose} maxHeight="max-h-[70%]">
+    <SheetHeader title={info?.title ?? ''} onClose={onClose} />
+    <div className="px-5 pt-4 pb-6 overflow-y-auto">
+      <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0]">
+        <span className="w-9 h-9 rounded-xl bg-white text-[#0E9F6E] flex items-center justify-center shrink-0">
+          <Info className="w-4.5 h-4.5" />
+        </span>
+        <p className="text-[12.5px] text-[#1E293B] leading-relaxed">{info?.text}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-4 w-full h-12 rounded-xl bg-[#4F46E5] text-white text-xs font-bold active:bg-[#4338CA] cursor-pointer"
+      >
+        Got it
+      </button>
+    </div>
+  </BottomSheet>
+);
 
 /** Label / value grid; unlike staff tabs, empty values stay visible as "Not added" so the user knows what to fill */
 export const ValueGrid: React.FC<{ rows: Row[] }> = ({ rows }) => (
@@ -15,6 +53,7 @@ export const ValueGrid: React.FC<{ rows: Row[] }> = ({ rows }) => (
         <dt className="flex items-center gap-1 text-[11px] text-slate-400">
           {r.label}
           {r.locked && <Lock className="w-2.5 h-2.5" aria-label="Locked" />}
+          {r.onInfo && <InfoButton label={r.label} onClick={r.onInfo} />}
         </dt>
         <dd className={`mt-0.5 text-[13px] leading-snug break-words ${r.value ? 'font-medium text-[#1E293B]' : 'italic text-slate-400'}`}>
           {r.value && r.href ? (
@@ -56,6 +95,31 @@ export const BandSectionCard: React.FC<{ title: string; action?: React.ReactNode
   </section>
 );
 
+/** Titled sub-group inside a section card (icon + small caps title, optional right action and hint) */
+export const FieldGroup: React.FC<{
+  icon: React.ElementType;
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ icon: Icon, title, hint, action, children }) => (
+  <div className="pt-4 mt-4 border-t border-dashed border-slate-200 first:mt-0 first:pt-0 first:border-0">
+    <div className="flex items-center justify-between gap-2 mb-3 min-h-7">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="w-6 h-6 rounded-lg bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
+          <Icon className="w-3.5 h-3.5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">{title}</h3>
+          {hint && <p className="text-[10.5px] text-slate-400 leading-snug truncate">{hint}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+    {children}
+  </div>
+);
+
 /** Selected values under a multi-select, each removable (B tag chips with ✕) */
 export const RemovableTags: React.FC<{ items: string[]; onRemove: (v: string) => void }> = ({ items, onRemove }) =>
   items.length ? (
@@ -76,11 +140,14 @@ export const RemovableTags: React.FC<{ items: string[]; onRemove: (v: string) =>
     </div>
   ) : null;
 
-export const Label: React.FC<{ text: string; required?: boolean; hint?: string }> = ({ text, required, hint }) => (
+export const Label: React.FC<{ text: string; required?: boolean; hint?: string; onInfo?: () => void }> = ({ text, required, hint, onInfo }) => (
   <span className="flex items-baseline justify-between gap-2 text-xs font-bold text-[#1E293B]">
-    <span>
-      {text}
-      {required && <span className="text-rose-500"> *</span>}
+    <span className="flex items-center gap-1">
+      <span>
+        {text}
+        {required && <span className="text-rose-500"> *</span>}
+      </span>
+      {onInfo && <InfoButton label={text} onClick={onInfo} />}
     </span>
     {hint && <span className="text-[10.5px] font-medium text-slate-400 tabular-nums">{hint}</span>}
   </span>
@@ -90,9 +157,9 @@ export const ErrorText: React.FC<{ error?: string }> = ({ error }) =>
   error ? <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p> : null;
 
 /** Read-only field in edit mode, with the reason it can't be changed here */
-export const LockedField: React.FC<{ label: string; value: string; note?: string }> = ({ label, value, note }) => (
+export const LockedField: React.FC<{ label: string; value: string; note?: string; onInfo?: () => void }> = ({ label, value, note, onInfo }) => (
   <div className="space-y-1.5">
-    <Label text={label} />
+    <Label text={label} onInfo={onInfo} />
     <div className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
       <span className="truncate">{value}</span>
       <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />

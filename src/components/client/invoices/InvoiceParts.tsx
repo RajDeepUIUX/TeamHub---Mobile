@@ -11,6 +11,13 @@ const STATUS_STYLE: Record<InvoicePaymentStatus, { pill: string; dot: string }> 
   'Partially Paid': { pill: 'bg-[#EEF2FF] text-[#4F46E5]', dot: 'bg-[#4F46E5]' },
 };
 
+/** Status colour for card accents (V2 left rail / V1 status dot ring) */
+export const INVOICE_STATUS_ACCENT: Record<InvoicePaymentStatus, { rail: string; soft: string; text: string }> = {
+  Paid: { rail: 'bg-[#10B981]', soft: 'bg-[#E8F8F0]', text: 'text-[#10B981]' },
+  Unpaid: { rail: 'bg-[#F59E0B]', soft: 'bg-[#FEF8E7]', text: 'text-[#D97706]' },
+  'Partially Paid': { rail: 'bg-[#4F46E5]', soft: 'bg-[#EEF2FF]', text: 'text-[#4F46E5]' },
+};
+
 export const InvoiceStatusPill: React.FC<{ status: InvoicePaymentStatus }> = ({ status }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${STATUS_STYLE[status].pill}`}>
     <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[status].dot}`} aria-hidden="true" />
@@ -42,26 +49,53 @@ export const FileAction: React.FC<{
   </button>
 );
 
-export const InvoiceListSkeleton: React.FC = () => (
-  <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
-    {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
-        <div className="flex items-center gap-3">
-          <StaffSkeleton className="w-10 h-10 rounded-xl" />
-          <div className="flex-1 space-y-1.5">
-            <StaffSkeleton className="w-28 h-3.5" />
-            <StaffSkeleton className="w-40 h-3" />
+export const InvoiceListSkeleton: React.FC<{ v2?: boolean }> = ({ v2 }) =>
+  v2 ? (
+    <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden">
+          <span className="absolute left-0 inset-y-0 w-1 bg-slate-200" />
+          <div className="pl-4 pr-3.5 py-3 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <StaffSkeleton className="w-16 h-2.5" />
+              <StaffSkeleton className="w-32 h-4" />
+            </div>
+            <StaffSkeleton className="w-16 h-5" />
           </div>
-          <StaffSkeleton className="w-14 h-5" />
+          <div className="pl-4 pr-3.5 pb-3 space-y-2.5 border-t border-dashed border-slate-200 pt-3">
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-2/3 h-3" />
+          </div>
+          <div className="h-11 bg-[#F8FAFC] border-t border-slate-100" />
         </div>
-        <div className="flex items-end justify-between">
-          <StaffSkeleton className="w-24 h-6" />
-          <StaffSkeleton className="w-20 h-3" />
+      ))}
+    </div>
+  ) : (
+    <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="bg-white border border-[#DCE3ED] rounded-[20px] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1.5">
+              <StaffSkeleton className="w-16 h-2.5" />
+              <StaffSkeleton className="w-32 h-4" />
+            </div>
+            <StaffSkeleton className="w-16 h-6 rounded-full" />
+          </div>
+          <StaffSkeleton className="w-full h-16 rounded-2xl" />
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((j) => (
+              <StaffSkeleton key={j} className="w-full h-12 rounded-2xl" />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <StaffSkeleton className="flex-1 h-10 rounded-full" />
+            <StaffSkeleton className="flex-1 h-10 rounded-full" />
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-);
+      ))}
+    </div>
+  );
 
 export const InvoiceDetailSkeleton: React.FC = () => (
   <div className="px-4 pt-3 space-y-3" aria-busy="true" aria-label="Loading invoice details">

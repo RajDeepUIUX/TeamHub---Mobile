@@ -102,5 +102,19 @@ export const MGMT_FEE_SEEDS = {
 
 export const MGMT_FEE_SEED: ClientMgmtFeeStructure = MGMT_FEE_SEEDS.levelWise;
 
+/** One chart per client login (desktop hard-codes the table by client id); firms are fictional */
+export interface MgmtFeeChart {
+  id: 'level-wise' | 'per-hour' | 'work-mode';
+  tabLabel: string;
+  firmName: string;
+  structure: ClientMgmtFeeStructure;
+}
+
+export const MGMT_FEE_CHARTS: MgmtFeeChart[] = [
+  { id: 'level-wise', tabLabel: 'Level Wise', firmName: 'Northwind CPA', structure: LEVEL_WISE_SEED },
+  { id: 'per-hour', tabLabel: 'Per Hour', firmName: 'Bluebay CPA', structure: HOURLY_SEED },
+  { id: 'work-mode', tabLabel: 'Work Mode', firmName: 'Ridgeway & Company', structure: WORK_MODE_SEED },
+];
+
 export const formatFee = (v: number, decimals = 0) =>
   `$${v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;

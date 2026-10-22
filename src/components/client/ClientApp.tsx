@@ -22,7 +22,7 @@ import { AMEND_SEED, AmendRequest, AmendStatus, pendingAmendCount } from './data
 import { ClientWorkFlexibilityView } from './flexibility/ClientWorkFlexibilityView';
 import { WORK_FLEX_SEED, WorkFlexPreferences, workFlexStaffFrom, workModeFromPrefs } from './data/clientWorkFlexData';
 import { ClientMgmtFeeView } from './fees/ClientMgmtFeeView';
-import { MGMT_FEE_SEED } from './data/clientMgmtFeeData';
+import { MGMT_FEE_CHARTS } from './data/clientMgmtFeeData';
 import { ClientFeedbackView } from './feedback/ClientFeedbackView';
 import { ClientSurvey, FEEDBACK_SURVEYS_SEED } from './data/clientFeedbackData';
 import { ClientNotificationsView } from './notifications/ClientNotificationsView';
@@ -463,7 +463,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
         ) : tab === 'more' && moreModuleId === 'mgmt-fee' ? (
           <ClientMgmtFeeView
             onBack={goHome}
-            structure={MGMT_FEE_SEED}
+            charts={MGMT_FEE_CHARTS}
+            initialChartId="level-wise"
             onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'directories' ? (

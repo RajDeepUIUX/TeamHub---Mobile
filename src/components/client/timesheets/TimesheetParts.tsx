@@ -2,25 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronRight, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { SheetHeader } from '../staff/tabs/StaffTabParts';
-import { StaffSkeleton } from '../staff/ClientStaffParts';
-
-export const TimesheetListSkeleton: React.FC = () => (
-  <div className="space-y-3" aria-busy="true" aria-label="Loading timesheets">
-    {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          {[0, 1, 2, 3].map((j) => (
-            <div key={j} className="space-y-1.5">
-              <StaffSkeleton className="w-20 h-2.5" />
-              <StaffSkeleton className="w-24 h-3.5" />
-            </div>
-          ))}
-        </div>
-        <StaffSkeleton className="w-full h-9 rounded-xl" />
-      </div>
-    ))}
-  </div>
-);
 
 /** Floating banner over the list (desktop toastr success / error) */
 export const useTimesheetNotice = () => {

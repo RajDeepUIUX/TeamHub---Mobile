@@ -1,9 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Briefcase, Eye, Loader2, MessageSquareText, Pencil, SearchX, UserRoundPlus, X } from 'lucide-react';
+import {
+  Briefcase,
+  Building2,
+  CalendarClock,
+  ChevronRight,
+  Clock3,
+  DollarSign,
+  Eye,
+  Loader2,
+  MessageSquareText,
+  Pencil,
+  Plus,
+  SearchX,
+  SlidersHorizontal,
+  UserRoundPlus,
+  X,
+} from 'lucide-react';
 import { CommentThreadSheet } from '../../common/CommentThreadSheet';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, DesignVersion, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { ShortlistedCandidate, formatShortDate, isoOfDate } from '../data/clientInterviewsData';
 import type { HubProfile } from '../data/clientStaffHubData';
@@ -12,6 +28,7 @@ import {
   REQUIREMENT_PAGE_SIZE,
   RequirementDraft,
   RequirementFilters,
+  RequirementStatus,
   StaffRequirement,
   availableResumesFor,
   draftOf,
@@ -24,7 +41,7 @@ import {
 import { RequirementDetailSheet } from './RequirementDetailSheet';
 import { RequirementFilterSheet } from './RequirementFilterSheet';
 import { RequirementFormView } from './RequirementFormView';
-import { RequirementListSkeleton, RequirementSavedSheet, RequirementStatusPill } from './RequirementParts';
+import { RequirementListSkeletonV1, RequirementListSkeletonV2, RequirementSavedSheet, RequirementStatusPill } from './RequirementParts';
 
 interface Props {
   requirements: StaffRequirement[];
@@ -47,22 +64,57 @@ type Sheet = 'filter' | 'detail' | 'comments' | 'saved' | null;
 /** Desktop loads the table by ajax */
 const LOAD_MS = 600;
 
+const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
-/** Desktop table column as a label / value pair */
-const Field: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({ label, children, className = '' }) => (
-  <div className={`min-w-0 ${className}`}>
-    <dt className="text-[11px] font-medium text-slate-400 leading-tight">{label}</dt>
-    <dd className="mt-1 text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{children}</dd>
-  </div>
-);
+/** Status accents (theme semantic colours): amber = In Progress, green = Completed, slate = Not Required */
+const TONE: Record<RequirementStatus, { bar: string; tile: string; band: string; dot: string; text: string }> = {
+  'In Progress': { bar: 'bg-[#F59E0B]', tile: 'bg-[#FEF8E7] text-[#D97706]', band: 'bg-[#FEF8E7]', dot: 'bg-[#D97706]', text: 'text-[#B45309]' },
+  Completed: { bar: 'bg-[#10B981]', tile: 'bg-[#E8F8F0] text-[#10B981]', band: 'bg-[#E8F8F0]', dot: 'bg-[#10B981]', text: 'text-[#047857]' },
+  'Not Required': { bar: 'bg-slate-300', tile: 'bg-slate-100 text-slate-500', band: 'bg-slate-50', dot: 'bg-slate-400', text: 'text-slate-500' },
+};
 
-/** Linked counts (locations, resumes, shortlisted) as label / value rows */
-const LinkRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="flex items-center justify-between gap-3 py-2.5">
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]';
+
+/** V2: label / value row */
+const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-center justify-between gap-3 py-2">
     <dt className="min-w-0 text-[12px] font-medium text-slate-500">{label}</dt>
-    <dd className="shrink-0 text-right text-[12.5px] font-semibold text-[#1E293B]">{children}</dd>
+    <dd className="shrink-0 max-w-[60%] text-right text-[12.5px] font-semibold text-[#1E293B] break-words">{children}</dd>
   </div>
 );
+
+/** V2: Available Resumes / Shortlisted Candidates tile; whole tile opens the linked list */
+const LinkTile: React.FC<{ label: string; value: string | null; tone: 'blue' | 'purple'; onClick?: () => void; ariaLabel: string }> = ({
+  label,
+  value,
+  tone,
+  onClick,
+  ariaLabel,
+}) => {
+  const on = value !== null;
+  const box = !on
+    ? 'bg-[#F8FAFC] border-slate-100'
+    : tone === 'blue'
+      ? 'bg-[#EFF6FF] border-[#BFDBFE]'
+      : 'bg-[#EEF2FF] border-[#E0E7FF]';
+  const color = !on ? 'text-[#1E293B]' : tone === 'blue' ? 'text-[#2F68FE]' : 'text-[#6366F1]';
+  const body = (
+    <>
+      <span className="block text-[10.5px] font-medium text-slate-500 leading-tight">{label}</span>
+      <span className={`mt-1 flex items-center gap-1 text-[13px] font-bold tabular-nums ${color}`}>
+        <span className="truncate">{value ?? '-'}</span>
+        {on && onClick && <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+      </span>
+    </>
+  );
+  return on && onClick ? (
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`min-w-0 text-left rounded-lg border px-3 py-2 active:brightness-95 cursor-pointer ${box} ${FOCUS}`}>
+      {body}
+    </button>
+  ) : (
+    <div className={`min-w-0 rounded-lg border px-3 py-2 ${box}`}>{body}</div>
+  );
+};
 
 /** Blue table link (Profile, N Locations, N Shortlisted); plain text when it can't be opened */
 const TableLink: React.FC<{ label: string; onClick?: () => void; ariaLabel: string; tone?: 'blue' | 'purple'; weight?: string }> = ({
@@ -101,6 +153,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
   // view = details + comments; add = Add Requirement; edit = Edit Requirement
   const { view: canView, add: canAdd, edit: canEdit } = useClientPermission('requirements');
 
+  const [version, setVersion] = useState<DesignVersion>('V1');
+  const v2 = version === 'V2';
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<RequirementFilters>(EMPTY_REQUIREMENT_FILTERS);
   const [pages, setPages] = useState(1);
@@ -205,101 +259,117 @@ export const ClientRequirementsView: React.FC<Props> = ({
     );
   }
 
-  const card = (r: StaffRequirement) => {
+  /** Values + actions shared by both designs (same content and behaviour) */
+  const cardData = (r: StaffRequirement) => {
     const resumes = availableResumesFor(r, hubProfiles, candidates);
     const shortlisted = shortlistedFor(r, candidates);
-    const showEdit = canEdit && r.editable;
+    return {
+      resumes,
+      shortlisted,
+      showEdit: canEdit && r.editable,
+      resumesLabel: resumes > 0 ? `${resumes} ${resumes === 1 ? 'Resume' : 'Resumes'}` : null,
+      shortlistedLabel: shortlisted > 0 ? `${shortlisted} Shortlisted` : null,
+      openResumes: resumes > 0 && onOpenHub ? () => onOpenHub(r.profile) : undefined,
+      openShortlisted: shortlisted > 0 && onOpenShortlisted ? () => onOpenShortlisted(r.profile) : undefined,
+      commentsAria: `Comments on ${r.profile}${r.comments.length > 0 ? `, ${r.comments.length}` : ''}`,
+    };
+  };
+
+  /* ---------- Card (V1): soft card ---------- */
+  const cardV1 = (r: StaffRequirement) => {
+    const d = cardData(r);
+    const t = TONE[r.status];
+    const facts = [
+      { label: 'Pricing', value: r.pricing, icon: DollarSign, num: true },
+      { label: 'Onboarding Timeline', value: r.timeline, icon: CalendarClock, num: false },
+      { label: 'Hours/Week', value: r.hoursPerWeek ? String(r.hoursPerWeek) : '', icon: Clock3, num: true },
+      { label: 'Work Mode', value: r.workMode, icon: Building2, num: false },
+    ];
+    const pill = `flex-1 min-w-0 h-10 px-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer ${FOCUS}`;
 
     return (
       <li key={r.id}>
-        <Card className="overflow-hidden">
-          <div className="px-4 pt-3.5 pb-1.5">
+        <article className="relative bg-white rounded-2xl border border-slate-100 shadow-[0_4px_16px_-8px_rgba(15,23,42,0.12)]">
+          <span aria-hidden="true" className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full ${t.bar}`} />
+          <div className="pl-5 pr-4 pt-4">
             <div className="flex items-start gap-3">
-              <span className="flex-1 min-w-0">
-                <span className="block text-[11px] font-medium text-slate-400 leading-tight">Profile</span>
-                <span className="block mt-1 text-[15px] leading-snug">
-                  <TableLink
-                    label={r.profile}
-                    weight="font-bold"
-                    onClick={canView ? () => openSheet('detail', r.id) : undefined}
-                    ariaLabel={`View requirement ${r.profile}`}
-                  />
-                </span>
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${t.tile}`}>
+                <Briefcase className="w-5 h-5" />
               </span>
-              <span className="shrink-0 flex flex-col items-end">
-                <span className="text-[11px] font-medium text-slate-400 leading-tight">Status</span>
-                <span className="mt-1">
-                  <RequirementStatusPill status={r.status} />
+              <div className="flex-1 min-w-0">
+                <span className="block text-[11px] font-medium text-slate-400 leading-tight">Profile</span>
+                <span className="block mt-0.5 text-[15px] leading-snug">
+                  <TableLink label={r.profile} weight="font-bold" onClick={canView ? () => openSheet('detail', r.id) : undefined} ariaLabel={`View requirement ${r.profile}`} />
                 </span>
+              </div>
+              <span className="shrink-0 pt-0.5" aria-label={`Status: ${r.status}`}>
+                <RequirementStatusPill status={r.status} />
               </span>
             </div>
 
-            <dl className="mt-3.5 p-3 rounded-xl bg-[#F8FAFC] border border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
-              <Field label="Pricing">
-                <span className="tabular-nums">{r.pricing || '-'}</span>
-              </Field>
-              <Field label="Onboarding Timeline">{r.timeline || '-'}</Field>
-              <Field label="Hours/Week">
-                <span className="tabular-nums">{r.hoursPerWeek || '-'}</span>
-              </Field>
-              <Field label="Work Mode">{r.workMode || '-'}</Field>
+            <dl className="mt-3.5 grid grid-cols-2 gap-2">
+              {facts.map((f) => (
+                <div key={f.label} className="min-w-0 rounded-xl bg-[#F8FAFC] px-3 py-2.5 flex items-start gap-2">
+                  <f.icon className="w-4 h-4 mt-0.5 shrink-0 text-[#2F68FE]" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <dt className="text-[10.5px] font-medium text-slate-400 leading-tight">{f.label}</dt>
+                    <dd className={`mt-0.5 text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words ${f.num ? 'tabular-nums' : ''}`}>{f.value || '-'}</dd>
+                  </div>
+                </div>
+              ))}
             </dl>
 
-            <dl className="mt-1 divide-y divide-slate-100">
-              <LinkRow label="Offshore Location">
-                <LocationValue locations={r.locations} />
-              </LinkRow>
-              <LinkRow label="Available Resumes">
-                {resumes > 0 ? (
-                  <TableLink
-                    label={`${resumes} ${resumes === 1 ? 'Resume' : 'Resumes'}`}
-                    onClick={onOpenHub ? () => onOpenHub(r.profile) : undefined}
-                    ariaLabel={`${resumes} available resumes for ${r.profile}`}
-                  />
-                ) : (
-                  '-'
-                )}
-              </LinkRow>
-              <LinkRow label="Shortlisted Candidates">
-                {shortlisted > 0 ? (
-                  <TableLink
-                    tone="purple"
-                    label={`${shortlisted} Shortlisted`}
-                    onClick={onOpenShortlisted ? () => onOpenShortlisted(r.profile) : undefined}
-                    ariaLabel={`${shortlisted} shortlisted candidates for ${r.profile}`}
-                  />
-                ) : (
-                  '-'
-                )}
-              </LinkRow>
+            <dl className="mt-2 grid grid-cols-3 rounded-xl border border-dashed border-[#BFDBFE] bg-[#F5F8FF] divide-x divide-dashed divide-[#BFDBFE]">
+              <div className="min-w-0 px-1.5 py-2.5 text-center">
+                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Offshore Location</dt>
+                <dd className="mt-1 text-[12.5px] font-bold text-[#1E293B] break-words">
+                  <LocationValue locations={r.locations} align="left" />
+                </dd>
+              </div>
+              <div className="min-w-0 px-1.5 py-2.5 text-center">
+                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Available Resumes</dt>
+                <dd className="mt-1 text-[12.5px] tabular-nums">
+                  {d.resumesLabel ? (
+                    <TableLink label={d.resumesLabel} weight="font-bold" onClick={d.openResumes} ariaLabel={`${d.resumes} available resumes for ${r.profile}`} />
+                  ) : (
+                    <span className="font-bold text-[#1E293B]">-</span>
+                  )}
+                </dd>
+              </div>
+              <div className="min-w-0 px-1.5 py-2.5 text-center">
+                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Shortlisted Candidates</dt>
+                <dd className="mt-1 text-[12.5px] tabular-nums">
+                  {d.shortlistedLabel ? (
+                    <TableLink
+                      tone="purple"
+                      label={d.shortlistedLabel}
+                      weight="font-bold"
+                      onClick={d.openShortlisted}
+                      ariaLabel={`${d.shortlisted} shortlisted candidates for ${r.profile}`}
+                    />
+                  ) : (
+                    <span className="font-bold text-[#1E293B]">-</span>
+                  )}
+                </dd>
+              </div>
             </dl>
           </div>
 
-          {(canView || showEdit) && (
-            <div className="px-4 py-3 border-t border-slate-100 bg-[#FBFCFE] flex items-center gap-2">
+          {canView || d.showEdit ? (
+            <div className="px-4 pt-3.5 pb-4 flex items-center gap-2">
               {canView && (
-                <button
-                  type="button"
-                  onClick={() => openSheet('comments', r.id)}
-                  aria-label={`Comments on ${r.profile}${r.comments.length > 0 ? `, ${r.comments.length}` : ''}`}
-                  className="relative flex-1 min-w-0 h-10 px-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
-                >
+                <button type="button" onClick={() => openSheet('comments', r.id)} aria-label={d.commentsAria} className={`relative bg-[#F1F5F9] text-slate-600 active:bg-slate-200 ${pill}`}>
                   <MessageSquareText className="w-4 h-4 shrink-0" />
                   <span className="truncate">Comments</span>
                   {r.comments.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] ring-2 ring-white text-white text-[9.5px] font-bold flex items-center justify-center tabular-nums">
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] text-white text-[9.5px] font-bold flex items-center justify-center tabular-nums">
                       {r.comments.length}
                     </span>
                   )}
                 </button>
               )}
-              {showEdit && (
-                <button
-                  type="button"
-                  onClick={() => openForm(r.id)}
-                  aria-label={`Edit requirement ${r.profile}`}
-                  className="flex-1 min-w-0 h-10 px-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
-                >
+              {d.showEdit && (
+                <button type="button" onClick={() => openForm(r.id)} aria-label={`Edit requirement ${r.profile}`} className={`border border-slate-200 bg-white text-slate-600 active:bg-slate-50 ${pill}`}>
                   <Pencil className="w-4 h-4 shrink-0" />
                   <span className="truncate">Edit</span>
                 </button>
@@ -309,71 +379,252 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   type="button"
                   onClick={() => openSheet('detail', r.id)}
                   aria-label={`View requirement ${r.profile}`}
-                  className="flex-1 min-w-0 h-10 px-1.5 rounded-xl bg-[#2F68FE]/10 text-[#2F68FE] text-xs font-semibold flex items-center justify-center gap-1.5 active:bg-[#2F68FE]/20 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                  className={`bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] ${pill}`}
                 >
                   <Eye className="w-4 h-4 shrink-0" />
                   <span className="truncate">View</span>
                 </button>
               )}
             </div>
+          ) : (
+            <div className="h-4" />
           )}
-        </Card>
+        </article>
       </li>
     );
   };
 
-  return (
-    <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Staff Requirement" onBack={onBack} />
-      {notice}
-      <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-3">
-          <div className="flex items-center gap-2.5">
-            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
-              {loading ? '' : `${results.length} ${results.length === 1 ? 'requirement' : 'requirements'}`}
+  /* ---------- Card (V2): compact ticket ---------- */
+  const cardV2 = (r: StaffRequirement) => {
+    const d = cardData(r);
+    const t = TONE[r.status];
+    const seg = `relative flex-1 min-w-0 h-11 px-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`;
+
+    return (
+      <li key={r.id}>
+        <article className="bg-white rounded-xl border border-[#E2E8F0] shadow-2xs overflow-hidden">
+          <div className={`h-9 px-3.5 flex items-center gap-2 border-b border-[#EBF0F7] ${t.band}`}>
+            <span className="text-[10.5px] font-medium text-slate-500">Status</span>
+            <span className={`ml-auto flex items-center gap-1.5 text-[11.5px] font-bold ${t.text}`}>
+              <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
+              {r.status}
             </span>
-            {canAdd && (
-              <button
-                type="button"
-                onClick={() => openForm(null)}
-                className="h-11 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shadow-2xs active:bg-blue-50 shrink-0 cursor-pointer"
-              >
-                <UserRoundPlus className="w-4 h-4" />
-                Add Requirement
-              </button>
-            )}
-            <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
           </div>
 
-          {applied.length > 0 && (
-            <div className="mt-2.5 flex items-center gap-2">
-              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
-                {applied.map((a) => (
-                  <span key={a.key} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
-                    {a.label}
-                    <button
-                      type="button"
-                      onClick={() => applyFilters(a.next)}
-                      aria-label={`Remove ${a.label}`}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+          <div className="px-3.5 pt-3 pb-3.5">
+            <span className="block text-[10.5px] font-medium text-slate-400 leading-tight">Profile</span>
+            {canView ? (
+              <button
+                type="button"
+                onClick={() => openSheet('detail', r.id)}
+                aria-label={`View requirement ${r.profile}`}
+                className={`mt-0.5 w-full flex items-center gap-1 text-left text-[15px] font-bold text-[#1E293B] active:text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
+              >
+                <span className="min-w-0 break-words">{r.profile}</span>
+                <ChevronRight className="w-4 h-4 shrink-0 text-[#2F68FE]" />
+              </button>
+            ) : (
+              <span className="mt-0.5 block text-[15px] font-bold text-[#1E293B] break-words">{r.profile}</span>
+            )}
+
+            <dl className="mt-3 grid grid-cols-2 rounded-lg border border-slate-100 divide-x divide-slate-100">
+              <div className="min-w-0 px-3 py-2.5">
+                <dt className="text-[10.5px] font-medium text-slate-500 leading-tight">Pricing</dt>
+                <dd className="mt-1 text-[16px] font-extrabold text-[#2F68FE] leading-tight tabular-nums break-words">{r.pricing || '-'}</dd>
               </div>
-              {isFiltered && (
-                <button type="button" onClick={clearAll} className="shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-                  Clear All
+              <div className="min-w-0 px-3 py-2.5">
+                <dt className="text-[10.5px] font-medium text-slate-500 leading-tight">Hours/Week</dt>
+                <dd className="mt-1 text-[16px] font-extrabold text-[#1E293B] leading-tight tabular-nums">{r.hoursPerWeek || '-'}</dd>
+              </div>
+            </dl>
+
+            <dl className="mt-1.5 divide-y divide-dashed divide-slate-200">
+              <Row label="Onboarding Timeline">{r.timeline || '-'}</Row>
+              <Row label="Work Mode">{r.workMode || '-'}</Row>
+              <Row label="Offshore Location">
+                <LocationValue locations={r.locations} />
+              </Row>
+            </dl>
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <LinkTile
+                label="Available Resumes"
+                value={d.resumesLabel}
+                tone="blue"
+                onClick={d.openResumes}
+                ariaLabel={`${d.resumes} available resumes for ${r.profile}`}
+              />
+              <LinkTile
+                label="Shortlisted Candidates"
+                value={d.shortlistedLabel}
+                tone="purple"
+                onClick={d.openShortlisted}
+                ariaLabel={`${d.shortlisted} shortlisted candidates for ${r.profile}`}
+              />
+            </div>
+          </div>
+
+          {(canView || d.showEdit) && (
+            <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-[#FBFCFE]">
+              {canView && (
+                <button type="button" onClick={() => openSheet('comments', r.id)} aria-label={d.commentsAria} className={`font-semibold text-slate-600 active:bg-slate-100 ${seg}`}>
+                  <MessageSquareText className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Comments</span>
+                  {r.comments.length > 0 && (
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-md bg-[#EFF6FF] text-[#2F68FE] text-[10px] font-bold flex items-center justify-center tabular-nums">
+                      {r.comments.length}
+                    </span>
+                  )}
+                </button>
+              )}
+              {d.showEdit && (
+                <button type="button" onClick={() => openForm(r.id)} aria-label={`Edit requirement ${r.profile}`} className={`font-semibold text-slate-600 active:bg-slate-100 ${seg}`}>
+                  <Pencil className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Edit</span>
+                </button>
+              )}
+              {canView && (
+                <button type="button" onClick={() => openSheet('detail', r.id)} aria-label={`View requirement ${r.profile}`} className={`font-bold text-[#2F68FE] active:bg-[#EFF6FF] ${seg}`}>
+                  <Eye className="w-4 h-4 shrink-0" />
+                  <span className="truncate">View</span>
                 </button>
               )}
             </div>
           )}
-        </div>
+        </article>
+      </li>
+    );
+  };
 
-        <div className="px-4 mt-4">
+  const countLabel = `${results.length === 1 ? 'requirement' : 'requirements'}`;
+
+  /* ---------- Toolbar (V1): big count + round filter, full-width Add, pill chips ---------- */
+  const toolbarV1 = (
+    <div className="px-4 pt-3">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
           {loading ? (
-            <RequirementListSkeleton />
+            <span className="block w-24 h-4 rounded-md bg-slate-200/70 animate-pulse" aria-hidden="true" />
+          ) : (
+            <p className="flex items-baseline gap-1 truncate tabular-nums">
+              <span className="text-[15px] font-extrabold text-[#1E293B] leading-none">{results.length}</span>
+              <span className="text-xs font-semibold text-slate-500">{countLabel}</span>
+            </p>
+          )}
+        </div>
+        {canAdd && (
+          <button
+            type="button"
+            onClick={() => openForm(null)}
+            className={`h-11 pl-3 pr-3.5 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+          >
+            <UserRoundPlus className="w-4 h-4" />
+            Add Requirement
+          </button>
+        )}
+        <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
+      </div>
+
+      {applied.length > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+            {applied.map((a) => (
+              <span key={a.key} className="shrink-0 h-8 pl-2.5 pr-1 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] font-semibold text-[#1E293B] flex items-center gap-1.5">
+                <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" />
+                {a.label}
+                <button
+                  type="button"
+                  onClick={() => applyFilters(a.next)}
+                  aria-label={`Remove ${a.label}`}
+                  className="w-5.5 h-5.5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          {isFiltered && (
+            <button type="button" onClick={clearAll} className="shrink-0 h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+              Clear All
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  /* ---------- Toolbar (V2): sticky white bar, text Filter + Add, square chips ---------- */
+  const toolbarV2 = (
+    <div className="sticky top-0 z-10 bg-white border-b border-[#EBF0F7] shadow-[0_4px_12px_-8px_rgba(15,23,42,0.15)] px-4 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">{loading ? '' : `${results.length} ${countLabel}`}</span>
+        <button
+          type="button"
+          onClick={() => openSheet('filter')}
+          aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
+          className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer ${FOCUS} ${
+            filterCount ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filter
+          {filterCount > 0 && (
+            <span className="min-w-4.5 h-4.5 px-1 rounded bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{filterCount}</span>
+          )}
+        </button>
+        {canAdd && (
+          <button
+            type="button"
+            onClick={() => openForm(null)}
+            className={`h-9 px-3 rounded-lg bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1 shrink-0 active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Add Requirement
+          </button>
+        )}
+      </div>
+
+      {applied.length > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
+            {applied.map((a) => (
+              <span key={a.key} className="shrink-0 h-7 pl-2 pr-0.5 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-700 flex items-center gap-0.5">
+                {a.label}
+                <button
+                  type="button"
+                  onClick={() => applyFilters(a.next)}
+                  aria-label={`Remove ${a.label}`}
+                  className="w-6 h-6 rounded flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          {isFiltered && (
+            <button type="button" onClick={clearAll} className="shrink-0 h-7 px-1 text-[11px] font-bold text-[#2F68FE] underline underline-offset-2 cursor-pointer">
+              Clear All
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+      <ScreenHeader title="Staff Requirement" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      {notice}
+      <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
+        {v2 ? toolbarV2 : toolbarV1}
+
+        <div className={`px-4 ${v2 ? 'mt-3' : 'mt-4'}`}>
+          {loading ? (
+            v2 ? (
+              <RequirementListSkeletonV2 />
+            ) : (
+              <RequirementListSkeletonV1 />
+            )
           ) : requirements.length === 0 ? (
             <EmptyCard
               icon={Briefcase}
@@ -402,7 +653,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
             />
           ) : (
             <>
-              <ul className="space-y-3">{visible.map(card)}</ul>
+              <ul className={v2 ? 'space-y-2.5' : 'space-y-3.5'}>{visible.map(v2 ? cardV2 : cardV1)}</ul>
 
               {visible.length < results.length && (
                 <button
@@ -415,7 +666,9 @@ export const ClientRequirementsView: React.FC<Props> = ({
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
+                  className={`mt-3 w-full h-11 border text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
+                    v2 ? 'rounded-lg border-[#BFDBFE] bg-[#EFF6FF] active:bg-[#DBEAFE]' : 'rounded-full border-slate-200 bg-white shadow-2xs active:bg-slate-50'
+                  }`}
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
@@ -423,7 +676,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
               )}
               {visible.length >= results.length && (
                 <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {results.length} {results.length === 1 ? 'requirement' : 'requirements'}
+                  Showing all {results.length} {countLabel}
                 </p>
               )}
             </>
@@ -442,7 +695,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
         }}
       />
 
-      <RequirementDetailSheet isOpen={sheet === 'detail'} requirement={target} onClose={closeSheet} />
+      <RequirementDetailSheet isOpen={sheet === 'detail'} requirement={target} onClose={closeSheet} version={version} />
 
       <CommentThreadSheet
         isOpen={sheet === 'comments'}
@@ -477,7 +730,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
 };
 
 /** Desktop shows "N Locations" with the full list in a hover tooltip; on mobile the link opens the same chip popover on tap */
-const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
+const LocationValue: React.FC<{ locations: string[]; align?: 'left' | 'right' }> = ({ locations, align = 'right' }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -510,7 +763,7 @@ const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
         {locations.length} Locations
       </button>
       {open && (
-        <span role="tooltip" className="absolute bottom-full right-0 mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150">
+        <span role="tooltip" className={`absolute bottom-full ${align === 'left' ? 'left-0 text-left' : 'right-0'} mb-2.5 z-20 w-[230px] max-w-[calc(100vw-48px)] animate-in fade-in zoom-in-95 duration-150`}>
           <span className="bg-white rounded-xl border border-slate-100 shadow-[0_8px_24px_rgba(15,23,42,0.14)] p-2.5 flex flex-wrap gap-1.5">
             {locations.map((l) => (
               <span key={l} className="px-2.5 py-1 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11.5px] font-medium">
@@ -518,7 +771,7 @@ const LocationValue: React.FC<{ locations: string[] }> = ({ locations }) => {
               </span>
             ))}
           </span>
-          <span aria-hidden="true" className="absolute -bottom-1 right-8 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100" />
+          <span aria-hidden="true" className={`absolute -bottom-1 ${align === 'left' ? 'left-8' : 'right-8'} w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-slate-100`} />
         </span>
       )}
     </span>

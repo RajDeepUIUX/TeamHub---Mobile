@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bookmark, BookmarkCheck, Headset, Info, Loader2, SearchX, Store, X } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Briefcase, CalendarClock, ChevronRight, Headset, Info, Loader2, MapPin, SearchX, Store, X } from 'lucide-react';
 import { SegmentedTabs } from '../../../design-system/components/SegmentedTabs';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, Card, EmptyCard, Pill, SearchField } from '../staff/tabs/StaffTabParts';
+import { BottomSheet } from '../../common/BottomSheet';
+import { ScreenHeader, Card, DesignVersion, EmptyCard, Pill, SearchField, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { InterviewScheduleSheet, InterviewScheduledSheet } from '../interviews/InterviewScheduleSheet';
 import { ScheduledInterview, ShortlistedCandidate } from '../data/clientInterviewsData';
 import {
-  CARD_SKILL_LIMIT,
   EMPTY_HUB_FILTERS,
   HUB_JOINING_OPTIONS,
   HUB_PAGE_SIZE,
@@ -32,9 +32,9 @@ import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
 import { StaffRequirement, hasOpenRequirementFor, requirementsFromHub } from '../data/clientRequirementsData';
 import { isoOfDate } from '../data/clientInterviewsData';
 import { HubFilterOptions, HubFilterSheet } from './HubFilterSheet';
-import { DomainTile, HubListSkeleton } from './HubParts';
+import { DomainTile, HubListSkeleton, SkillLine } from './HubParts';
 import { HubRequirementSheet, HubShortlistedSheet, ShortlistNext } from './HubRequirementSheet';
-import { HubResumeView } from './HubResumeView';
+import { HubResumeView, HubResumeViewV1 } from './HubResumeView';
 
 interface Props {
   profiles: HubProfile[];
@@ -75,6 +75,8 @@ const TAB_LABEL: Record<Tab, string> = { available: 'Available Resumes', saved: 
 
 const sortedUnique = (values: string[]) => [...new Set(values)].sort();
 
+const DESIGN_VERSIONS = ['V1', 'V2'] as const;
+
 /**
  * Hire New Staff › Available Staff Hub (desktop `staffingMarketplace`): Available Resumes and Saved Resumes tabs, search +
  * filters, resume cards (profile, level, experience, joining, location, skills, rate), View Resume, Save / Remove from Saved
@@ -97,6 +99,8 @@ export const ClientStaffHubView: React.FC<Props> = ({
   // view = View Resume; add = Shortlist Candidate and Save / Remove from Saved Resumes; download = psychometric test, certificates, reports
   const { view: canView, add: canAdd, download: canDownload } = useClientPermission('staff-hub');
 
+  const [version, setVersion] = useState<DesignVersion>('V1');
+  const v2 = version === 'V2';
   const [tab, setTab] = useState<Tab>('available');
   const [tabState, setTabState] = useState<Record<Tab, TabState>>(() => ({
     available: initialProfile ? { ...INITIAL_TAB, filters: { ...EMPTY_HUB_FILTERS, profiles: [initialProfile] } } : INITIAL_TAB,
@@ -105,8 +109,8 @@ export const ClientStaffHubView: React.FC<Props> = ({
   const [loading, setLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
-  // Cards with "Show More" skills opened, and the card whose price info is open
-  const [expandedSkills, setExpandedSkills] = useState<string[]>([]);
+  // Card whose skills sheet ("Show More") is open, and the card whose price info is open
+  const [skillsId, setSkillsId] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   // Profile being shortlisted + the requirement the client typed in (kept while the schedule sheet is open)
@@ -243,19 +247,150 @@ export const ClientStaffHubView: React.FC<Props> = ({
     const r = p.resume;
     const saved = savedIds.includes(p.id);
     const skills = cardSkillsOf(p);
-    const skillsOpen = expandedSkills.includes(p.id);
-    const shownSkills = skillsOpen ? skills : skills.slice(0, CARD_SKILL_LIMIT);
-    const hiddenSkills = skills.length - CARD_SKILL_LIMIT;
     const experience = totalExperienceMonths(r) > 0 ? totalExperienceLabel(r) : null;
-    const cost = CLIENT_IS_MOS ? costBreakdownOf(p) : null;
     const infoOpen = infoId === p.id;
     const open = () => {
       if (canView) setResumeId(p.id);
     };
+    const facts = [
+      ...(experience ? [{ icon: Briefcase, tint: 'text-[#4F46E5]', label: 'Total Experience', value: experience, tone: 'text-[#0F172A]' }] : []),
+      { icon: CalendarClock, tint: 'text-[#10B981]', label: 'Joining', value: joiningLabel(p.noticeDays), tone: p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#0F172A]' },
+      { icon: MapPin, tint: 'text-[#D97706]', label: 'Location', value: p.location, tone: 'text-[#0F172A]' },
+    ];
 
     return (
       <li key={p.id}>
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="relative">
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-16 bg-linear-to-b from-[#F1F5FF] to-transparent pointer-events-none" />
+            <div
+              role={canView ? 'button' : undefined}
+              tabIndex={canView ? 0 : undefined}
+              onClick={open}
+              onKeyDown={(e) => {
+                if (canView && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  open();
+                }
+              }}
+              aria-label={canView ? `${p.profile} (${p.resumeId}). View resume` : undefined}
+              className={`relative p-4 pb-3.5 ${canView ? 'active:bg-slate-50/70 cursor-pointer' : ''} transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`}
+            >
+              <div className={`flex items-center gap-3 ${canAdd ? 'pr-11' : ''}`}>
+                <span className="w-12 h-12 rounded-2xl bg-white ring-1 ring-[#E2E8F0] shadow-[0_4px_10px_-6px_rgba(15,23,42,0.25)] flex items-center justify-center shrink-0">
+                  <DomainTile domain={p.domain} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate">{p.domain}</p>
+                  <h3 className="mt-0.5 text-[15px] font-extrabold text-[#0F172A] leading-snug">{p.profile}</h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10.5px] font-bold text-slate-500 tabular-nums">({p.resumeId})</span>
+                    <Pill tone="indigo">{r.level}</Pill>
+                  </div>
+                </div>
+              </div>
+
+              <dl className={`mt-4 grid ${facts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                {facts.map((f) => {
+                  const FIcon = f.icon;
+                  return (
+                    <div key={f.label} className="min-w-0 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7] px-2.5 py-2">
+                      <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 leading-tight">
+                        <FIcon className={`w-3 h-3 shrink-0 ${f.tint}`} aria-hidden="true" />
+                        <span className="truncate">{f.label}</span>
+                      </dt>
+                      <dd className={`mt-1 text-[12px] font-bold leading-snug truncate ${f.tone}`}>{f.value}</dd>
+                    </div>
+                  );
+                })}
+              </dl>
+
+              {r.summary && <p className="mt-3.5 text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
+            </div>
+
+            {canAdd && (
+              <button
+                type="button"
+                onClick={() => toggleSave(p)}
+                aria-pressed={saved}
+                aria-label={saved ? `Remove ${p.resumeId} from Saved Resumes` : `Save resume ${p.resumeId}`}
+                className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                  saved
+                    ? 'text-white bg-[#2F68FE] shadow-[0_6px_14px_-6px_rgba(47,104,254,0.8)]'
+                    : 'text-slate-400 bg-white ring-1 ring-[#E2E8F0] active:bg-slate-50 active:scale-95'
+                }`}
+              >
+                {saved ? <BookmarkCheck className="w-[18px] h-[18px]" /> : <Bookmark className="w-[18px] h-[18px]" />}
+              </button>
+            )}
+          </div>
+
+          {skills.length > 0 && (
+            <div className="px-4 pb-4">
+              <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Skills</h4>
+              <div className="mt-2">
+                <SkillLine skills={skills} onMore={() => setSkillsId(p.id)} />
+              </div>
+            </div>
+          )}
+
+          <div className="px-4 py-3 border-t border-[#EEF2F7] bg-linear-to-r from-[#FAFBFF] to-[#F5F8FF]">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0 flex items-center gap-0.5">
+                <p className="text-[17px] font-extrabold text-[#0F172A] tabular-nums tracking-tight">{rateLabel(p)}</p>
+                <button
+                  type="button"
+                  onClick={() => setInfoId(p.id)}
+                  aria-haspopup="dialog"
+                  aria-label={CLIENT_IS_MOS ? 'About talent cost' : 'About hourly charges'}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${infoOpen ? 'text-[#2F68FE] bg-[#E0EAFF]' : 'text-slate-400 active:bg-slate-100'}`}
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </div>
+              {canView && (
+                <button
+                  type="button"
+                  onClick={open}
+                  aria-label={`View resume ${p.resumeId}`}
+                  className="h-10 pl-4 pr-3 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1 shadow-[0_8px_16px_-8px_rgba(47,104,254,0.8)] active:bg-[#1D4ED8] active:scale-[0.98] transition-transform cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                >
+                  View Resume <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </Card>
+      </li>
+    );
+  };
+
+  /* ---------- Card (V2) ---------- */
+
+  const cardV2 = (p: HubProfile) => {
+    const r = p.resume;
+    const saved = savedIds.includes(p.id);
+    const skills = cardSkillsOf(p);
+    const experience = totalExperienceMonths(r) > 0 ? totalExperienceLabel(r) : null;
+    const infoOpen = infoId === p.id;
+    const open = () => {
+      if (canView) setResumeId(p.id);
+    };
+    const facts = [
+      ...(experience ? [{ icon: Briefcase, tint: 'bg-[#EEF2FF] text-[#4F46E5]', label: 'Total Experience', value: experience, tone: 'text-[#1E293B]' }] : []),
+      {
+        icon: CalendarClock,
+        tint: 'bg-[#E8F8F0] text-[#10B981]',
+        label: 'Joining',
+        value: joiningLabel(p.noticeDays),
+        tone: p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#1E293B]',
+      },
+      { icon: MapPin, tint: 'bg-[#FEF8E7] text-[#D97706]', label: 'Location', value: p.location, tone: 'text-[#1E293B]' },
+    ];
+
+    return (
+      <li key={p.id}>
+        <Card className="overflow-hidden">
           <div className="relative">
             <div
               role={canView ? 'button' : undefined}
@@ -268,40 +403,43 @@ export const ClientStaffHubView: React.FC<Props> = ({
                 }
               }}
               aria-label={canView ? `${p.profile} (${p.resumeId}). View resume` : undefined}
-              className={`p-3.5 pb-3 rounded-t-2xl ${canView ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}
+              className={`p-4 pb-3.5 ${canView ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}
             >
-              <div className={`flex items-center gap-2 ${canAdd ? 'pr-11' : ''}`}>
-                <DomainTile domain={p.domain} />
-                <span className="flex-1 min-w-0 text-[12px] font-semibold text-slate-500 truncate">{p.domain}</span>
-                <span className="shrink-0">
-                  <Pill tone="indigo">{r.level}</Pill>
+              <div className={`flex items-start gap-3 ${canAdd ? 'pr-10' : ''}`}>
+                <span className="w-11 h-11 rounded-xl bg-[#F8FAFC] border border-[#EBF0F7] flex items-center justify-center shrink-0">
+                  <DomainTile domain={p.domain} />
                 </span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-bold text-[#1E293B] leading-snug">{p.profile}</h3>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-slate-500 min-w-0">
+                    <span className="shrink-0 tabular-nums font-semibold text-slate-400">({p.resumeId})</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                    <span className="truncate">{p.domain}</span>
+                  </p>
+                  <span className="mt-2 inline-flex">
+                    <Pill tone="indigo">{r.level}</Pill>
+                  </span>
+                </div>
               </div>
 
-              <h3 className="mt-2.5 text-[15px] font-extrabold text-[#1E293B] leading-snug">
-                {p.profile} <span className="tabular-nums font-semibold text-slate-400">({p.resumeId})</span>
-              </h3>
-
-              <dl
-                className={`mt-3 grid ${experience ? 'grid-cols-3' : 'grid-cols-2'} rounded-xl bg-[#F8FAFC] border border-slate-100 py-2.5 divide-x divide-slate-200 text-[11px]`}
-              >
-                {experience && (
-                  <div className="min-w-0 px-3">
-                    <dt className="text-[10.5px] font-medium text-slate-400">Total Experience</dt>
-                    <dd className="mt-1 font-bold text-[#1E293B] leading-snug">{experience}</dd>
-                  </div>
-                )}
-                <div className="min-w-0 px-3">
-                  <dt className="text-[10.5px] font-medium text-slate-400">Joining</dt>
-                  <dd className={`mt-1 font-bold leading-snug ${p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#1E293B]'}`}>{joiningLabel(p.noticeDays)}</dd>
-                </div>
-                <div className="min-w-0 px-3">
-                  <dt className="text-[10.5px] font-medium text-slate-400">Location</dt>
-                  <dd className="mt-1 font-bold text-[#1E293B] leading-snug truncate">{p.location}</dd>
-                </div>
+              <dl className="mt-3.5 rounded-xl border border-[#EBF0F7] divide-y divide-[#EBF0F7]">
+                {facts.map((f) => {
+                  const FIcon = f.icon;
+                  return (
+                    <div key={f.label} className="flex items-center gap-2.5 px-3 py-2">
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${f.tint}`} aria-hidden="true">
+                        <FIcon className="w-3.5 h-3.5" />
+                      </span>
+                      <dt className="flex-1 min-w-0 text-[11.5px] font-medium text-slate-500">{f.label}</dt>
+                      <dd className={`max-w-[55%] text-right text-[12px] font-bold leading-snug truncate ${f.tone}`}>{f.value}</dd>
+                    </div>
+                  );
+                })}
               </dl>
 
-              {r.summary && <p className="mt-3 text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
+              {r.summary && (
+                <p className="mt-3 pl-3 border-l-2 border-[#BFDBFE] text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>
+              )}
             </div>
 
             {canAdd && (
@@ -310,48 +448,32 @@ export const ClientStaffHubView: React.FC<Props> = ({
                 onClick={() => toggleSave(p)}
                 aria-pressed={saved}
                 aria-label={saved ? `Remove ${p.resumeId} from Saved Resumes` : `Save resume ${p.resumeId}`}
-                className={`absolute top-1.5 right-1.5 w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                  saved ? 'text-[#2F68FE] bg-[#EFF6FF]' : 'text-slate-400 active:bg-slate-100'
+                className={`absolute top-3 right-3 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                  saved ? 'text-white bg-[#2F68FE] border-[#2F68FE]' : 'text-slate-400 bg-white border-[#DCE3ED] active:bg-slate-50'
                 }`}
               >
-                {saved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                {saved ? <BookmarkCheck className="w-[18px] h-[18px]" /> : <Bookmark className="w-[18px] h-[18px]" />}
               </button>
             )}
           </div>
 
           {skills.length > 0 && (
-            <div className="px-3.5 pt-1 pb-3.5">
-              <h4 className="text-[12px] font-semibold text-slate-400">Skills</h4>
-              <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Skills">
-                {shownSkills.map((s) => (
-                  <li key={s} className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-medium text-slate-600 leading-snug">
-                    {s}
-                  </li>
-                ))}
-                {hiddenSkills > 0 && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedSkills((ids) => (skillsOpen ? ids.filter((x) => x !== p.id) : [...ids, p.id]))}
-                      aria-expanded={skillsOpen}
-                      className="px-2.5 py-1 rounded-lg border border-[#DBEAFE] bg-[#EFF6FF] text-[11px] font-semibold text-[#2F68FE] leading-snug active:bg-blue-100 cursor-pointer"
-                    >
-                      {skillsOpen ? 'Show Less' : 'Show More'}
-                    </button>
-                  </li>
-                )}
-              </ul>
+            <div className="px-4 pb-3.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Skills</h4>
+              <div className="mt-2">
+                <SkillLine skills={skills} onMore={() => setSkillsId(p.id)} />
+              </div>
             </div>
           )}
 
-          <div className="px-3.5 py-3 border-t border-slate-100 bg-[#FAFBFD] rounded-b-2xl">
+          <div className="px-4 py-3 border-t border-dashed border-slate-200">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0 flex items-center gap-1">
-                <p className="text-[16px] font-extrabold text-[#1E293B] tabular-nums">{rateLabel(p)}</p>
+                <p className="text-[17px] font-extrabold text-[#2F68FE] tabular-nums">{rateLabel(p)}</p>
                 <button
                   type="button"
-                  onClick={() => setInfoId(infoOpen ? null : p.id)}
-                  aria-expanded={infoOpen}
+                  onClick={() => setInfoId(p.id)}
+                  aria-haspopup="dialog"
                   aria-label={CLIENT_IS_MOS ? 'About talent cost' : 'About hourly charges'}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${infoOpen ? 'text-[#2F68FE] bg-[#EFF6FF]' : 'text-slate-400 active:bg-slate-100'}`}
                 >
@@ -363,26 +485,12 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   type="button"
                   onClick={open}
                   aria-label={`View resume ${p.resumeId}`}
-                  className="h-10 px-5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] cursor-pointer"
+                  className="h-10 pl-4 pr-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center gap-1 active:bg-blue-100 cursor-pointer"
                 >
-                  View Resume
+                  View Resume <ChevronRight className="w-4 h-4" />
                 </button>
               )}
             </div>
-            {infoOpen && (
-              <div className="mt-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-[11px] text-slate-600 leading-relaxed" role="note">
-                {cost ? (
-                  <>
-                    <p>Indicative monthly talent cost (compensation package).</p>
-                    <p className="mt-1 tabular-nums">
-                      Fixed <span className="font-bold text-[#1E293B]">USD {cost.fixed}</span> + Variable <span className="font-bold text-[#1E293B]">USD {cost.variable}</span>
-                    </p>
-                  </>
-                ) : (
-                  <p>Hourly charges for this resume, billed on the hours worked.</p>
-                )}
-              </div>
-            )}
           </div>
         </Card>
       </li>
@@ -405,25 +513,73 @@ export const ClientStaffHubView: React.FC<Props> = ({
   ];
 
   const closeSheet = () => setSheet(null);
+  const ResumeView = v2 ? HubResumeView : HubResumeViewV1;
+  const infoProfile = profileOf(infoId);
+  const infoCost = infoProfile && CLIENT_IS_MOS ? costBreakdownOf(infoProfile) : null;
+  const skillsProfile = profileOf(skillsId);
+  const sheetSkills = skillsProfile ? cardSkillsOf(skillsProfile) : [];
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Available Staff Hub" onBack={onBack} />
+      <ScreenHeader title="Available Staff Hub" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
       {notice}
 
       <div ref={listRef} inert={Boolean(resumeProfile)} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-3">
-          <div>
-            <SegmentedTabs
-              ariaLabel="Resume lists"
-              value={tab}
-              onChange={switchTab}
-              options={[
-                { id: 'available', label: TAB_LABEL.available },
-                { id: 'saved', label: TAB_LABEL.saved, badge: savedPool.length },
-              ]}
-            />
-          </div>
+        <div
+          className={
+            v2
+              ? 'sticky top-0 z-10 bg-white border-b border-[#EBF0F7] shadow-[0_4px_12px_-8px_rgba(15,23,42,0.15)] px-4 pb-3'
+              : 'sticky top-0 z-10 bg-[#F8FAFC]/95 backdrop-blur-sm px-4 pt-3 pb-3 border-b border-[#EEF2F7]'
+          }
+        >
+          {v2 ? (
+            <div className="-mx-4 mt-2 px-2 flex gap-1 overflow-x-auto no-scrollbar border-b border-slate-200/80" role="tablist" aria-label="Resume lists">
+              {(['available', 'saved'] as const).map((t) => {
+                const on = tab === t;
+                const TabIcon = t === 'available' ? Store : Bookmark;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => switchTab(t)}
+                    className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                      on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
+                    }`}
+                  >
+                    <TabIcon className="w-4 h-4" />
+                    {TAB_LABEL[t]}
+                    {t === 'saved' && (
+                      <span
+                        className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
+                          on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-500'
+                        }`}
+                      >
+                        {savedPool.length}
+                      </span>
+                    )}
+                    <span
+                      aria-hidden="true"
+                      className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${on ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div>
+              <SegmentedTabs
+                ariaLabel="Resume lists"
+                value={tab}
+                onChange={switchTab}
+                options={[
+                  { id: 'available', label: TAB_LABEL.available },
+                  { id: 'saved', label: TAB_LABEL.saved, badge: savedPool.length },
+                ]}
+              />
+            </div>
+          )}
 
           <div className="mt-3 flex items-center gap-2.5">
             <div className="flex-1 min-w-0">
@@ -515,10 +671,14 @@ export const ClientStaffHubView: React.FC<Props> = ({
             />
           ) : (
             <>
-              <p className="mb-2.5 px-0.5 text-[11px] text-slate-400 tabular-nums" aria-live="polite">
-                Showing {visible.length} of {results.length} {results.length === 1 ? 'resume' : 'resumes'}
-              </p>
-              <ul className="space-y-3">{visible.map(card)}</ul>
+              {v2 && (
+                <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold text-slate-500 tabular-nums" aria-live="polite">
+                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                  Showing {visible.length} of {results.length} {results.length === 1 ? 'resume' : 'resumes'}
+                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                </p>
+              )}
+              <ul className="space-y-3">{visible.map(v2 ? cardV2 : card)}</ul>
 
               {visible.length < results.length && (
                 <button
@@ -531,7 +691,9 @@ export const ClientStaffHubView: React.FC<Props> = ({
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
+                  className={`mt-3 w-full h-11 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
+                    v2 ? 'rounded-xl border border-slate-200 bg-white active:bg-slate-50' : 'rounded-2xl border border-dashed border-[#BFDBFE] bg-[#F5F8FF] active:bg-[#EFF6FF]'
+                  }`}
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
@@ -548,7 +710,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
       </div>
 
       {resumeProfile && (
-        <HubResumeView
+        <ResumeView
           profile={resumeProfile}
           fromLabel={TAB_LABEL[tab]}
           shortlisted={shortlistedResumeIds.has(resumeProfile.resumeId)}
@@ -573,6 +735,56 @@ export const ClientStaffHubView: React.FC<Props> = ({
           applyFilters(next);
         }}
       />
+
+      <BottomSheet isOpen={skillsProfile !== null} onClose={() => setSkillsId(null)} maxHeight="max-h-[75%]">
+        <SheetHeader
+          title={`Skills (${sheetSkills.length})`}
+          subtitle={skillsProfile ? `${skillsProfile.profile} (${skillsProfile.resumeId})` : undefined}
+          onClose={() => setSkillsId(null)}
+        />
+        <div className="flex-1 min-h-0 px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
+          <ul className="flex flex-wrap gap-2" aria-label="Skills">
+            {sheetSkills.map((s) => (
+              <li key={s} className="px-3 py-1.5 rounded-full bg-white ring-1 ring-inset ring-[#E2E8F0] text-[12px] font-semibold text-slate-600 leading-snug">
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet isOpen={infoProfile !== null} onClose={() => setInfoId(null)} maxHeight="max-h-[60%]">
+        <SheetHeader title={CLIENT_IS_MOS ? 'Talent Cost' : 'Hourly Charges'} onClose={() => setInfoId(null)} />
+        <div className="px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
+          <div className="flex gap-3 p-3.5 rounded-2xl bg-[#F5F8FF] ring-1 ring-inset ring-[#DBEAFE]">
+            <span className="w-9 h-9 rounded-xl bg-white ring-1 ring-[#DBEAFE] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+              <Info className="w-[18px] h-[18px]" />
+            </span>
+            <p className="text-[12.5px] text-slate-600 leading-relaxed">
+              Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.
+            </p>
+          </div>
+          {infoCost && (
+            <dl className="mt-3 grid grid-cols-2 gap-2">
+              <div className="px-3 py-2.5 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7]">
+                <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Fixed</dt>
+                <dd className="mt-0.5 text-[13px] font-bold text-[#0F172A] tabular-nums">USD {infoCost.fixed}</dd>
+              </div>
+              <div className="px-3 py-2.5 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7]">
+                <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Variable</dt>
+                <dd className="mt-0.5 text-[13px] font-bold text-[#0F172A] tabular-nums">USD {infoCost.variable}</dd>
+              </div>
+            </dl>
+          )}
+          <button
+            type="button"
+            onClick={() => setInfoId(null)}
+            className="mt-4 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-[13px] font-bold active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+          >
+            Got it
+          </button>
+        </div>
+      </BottomSheet>
 
       <HubRequirementSheet isOpen={sheet === 'requirement'} profile={shortlistProfile} onClose={closeSheet} onConfirm={confirmRequirement} />
 

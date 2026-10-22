@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Check, ChevronRight, Info, KeyRound, Pencil, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, Building2, Camera, Check, ChevronRight, Clock, KeyRound, Pencil, ShieldCheck, UserPen, UserRound } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { ProfileAvatar } from '../../profile/ProfileAvatar';
@@ -14,6 +14,9 @@ import {
   BandSectionCard,
   DisabledSelect,
   ErrorText,
+  FieldGroup,
+  FieldInfoSheet,
+  InfoButton,
   Label,
   LockedField,
   ProfileSkeleton,
@@ -26,6 +29,7 @@ import {
   CLIENT_COUNTRIES,
   CLIENT_TIME_ZONES,
   ClientQualification,
+  ClientSecondAddress,
   ClientUserProfile,
   DESIGNATIONS,
   FollowedSpeaker,
@@ -94,10 +98,28 @@ const validate = (p: ClientUserProfile): Errors => {
 const formatDate = (iso: string) =>
   iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '';
 
-const formatSynced = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-
 const SYNC_FIELD = { ptin: 'PTIN No.', ctec: 'CTEC No.', cfp: 'CFP Board No.' } as const;
+
+/** Desktop ⓘ tooltip copy (B `common-profile`) — shown in a bottom drawer on mobile */
+const FIELD_INFO = {
+  birthDate: {
+    title: 'Date of Birth',
+    text: 'As part of our commitment to ensuring full compliance with NASBA (National Association of State Boards of Accountancy) and other regulatory body standards, we require your birth date. This information helps us accurately track and report your continuing education credits to the relevant state boards, ensuring you meet the necessary requirements for your professional qualifications. Your personal information is kept secure and is used strictly for compliance purposes.',
+  },
+  ptin: {
+    title: 'PTIN No.',
+    text: "PTIN is set from your Qualification Details (IRS qualifications' license number, e.g. EA, AFSP) and cannot be edited here.",
+  },
+  ctec: {
+    title: 'CTEC No.',
+    text: 'CTEC No. is set from your Qualification Details (CTEC license number) and cannot be edited here.',
+  },
+  cfp: {
+    title: 'CFP Board No.',
+    text: 'CFP Board No. is set from your Qualification Details (CFP license number) and cannot be edited here.',
+  },
+} as const;
+type InfoKey = keyof typeof FIELD_INFO;
 
 /* --------------------------------- Screen --------------------------------- */
 
@@ -133,6 +155,7 @@ export const ClientUserProfileView: React.FC<{
   const [qualSheet, setQualSheet] = useState<{ open: boolean; qualification: ClientQualification | null }>({ open: false, qualification: null });
   const [deleteQual, setDeleteQual] = useState<ClientQualification | null>(null);
   const [unfollow, setUnfollow] = useState<FollowedSpeaker | null>(null);
+  const [info, setInfo] = useState<InfoKey | null>(null);
   const [notice, showNotice] = useNotice();
   const fileInput = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -182,7 +205,7 @@ export const ClientUserProfileView: React.FC<{
     }
     setSaving(true);
     setTimeout(() => {
-      onSave({ ...draft, address: draft.address.trim(), lastSyncedAt: new Date().toISOString() });
+      onSave({ ...draft, address: draft.address.trim(), address2: { ...draft.address2, address: draft.address2.address.trim() }, lastSyncedAt: new Date().toISOString() });
       setSaving(false);
       setEditing(false);
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,15 +239,13 @@ export const ClientUserProfileView: React.FC<{
     showNotice(`Qualification ${exists ? 'updated' : 'added'}.${synced ? ` ${SYNC_FIELD[synced]} updated in Basic Details.` : ''}`);
   };
 
+  const setAddress2 = (patch: Partial<ClientSecondAddress>) => setDraft((d) => ({ ...d, address2: { ...d.address2, ...patch } }));
+
   const v = editing ? draft : profile;
   const states = statesOf(v.country);
   const cities = citiesOf(v.country, v.state);
-
-  const licenseNote = (
-    <p className="px-0.5 text-[10.5px] text-slate-400 leading-relaxed">
-      PTIN, CTEC and CFP Board numbers are set from your Qualification Details and can't be edited here.
-    </p>
-  );
+  const states2 = statesOf(v.address2.country);
+  const cities2 = citiesOf(v.address2.country, v.address2.state);
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -247,13 +268,7 @@ export const ClientUserProfileView: React.FC<{
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         {editing ? (
           <div className="px-4 pt-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[11.5px] text-slate-500">Fields marked * are required. Locked fields are managed by MyCPE ONE.</p>
-              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1 shrink-0">
-                <Pencil className="w-3 h-3" />
-                Editing
-              </span>
-            </div>
+            <p className="text-[11.5px] text-slate-500">Fields marked * are required. Locked fields are managed by MyCPE ONE.</p>
           </div>
         ) : (
           <>
@@ -321,17 +336,16 @@ export const ClientUserProfileView: React.FC<{
                       {pendingName ? 'Your name change request is being reviewed.' : 'To change your name, use Request Name Change on your profile.'}
                     </p>
                     <LockedField label="Email" value={profile.email} note="Your sign-in email for the Client Hub and MyCPE ONE." />
-                    <div className="space-y-1.5">
+                    <div className="relative">
                       <DateField
                         label="Date of Birth"
                         value={draft.birthDate}
                         max={new Date().toISOString().slice(0, 10)}
                         onChange={(iso) => set('birthDate', iso)}
                       />
-                      <p className="flex items-start gap-1.5 px-0.5 text-[10.5px] text-slate-400 leading-relaxed">
-                        <Info className="w-3 h-3 shrink-0 mt-px" />
-                        Needed to meet NASBA and other regulator standards for your compliance records.
-                      </p>
+                      <span className="absolute top-0 right-0">
+                        <InfoButton label="Date of Birth" onClick={() => setInfo('birthDate')} />
+                      </span>
                     </div>
                     {(
                       [
@@ -390,15 +404,14 @@ export const ClientUserProfileView: React.FC<{
                       <ErrorText error={errors.industries} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <LockedField label="PTIN No." value={ids.ptin ? `P${ids.ptin}` : '—'} />
-                      <LockedField label="CTEC No." value={ids.ctec ? `A${ids.ctec}` : '—'} />
+                      <LockedField label="PTIN No." value={ids.ptin ? `P${ids.ptin}` : '—'} onInfo={() => setInfo('ptin')} />
+                      <LockedField label="CTEC No." value={ids.ctec ? `A${ids.ctec}` : '—'} onInfo={() => setInfo('ctec')} />
                     </div>
-                    <LockedField label="CFP Board No." value={ids.cfp || '—'} />
-                    <div className="-mt-2">{licenseNote}</div>
+                    <LockedField label="CFP Board No." value={ids.cfp || '—'} onInfo={() => setInfo('cfp')} />
                   </div>
                 </BandSectionCard>
 
-                <BandSectionCard title="Address">
+                <BandSectionCard title="Address Information">
                   <div className="space-y-4">
                     <label className="block space-y-1.5" data-field="address">
                       <Label text="Address" required hint={`${draft.address.length}/${ADDRESS_MAX}`} />
@@ -467,7 +480,7 @@ export const ClientUserProfileView: React.FC<{
                       </div>
                     </div>
                     <label className="block space-y-1.5" data-field="zipCode">
-                      <Label text="Zip Code" required />
+                      <Label text="Postal Code" required />
                       <input
                         type="text"
                         inputMode="numeric"
@@ -481,7 +494,7 @@ export const ClientUserProfileView: React.FC<{
                       <ErrorText error={errors.zipCode} />
                     </label>
                     <div className="space-y-1.5" data-field="timeZone">
-                      <Label text="Time Zone" required />
+                      <Label text="Timezone" required />
                       <Dropdown
                         ariaLabel="Time Zone"
                         value={draft.timeZone || null}
@@ -492,6 +505,79 @@ export const ClientUserProfileView: React.FC<{
                       <ErrorText error={errors.timeZone} />
                       <p className="px-0.5 text-[10.5px] text-slate-400">Used for meeting times, reminders and staff shift times.</p>
                     </div>
+                  </div>
+                </BandSectionCard>
+
+                <BandSectionCard title="Address 2">
+                  <div className="space-y-4">
+                    <label className="block space-y-1.5">
+                      <Label text="Address" hint={`${draft.address2.address.length}/${ADDRESS_MAX}`} />
+                      <input
+                        type="text"
+                        autoComplete="address-line2"
+                        value={draft.address2.address}
+                        onChange={(e) => setAddress2({ address: e.target.value.slice(0, ADDRESS_MAX) })}
+                        placeholder="Street, building, suite"
+                        className={fieldInputClass()}
+                      />
+                    </label>
+                    <div className="space-y-1.5">
+                      <Label text="Country" />
+                      <Dropdown
+                        ariaLabel="Address 2 Country"
+                        value={draft.address2.country || null}
+                        placeholder="Select country"
+                        options={CLIENT_COUNTRIES}
+                        onChange={(c) => {
+                          if (c !== draft.address2.country) setAddress2({ country: c, state: '', city: '' });
+                        }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5 min-w-0">
+                        <Label text="State" />
+                        {states2.length ? (
+                          <Dropdown
+                            ariaLabel="Address 2 State"
+                            value={draft.address2.state || null}
+                            placeholder="Select"
+                            options={states2}
+                            menuMinWidth={220}
+                            onChange={(st) => {
+                              if (st !== draft.address2.state) setAddress2({ state: st, city: '' });
+                            }}
+                          />
+                        ) : (
+                          <DisabledSelect text="Pick country" />
+                        )}
+                      </div>
+                      <div className="space-y-1.5 min-w-0">
+                        <Label text="City" />
+                        {cities2.length ? (
+                          <Dropdown
+                            ariaLabel="Address 2 City"
+                            value={draft.address2.city || null}
+                            placeholder="Select"
+                            options={cities2}
+                            menuMinWidth={200}
+                            onChange={(c) => setAddress2({ city: c })}
+                          />
+                        ) : (
+                          <DisabledSelect text="Pick state" />
+                        )}
+                      </div>
+                    </div>
+                    <label className="block space-y-1.5">
+                      <Label text="Zip Code" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={draft.address2.zipCode}
+                        onChange={(e) => setAddress2({ zipCode: e.target.value.replace(/\D/g, '').slice(0, ZIP_MAX) })}
+                        placeholder="e.g. 02139"
+                        className={`${fieldInputClass()} tabular-nums`}
+                      />
+                    </label>
                   </div>
                 </BandSectionCard>
               </>
@@ -506,108 +592,134 @@ export const ClientUserProfileView: React.FC<{
                       <button
                         type="button"
                         onClick={() => setNameSheet(true)}
-                        className="h-8 -mr-1.5 px-2 rounded-lg text-[11px] font-bold text-[#4F46E5] underline underline-offset-2 active:bg-[#EEF2FF] cursor-pointer"
+                        className="h-8 -mr-1 px-2.5 rounded-lg bg-white border border-[#E0E7FF] text-[11px] font-bold text-[#4F46E5] flex items-center gap-1 active:bg-[#EEF2FF] cursor-pointer"
                       >
+                        <UserPen className="w-3.5 h-3.5" />
                         Request Name Change
                       </button>
                     )
                   }
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="relative shrink-0">
-                      <ProfileAvatar name={fullName} photoUrl={photoUrl} className="w-18 h-18 rounded-full" textClassName="text-xl" />
+                  <div className="-mx-4 -mt-4 px-4 pt-5 pb-4 bg-gradient-to-b from-[#F5F7FF] to-white flex flex-col items-center text-center">
+                    <div className="relative">
+                      <ProfileAvatar
+                        name={fullName}
+                        photoUrl={photoUrl}
+                        className="w-20 h-20 rounded-full ring-4 ring-white shadow-[0_4px_14px_-4px_rgba(79,70,229,0.35)]"
+                        textClassName="text-2xl"
+                      />
                       <button
                         type="button"
                         onClick={() => setPhotoSheet(true)}
-                        className="absolute -right-2.5 -top-2.5 w-11 h-11 flex items-center justify-center cursor-pointer group"
+                        className="absolute -right-3 -bottom-3 w-11 h-11 flex items-center justify-center cursor-pointer group"
                         aria-label={photoUrl ? 'Change profile photo' : 'Add profile photo'}
                       >
-                        <span className="w-7.5 h-7.5 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center shadow-xs group-active:bg-slate-100">
-                          <Pencil className="w-3.5 h-3.5" />
+                        <span className="w-8 h-8 rounded-full bg-[#4F46E5] border-2 border-white text-white flex items-center justify-center shadow-sm group-active:bg-[#4338CA]">
+                          <Camera className="w-3.5 h-3.5" />
                         </span>
                       </button>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-base font-extrabold leading-tight truncate">{fullName}</h2>
-                      <p className="mt-0.5 text-[11.5px] text-slate-500 truncate">{profile.email}</p>
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        <Pill tone="indigo">
-                          <ShieldCheck className="w-3 h-3" />
-                          {role.name}
-                        </Pill>
-                      </div>
+                    <h2 className="mt-3 max-w-full text-[17px] font-extrabold text-[#1E293B] leading-tight truncate">{fullName}</h2>
+                    <p className="mt-1 max-w-full text-[12px] text-slate-500 truncate">{profile.email}</p>
+                    <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                      <Pill tone="indigo">
+                        <ShieldCheck className="w-3 h-3" />
+                        {role.name}
+                      </Pill>
+                      {profile.designation && <Pill tone="slate">{profile.designation}</Pill>}
                     </div>
                   </div>
 
                   {pendingName && (
-                    <div className="mt-3.5 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A]">
-                      <p className="text-[11.5px] font-bold text-amber-800">Name change requested</p>
-                      <p className="mt-1 text-[11.5px] text-amber-800/90 leading-relaxed">
-                        New name <span className="font-semibold">{pendingName.firstName} {pendingName.lastName}</span> · submitted{' '}
-                        {formatDate(pendingName.submittedAt.slice(0, 10))}. We'll update your profile once it's verified.
-                      </p>
+                    <div className="mb-1 flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A]">
+                      <Clock className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11.5px] font-bold text-amber-800">Name change requested</p>
+                        <p className="mt-0.5 text-[11.5px] text-amber-800/90 leading-relaxed">
+                          New name <span className="font-semibold">{pendingName.firstName} {pendingName.lastName}</span> · submitted{' '}
+                          {formatDate(pendingName.submittedAt.slice(0, 10))}. We'll update your profile once it's verified.
+                        </p>
+                      </div>
                     </div>
                   )}
 
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <ValueGrid
-                      rows={[
-                        { label: 'First Name', value: profile.firstName, locked: true },
-                        { label: 'Last Name', value: profile.lastName, locked: true },
-                        { label: 'Email', value: profile.email, wide: true, locked: true },
-                        { label: 'Date of Birth', value: formatDate(profile.birthDate) },
-                        { label: 'Mobile Number', value: profile.mobile, href: profile.mobile ? `tel:${profile.mobile.replace(/\D/g, '')}` : undefined },
-                        { label: 'Phone Number', value: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : undefined },
-                        { label: 'Organization Name', value: companyName, wide: true, locked: true },
-                        { label: 'Organization Category', value: profile.organizationCategory, wide: true },
-                        { label: 'Designation', value: profile.designation },
-                        { label: 'Industry', value: profile.industries.join(', ') },
-                        { label: 'PTIN No.', value: ids.ptin ? `P${ids.ptin}` : '', locked: true },
-                        { label: 'CTEC No.', value: ids.ctec ? `A${ids.ctec}` : '', locked: true },
-                        { label: 'CFP Board No.', value: ids.cfp, locked: true },
-                      ]}
-                    />
-                    <div className="mt-3 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-100/80">
-                      <span className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-snug">
-                        <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
-                        PTIN, CTEC and CFP Board No. come from your qualifications.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => pickTab('qualifications')}
-                        className="h-8 -mr-1 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] cursor-pointer shrink-0"
-                      >
-                        Manage
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  <div className="pt-3">
+                    <FieldGroup icon={UserRound} title="Personal & Contact">
+                      <ValueGrid
+                        rows={[
+                          { label: 'First Name', value: profile.firstName, locked: true },
+                          { label: 'Last Name', value: profile.lastName, locked: true },
+                          { label: 'Email', value: profile.email, wide: true, locked: true },
+                          { label: 'Date of Birth', value: formatDate(profile.birthDate), onInfo: () => setInfo('birthDate') },
+                          { label: 'Mobile Number', value: profile.mobile, href: profile.mobile ? `tel:${profile.mobile.replace(/\D/g, '')}` : undefined },
+                          { label: 'Phone Number', value: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : undefined },
+                        ]}
+                      />
+                    </FieldGroup>
+
+                    <FieldGroup icon={Building2} title="Organization">
+                      <ValueGrid
+                        rows={[
+                          { label: 'Organization Name', value: companyName, wide: true, locked: true },
+                          { label: 'Organization Category', value: profile.organizationCategory, wide: true },
+                          { label: 'Designation', value: profile.designation },
+                          { label: 'Industry', value: profile.industries.join(', ') },
+                        ]}
+                      />
+                    </FieldGroup>
+
+                    <FieldGroup
+                      icon={BadgeCheck}
+                      title="Professional IDs"
+                      hint="Synced from your qualifications"
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => pickTab('qualifications')}
+                          className="h-8 -mr-1 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] cursor-pointer shrink-0"
+                        >
+                          Manage
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      }
+                    >
+                      <div className="px-3 py-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <ValueGrid
+                          rows={[
+                            { label: 'PTIN No.', value: ids.ptin ? `P${ids.ptin}` : '', locked: true, onInfo: () => setInfo('ptin') },
+                            { label: 'CTEC No.', value: ids.ctec ? `A${ids.ctec}` : '', locked: true, onInfo: () => setInfo('ctec') },
+                            { label: 'CFP Board No.', value: ids.cfp, locked: true, onInfo: () => setInfo('cfp') },
+                          ]}
+                        />
+                      </div>
+                    </FieldGroup>
                   </div>
                 </BandSectionCard>
 
-                <BandSectionCard title="Address">
+                <BandSectionCard title="Address Information">
                   <ValueGrid
                     rows={[
                       { label: 'Address', value: profile.address, wide: true },
                       { label: 'Country', value: profile.country },
                       { label: 'State', value: profile.state },
                       { label: 'City', value: profile.city },
-                      { label: 'Zip Code', value: profile.zipCode },
-                      { label: 'Time Zone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '', wide: true },
+                      { label: 'Postal Code', value: profile.zipCode },
+                      { label: 'Timezone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '', wide: true },
                     ]}
                   />
                 </BandSectionCard>
 
-                <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-white border border-[#DCE3ED]">
-                  <span className="w-9 h-9 rounded-xl bg-[#E8F8F0] text-[#10B981] flex items-center justify-center shrink-0">
-                    <RefreshCw className="w-4.5 h-4.5" />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] font-semibold text-[#1E293B]">Synced with MyCPE ONE</span>
-                    <span className="block text-[11px] text-slate-400 truncate">
-                      Last synced {formatSynced(profile.lastSyncedAt)} · Client since {formatDate(profile.memberSince)}
-                    </span>
-                  </span>
-                </div>
+                <BandSectionCard title="Address 2">
+                  <ValueGrid
+                    rows={[
+                      { label: 'Address', value: profile.address2.address, wide: true },
+                      { label: 'Country', value: profile.address2.country },
+                      { label: 'State', value: profile.address2.state },
+                      { label: 'City', value: profile.address2.city },
+                      { label: 'Zip Code', value: profile.address2.zipCode },
+                    ]}
+                  />
+                </BandSectionCard>
 
                 <p className="px-1 text-[11px] text-slate-400 leading-relaxed">
                   Need to change your email?{' '}
@@ -754,6 +866,7 @@ export const ClientUserProfileView: React.FC<{
           showNotice(`You unfollowed ${unfollow.name}.`);
         }}
       />
+      <FieldInfoSheet info={info ? FIELD_INFO[info] : null} onClose={() => setInfo(null)} />
       <ConfirmSheet
         isOpen={confirmDiscard}
         title="Discard your changes?"

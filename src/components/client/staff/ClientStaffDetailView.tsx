@@ -1,5 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Mail } from 'lucide-react';
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  CalendarCheck,
+  ClipboardCheck,
+  FileSignature,
+  FileText,
+  GraduationCap,
+  Laptop,
+  ListChecks,
+  Mail,
+  Sparkles,
+  User,
+  UserCheck,
+} from 'lucide-react';
 import type { TniRequest } from '../data/clientTrainingNeedData';
 import { ClientStaffMember, STAFF_PROFILE_TABS, StaffProfileTab, formatStaffDate } from '../data/clientStaffData';
 import {
@@ -26,7 +40,21 @@ import { StaffSystemTab } from './tabs/StaffSystemTab';
 import { StaffAssessmentsTab } from './tabs/StaffAssessmentsTab';
 import { StaffSopTab } from './tabs/StaffSopTab';
 
-const dateParts = (iso: string) => {
+const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
+  'Personal Information': User,
+  'Work Information': BriefcaseBusiness,
+  'Reporting To': UserCheck,
+  'Attendance & Leave': CalendarCheck,
+  'Skills & Qualification': Sparkles,
+  'Employee Documents': FileText,
+  'Terms of Employment': FileSignature,
+  'Training & Development': GraduationCap,
+  'System & IT Details': Laptop,
+  'Assessments': ClipboardCheck,
+  SOP: ListChecks,
+};
+
+const dateParts =(iso: string) => {
   const d = new Date(`${iso}T00:00:00`);
   return { day: String(d.getDate()).padStart(2, '0'), month: d.toLocaleDateString('en-US', { month: 'short' }), year: d.getFullYear() };
 };
@@ -60,11 +88,23 @@ interface ClientStaffDetailViewProps {
 export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ member, tint, clientName, onBack, initialTab, tniRequests, onOpenTrainingNeed, workModeOverride }) => {
   const [tab, setTab] = useState<StaffProfileTab>(initialTab ?? 'Personal Information');
   const tabsRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tabsSentinelRef = useRef<HTMLDivElement>(null);
+  const [tabsStuck, setTabsStuck] = useState(false);
   const leaving = member.status !== 'Active' && member.status !== 'Replacement In-Progress' && member.lastWorkingDay;
 
   useEffect(() => {
     tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [tab]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = tabsSentinelRef.current;
+    if (!root || !sentinel) return;
+    const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const work = useMemo(() => {
     const info = workInfoFor(member);
@@ -196,7 +236,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
         <h1 className="text-base font-bold screen-title">Staff Details</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3">
           <section className="bg-white border border-[#DCE3ED] rounded-2xl px-3.5 py-3 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)]">
             <div className="flex items-center gap-3">
@@ -224,10 +264,17 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
           </section>
         </div>
 
-        {/* Desktop tab bar → Staff My Profile sticky pill tabs */}
-        <nav className="sticky top-0 z-10 mt-3 bg-[#F8FAFC]/95 backdrop-blur-md pt-1 pb-2" aria-label="Staff profile sections">
-          <div ref={tabsRef} className="flex gap-1.5 overflow-x-auto no-scrollbar px-4" role="tablist">
+        {/* Desktop tab bar → Manager My Profile sticky underline tabs (icon + label) */}
+        <div ref={tabsSentinelRef} className="h-px -mb-px mt-3" aria-hidden="true" />
+        <nav
+          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-1 transition-colors duration-200 ${
+            tabsStuck ? 'bg-[#F8FAFC]/95 backdrop-blur-md' : 'bg-transparent'
+          }`}
+          aria-label="Staff profile sections"
+        >
+          <div ref={tabsRef} className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
             {STAFF_PROFILE_TABS.map((t) => {
+              const Icon = TAB_ICONS[t];
               const on = t === tab;
               return (
                 <button
@@ -236,11 +283,17 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({ me
                   role="tab"
                   aria-selected={on}
                   onClick={() => setTab(t)}
-                  className={`h-9 px-3.5 rounded-full flex items-center text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]' : 'bg-white border border-slate-200 text-slate-600'
+                  className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                   }`}
                 >
+                  <Icon className="w-4 h-4" />
                   {t}
+                  <span
+                    className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
+                      on ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                 </button>
               );
             })}

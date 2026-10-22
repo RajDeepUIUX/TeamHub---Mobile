@@ -38,6 +38,15 @@ export interface FollowedSpeaker {
   company: string;
 }
 
+/** B "Address 2" (ERP address on file) — every field optional */
+export interface ClientSecondAddress {
+  address: string;
+  country: string;
+  state: string;
+  city: string;
+  zipCode: string;
+}
+
 export interface ClientUserProfile {
   firstName: string;
   lastName: string;
@@ -53,6 +62,7 @@ export interface ClientUserProfile {
   city: string;
   zipCode: string;
   timeZone: string;
+  address2: ClientSecondAddress;
   designation: string;
   organizationCategory: string;
   industries: string[];
@@ -78,6 +88,13 @@ export const CLIENT_USER_PROFILE_SEED: ClientUserProfile = {
   city: 'Boston',
   zipCode: '02110',
   timeZone: 'America/New_York',
+  address2: {
+    address: '200 Sample Street, Floor 2',
+    country: 'United States',
+    state: 'Massachusetts',
+    city: 'Cambridge',
+    zipCode: '02139',
+  },
   designation: 'Managing Partner',
   organizationCategory: '',
   industries: ['Accounting & Tax'],

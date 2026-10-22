@@ -169,7 +169,13 @@ export const SearchField: React.FC<{ value: string; onChange: (v: string) => voi
 );
 
 /** Module screen header (Staff / Manager style): back arrow + title centred on the screen */
-export const ScreenHeader: React.FC<{ title: string; onBack?: () => void; backLabel?: string }> = ({ title, onBack, backLabel = 'Back to Dashboard' }) => (
+export const ScreenHeader: React.FC<{
+  title: string;
+  onBack?: () => void;
+  backLabel?: string;
+  /** Design version switch shown beside the centred title */
+  version?: { versions: readonly DesignVersion[]; value: DesignVersion; onChange: (v: DesignVersion) => void };
+}> = ({ title, onBack, backLabel = 'Back to Dashboard', version }) => (
   <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
     {onBack && (
       <button
@@ -181,8 +187,41 @@ export const ScreenHeader: React.FC<{ title: string; onBack?: () => void; backLa
         <ArrowLeft className="w-5 h-5" />
       </button>
     )}
-    <h1 className="text-base font-bold screen-title">{title}</h1>
+    {version ? (
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[calc(100%-96px)] flex items-center gap-2">
+        <h1 className="min-w-0 text-base font-bold truncate">{title}</h1>
+        <DesignVersionSwitch {...version} />
+      </div>
+    ) : (
+      <h1 className="text-base font-bold screen-title">{title}</h1>
+    )}
   </header>
+);
+
+export type DesignVersion = 'V1' | 'V2' | 'V3';
+
+/** Header design switcher (same as Team Attendance) — previews alternate layouts of one screen */
+export const DesignVersionSwitch: React.FC<{
+  versions: readonly DesignVersion[];
+  value: DesignVersion;
+  onChange: (v: DesignVersion) => void;
+}> = ({ versions, value, onChange }) => (
+  <div className="shrink-0 flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/70" role="tablist" aria-label="Design version">
+    {versions.map((v) => (
+      <button
+        key={v}
+        type="button"
+        role="tab"
+        aria-selected={value === v}
+        onClick={() => onChange(v)}
+        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+          value === v ? 'bg-white text-[#2F68FE] shadow-2xs' : 'text-slate-500'
+        }`}
+      >
+        {v}
+      </button>
+    ))}
+  </div>
 );
 
 export const SheetHeader: React.FC<{ title: string; subtitle?: string; onClose: () => void }> = ({ title, subtitle, onClose }) => (

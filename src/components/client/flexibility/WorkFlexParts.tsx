@@ -12,12 +12,20 @@ export const AllowToggle: React.FC<{
   disabled?: boolean;
   compact?: boolean;
 }> = ({ value, onChange, label, disabled, compact }) => (
-  <div role="radiogroup" aria-label={label} className={`relative grid grid-cols-2 p-1 rounded-2xl bg-slate-100 ${disabled ? 'opacity-60' : ''}`}>
+  <div
+    role="radiogroup"
+    aria-label={label}
+    className={`relative grid grid-cols-2 p-[3px] rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] ${disabled ? 'opacity-60' : ''}`}
+  >
     <span
       aria-hidden="true"
-      className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl shadow-[0_2px_8px_rgba(15,23,42,0.18)] transition-all duration-300 ease-out ${
+      className={`absolute top-[3px] bottom-[3px] left-[3px] w-[calc(50%-3px)] rounded-lg transition-all duration-300 ease-out ${
         value === null ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-      } ${value === 'no' ? 'translate-x-full bg-[#64748B]' : 'bg-[#10B981]'}`}
+      } ${
+        value === 'no'
+          ? 'translate-x-full bg-gradient-to-r from-[#64748B] to-[#94A3B8] shadow-[0_2px_6px_-1px_rgba(100,116,139,0.4)]'
+          : 'bg-gradient-to-r from-[#10B981] to-[#34D399] shadow-[0_2px_6px_-1px_rgba(16,185,129,0.4)]'
+      }`}
     />
     {(['yes', 'no'] as const).map((v) => {
       const on = value === v;
@@ -30,11 +38,95 @@ export const AllowToggle: React.FC<{
           aria-checked={on}
           disabled={disabled}
           onClick={() => onChange(v)}
-          className={`relative z-10 ${compact ? 'h-9' : 'h-11'} rounded-xl flex items-center justify-center gap-1.5 text-[13px] font-bold transition-colors duration-300 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
-            on ? 'text-white' : 'text-slate-500 active:text-slate-700'
+          className={`relative z-10 ${compact ? 'h-8' : 'h-9'} rounded-lg flex items-center justify-center gap-1 text-[12px] font-bold transition-colors duration-300 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+            on ? 'text-white' : 'text-slate-600 active:bg-white/70'
           }`}
         >
-          {yes ? <Check className="w-4 h-4 stroke-[3]" /> : <X className="w-4 h-4 stroke-[3]" />}
+          {yes ? (
+            <Check className={`w-3.5 h-3.5 stroke-[3] transition-colors ${on ? '' : 'text-[#10B981]'}`} />
+          ) : (
+            <X className={`w-3.5 h-3.5 stroke-[3] transition-colors ${on ? '' : 'text-[#94A3B8]'}`} />
+          )}
+          {yes ? 'Allowed' : 'Not Allowed'}
+        </button>
+      );
+    })}
+  </div>
+);
+
+/** V1 mode cards: Allowed / Not Allowed as two separate pills; tapping the active pill clears it */
+export const AllowPills: React.FC<{
+  value: YesNo | null;
+  onChange: (v: YesNo) => void;
+  label: string;
+  disabled?: boolean;
+}> = ({ value, onChange, label, disabled }) => (
+  <div role="radiogroup" aria-label={label} className={`flex gap-2 ${disabled ? 'opacity-60' : ''}`}>
+    {(['yes', 'no'] as const).map((v) => {
+      const on = value === v;
+      const yes = v === 'yes';
+      return (
+        <button
+          key={v}
+          type="button"
+          role="radio"
+          aria-checked={on}
+          disabled={disabled}
+          onClick={() => onChange(v)}
+          className={`flex-1 h-9 rounded-full border text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+            on
+              ? yes
+                ? 'bg-[#10B981] border-[#10B981] text-white shadow-[0_4px_12px_-4px_rgba(16,185,129,0.6)]'
+                : 'bg-[#475569] border-[#475569] text-white shadow-[0_4px_12px_-4px_rgba(71,85,105,0.5)]'
+              : yes
+              ? 'bg-white border-[#A7F3D0] text-[#059669] active:bg-[#F0FDF7]'
+              : 'bg-white border-[#DCE3ED] text-slate-500 active:bg-slate-50'
+          }`}
+        >
+          {yes ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <X className="w-3.5 h-3.5 stroke-[3]" />}
+          {yes ? 'Allowed' : 'Not Allowed'}
+        </button>
+      );
+    })}
+  </div>
+);
+
+/** V2: Allowed / Not Allowed as two selectable tiles with a radio dot; tapping the active tile clears it */
+export const AllowChoice: React.FC<{
+  value: YesNo | null;
+  onChange: (v: YesNo) => void;
+  label: string;
+  disabled?: boolean;
+  compact?: boolean;
+}> = ({ value, onChange, label, disabled, compact }) => (
+  <div role="radiogroup" aria-label={label} className={`grid grid-cols-2 gap-2 ${disabled ? 'opacity-60' : ''}`}>
+    {(['yes', 'no'] as const).map((v) => {
+      const on = value === v;
+      const yes = v === 'yes';
+      return (
+        <button
+          key={v}
+          type="button"
+          role="radio"
+          aria-checked={on}
+          disabled={disabled}
+          onClick={() => onChange(v)}
+          className={`${compact ? 'h-10' : 'h-11'} rounded-xl px-3 border-2 flex items-center gap-2 text-[12.5px] font-bold transition-all duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+            on
+              ? yes
+                ? 'border-[#10B981] bg-[#ECFDF5] text-[#047857]'
+                : 'border-[#64748B] bg-[#F1F5F9] text-[#334155]'
+              : 'border-[#E2E8F0] bg-white text-slate-500 active:bg-slate-50'
+          }`}
+        >
+          <span
+            className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+              on ? (yes ? 'bg-[#10B981] text-white' : 'bg-[#64748B] text-white') : 'border-2 border-slate-300'
+            }`}
+            aria-hidden="true"
+          >
+            {on && (yes ? <Check className="w-3 h-3 stroke-[3.5]" /> : <X className="w-3 h-3 stroke-[3.5]" />)}
+          </span>
           {yes ? 'Allowed' : 'Not Allowed'}
         </button>
       );

@@ -7,77 +7,61 @@ import { BOOKING_HORIZON_DAYS, CandidateStatus, ShortlistedCandidate, isBookable
 
 export const CandidateStatusPill: React.FC<{ status: CandidateStatus }> = ({ status }) => <Pill tone={statusTone(status)}>{status}</Pill>;
 
-export const CandidateListSkeleton: React.FC = () => (
-  <div className="space-y-3" aria-busy="true" aria-label="Loading candidates">
-    {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
+/** V1: soft card — accent bar, avatar row, profile line, interview band, 2-up tiles, pill footer */
+export const CandidateListSkeletonV1: React.FC = () => (
+  <div className="space-y-3.5" aria-busy="true" aria-label="Loading candidates">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white border border-slate-100 rounded-2xl pl-5 pr-4 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">
             <StaffSkeleton className="w-28 h-3.5" />
-            <StaffSkeleton className="w-44 h-3" />
+            <StaffSkeleton className="w-36 h-3" />
           </div>
-          <StaffSkeleton className="w-16 h-5" />
+          <StaffSkeleton className="w-20 h-5 rounded-full" />
         </div>
-        <StaffSkeleton className="w-full h-9" />
+        <StaffSkeleton className="w-48 h-3.5" />
+        <StaffSkeleton className="w-full h-14 rounded-xl" />
+        <div className="grid grid-cols-2 gap-2">
+          <StaffSkeleton className="h-14 rounded-xl" />
+          <StaffSkeleton className="h-14 rounded-xl" />
+        </div>
         <div className="flex gap-2">
-          <StaffSkeleton className="w-24 h-8" />
-          <StaffSkeleton className="w-20 h-8" />
+          <StaffSkeleton className="flex-1 h-10 rounded-full" />
+          <StaffSkeleton className="w-10 h-10 rounded-full" />
         </div>
       </div>
     ))}
   </div>
 );
 
-/** Small outlined / filled card action */
-export const CardAction: React.FC<{
-  label: string;
-  icon?: React.ElementType;
-  tone?: 'primary' | 'outline' | 'success' | 'danger' | 'soft';
-  /** `lg` = card footer button that shares the row (h-10, grows) */
-  size?: 'sm' | 'lg';
-  onClick: () => void;
-  ariaLabel?: string;
-}> = ({ label, icon: Icon, tone = 'outline', size = 'sm', onClick, ariaLabel }) => {
-  const style = {
-    primary: 'bg-[#2F68FE] text-white active:bg-[#1D4ED8] border border-transparent',
-    outline: 'bg-white text-[#1E293B] border border-slate-200 active:bg-slate-50',
-    success: 'bg-[#10B981] text-white active:bg-[#059669] border border-transparent',
-    danger: 'bg-white text-rose-600 border border-rose-200 active:bg-rose-50',
-    soft: 'bg-[#EFF6FF] text-[#2F68FE] border border-[#BFDBFE] active:bg-blue-100',
-  }[tone];
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      aria-label={ariaLabel ?? label}
-      className={`rounded-xl font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
-        size === 'lg' ? 'h-10 px-3 flex-1 min-w-0 text-xs' : 'h-8 px-3 text-[11px]'
-      } ${style}`}
-    >
-      {Icon && <Icon className={size === 'lg' ? 'w-4 h-4 shrink-0' : 'w-3.5 h-3.5 shrink-0'} />}
-      <span className="truncate">{label}</span>
-    </button>
-  );
-};
-
-/** Square icon button on the card footer (View Resume, More) */
-export const CardIconButton: React.FC<{ icon: React.ElementType; label: string; onClick: () => void }> = ({ icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    aria-label={label}
-    title={label}
-    className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 active:bg-slate-50 cursor-pointer"
-  >
-    <Icon className="w-4 h-4" />
-  </button>
+/** V2: compact ticket — status band, name + profile, dashed rows, segmented footer */
+export const CandidateListSkeletonV2: React.FC = () => (
+  <div className="space-y-2.5" aria-busy="true" aria-label="Loading candidates">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+        <div className="h-9 px-3.5 flex items-center justify-between bg-[#F8FAFC] border-b border-[#EBF0F7]">
+          <StaffSkeleton className="w-24 h-3" />
+          <StaffSkeleton className="w-20 h-3" />
+        </div>
+        <div className="px-3.5 py-3 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <StaffSkeleton className="w-9 h-9 rounded-lg" />
+            <div className="flex-1 space-y-1.5">
+              <StaffSkeleton className="w-32 h-3.5" />
+              <StaffSkeleton className="w-44 h-3" />
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-full h-3" />
+          </div>
+        </div>
+        <div className="h-11 border-t border-slate-100" />
+      </div>
+    ))}
+  </div>
 );
 
 /** "More" actions of a card (Reschedule / Cancel Interview) */

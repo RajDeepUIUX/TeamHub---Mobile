@@ -7,22 +7,57 @@ import { RequirementStatus, statusTone } from '../data/clientRequirementsData';
 
 export const RequirementStatusPill: React.FC<{ status: RequirementStatus }> = ({ status }) => <Pill tone={statusTone(status)}>{status}</Pill>;
 
-export const RequirementListSkeleton: React.FC = () => (
-  <div className="space-y-3" aria-busy="true" aria-label="Loading requirements">
-    {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
+/** V1: soft card — icon tile + title, 2×2 fact tiles, 3-column strip, pill actions */
+export const RequirementListSkeletonV1: React.FC = () => (
+  <div className="space-y-3.5" aria-busy="true" aria-label="Loading requirements">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white border border-slate-100 rounded-2xl pl-5 pr-4 py-4 space-y-3">
         <div className="flex items-center gap-3">
+          <StaffSkeleton className="w-10 h-10 rounded-xl" />
           <div className="flex-1 space-y-1.5">
-            <StaffSkeleton className="w-44 h-3.5" />
-            <StaffSkeleton className="w-24 h-3" />
+            <StaffSkeleton className="w-16 h-2.5" />
+            <StaffSkeleton className="w-40 h-3.5" />
           </div>
-          <StaffSkeleton className="w-16 h-5" />
+          <StaffSkeleton className="w-20 h-5 rounded-full" />
         </div>
-        <StaffSkeleton className="w-full h-16" />
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 1, 2, 3].map((j) => (
+            <StaffSkeleton key={j} className="h-12 rounded-xl" />
+          ))}
+        </div>
+        <StaffSkeleton className="w-full h-14 rounded-xl" />
         <div className="flex gap-2">
-          <StaffSkeleton className="w-24 h-9" />
-          <StaffSkeleton className="w-20 h-9" />
+          <StaffSkeleton className="flex-1 h-10 rounded-full" />
+          <StaffSkeleton className="flex-1 h-10 rounded-full" />
+          <StaffSkeleton className="flex-1 h-10 rounded-full" />
         </div>
+      </div>
+    ))}
+  </div>
+);
+
+/** V2: compact ticket — status band, title, 2-up figures, rows, link tiles, segmented footer */
+export const RequirementListSkeletonV2: React.FC = () => (
+  <div className="space-y-2.5" aria-busy="true" aria-label="Loading requirements">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+        <div className="h-9 px-3.5 flex items-center bg-[#F8FAFC] border-b border-[#EBF0F7]">
+          <StaffSkeleton className="w-20 h-3" />
+        </div>
+        <div className="px-3.5 py-3 space-y-3">
+          <StaffSkeleton className="w-44 h-4" />
+          <StaffSkeleton className="w-full h-14 rounded-lg" />
+          <div className="space-y-2.5">
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-full h-3" />
+            <StaffSkeleton className="w-full h-3" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <StaffSkeleton className="h-12 rounded-lg" />
+            <StaffSkeleton className="h-12 rounded-lg" />
+          </div>
+        </div>
+        <div className="h-11 border-t border-slate-100" />
       </div>
     ))}
   </div>
