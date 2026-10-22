@@ -662,7 +662,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
               )}
               {visible.length >= results.length && (
                 <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {results.length} {results.length === 1 ? 'survey' : 'surveys'}
+                  Showing {results.length} Of {results.length} Records
                 </p>
               )}
             </>

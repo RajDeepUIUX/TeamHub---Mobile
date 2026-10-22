@@ -362,7 +362,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   <MessageSquareText className="w-4 h-4 shrink-0" />
                   <span className="truncate">Comments</span>
                   {r.comments.length > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] text-white text-[9.5px] font-bold flex items-center justify-center tabular-nums">
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
                       {r.comments.length}
                     </span>
                   )}
@@ -676,7 +676,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
               )}
               {visible.length >= results.length && (
                 <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {results.length} {countLabel}
+                  Showing {results.length} Of {results.length} Records
                 </p>
               )}
             </>

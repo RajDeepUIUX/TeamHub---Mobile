@@ -156,7 +156,7 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
                       >
                         {on && <Check className="w-3 h-3 stroke-[3]" />}
                       </span>
-                      <span className="inline-flex px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#4F46E5] text-[9.5px] font-bold items-center">{t.tag}</span>
+                      <span className="inline-flex px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#4F46E5] text-[10px] font-bold items-center">{t.tag}</span>
                       <span className="mt-1.5 block text-[12px] font-bold text-[#1E293B] leading-snug">{t.title}</span>
                       <span className="mt-0.5 block text-[10.5px] text-slate-500 leading-snug">{t.desc}</span>
                       <span className="mt-1.5 block text-[10.5px] font-semibold text-slate-400 tabular-nums">{count} allowed</span>

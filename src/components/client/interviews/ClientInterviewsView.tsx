@@ -919,7 +919,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               )}
               {visible.length >= results.length && (
                 <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {results.length} {countLabel}
+                  Showing {results.length} Of {results.length} Records
                 </p>
               )}
             </>

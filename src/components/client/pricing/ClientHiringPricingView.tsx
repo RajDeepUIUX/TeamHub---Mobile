@@ -190,7 +190,7 @@ const RateCardsV1: React.FC<{ rows: PricingRow[] }> = ({ rows }) => (
         <Card className="p-3.5">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-2xl bg-[#EFF6FF] text-[#2F68FE] flex flex-col items-center justify-center shrink-0 leading-none">
-              <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">Level</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">Level</span>
               <span className="mt-0.5 text-[16px] font-extrabold tabular-nums">{r.level}</span>
             </span>
             <div className="flex-1 min-w-0">
@@ -295,7 +295,7 @@ const LadderV2: React.FC<{ rows: PricingRow[] }> = ({ rows }) => (
                 <p className="text-[14px] font-bold text-[#1E293B] leading-snug">{r.designation}</p>
               </div>
               <span className="shrink-0 rounded-xl bg-[#EFF6FF] px-2.5 py-1.5 text-right">
-                <span className="block text-[9.5px] font-bold uppercase tracking-wide text-[#2F68FE]/70">Rate/Hr</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2F68FE]/70">Rate/Hr</span>
                 <span className="block text-[14px] font-extrabold text-[#2F68FE] tabular-nums whitespace-nowrap">{r.rate}</span>
               </span>
             </div>

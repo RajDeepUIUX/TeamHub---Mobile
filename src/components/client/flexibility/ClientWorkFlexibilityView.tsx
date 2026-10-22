@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Info, Lock, Pencil, Plus, Send, Sparkles, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronRight, Info, Lock, Pencil, Plus, Send, Sparkles, TrendingUp, X } from 'lucide-react';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
 import { BottomSheet } from '../../common/BottomSheet';
-import { Card, ConfirmSheet, DesignVersion, DesignVersionSwitch, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { Card, ConfirmSheet, DesignVersion, ScreenHeader, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import {
   ArrangementKey,
@@ -106,12 +106,12 @@ const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 const AvatarStack: React.FC<{ list: WorkFlexStaff[] }> = ({ list }) => (
   <span className="flex -space-x-2 shrink-0" aria-hidden="true">
     {list.slice(0, 4).map((x) => (
-      <span key={x.id} className={`w-7 h-7 rounded-full ring-2 ring-white text-[9px] font-bold flex items-center justify-center ${avatarTint(x.tint)}`}>
+      <span key={x.id} className={`w-7 h-7 rounded-full ring-2 ring-white text-[10px] font-bold flex items-center justify-center ${avatarTint(x.tint)}`}>
         {initialsOf(x.name)}
       </span>
     ))}
     {list.length > 4 && (
-      <span className="w-7 h-7 rounded-full ring-2 ring-white bg-slate-100 text-slate-500 text-[9px] font-bold flex items-center justify-center">
+      <span className="w-7 h-7 rounded-full ring-2 ring-white bg-slate-100 text-slate-500 text-[10px] font-bold flex items-center justify-center">
         +{list.length - 4}
       </span>
     )}
@@ -120,7 +120,7 @@ const AvatarStack: React.FC<{ list: WorkFlexStaff[] }> = ({ list }) => (
 
 const StaffTag: React.FC<{ staff: WorkFlexStaff; onRemove?: () => void }> = ({ staff, onRemove }) => (
   <span className={`inline-flex items-center gap-1.5 h-7 pl-1 ${onRemove ? 'pr-0.5' : 'pr-2.5'} rounded-full bg-white border border-[#EBF0F7] max-w-full`}>
-    <span className={`w-5 h-5 rounded-full text-[8px] font-bold flex items-center justify-center shrink-0 ${avatarTint(staff.tint)}`} aria-hidden="true">
+    <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${avatarTint(staff.tint)}`} aria-hidden="true">
       {initialsOf(staff.name)}
     </span>
     <span className="text-[11px] font-semibold text-[#1E293B] truncate">{staff.name}</span>
@@ -777,22 +777,12 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <header className="shrink-0 bg-white h-14 px-4 flex items-center border-b border-[#EBF0F7] relative">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Back to Dashboard"
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 shrink-0 cursor-pointer"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        )}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[calc(100%-96px)] flex items-center gap-1.5">
-          <h1 className="min-w-0 text-[14px] font-bold truncate">Work Flexibility Preferences</h1>
-          <DesignVersionSwitch versions={DESIGN_VERSIONS} value={version} onChange={setVersion} />
-        </div>
-      </header>
+      <ScreenHeader
+        title="Work Flexibility Preferences"
+        onBack={onBack}
+        backLabel="Back"
+        version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }}
+      />
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         {loading ? (
           <PageSkeleton />

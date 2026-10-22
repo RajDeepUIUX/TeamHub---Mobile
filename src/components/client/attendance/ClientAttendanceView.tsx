@@ -353,11 +353,11 @@ const DateBlock: React.FC<{ iso: string }> = ({ iso }) => {
   const d = parse(iso)!;
   return (
     <span className="w-12 shrink-0 rounded-lg border border-[#DBEAFE] bg-white overflow-hidden text-center" aria-label={shortDate(iso)}>
-      <span className="block py-0.5 bg-[#2F68FE] text-white text-[9.5px] font-bold uppercase tracking-wide">
+      <span className="block py-0.5 bg-[#2F68FE] text-white text-[10px] font-bold uppercase tracking-wide">
         {d.toLocaleDateString('en-US', { weekday: 'short' })}
       </span>
       <span className="block pt-1 text-[17px] font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
-      <span className="block pt-0.5 pb-1 text-[9.5px] font-semibold text-slate-500">
+      <span className="block pt-0.5 pb-1 text-[10px] font-semibold text-slate-500">
         {d.toLocaleDateString('en-US', { month: 'short' })} {d.getFullYear()}
       </span>
     </span>

@@ -115,7 +115,7 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
             <span className="flex-1 min-w-0">
               <span className="flex items-center gap-1.5">
                 <span className="text-[13.5px] font-extrabold text-[#1E293B] truncate">{fullName}</span>
-                <span className="px-1.5 py-px rounded-md text-[9px] font-bold uppercase tracking-wide shrink-0 bg-blue-100 text-[#2F68FE]">
+                <span className="px-1.5 py-px rounded-md text-[10px] font-bold uppercase tracking-wide shrink-0 bg-blue-100 text-[#2F68FE]">
                   Client
                 </span>
               </span>

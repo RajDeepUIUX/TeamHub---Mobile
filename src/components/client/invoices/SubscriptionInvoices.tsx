@@ -150,7 +150,7 @@ export const SubscriptionInvoices: React.FC<{ canDownload: boolean; onNotice: (m
     <>
       <ul className="space-y-3">{items.map(v2 ? cardV2 : cardV1)}</ul>
       <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-        Showing all {items.length} {items.length === 1 ? 'invoice' : 'invoices'}
+        Showing {items.length} Of {items.length} Records
       </p>
     </>
   );

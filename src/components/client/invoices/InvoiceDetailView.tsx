@@ -151,7 +151,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   className="w-11 rounded-xl border border-slate-200 bg-white text-[#2F68FE] flex flex-col items-center justify-center gap-0.5 active:bg-slate-50 disabled:opacity-60 shrink-0 cursor-pointer"
                 >
                   <FileDown className={`w-4 h-4 ${busy === `ts-${l.staffId}` ? 'animate-pulse' : ''}`} />
-                  <span className="text-[8.5px] font-bold text-slate-500">PDF</span>
+                  <span className="text-[10px] font-bold text-slate-500">PDF</span>
                 </button>
               )}
             </div>
@@ -311,7 +311,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   </h3>
                   {staffFilter.length > 0 && (
                     <span className="text-[11px] text-slate-500 tabular-nums">
-                      Showing {shownLines.length} of {lines.length}
+                      Showing {shownLines.length} Of {lines.length} Records
                     </span>
                   )}
                 </div>

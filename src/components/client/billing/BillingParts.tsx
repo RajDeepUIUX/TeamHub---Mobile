@@ -245,7 +245,7 @@ export const CreditCardTile: React.FC<{ card: BillingCreditCard; onDelete?: () =
       <li className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden">
         <LedgerRail className="bg-[#4F46E5]" />
         <div className="pl-4 pr-3 py-3 flex items-center gap-3 border-b border-slate-100">
-          <span className={`w-11 h-7 rounded flex items-center justify-center text-[9.5px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
+          <span className={`w-11 h-7 rounded flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
             {brand.mark}
           </span>
           <span className="flex-1 min-w-0">
@@ -344,7 +344,7 @@ export const MethodIcon: React.FC<{ type: PaymentType; className?: string }> = (
     );
   return (
     <span className={`rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
-      <span className="text-[9px] font-black">CARD</span>
+      <span className="text-[10px] font-black">CARD</span>
     </span>
   );
 };
@@ -369,7 +369,7 @@ export const StaffChips: React.FC<{ names: { id: string; name: string; tint: num
         }`}
       >
         <span
-          className={`flex items-center justify-center font-bold shrink-0 ${v2 ? 'w-5 h-5 rounded text-[8px]' : 'w-6 h-6 rounded-full text-[8.5px]'} ${avatarTint(s.tint)}`}
+          className={`flex items-center justify-center font-bold shrink-0 ${v2 ? 'w-5 h-5 rounded text-[10px]' : 'w-6 h-6 rounded-full text-[10px]'} ${avatarTint(s.tint)}`}
           aria-hidden="true"
         >
           {initialsOf(s.name)}

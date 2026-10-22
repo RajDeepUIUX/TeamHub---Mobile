@@ -180,7 +180,7 @@ export const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = (
                       <span className="mt-1.5 flex items-center gap-2">
                         <span className="text-[10px] font-semibold text-slate-400">{n.category}</span>
                         {n.actionRequired && !n.read && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9.5px] font-bold">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
                             <Zap className="w-2.5 h-2.5" />
                             Action needed
                           </span>

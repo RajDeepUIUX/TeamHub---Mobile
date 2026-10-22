@@ -674,7 +674,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
               {v2 && (
                 <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold text-slate-500 tabular-nums" aria-live="polite">
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
-                  Showing {visible.length} of {results.length} {results.length === 1 ? 'resume' : 'resumes'}
+                  Showing {visible.length} Of {results.length} Records
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
                 </p>
               )}
@@ -701,7 +701,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
               )}
               {visible.length >= results.length && (
                 <p className="mt-4 text-center text-[11px] text-slate-400 tabular-nums">
-                  Showing all {results.length} {results.length === 1 ? 'resume' : 'resumes'}
+                  Showing {results.length} Of {results.length} Records
                 </p>
               )}
             </>

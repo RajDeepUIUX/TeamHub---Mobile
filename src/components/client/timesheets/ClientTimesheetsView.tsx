@@ -71,11 +71,11 @@ const DateLeaf: React.FC<{ iso: string; label: string }> = ({ iso, label }) => {
   const d = parseIso(iso);
   return (
     <span className="w-12 shrink-0 rounded-lg border border-[#DBEAFE] bg-white overflow-hidden text-center" aria-label={label}>
-      <span className="block py-0.5 bg-[#2F68FE] text-white text-[9.5px] font-bold uppercase tracking-wide">
+      <span className="block py-0.5 bg-[#2F68FE] text-white text-[10px] font-bold uppercase tracking-wide">
         {d.toLocaleDateString('en-US', { weekday: 'short' })}
       </span>
       <span className="block pt-1 text-[17px] font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
-      <span className="block pt-0.5 pb-1 text-[9.5px] font-semibold text-slate-500">
+      <span className="block pt-0.5 pb-1 text-[10px] font-semibold text-slate-500">
         {d.toLocaleDateString('en-US', { month: 'short' })} {d.getFullYear()}
       </span>
     </span>
@@ -320,7 +320,7 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
             type="button"
             onClick={() => setExportOpen(true)}
             disabled={loading}
-            className={`h-11 px-4 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] disabled:opacity-60 shrink-0 cursor-pointer ${FOCUS}`}
+            className={`h-11 min-h-11 px-4 rounded-xl bg-[#2F68FE] text-white text-[13px] font-bold flex items-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] disabled:opacity-60 shrink-0 cursor-pointer ${FOCUS}`}
           >
             <Download className="w-4 h-4" />
             Export

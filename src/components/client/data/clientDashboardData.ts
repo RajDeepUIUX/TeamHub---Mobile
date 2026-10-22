@@ -75,7 +75,7 @@ A quick (and very real) story: a team member leaves, everyone wishes them well�
 
 We've all been there — so we decided to fix it.
 
-**Introducing AI-Based SOP Creation, now live in our HRMS.** (Here is a [sample AI-SOP](https://www.my-cpe.com/))
+**Introducing AI-Based SOP Creation, now live in our HRMS.** (Here is a [sample AI-SOP](https://resources.northwindcpa.example/))
 
 It's as simple as it sounds:
 
@@ -239,7 +239,7 @@ The best SOPs are short, specific and easy to update. A few tips from our proces
 - Add screenshots or a screen recording for tricky steps
 - Review SOPs every quarter or after any client change
 
-Read the full guide in [Client Resources](https://www.my-cpe.com/).
+Read the full guide in [Client Resources](https://resources.northwindcpa.example/).
 
 Regards,
 MYCPE ONE`,
@@ -275,7 +275,7 @@ MYCPE ONE`,
 
 Our **MSP** and **MSSP** services are now available to every HRMS client — managed IT, endpoint security and compliance support built for accounting firms.
 
-See plans under **Other Modules & Services** or [view pricing](https://my-cpe.com/msp-pricing).
+See plans under **Other Modules & Services** or [view pricing](https://resources.northwindcpa.example/msp-pricing).
 
 Regards,
 MYCPE ONE`,
@@ -384,7 +384,7 @@ export const CLIENT_ACCOUNT_MANAGER = {
   hours: 'Mon–Fri · 9:00 AM – 6:00 PM EST',
   email: 'karan.bhatia@example.com',
   phone: '+1 (555) 010-0148',
-  whatsapp: '+91 90000 00148',
+  whatsapp: '+1 (555) 010-0149',
   slack: '#northwind-cpa-team',
 };
 
@@ -451,8 +451,8 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
     description: 'Solutions currently enabled for your firm.',
     services: [
       { id: 'erp', title: 'HRMS 24 x 7 (Offshoring)', description: 'End-to-End Team Management, Billing & HR Operations.', state: 'current' },
-      { id: 'mycpe', title: 'Continuing Education', description: 'Access CPE, Firm wide compliance and tools for your team.', state: 'enabled', url: 'https://my-cpe.com/' },
-      { id: 'assessment', title: 'Assessments', description: 'Evaluate hiring and team skills with AI-powered assessments.', state: 'enabled', url: 'https://my-cpe.com/' },
+      { id: 'mycpe', title: 'Continuing Education', description: 'Access CPE, Firm wide compliance and tools for your team.', state: 'enabled', url: 'https://resources.northwindcpa.example/' },
+      { id: 'assessment', title: 'Assessments', description: 'Evaluate hiring and team skills with AI-powered assessments.', state: 'enabled', url: 'https://resources.northwindcpa.example/' },
     ],
   },
   {
@@ -460,11 +460,11 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
     title: 'Other Services',
     description: "Additional services and tools available to support your firm's growth.",
     services: [
-      { id: 'wd', title: 'Website Services', description: 'AI-powered CPA websites built & managed for firms.', url: 'https://my-cpe.com/', tag: 'Starts From $49/month' },
-      { id: 'dg', title: 'Digital Marketing', description: 'Growth marketing solutions for CPA & accounting firms.', url: 'https://my-cpe.com/', tag: 'Starts From $149/month' },
-      { id: 'bm', title: 'Benchmarking Services', description: 'AI-Powered peer comparison & exclusive research reports.', url: 'https://my-cpe.com/', tag: 'Free Sign up & Unlock Free Reports' },
-      { id: 'msp', title: 'MSP', description: 'Managed IT services built for CPA and accounting firms.', url: 'https://my-cpe.com/msp-pricing' },
-      { id: 'mssp', title: 'MSSP', description: 'Managed cybersecurity and compliance protection for firms.', url: 'https://my-cpe.com/mssp-pricing' },
+      { id: 'wd', title: 'Website Services', description: 'AI-powered CPA websites built & managed for firms.', url: 'https://resources.northwindcpa.example/', tag: 'Starts From $49/month' },
+      { id: 'dg', title: 'Digital Marketing', description: 'Growth marketing solutions for CPA & accounting firms.', url: 'https://resources.northwindcpa.example/', tag: 'Starts From $149/month' },
+      { id: 'bm', title: 'Benchmarking Services', description: 'AI-Powered peer comparison & exclusive research reports.', url: 'https://resources.northwindcpa.example/', tag: 'Free Sign up & Unlock Free Reports' },
+      { id: 'msp', title: 'MSP', description: 'Managed IT services built for CPA and accounting firms.', url: 'https://resources.northwindcpa.example/msp-pricing' },
+      { id: 'mssp', title: 'MSSP', description: 'Managed cybersecurity and compliance protection for firms.', url: 'https://resources.northwindcpa.example/mssp-pricing' },
     ],
   },
   {
@@ -479,12 +479,12 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
   },
 ];
 
-/** Desktop sidebar static menu "News and Insights" (`sidebar.tpl`, 6 my-cpe.com pages, open in a new tab) */
+/** Desktop sidebar static menu "News and Insights" (`sidebar.tpl`, 6 resource pages, open in a new tab) */
 export const CLIENT_NEWS_LINKS = [
-  { id: 'trending-news', label: 'Trending News', hint: 'Finance & economics headlines', url: 'https://my-cpe.com/dashboard/insights-finance-economics' },
-  { id: 'accounting-industry', label: 'Accounting Industry', hint: 'What is moving the profession', url: 'https://my-cpe.com/dashboard/insights-accounting-industry' },
-  { id: 'regulatory-updates', label: 'Regulatory Updates', hint: 'Rule and compliance changes', url: 'https://my-cpe.com/dashboard/insights-regulatory-updates' },
-  { id: 'infographics', label: 'Infographics', hint: 'Quick visual summaries', url: 'https://my-cpe.com/dashboard/insights-infographics' },
-  { id: 'accounting-pulse', label: 'Accounting Pulse', hint: 'Regular pulse on the industry', url: 'https://my-cpe.com/dashboard/insights-accounting-pulse' },
-  { id: 'industry-insights', label: 'Industry insights', hint: 'Benchmarking blogs', url: 'https://my-cpe.com/dashboard/insights-benchmarking-blogs' },
+  { id: 'trending-news', label: 'Trending News', hint: 'Finance & economics headlines', url: 'https://resources.northwindcpa.example/dashboard/insights-finance-economics' },
+  { id: 'accounting-industry', label: 'Accounting Industry', hint: 'What is moving the profession', url: 'https://resources.northwindcpa.example/dashboard/insights-accounting-industry' },
+  { id: 'regulatory-updates', label: 'Regulatory Updates', hint: 'Rule and compliance changes', url: 'https://resources.northwindcpa.example/dashboard/insights-regulatory-updates' },
+  { id: 'infographics', label: 'Infographics', hint: 'Quick visual summaries', url: 'https://resources.northwindcpa.example/dashboard/insights-infographics' },
+  { id: 'accounting-pulse', label: 'Accounting Pulse', hint: 'Regular pulse on the industry', url: 'https://resources.northwindcpa.example/dashboard/insights-accounting-pulse' },
+  { id: 'industry-insights', label: 'Industry insights', hint: 'Benchmarking blogs', url: 'https://resources.northwindcpa.example/dashboard/insights-benchmarking-blogs' },
 ];

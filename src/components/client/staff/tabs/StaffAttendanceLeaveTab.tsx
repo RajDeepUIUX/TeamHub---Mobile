@@ -163,7 +163,7 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                       <div className="flex items-center gap-3">
                         <span className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 ${style.tile}`}>
                           <span className="text-[16px] font-extrabold leading-none tabular-nums">{pad(start.getDate())}</span>
-                          <span className="mt-0.5 text-[9.5px] font-bold uppercase">{MONTHS[start.getMonth()].slice(0, 3)}</span>
+                          <span className="mt-0.5 text-[10px] font-bold uppercase">{MONTHS[start.getMonth()].slice(0, 3)}</span>
                         </span>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-bold text-[#1E293B] leading-snug truncate">{l.leaveType}</h3>
