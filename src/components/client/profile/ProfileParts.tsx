@@ -157,9 +157,15 @@ export const ErrorText: React.FC<{ error?: string }> = ({ error }) =>
   error ? <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p> : null;
 
 /** Read-only field in edit mode, with the reason it can't be changed here */
-export const LockedField: React.FC<{ label: string; value: string; note?: string; onInfo?: () => void }> = ({ label, value, note, onInfo }) => (
+export const LockedField: React.FC<{ label: string; value: string; note?: string; required?: boolean; onInfo?: () => void }> = ({
+  label,
+  value,
+  note,
+  required,
+  onInfo,
+}) => (
   <div className="space-y-1.5">
-    <Label text={label} onInfo={onInfo} />
+    <Label text={label} required={required} onInfo={onInfo} />
     <div className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
       <span className="truncate">{value}</span>
       <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />

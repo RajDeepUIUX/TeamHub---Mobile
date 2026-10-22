@@ -722,7 +722,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               type="button"
               aria-pressed={active}
               onClick={() => pickStatus(s)}
-              className={`shrink-0 h-10 pl-1.5 pr-2 rounded-full border text-[11.5px] font-semibold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
+              className={`shrink-0 h-10 pl-1.5 pr-1.5 rounded-full border text-[11.5px] font-semibold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
                 active ? `${on.solid} shadow-2xs` : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
               }`}
             >
@@ -733,6 +733,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               <span className={`min-w-6 h-6 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center tabular-nums ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-[#1E293B]'}`}>
                 {counts[s]}
               </span>
+              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? 'text-white/80' : 'text-slate-400'}`} />
             </button>
           );
         })}
@@ -825,6 +826,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               >
                 {counts[s]}
               </span>
+              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? on.text : 'text-slate-400'}`} />
             </button>
           );
         })}

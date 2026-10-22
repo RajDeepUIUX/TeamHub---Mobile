@@ -129,7 +129,7 @@ export const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = (
                 aria-selected={isOn}
                 onClick={() => setFilter(id)}
                 className={`shrink-0 h-8 pl-3 pr-2 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
-                  isOn ? 'bg-[#1E293B] border-[#1E293B] text-white' : 'bg-white border-slate-200 text-slate-600'
+                  isOn ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600'
                 }`}
               >
                 {id}
