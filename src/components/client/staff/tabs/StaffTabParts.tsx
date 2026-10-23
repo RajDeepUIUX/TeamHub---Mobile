@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, CheckCircle2, Search, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, Info, Search, X } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { DateWheelSheet } from '../../../common/DateWheelSheet';
 
@@ -348,6 +348,35 @@ export const SheetHeader: React.FC<{ title: string; subtitle?: string; onClose: 
       </button>
     </div>
   </>
+);
+
+/** Bottom drawer for ⓘ info copy — every client ⓘ button opens its message here */
+export const InfoSheet: React.FC<{ isOpen: boolean; title: string; onClose: () => void; children: React.ReactNode; extra?: React.ReactNode }> = ({
+  isOpen,
+  title,
+  onClose,
+  children,
+  extra,
+}) => (
+  <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[60%]">
+    <SheetHeader title={title} onClose={onClose} />
+    <div className="px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
+      <div className="flex gap-3 p-3.5 rounded-2xl bg-[#F5F8FF] ring-1 ring-inset ring-[#DBEAFE]">
+        <span className="w-9 h-9 rounded-xl bg-white ring-1 ring-[#DBEAFE] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+          <Info className="w-[18px] h-[18px]" />
+        </span>
+        <div className="min-w-0 text-[12.5px] text-slate-600 leading-relaxed">{children}</div>
+      </div>
+      {extra}
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-4 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-[13px] font-bold active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+      >
+        Got it
+      </button>
+    </div>
+  </BottomSheet>
 );
 
 /** Desktop confirm popups (delete / publish / status change) */

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Briefcase, CalendarClock, Clock3, DollarSign, FileText, Info, ListChecks, MessagesSquare, Sparkles, Users, X } from 'lucide-react';
+import { InfoSheet } from '../staff/tabs/StaffTabParts';
 import type { DesignVersion } from '../staff/tabs/StaffTabParts';
 import { formatShortDate } from '../data/clientInterviewsData';
 import { StaffRequirement, formatTime12 } from '../data/clientRequirementsData';
@@ -38,24 +39,19 @@ const Chips: React.FC<{ items: string[]; square?: boolean }> = ({ items, square 
     <>-</>
   );
 
-/** "Offshore Location Preference" label with the desktop info tooltip */
-const LocationLabel: React.FC<{ open: boolean; onToggle: () => void }> = ({ open, onToggle }) => (
-  <span className="relative inline-flex items-start gap-1">
+/** "Offshore Location Preference" label; ⓘ opens the desktop tooltip copy in a bottom sheet */
+const LocationLabel: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
+  <span className="inline-flex items-start gap-1">
     <span>Offshore Location Preference</span>
     <button
       type="button"
-      onClick={onToggle}
-      aria-expanded={open}
+      onClick={onOpen}
+      aria-haspopup="dialog"
       aria-label="About Offshore Location Preference"
       className="shrink-0 w-5 h-5 -mt-0.5 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
     >
       <Info className="w-3.5 h-3.5" />
     </button>
-    {open && (
-      <span role="tooltip" className="absolute top-full left-0 mt-1.5 z-10 w-[200px] px-2.5 py-2 rounded-lg bg-[#1E293B] text-white text-[11px] font-normal normal-case tracking-normal leading-snug shadow-lg">
-        Offshore office locations the staff can work from.
-      </span>
-    )}
   </span>
 );
 
@@ -121,7 +117,7 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
         { key: 'upto', label: 'Preferred Available Upto Time', value: upto },
         { key: 'ot', label: 'Overtime Requirement', value: overtime },
         { key: 'mode', label: 'Work Mode Preference', value: dash(r.workMode) },
-        { key: 'loc', label: <LocationLabel open={tipOpen} onToggle={() => setTipOpen((o) => !o)} />, value: <Chips items={r.locations} square={v2} />, block: true },
+        { key: 'loc', label: <LocationLabel onOpen={() => setTipOpen(true)} />, value: <Chips items={r.locations} square={v2} />, block: true },
       ],
     },
     {
@@ -318,6 +314,10 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
           </section>
         </div>
       </div>
+
+      <InfoSheet isOpen={tipOpen} title="Offshore Location Preference" onClose={() => setTipOpen(false)}>
+        Offshore office locations the staff can work from.
+      </InfoSheet>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Info, Loader2, Plus, X } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
-import { ConfirmSheet, fieldInputClass } from '../staff/tabs/StaffTabParts';
+import { ConfirmSheet, InfoSheet, fieldInputClass } from '../staff/tabs/StaffTabParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
   EMPTY_TNI_DRAFT,
@@ -149,19 +149,17 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
               <Label>Training Name (Topic)</Label>
               <button
                 type="button"
-                onClick={() => setInfoOpen((o) => !o)}
+                onClick={() => setInfoOpen(true)}
                 aria-label="About Training Name"
-                aria-expanded={infoOpen}
+                aria-haspopup="dialog"
                 className="w-5 h-5 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
               >
                 <Info className="w-4 h-4" />
               </button>
             </div>
-            {infoOpen && (
-              <p className="px-3 py-2 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-blue-900 leading-snug">
-                Please enter the topics here if you were not able to find the required topic from the main training program dropdown options.
-              </p>
-            )}
+            <InfoSheet isOpen={infoOpen} title="Training Name (Topic)" onClose={() => setInfoOpen(false)}>
+              Please enter the topics here if you were not able to find the required topic from the main training program dropdown options.
+            </InfoSheet>
             <div className="flex items-center gap-2">
               <input
                 type="text"

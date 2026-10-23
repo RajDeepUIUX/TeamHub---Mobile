@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Briefcase, CheckCircle2, FileText, Info, Loader2, Lock, User } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
-import { SheetHeader } from '../staff/tabs/StaffTabParts';
+import { InfoSheet, SheetHeader } from '../staff/tabs/StaffTabParts';
 import {
   CandidateFeedback,
   FeedbackResult,
@@ -176,8 +176,8 @@ export const InterviewFeedbackSheet: React.FC<Props> = ({ isOpen, candidate, can
                     {c.hint && (
                       <button
                         type="button"
-                        onClick={() => setHintOpen(hintOpen === i ? null : i)}
-                        aria-expanded={hintOpen === i}
+                        onClick={() => setHintOpen(i)}
+                        aria-haspopup="dialog"
                         aria-label={`About ${c.label}`}
                         className={`w-7 h-7 shrink-0 -mr-1 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
                           hintOpen === i ? 'bg-[#EFF6FF] text-[#2F68FE]' : 'text-slate-400 active:bg-slate-100'
@@ -187,9 +187,6 @@ export const InterviewFeedbackSheet: React.FC<Props> = ({ isOpen, candidate, can
                       </button>
                     )}
                   </div>
-                  {hintOpen === i && c.hint && (
-                    <p className="mt-2.5 px-3 py-2 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] text-[#1D4ED8] leading-snug">{c.hint}</p>
-                  )}
                   <div className="mt-3 grid grid-cols-5 gap-2">
                     {[1, 2, 3, 4, 5].map((v) => {
                       const on = value === v;
@@ -322,6 +319,10 @@ export const InterviewFeedbackSheet: React.FC<Props> = ({ isOpen, candidate, can
           </button>
         </div>
       )}
+
+      <InfoSheet isOpen={hintOpen !== null} title={criteria[hintOpen ?? -1]?.label ?? ''} onClose={() => setHintOpen(null)}>
+        {criteria[hintOpen ?? -1]?.hint}
+      </InfoSheet>
     </BottomSheet>
   );
 };

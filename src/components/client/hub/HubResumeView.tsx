@@ -32,7 +32,7 @@ import {
   Wallet,
   Wrench,
 } from 'lucide-react';
-import { Card } from '../staff/tabs/StaffTabParts';
+import { Card, InfoSheet } from '../staff/tabs/StaffTabParts';
 import { FileButton } from '../interviews/CandidateResumeView';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
 import { formatExperience, formatMonthYear, formatShortDate } from '../data/clientInterviewsData';
@@ -62,7 +62,7 @@ const InfoToggle: React.FC<{ open: boolean; onToggle: () => void; label: string 
   <button
     type="button"
     onClick={onToggle}
-    aria-expanded={open}
+    aria-haspopup="dialog"
     aria-label={label}
     className={`w-8 h-8 -my-1 rounded-full flex items-center justify-center shrink-0 transition-colors cursor-pointer ${open ? 'text-[#2F68FE] bg-[#EFF6FF]' : 'text-[#2F68FE] active:bg-slate-100'}`}
   >
@@ -98,12 +98,6 @@ const KeyValueV2: React.FC<{ label: string; aside?: React.ReactNode; children: R
     </dt>
     <dd className="min-w-0 text-right text-[12.5px] font-bold text-[#1E293B] leading-snug break-words">{children}</dd>
   </div>
-);
-
-const NoteV2: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="mb-3 pl-3 border-l-[3px] border-[#93C5FD] text-[11.5px] text-slate-600 leading-relaxed" role="note">
-    {children}
-  </p>
 );
 
 /** Money row with a dotted leader between label and amount */
@@ -307,15 +301,13 @@ export const HubResumeView: React.FC<Props> = ({
         {/* Talent Cost */}
         <BlockV2
           title={cost ? 'Talent Cost' : 'Hourly Charges'}
-          action={<InfoToggle open={costInfo} onToggle={() => setCostInfo((o) => !o)} label={cost ? 'About talent cost' : 'About hourly charges'} />}
+          action={<InfoToggle open={costInfo} onToggle={() => setCostInfo(true)} label={cost ? 'About talent cost' : 'About hourly charges'} />}
         >
-          {costInfo && (
-            <NoteV2>
-              {cost
-                ? 'Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.'
-                : 'Hourly charges for this resume, billed on the hours worked.'}
-            </NoteV2>
-          )}
+          <InfoSheet isOpen={costInfo} title={cost ? 'Talent Cost' : 'Hourly Charges'} onClose={() => setCostInfo(false)}>
+            {cost
+              ? 'Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.'
+              : 'Hourly charges for this resume, billed on the hours worked.'}
+          </InfoSheet>
           {cost ? (
             <>
               <button
@@ -369,10 +361,12 @@ export const HubResumeView: React.FC<Props> = ({
         <BlockV2 title="Availability">
           <dl className="-my-2.5 divide-y divide-slate-100">
             <div>
-              <KeyValueV2 label="Available Till" aside={<InfoToggle open={tillInfo} onToggle={() => setTillInfo((o) => !o)} label="About Available Till" />}>
+              <KeyValueV2 label="Available Till" aside={<InfoToggle open={tillInfo} onToggle={() => setTillInfo(true)} label="About Available Till" />}>
                 <span className="tabular-nums">{profile.availableTill}</span>
               </KeyValueV2>
-              {tillInfo && <NoteV2>The latest time the candidate can work each day, shown in your time zone.</NoteV2>}
+              <InfoSheet isOpen={tillInfo} title="Available Till" onClose={() => setTillInfo(false)}>
+                The latest time the candidate can work each day, shown in your time zone.
+              </InfoSheet>
             </div>
             <KeyValueV2 label="Availability (per week)">
               <span className="tabular-nums">{r.availableHoursPerDay * 5} Hours/Week</span>
@@ -698,13 +692,6 @@ const RowV1: React.FC<{ icon: React.ElementType; label: string; children: React.
   </div>
 );
 
-const InfoNoteV1: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="mb-2 flex gap-2 rounded-xl bg-[#F5F8FF] ring-1 ring-inset ring-[#DBEAFE] px-3 py-2.5 text-[11px] text-slate-600 leading-snug" role="note">
-    <Info className="w-3.5 h-3.5 mt-px shrink-0 text-[#2F68FE]" aria-hidden="true" />
-    <span>{children}</span>
-  </p>
-);
-
 const MoneyV1: React.FC<{ label: string; value: number; strong?: boolean }> = ({ label, value, strong }) => (
   <div className={`flex items-center justify-between gap-3 py-2 ${strong ? 'text-[12.5px] font-bold text-[#0F172A]' : 'text-[12px] text-slate-600'}`}>
     <span>{label}</span>
@@ -859,15 +846,13 @@ export const HubResumeViewV1: React.FC<Props> = ({
             icon={Wallet}
             tint="bg-[#E8F8F0] text-[#10B981]"
             title={cost ? 'Talent Cost' : 'Hourly Charges'}
-            action={<InfoToggle open={costInfo} onToggle={() => setCostInfo((o) => !o)} label={cost ? 'About talent cost' : 'About hourly charges'} />}
+            action={<InfoToggle open={costInfo} onToggle={() => setCostInfo(true)} label={cost ? 'About talent cost' : 'About hourly charges'} />}
           >
-            {costInfo && (
-              <InfoNoteV1>
-                {cost
-                  ? 'Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.'
-                  : 'Hourly charges for this resume, billed on the hours worked.'}
-              </InfoNoteV1>
-            )}
+            <InfoSheet isOpen={costInfo} title={cost ? 'Talent Cost' : 'Hourly Charges'} onClose={() => setCostInfo(false)}>
+              {cost
+                ? 'Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.'
+                : 'Hourly charges for this resume, billed on the hours worked.'}
+            </InfoSheet>
             {cost ? (
               <div className="rounded-xl ring-1 ring-inset ring-[#DBEAFE] bg-[#F5F8FF] overflow-hidden">
                 <button
@@ -920,10 +905,12 @@ export const HubResumeViewV1: React.FC<Props> = ({
           <SectionV1 icon={Clock3} tint="bg-[#FEF8E7] text-[#D97706]" title="Availability">
             <div className="-mt-1 divide-y divide-slate-100">
               <div>
-                <RowV1 icon={Clock3} label="Available Till" aside={<InfoToggle open={tillInfo} onToggle={() => setTillInfo((o) => !o)} label="About Available Till" />}>
+                <RowV1 icon={Clock3} label="Available Till" aside={<InfoToggle open={tillInfo} onToggle={() => setTillInfo(true)} label="About Available Till" />}>
                   <span className="tabular-nums">{profile.availableTill}</span>
                 </RowV1>
-                {tillInfo && <InfoNoteV1>The latest time the candidate can work each day, shown in your time zone.</InfoNoteV1>}
+                <InfoSheet isOpen={tillInfo} title="Available Till" onClose={() => setTillInfo(false)}>
+                The latest time the candidate can work each day, shown in your time zone.
+              </InfoSheet>
               </div>
               <RowV1 icon={CalendarClock} label="Availability (per week)">
                 <span className="tabular-nums">{r.availableHoursPerDay * 5} Hours/Week</span>

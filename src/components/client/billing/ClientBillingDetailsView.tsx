@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Eye, EyeOff, Info, Loader2, Lock, Pencil, Plus, Save, Trash2, Zap } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, ConfirmSheet, DesignVersion } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, ConfirmSheet, DesignVersion, InfoSheet } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
@@ -516,8 +516,8 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                 aside={
                   <button
                     type="button"
-                    onClick={() => setShowHelp((v) => !v)}
-                    aria-expanded={showHelp}
+                    onClick={() => setShowHelp(true)}
+                    aria-haspopup="dialog"
                     aria-label="How payment mapping works"
                     className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
                       v2
@@ -531,16 +531,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               />
             }
           >
-            {showHelp && (
-              <p
-                className={`mb-3.5 px-3 py-2.5 text-[11px] leading-relaxed text-[#3730A3] ${
-                  v2 ? 'rounded-lg bg-[#EEF2FF] border-l-[3px] border-[#4F46E5]' : 'rounded-2xl bg-[#EEF2FF]'
-                }`}
-              >
-                If you have multiple timesheets and want to setup different payment methods for your timesheets then in step 1 you can add multiple
-                payment methods and map specific timesheets to them below. Group multiple staff timesheet numbers per method.
-              </p>
-            )}
+            <InfoSheet isOpen={showHelp} title="Payment Mapping" onClose={() => setShowHelp(false)}>
+              If you have multiple timesheets and want to setup different payment methods for your timesheets then in step 1 you can add multiple
+              payment methods and map specific timesheets to them below. Group multiple staff timesheet numbers per method.
+            </InfoSheet>
 
             {!hasPayment ? (
               <div

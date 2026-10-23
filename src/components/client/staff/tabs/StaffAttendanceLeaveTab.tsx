@@ -6,7 +6,7 @@ import { SegmentedTabs } from '../../../../design-system/components/SegmentedTab
 import type { ClientStaffMember } from '../../data/clientStaffData';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { LeaveBalance, LeaveRecord, StaffWorkMode, leaveBalancesFor, leavesFor, staffRecordsEnd } from '../../data/clientStaffProfileData';
-import { Card, EmptyCard, RowList, SheetHeader, SwitchTiles } from './StaffTabParts';
+import { Card, EmptyCard, InfoSheet, RowList, SheetHeader, SwitchTiles } from './StaffTabParts';
 import { Month, MonthFilterSheet, StaffAttendancePanel } from './StaffAttendancePanel';
 import type { AmendRequest } from '../../data/clientAttendanceData';
 
@@ -96,9 +96,9 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                 <span className="text-[13px] font-bold">Leave Balance</span>
                 <button
                   type="button"
-                  onClick={() => setShowInfo((v) => !v)}
+                  onClick={() => setShowInfo(true)}
                   aria-label="About leave balance"
-                  aria-expanded={showInfo}
+                  aria-haspopup="dialog"
                   className="w-6 h-6 rounded-full text-white/80 flex items-center justify-center active:bg-white/15 cursor-pointer"
                 >
                   <Info className="w-3.5 h-3.5" />
@@ -109,11 +109,9 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                 <span className="block mt-0.5 text-[10.5px] font-semibold text-white/80">days left</span>
               </span>
             </div>
-            {showInfo && (
-              <p className="mx-4 mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-[#2F68FE] leading-relaxed animate-in fade-in duration-200">
-                Each balance shows leave used / total balance for {member.name}.
-              </p>
-            )}
+            <InfoSheet isOpen={showInfo} title="Leave Balance" onClose={() => setShowInfo(false)}>
+              Each balance shows leave used / total balance for {member.name}.
+            </InfoSheet>
             <ul className="px-4 py-1 divide-y divide-slate-100">
               {balances.map((b) => {
                 const style = BALANCE_STYLE[b.label];
@@ -225,9 +223,9 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                 <span className="text-sm font-bold text-[#1E293B]">Leave Balance</span>
                 <button
                   type="button"
-                  onClick={() => setShowInfo((v) => !v)}
+                  onClick={() => setShowInfo(true)}
                   aria-label="About leave balance"
-                  aria-expanded={showInfo}
+                  aria-haspopup="dialog"
                   className="w-5 h-5 rounded-full text-slate-400 flex items-center justify-center active:bg-slate-100 cursor-pointer"
                 >
                   <Info className="w-3.5 h-3.5" />
@@ -237,11 +235,9 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                 {totalLeft.toFixed(2)} days left
               </span>
             </div>
-            {showInfo && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-[#2F68FE] leading-relaxed animate-in fade-in duration-200">
-                Each balance shows leave used / total balance for {member.name}.
-              </div>
-            )}
+            <InfoSheet isOpen={showInfo} title="Leave Balance" onClose={() => setShowInfo(false)}>
+              Each balance shows leave used / total balance for {member.name}.
+            </InfoSheet>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {balances.map((b) => {
                 const style = BALANCE_STYLE[b.label];
