@@ -14,12 +14,15 @@ import {
   staffRecordsEnd,
   summarizeAttendance,
 } from '../../data/clientStaffProfileData';
+import { AmendRequest, withApprovedAmends } from '../../data/clientAttendanceData';
 import { EmptyCard, SheetHeader } from './StaffTabParts';
 import { StaffSkeleton } from '../ClientStaffParts';
 
 interface StaffAttendancePanelProps {
   member: ClientStaffMember;
   workMode: StaffWorkMode;
+  /** Attendance Amend requests; approved ones replace the recorded day */
+  amends?: AmendRequest[];
   v2?: boolean;
 }
 
@@ -344,7 +347,7 @@ export const MonthFilterSheet: React.FC<{
 /* ---------------------------------- Panel --------------------------------- */
 
 /** Attendance view of the staff "Attendance & Leave" tab (desktop attendance-leave.tpl): KPIs, month + status filter, daily records */
-export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode, v2 }) => {
+export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode, amends = [], v2 }) => {
   const joined = parse(member.joiningDate);
   // Staff who already left open on their last month (no records after the last working day)
   const end = parse(staffRecordsEnd(member));
@@ -361,7 +364,7 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
     return () => clearTimeout(t);
   }, [loading]);
 
-  const days = useMemo(() => attendanceFor(member, month.y, month.m, workMode), [member, month, workMode]);
+  const days = useMemo(() => withApprovedAmends(member.id, attendanceFor(member, month.y, month.m, workMode), amends), [member, month, workMode, amends]);
   const summary = summarizeAttendance(days);
   const statusCode = ATTENDANCE_STATUSES.find((s) => STATUS_LABEL[s] === status);
   const visibleDays = statusCode ? days.filter((d) => d.status === statusCode) : days;

@@ -20,13 +20,22 @@ import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { RangeCalendar, formatShortDate, toDateKey } from '../../../design-system/components/RangeCalendar';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, Card, DesignVersion, EmptyCard, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, DateField, DesignVersion, EmptyCard, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { STATUS_LABEL, STATUS_PILL } from '../staff/tabs/StaffAttendancePanel';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import { ATTENDANCE_STATUSES, AttendanceDay, StaffWorkMode, attendanceFor, holidayName, workInfoFor } from '../data/clientStaffProfileData';
-import { AmendRequest, AmendStatus, SET_OFF_REASON, formatAmendDate, isoOf, pendingAmendCount } from '../data/clientAttendanceData';
+import {
+  AmendRequest,
+  AmendStatus,
+  SET_OFF_REASON,
+  amendTimes,
+  formatAmendDate,
+  isoOf,
+  pendingAmendCount,
+  withApprovedAmends,
+} from '../data/clientAttendanceData';
 
 interface Props {
   requests: AmendRequest[];
@@ -114,23 +123,6 @@ const filterCount = (f: Filters, d: Filters = defaultFilters()) =>
 const parse = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00`) : null);
 /** Desktop range text "01-10-2026" */
 const dmy = (iso: string) => iso.split('-').reverse().join('-');
-
-/** 09:00 AM → minutes */
-const minutesOf = (time: string | null) => {
-  const m = time?.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return null;
-  return ((Number(m[1]) % 12) + (m[3].toUpperCase() === 'PM' ? 12 : 0)) * 60 + Number(m[2]);
-};
-const hm = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-
-/** Requested punch times → Total Office Time / Overtime (over a 9h day incl. break) */
-const amendTimes = (r: AmendRequest) => {
-  const a = minutesOf(r.requestedIn);
-  const b = minutesOf(r.requestedOut);
-  if (a === null || b === null || b <= a) return { office: null, overtime: null };
-  const office = b - a;
-  return { office: hm(office), overtime: hm(Math.max(0, office - 9 * 60)) };
-};
 
 const AttendanceFilterSheet: React.FC<{
   isOpen: boolean;
@@ -489,7 +481,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
       if (af.staff.length && !af.staff.includes(member.id)) return;
       const mode = workModeOf?.(member.id) ?? workInfoFor(member).currentMode;
       for (let k = start.getFullYear() * 12 + start.getMonth(); k <= end.getFullYear() * 12 + end.getMonth(); k++) {
-        attendanceFor(member, Math.floor(k / 12), k % 12, mode).forEach((day) => {
+        withApprovedAmends(member.id, attendanceFor(member, Math.floor(k / 12), k % 12, mode), requests).forEach((day) => {
           if (day.date < af.from || day.date > af.to) return;
           if (af.workMode.length && !(day.workMode && af.workMode.includes(WORK_MODE_LABEL[day.workMode]))) return;
           if (af.status.length && !af.status.includes(STATUS_LABEL[day.status])) return;
@@ -499,7 +491,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     });
     // Stable sort keeps staff A→Z within a date
     return out.sort((a, b) => b.day.date.localeCompare(a.day.date));
-  }, [filters.attendance, sortedStaff, workModeOf]);
+  }, [filters.attendance, sortedStaff, workModeOf, requests]);
 
   const amends = useMemo(() => {
     const af = filters.amend;
@@ -534,7 +526,9 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
   };
 
   const target = decision ? requests.filter((r) => decision.ids.includes(r.id)) : [];
-  const needsSetOff = decision?.status === 'Approved' && target.length === 1 && target[0].reason === SET_OFF_REASON;
+  // Every "Left Early and Set Off Hours" request in the approval (single or Approve All) needs the make-up day
+  const setOffCount = decision?.status === 'Approved' ? target.filter((r) => r.reason === SET_OFF_REASON).length : 0;
+  const needsSetOff = setOffCount > 0;
 
   const confirm = () => {
     if (!decision) return;
@@ -1072,20 +1066,21 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
               {needsSetOff && (
                 <div className="space-y-1">
-                  <label htmlFor="amend-setoff" className="block text-[11px] font-semibold text-slate-600">
-                    Make up the hours on <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="amend-setoff"
-                    type="date"
+                  <DateField
+                    label="Make up the hours on"
+                    required
                     min={isoOf(new Date())}
                     value={setOffDate}
-                    onChange={(e) => {
-                      setSetOffDate(e.target.value);
+                    onChange={(iso) => {
+                      setSetOffDate(iso);
                       setError('');
                     }}
-                    className="w-full h-12 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text"
                   />
+                  {target.length > 1 && (
+                    <p className="px-0.5 text-[11px] text-slate-500">
+                      Applies to the {setOffCount} "Left Early and Set Off Hours" {setOffCount === 1 ? 'request' : 'requests'} in this approval.
+                    </p>
+                  )}
                 </div>
               )}
               <div className="space-y-1">

@@ -33,8 +33,11 @@ import {
   termsFor,
   trainingsFor,
   workInfoFor,
+  type MappedContact,
+  type SopRecord,
   type StaffWorkMode,
 } from '../data/clientStaffProfileData';
+import type { AmendRequest } from '../data/clientAttendanceData';
 import { StaffAvatar, StaffStatusPill } from './ClientStaffParts';
 import { BottomSheet } from '../../common/BottomSheet';
 import { Card, CardHeading, DesignVersion, Field, InfoCard, RowList, ScreenHeader, SheetHeader } from './tabs/StaffTabParts';
@@ -62,6 +65,12 @@ const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
 };
 
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
+
+/** Changes made on this screen, kept in ClientApp so they survive Back and module switches */
+export interface StaffProfileEdits {
+  contacts?: MappedContact[];
+  sops?: SopRecord[];
+}
 
 type InfoGroup = { title: string; icon: React.ElementType; fields: Field[] };
 
@@ -105,6 +114,11 @@ interface ClientStaffDetailViewProps {
   onOpenTrainingNeed?: () => void;
   /** Work mode set in Staff Work Flexibility */
   workModeOverride?: StaffWorkMode;
+  /** Attendance Amend requests (approved ones show on Attendance & Leave) */
+  amends?: AmendRequest[];
+  /** Saved Reporting To / SOP changes for this staff member */
+  edits?: StaffProfileEdits;
+  onEdit?: (patch: StaffProfileEdits) => void;
   /** Follows the My Staff V1 / V2 switch */
   version?: DesignVersion;
   onVersionChange?: (v: DesignVersion) => void;
@@ -120,6 +134,9 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
   tniRequests,
   onOpenTrainingNeed,
   workModeOverride,
+  amends,
+  edits,
+  onEdit,
   version = 'V1',
   onVersionChange,
 }) => {
@@ -158,8 +175,16 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
   const access = useMemo(() => systemAccessFor(member), [member]);
   const assessments = useMemo(() => assessmentsFor(member), [member]);
   // Editable on this screen (kept while switching tabs)
-  const [contacts, setContacts] = useState(() => mappedContactsFor(member));
-  const [sops, setSops] = useState(() => sopsFor(member));
+  const [contacts, setContactsState] = useState(() => edits?.contacts ?? mappedContactsFor(member));
+  const [sops, setSopsState] = useState(() => edits?.sops ?? sopsFor(member));
+  const setContacts = (next: MappedContact[]) => {
+    setContactsState(next);
+    onEdit?.({ contacts: next });
+  };
+  const setSops = (next: SopRecord[]) => {
+    setSopsState(next);
+    onEdit?.({ sops: next });
+  };
 
   const info = (groups: InfoGroup[]) => (v2 ? <InfoListV2 groups={groups} /> : <InfoCard groups={groups} />);
 
@@ -213,7 +238,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
       case 'Reporting To':
         return <StaffReportingToTab staffName={member.name} contacts={contacts} onChange={setContacts} v2={v2} />;
       case 'Attendance & Leave':
-        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} v2={v2} />;
+        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} amends={amends} v2={v2} />;
       case 'Skills & Qualification':
         return <StaffSkillsTab skills={skills} v2={v2} />;
       case 'Employee Documents':

@@ -54,6 +54,7 @@ import {
   CreditCard,
   PackageCheck,
   ScanSearch,
+  Newspaper,
 } from 'lucide-react';
 
 export interface ClientMenuModule {
@@ -197,13 +198,14 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     icon: LayoutGrid,
     modules: [
       { id: 'account-manager', label: 'Account Manager', hint: 'Call, email or chat', icon: Headset, designed: true },
-      { id: 'other-modules', label: 'Other Modules & Services', hint: 'MyCPE ONE modules', icon: LayoutGrid },
+      { id: 'news-insights', label: 'News and Insights', hint: 'Industry news, updates & infographics', icon: Newspaper, designed: true },
+      { id: 'other-modules', label: 'Other Modules & Services', hint: 'MyCPE ONE modules', icon: LayoutGrid, designed: true },
     ],
   },
 ];
 
 /** Side menu: designed modules only (set `designed: true` as each module's design is done) */
-export const CLIENT_DRAWER_GROUPS: ClientMenuGroup[] = CLIENT_MENU_GROUPS.filter((g) => g.id !== 'other' && g.id !== 'account').map((g) => ({
+export const CLIENT_DRAWER_GROUPS: ClientMenuGroup[] = CLIENT_MENU_GROUPS.filter((g) => g.id !== 'account').map((g) => ({
   ...g,
   modules: g.modules.filter((m) => m.designed),
 })).filter((g) => g.modules.length > 0);

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   ChevronRight,
+  Megaphone,
   Newspaper,
   UserPlus,
   UsersRound,
@@ -157,6 +158,29 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
           </div>
           <span className="shrink-0 text-xs font-semibold text-slate-600">{dateLabel}</span>
         </div>
+
+        {/* Important Updates (auto-opens after sign in; reopen here) */}
+        <button
+          type="button"
+          onClick={onOpenUpdates}
+          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-white border border-[#DCE3ED] text-left shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] active:bg-slate-50 transition-colors cursor-pointer"
+        >
+          <span className="relative w-10 h-10 rounded-xl bg-linear-to-br from-[#FBBF24] to-[#F59E0B] text-white flex items-center justify-center shrink-0">
+            <Megaphone className="w-[18px] h-[18px]" />
+            {unreadUpdates > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white tabular-nums">
+                {unreadUpdates}
+              </span>
+            )}
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13.5px] font-bold text-[#1E293B]">Important Updates</span>
+            <span className="block text-[11.5px] text-slate-500 truncate">
+              {unreadUpdates > 0 ? `${unreadUpdates} new ${unreadUpdates === 1 ? 'update' : 'updates'} for you` : "You're all caught up"}
+            </span>
+          </span>
+          <ChevronRight className="w-4.5 h-4.5 text-slate-400 shrink-0" />
+        </button>
 
         {/* Hire New Staff */}
         {onHireNewStaff && (

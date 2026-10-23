@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Download, FileText, Image as ImageIcon, Pencil } from 'lucide-react';
+import { Check, ChevronRight, Download, FileText, Image as ImageIcon, Pencil } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
-import { ConfirmSheet, DesignVersion, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
+import { avatarTint, initialsOf } from '../../home/celebrationUtils';
+import { ConfirmSheet, DesignVersion, Pill, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { CompanyLogoSheet } from './CompanyLogoSheet';
 import {
@@ -30,6 +31,7 @@ import {
 } from '../data/clientCompanyProfileData';
 
 const LOAD_MS = 600;
+const CONTACTS_PREVIEW = 3;
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 type FieldKey =
@@ -84,12 +86,13 @@ const inputClassV2 = (error?: string) =>
   }`;
 
 /** V1 = banded card; V2 = flat card with blue-bar uppercase title */
-const Section: React.FC<{ v2: boolean; title: string; children: React.ReactNode }> = ({ v2, title, children }) =>
+const Section: React.FC<{ v2: boolean; title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ v2, title, action, children }) =>
   v2 ? (
     <section className="bg-white rounded-2xl border border-[#E6EBF2] shadow-[0_4px_16px_-8px_rgba(15,23,42,0.14)] overflow-hidden">
       <h2 className="px-4 py-3 flex items-center gap-2.5 border-b border-slate-100 bg-linear-to-r from-[#F3F6FF] to-white text-[13px] font-bold text-[#1E293B]">
         <span className="w-1 h-4 rounded-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden />
-        {title}
+        <span className="flex-1 min-w-0">{title}</span>
+        {action}
       </h2>
       <div className="p-4">{children}</div>
     </section>
@@ -97,7 +100,8 @@ const Section: React.FC<{ v2: boolean; title: string; children: React.ReactNode 
     <section className="bg-white rounded-[20px] p-4 ring-1 ring-[#ECEAFD] shadow-[0_6px_20px_-10px_rgba(108,92,231,0.28)]">
       <h2 className="flex items-center gap-2.5 text-sm font-bold text-[#1E293B]">
         <span className="w-2 h-2 rounded-full bg-[#6C5CE7] ring-4 ring-[#EEEBFD]" aria-hidden />
-        {title}
+        <span className="flex-1 min-w-0">{title}</span>
+        {action}
       </h2>
       <div className="mt-3.5 pt-3.5 border-t border-dashed border-[#E4E2FB]">{children}</div>
     </section>
@@ -148,7 +152,7 @@ export const ClientCompanyProfileView: React.FC<{
   onContactManager: () => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
-}> = ({ profile, logoUrl, agreements, onSave, onLogoChange, onBack }) => {
+}> = ({ profile, logoUrl, agreements, contacts, onSave, onLogoChange, onOpenContacts, onContactManager, onBack }) => {
   const perm = useClientPermission('company-profile');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -653,6 +657,53 @@ export const ClientCompanyProfileView: React.FC<{
                     </ul>
                   </Section>
                 )}
+
+                <Section
+                  v2={v2}
+                  title="Contact Persons"
+                  action={
+                    onOpenContacts && (
+                      <button
+                        type="button"
+                        onClick={onOpenContacts}
+                        className="h-8 -my-1 -mr-1.5 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] cursor-pointer"
+                      >
+                        Manage
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    )
+                  }
+                >
+                  <ul className={v2 ? 'rounded-xl bg-[#F8FAFC] border border-slate-100 divide-y divide-slate-100' : '-mx-1 -my-1 divide-y divide-dashed divide-[#E4E2FB]'}>
+                    {contacts.slice(0, CONTACTS_PREVIEW).map((c, i) => (
+                      <li key={c.id} className={`min-h-14 py-2 flex items-center gap-3 ${v2 ? 'px-3' : 'px-1'}`}>
+                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${avatarTint(i)}`} aria-hidden>
+                          {initialsOf(c.name)}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[13px] font-semibold text-[#1E293B] truncate">{c.name}</span>
+                            {c.isPrimary && <Pill tone="green">Primary</Pill>}
+                          </span>
+                          <span className="block text-[11px] text-slate-400 break-all">{c.email}</span>
+                        </span>
+                        <Pill tone={c.isAdmin ? 'indigo' : 'slate'}>{c.role || 'Manager'}</Pill>
+                      </li>
+                    ))}
+                  </ul>
+                  {contacts.length > CONTACTS_PREVIEW && (
+                    <p className="mt-2.5 text-[11px] text-slate-400">
+                      +{contacts.length - CONTACTS_PREVIEW} more {contacts.length - CONTACTS_PREVIEW === 1 ? 'contact' : 'contacts'}
+                    </p>
+                  )}
+                </Section>
+
+                <p className="px-1 text-[11px] text-slate-400 leading-relaxed">
+                  Need to change the company email?{' '}
+                  <button type="button" onClick={onContactManager} className="font-bold text-[#2F68FE] cursor-pointer">
+                    Contact your Account Manager
+                  </button>
+                </p>
               </>
             )}
           </div>

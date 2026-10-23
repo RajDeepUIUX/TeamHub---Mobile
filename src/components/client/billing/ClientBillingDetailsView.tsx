@@ -30,8 +30,6 @@ interface Props {
   country: string;
   userName: string;
   onChange: (next: BillingDetails) => void;
-  /** Hidden without Invoices access */
-  onOpenInvoices?: () => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }

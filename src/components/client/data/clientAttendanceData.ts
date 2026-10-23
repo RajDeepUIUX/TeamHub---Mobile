@@ -3,7 +3,7 @@
  * correct a day's attendance and the client approves or rejects it with a comment. The daily Attendance View lives in each
  * staff profile (My Staff › Attendance & Leave). Dummy data only.
  */
-import { holidayName } from './clientStaffProfileData';
+import { holidayName, type AttendanceDay } from './clientStaffProfileData';
 
 export const AMEND_STATUSES = ['Pending', 'Approved', 'Rejected'] as const;
 export type AmendStatus = (typeof AMEND_STATUSES)[number];
@@ -104,3 +104,42 @@ export const nextHoliday = (): { name: string; date: string } | null => {
 };
 
 export const pendingAmendCount = (requests: AmendRequest[]) => requests.filter((r) => r.status === 'Pending').length;
+
+/** 09:00 AM → minutes */
+export const minutesOf = (time: string | null) => {
+  const m = time?.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return null;
+  return ((Number(m[1]) % 12) + (m[3].toUpperCase() === 'PM' ? 12 : 0)) * 60 + Number(m[2]);
+};
+export const hm = (mins: number) => `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
+
+/** Requested punch times → Total Office Time / Overtime (over a 9h day incl. break) */
+export const amendTimes = (r: Pick<AmendRequest, 'requestedIn' | 'requestedOut'>) => {
+  const a = minutesOf(r.requestedIn);
+  const b = minutesOf(r.requestedOut);
+  if (a === null || b === null || b <= a) return { office: null, overtime: null };
+  const office = b - a;
+  return { office: hm(office), overtime: hm(Math.max(0, office - 9 * 60)) };
+};
+
+/** Approved amend requests replace the recorded day (desktop `acceptAttendance` rewrites the attendance row) */
+export const withApprovedAmends = (staffId: string, days: AttendanceDay[], requests: AmendRequest[]): AttendanceDay[] => {
+  const approved = requests.filter((r) => r.staffId === staffId && r.status === 'Approved');
+  if (!approved.length) return days;
+  return days.map((d) => {
+    const r = approved.find((a) => a.date === d.date);
+    if (!r) return d;
+    const checkIn = r.requestedIn ?? d.checkIn;
+    const checkOut = r.requestedOut ?? d.checkOut;
+    const times = amendTimes({ requestedIn: checkIn, requestedOut: checkOut });
+    return {
+      ...d,
+      status: 'Full day',
+      checkIn,
+      checkOut,
+      officeTime: times.office ?? d.officeTime,
+      overtime: times.overtime ?? d.overtime,
+      workMode: r.workMode,
+    };
+  });
+};

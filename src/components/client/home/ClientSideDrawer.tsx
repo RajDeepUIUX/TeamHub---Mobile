@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Search, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
+import { X, Search, ChevronDown, ChevronRight, LogOut, UserCog } from 'lucide-react';
 import { BrandLogoHorizontal } from '../../auth/BrandLogo';
 import { ProfileAvatar } from '../../profile/ProfileAvatar';
 import { CLIENT_DRAWER_GROUPS, ClientMenuModule } from './clientMenu';
@@ -19,6 +19,8 @@ interface ClientSideDrawerProps {
   version: string;
   onOpenModule: (module: ClientMenuModule) => void;
   onOpenProfile: () => void;
+  /** Prototype: preview the app as another Contact Role */
+  onOpenRole: () => void;
   onLogout: () => void;
 }
 
@@ -35,6 +37,7 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
   version,
   onOpenModule,
   onOpenProfile,
+  onOpenRole,
   onLogout,
 }) => {
   const role = useClientRole();
@@ -223,7 +226,19 @@ export const ClientSideDrawer: React.FC<ClientSideDrawerProps> = ({
           )}
         </nav>
 
-        <div className="shrink-0 px-4 pt-3 pb-5 border-t border-[#EBF0F7] bg-white flex items-center justify-between gap-3">
+        <div className="shrink-0 px-4 pt-2 border-t border-[#EBF0F7] bg-white">
+          <button
+            type="button"
+            onClick={onOpenRole}
+            className="max-w-full h-8 px-2.5 -ml-1 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 active:bg-slate-50 cursor-pointer"
+            aria-label={`Preview as role, current ${role.name}`}
+          >
+            <UserCog className="w-4 h-4 shrink-0" />
+            <span className="truncate">Role: {role.name}</span>
+            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+          </button>
+        </div>
+        <div className="shrink-0 px-4 pt-1 pb-5 bg-white flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onLogout}

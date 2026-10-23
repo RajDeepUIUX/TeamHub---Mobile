@@ -13,7 +13,8 @@ import type { StaffWorkMode } from '../data/clientStaffProfileData';
 import type { TniRequest } from '../data/clientTrainingNeedData';
 import { ClientStaffFilterSheet, ClientStaffFilters, EMPTY_STAFF_FILTERS, staffFilterCount } from './ClientStaffFilterSheet';
 import { StaffAvatar, StaffSkeleton, StaffStatusPill } from './ClientStaffParts';
-import { ClientStaffDetailView } from './ClientStaffDetailView';
+import { ClientStaffDetailView, StaffProfileEdits } from './ClientStaffDetailView';
+import type { AmendRequest } from '../data/clientAttendanceData';
 import { DesignVersion, ScreenHeader } from './tabs/StaffTabParts';
 
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
@@ -35,6 +36,11 @@ interface ClientMyStaffViewProps {
   workModeOf?: (staffId: string) => StaffWorkMode | undefined;
   /** Opens this staff profile straight away (e.g. from a notification), optionally on a given tab */
   focus?: { staffId: string; tab?: StaffProfileTab } | null;
+  /** Attendance Amend requests (approved ones show in Staff Details › Attendance & Leave) */
+  amends?: AmendRequest[];
+  /** Reporting To / SOP changes per staff id, kept in ClientApp */
+  staffEdits?: Record<string, StaffProfileEdits>;
+  onStaffEdit?: (staffId: string, patch: StaffProfileEdits) => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -59,7 +65,7 @@ const ListSkeleton: React.FC = () => (
   </div>
 );
 
-export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, clientName, onOpenTimesheets, tniRequests, onOpenTrainingNeed, workModeOf, focus, onBack }) => {
+export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, clientName, onOpenTimesheets, tniRequests, onOpenTrainingNeed, workModeOf, focus, amends, staffEdits, onStaffEdit, onBack }) => {
   // `is_view` opens Staff Details
   const { view: canView } = useClientPermission('my-staff');
   const [loading, setLoading] = useState(true);
@@ -117,6 +123,10 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
     ...(Object.keys(LIST_LABELS) as ListKey[]).flatMap((k) =>
       filters[k].map((v) => ({ key: `${k}-${v}`, label: `${LIST_LABELS[k]}: ${v}`, remove: () => setFilters((f) => ({ ...f, [k]: f[k].filter((x) => x !== v) })) })),
     ),
+    // Status only shows when it differs from the desktop default (current staff)
+    ...(staffFilterCount({ ...EMPTY_STAFF_FILTERS, status: filters.status }) > 0
+      ? [{ key: 'status', label: `Status: ${filters.status.join(', ')}`, remove: () => setFilters((f) => ({ ...f, status: EMPTY_STAFF_FILTERS.status })) }]
+      : []),
   ];
 
   const reload = () => {
@@ -142,6 +152,9 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         tniRequests={tniRequests?.filter((r) => r.staffId === selected.id)}
         onOpenTrainingNeed={onOpenTrainingNeed ? () => onOpenTrainingNeed(selected.id) : undefined}
         workModeOverride={workModeOf?.(selected.id)}
+        amends={amends}
+        edits={staffEdits?.[selected.id]}
+        onEdit={onStaffEdit ? (patch) => onStaffEdit(selected.id, patch) : undefined}
         version={version}
         onVersionChange={setVersion}
         onBack={() => setSelectedId(null)}

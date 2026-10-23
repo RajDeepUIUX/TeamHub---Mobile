@@ -8,10 +8,12 @@ import { formatStaffDate } from '../../data/clientStaffData';
 import { LeaveBalance, LeaveRecord, StaffWorkMode, leaveBalancesFor, leavesFor, staffRecordsEnd } from '../../data/clientStaffProfileData';
 import { Card, EmptyCard, RowList, SheetHeader, SwitchTiles } from './StaffTabParts';
 import { Month, MonthFilterSheet, StaffAttendancePanel } from './StaffAttendancePanel';
+import type { AmendRequest } from '../../data/clientAttendanceData';
 
 interface StaffAttendanceLeaveTabProps {
   member: ClientStaffMember;
   workMode: StaffWorkMode;
+  amends?: AmendRequest[];
   v2?: boolean;
 }
 
@@ -39,7 +41,7 @@ const monthStart = (m: Month) => `${m.y}-${pad(m.m + 1)}-01`;
 const monthEnd = (m: Month) => `${m.y}-${pad(m.m + 1)}-${pad(new Date(m.y, m.m + 1, 0).getDate())}`;
 
 /** Desktop "Attendance & Leave" tab (attendance-leave.tpl): monthly attendance + KPIs, leave balances + leave list */
-export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode, v2 }) => {
+export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode, amends, v2 }) => {
   const [view, setView] = useState<View>('attendance');
   const [month, setMonth] = useState<Month | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -84,7 +86,7 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
       </div>
 
       {view === 'attendance' ? (
-        <StaffAttendancePanel member={member} workMode={workMode} v2={v2} />
+        <StaffAttendancePanel member={member} workMode={workMode} amends={amends} v2={v2} />
       ) : v2 ? (
         <div className="mt-3 space-y-3.5">
           {/* Leave balance: total on a gradient band, one progress row per balance */}

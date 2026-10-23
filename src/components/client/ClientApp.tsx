@@ -16,9 +16,10 @@ import { ClientPermissionProvider } from './context/ClientPermissionContext';
 import { CLIENT_CONTACT_ROLES, ClientContactRole, permissionFor } from './data/clientPermissionsData';
 import { findClientModule } from './home/clientMenu';
 import { ClientMyStaffView } from './staff/ClientMyStaffView';
+import type { StaffProfileEdits } from './staff/ClientStaffDetailView';
 import { ClientStaffMember, MY_STAFF_SEED, StaffProfileTab, staffFromHire } from './data/clientStaffData';
 import { ClientAttendanceView } from './attendance/ClientAttendanceView';
-import { AMEND_SEED, AmendRequest, AmendStatus, pendingAmendCount } from './data/clientAttendanceData';
+import { AMEND_SEED, AmendRequest, AmendStatus, SET_OFF_REASON, pendingAmendCount } from './data/clientAttendanceData';
 import { ClientWorkFlexibilityView } from './flexibility/ClientWorkFlexibilityView';
 import { WORK_FLEX_SEED, WorkFlexPreferences, workFlexStaffFrom, workModeFromPrefs } from './data/clientWorkFlexData';
 import { ClientMgmtFeeView } from './fees/ClientMgmtFeeView';
@@ -93,8 +94,14 @@ interface BackTarget {
 /** Mock load time of the dashboard when the app opens */
 const DASHBOARD_LOAD_MS = 700;
 
-/** Important Updates auto-opens until it is closed once (Skip / Mark As Read / ✕); later visits to Client don't reopen it */
-let updatesDismissed = false;
+/** Drawer / link items that open a sheet over the current screen instead of a module screen */
+const OVERLAY_MODULES = ['other-modules', 'news-insights', 'account-manager'];
+
+/**
+ * Important Updates for this sign-in: auto-opens until closed once (Skip / Mark As Read / ✕), so later visits to the Client tab
+ * don't reopen it. Mark As Read lasts across sign-ins; Skip shows them again after the next sign in (desktop).
+ */
+const updatesSession = { dismissed: false, read: false };
 
 /**
  * Client (HRMS) experience — completely separate from the Staff / Manager app:
@@ -135,13 +142,13 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const [posts, setPosts] = useState<ClientFeedPost[]>(CLIENT_FEED_SEED);
   const [seenTabs, setSeenTabs] = useState<ClientFeedTab[]>([CLIENT_FEED_TABS[0]]);
   const [updates, setUpdates] = useState<ClientImportantUpdate[]>(CLIENT_IMPORTANT_UPDATES_SEED);
-  const [updatesRead, setUpdatesRead] = useState(false);
+  const [updatesRead, setUpdatesRead] = useState(updatesSession.read);
   const unreadUpdates = updatesRead ? 0 : updates.length;
 
   // Skip keeps Important Updates for the next visit; Mark As Read clears them
-  const [overlay, setOverlay] = useState<ClientOverlay>(() => (updatesDismissed ? null : 'updates'));
+  const [overlay, setOverlay] = useState<ClientOverlay>(() => (updatesSession.dismissed || updatesSession.read ? null : 'updates'));
   const closeUpdates = () => {
-    updatesDismissed = true;
+    updatesSession.dismissed = true;
     setOverlay(null);
   };
 
@@ -153,6 +160,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const [staff, setStaff] = useState<ClientStaffMember[]>(MY_STAFF_SEED);
   // Opens a staff profile straight away (notification -> My Staff), optionally on a tab
   const [staffFocus, setStaffFocus] = useState<{ staffId: string; tab?: StaffProfileTab } | null>(null);
+  // Staff Details › Reporting To / SOP changes per staff id (kept after Back and module switches)
+  const [staffEdits, setStaffEdits] = useState<Record<string, StaffProfileEdits>>({});
   const offshoreStaff = useMemo(() => offshoreStaffFrom(staff), [staff]);
   const workFlexStaff = useMemo(() => workFlexStaffFrom(staff), [staff]);
 
@@ -248,7 +257,11 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   };
 
   const decideAmends = (ids: string[], status: Exclude<AmendStatus, 'Pending'>, comment: string, setOffDate: string | null) => {
-    const next = amends.map((r) => (ids.includes(r.id) ? { ...r, status, decidedOn: isoOfDate(new Date()), clientComment: comment, setOffDate } : r));
+    const next = amends.map((r) =>
+      ids.includes(r.id)
+        ? { ...r, status, decidedOn: isoOfDate(new Date()), clientComment: comment, setOffDate: r.reason === SET_OFF_REASON ? setOffDate : null }
+        : r,
+    );
     setAmends(next);
     const left = pendingAmendCount(next);
     setNotifications((prev) =>
@@ -300,6 +313,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
     setIsNotificationsOpen(false);
     setInvoiceFocus(null);
     setAmendFocus(false);
+    setTimesheetPreset({ staffIds: [] });
     setTab(next);
     setMoreModuleId(null);
   };
@@ -357,6 +371,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const closeOverlay = () => setOverlay(null);
 
   const markUpdatesRead = () => {
+    updatesSession.read = true;
     setUpdatesRead(true);
     setNotifications((prev) => prev.map((n) => (n.link === 'updates' ? { ...n, read: true } : n)));
   };
@@ -370,6 +385,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
       return;
     }
     const link = n.link;
+    // Sheets (e.g. Account Manager) open over the current screen, so there is nothing to come back to
+    if (OVERLAY_MODULES.includes(link)) return openModule(link);
     openFrom(here({ notifications: true }), () => openModule(link));
     if (n.link === 'invoices' && n.targetId) setInvoiceFocus(n.targetId);
     if (n.link === 'attendance' && n.targetTab === 'amend') setAmendFocus(true);
@@ -407,8 +424,14 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
         version={APP_VERSION}
         onOpenModule={(m) => openModule(m.id)}
         onOpenProfile={() => openModule('user-profile')}
+        onOpenRole={() => {
+          setIsMenuOpen(false);
+          setOverlay('role');
+        }}
         onLogout={() => {
           setIsMenuOpen(false);
+          // Skipped Important Updates show again after the next sign in
+          updatesSession.dismissed = false;
           onLogout();
         }}
       />
@@ -423,7 +446,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             onOpen={openNotification}
             onMarkAllRead={() => {
               setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-              setUpdatesRead(true);
+              markUpdatesRead();
             }}
           />
         ) : !canList(currentModuleId) ? (
@@ -448,6 +471,9 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             staff={staff}
             clientName={userName}
             focus={staffFocus}
+            amends={amends}
+            staffEdits={staffEdits}
+            onStaffEdit={(staffId, patch) => setStaffEdits((prev) => ({ ...prev, [staffId]: { ...prev[staffId], ...patch } }))}
             tniRequests={tniRequests}
             onOpenTrainingNeed={
               canList('training-need')
@@ -552,7 +578,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             country={company.country}
             userName={userName}
             onChange={setBilling}
-            onOpenInvoices={canList('invoices') ? () => openFrom(here(), () => openTab('invoices')) : undefined}
           />
         ) : tab === 'more' && moreModuleId === 'inclusions' ? (
           <ClientInclusionsView onBack={goBack} />
@@ -568,7 +593,10 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
               pushNotification({
                 category: 'Hiring',
                 title: `${c.name} shortlisted`,
-                body: `${c.profile} · Schedule an interview from Shortlisted Candidates.`,
+                body:
+                  c.status === 'Interview Scheduled'
+                    ? `${c.profile} · Interview scheduled. Join or reschedule it from Shortlisted Candidates.`
+                    : `${c.profile} · Schedule an interview from Shortlisted Candidates.`,
                 link: 'interviews',
               });
             }}
