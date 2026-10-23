@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Play, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { CalendarDays, Check, Play, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { ClientPost, ClientReaction, ClientVideo } from '../data/clientDashboardData';
 import { ClientVideoModal, youtubeThumbUrl } from './ClientVideoModal';
 
@@ -86,8 +86,8 @@ export const PostBody: React.FC<{ text: string }> = ({ text }) => (
   </div>
 );
 
-const Reactions: React.FC<{ reaction: ClientReaction; onReact: (r: ClientReaction) => void }> = ({ reaction, onReact }) => (
-  <div className="flex items-center gap-2">
+const Reactions: React.FC<{ reaction: ClientReaction; onReact: (r: ClientReaction) => void; full?: boolean }> = ({ reaction, onReact, full }) => (
+  <div className={`flex items-center gap-2 ${full ? 'w-full' : ''}`}>
     {(['like', 'dislike'] as const).map((r) => {
       const on = reaction === r;
       const Icon = r === 'like' ? ThumbsUp : ThumbsDown;
@@ -98,7 +98,7 @@ const Reactions: React.FC<{ reaction: ClientReaction; onReact: (r: ClientReactio
           aria-pressed={on}
           aria-label={r === 'like' ? 'Like' : 'Dislike'}
           onClick={() => onReact(on ? null : r)}
-          className={`h-8 px-2.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 ${
+          className={`${full ? 'flex-1 h-9 rounded-xl justify-center' : 'h-8 px-2.5 rounded-full'} border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
             on
               ? r === 'like'
                 ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]'
@@ -209,13 +209,61 @@ export const PostVideo: React.FC<{ video: ClientVideo }> = ({ video }) => {
 interface ClientPostCardProps {
   post: ClientPost;
   unread?: boolean;
+  /** Dashboard design version (V2 = date chip, accent stripe, full-width reactions) */
+  variant?: 'V1' | 'V2';
   onUpdate: (patch: Partial<ClientPost>) => void;
 }
 
 /** Dashboard post: title + date, expandable text, YouTube card, poll, like / dislike */
-export const ClientPostCard: React.FC<ClientPostCardProps> = ({ post, unread, onUpdate }) => {
+export const ClientPostCard: React.FC<ClientPostCardProps> = ({ post, unread, variant = 'V1', onUpdate }) => {
   const [expanded, setExpanded] = useState(false);
   const long = isLongPost(post);
+
+  const body = (
+    <>
+      <div className={long && !expanded ? 'relative max-h-[132px] overflow-hidden' : ''}>
+        <PostBody text={post.description} />
+        {long && !expanded && <span className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-white to-transparent" aria-hidden="true" />}
+      </div>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 text-[11.5px] font-semibold text-[#2F68FE] cursor-pointer"
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
+    </>
+  );
+
+  if (variant === 'V2') {
+    return (
+      <article
+        className={`relative overflow-hidden bg-white border rounded-3xl p-4 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.08)] ${unread ? 'border-[#C7D7FE]' : 'border-[#EBF0F7]'}`}
+      >
+        {unread && <span className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden="true" />}
+        <div className="flex items-center justify-between gap-2">
+          <span className="h-6 px-2 rounded-full bg-[#EEF2FF] text-[10.5px] font-semibold text-[#2F68FE] flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" aria-hidden="true" />
+            {formatPostDate(post.publishDate)}
+          </span>
+          {unread && <span className="w-2 h-2 rounded-full bg-[#2F68FE] shrink-0" aria-label="Unread" />}
+        </div>
+        <h3 className={`mt-2.5 text-[14.5px] leading-snug ${unread ? 'font-extrabold text-[#1E293B]' : 'font-bold text-slate-700'}`}>{post.title}</h3>
+
+        <div className="mt-2">{body}</div>
+
+        {post.video && <PostVideo video={post.video} />}
+
+        {post.poll && <Poll poll={post.poll} onVote={(optionId) => onUpdate(votePatch(post, optionId))} />}
+
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <Reactions reaction={post.reaction} onReact={(reaction) => onUpdate({ reaction })} full />
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article className={`bg-white border rounded-2xl p-4 shadow-2xs ${unread ? 'border-blue-100' : 'border-[#EBF0F7]'}`}>
@@ -227,21 +275,7 @@ export const ClientPostCard: React.FC<ClientPostCardProps> = ({ post, unread, on
         </span>
       </div>
 
-      <div className="mt-2 pt-2 border-t border-slate-100">
-        <div className={long && !expanded ? 'relative max-h-[132px] overflow-hidden' : ''}>
-          <PostBody text={post.description} />
-          {long && !expanded && <span className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-white to-transparent" aria-hidden="true" />}
-        </div>
-        {long && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-1 text-[11.5px] font-semibold text-[#2F68FE] cursor-pointer"
-          >
-            {expanded ? 'Show less' : 'Read more'}
-          </button>
-        )}
-      </div>
+      <div className="mt-2 pt-2 border-t border-slate-100">{body}</div>
 
       {post.video && <PostVideo video={post.video} />}
 
