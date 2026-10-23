@@ -443,57 +443,61 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         {/* Desktop table columns */}
         <dl className="mt-3 mx-3.5 grid grid-cols-3 rounded-xl bg-[#F8FAFC] divide-x divide-[#EBF0F7]">
           {[
-            ['Level', s.level],
-            ['Joining Date', formatStaffDate(s.joiningDate)],
-            ['Location', s.location],
-          ].map(([label, value]) => (
-            <div key={label} className="px-2 py-2.5 min-w-0 text-center">
-              <dt className="text-[10px] font-semibold text-slate-400 truncate">{label}</dt>
-              <dd className="mt-0.5 text-[11.5px] font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
+            { icon: Layers, tint: 'bg-[#EEF2FF] text-[#4F46E5]', label: 'Level', value: s.level },
+            { icon: CalendarDays, tint: 'bg-[#E8F8F0] text-[#10B981]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
+            { icon: MapPin, tint: 'bg-[#EFF6FF] text-[#2F68FE]', label: 'Location', value: s.location },
+          ].map(({ icon: Icon, tint, label, value }) => (
+            <div key={label} className="px-2 py-2.5 min-w-0 flex flex-col items-center text-center">
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center ${tint}`} aria-hidden="true">
+                <Icon className="w-3.5 h-3.5" />
+              </span>
+              <dt className="mt-1.5 max-w-full text-[10px] font-semibold text-slate-400 truncate">{label}</dt>
+              <dd className="mt-0.5 max-w-full text-[11.5px] font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
             </div>
           ))}
         </dl>
 
-        <div className="px-3.5 pt-2.5 pb-3.5 flex items-end gap-2">
-          <dl className="flex-1 min-w-0 flex flex-wrap gap-1.5">
-            <div className="max-w-full h-7 px-2.5 rounded-full bg-[#FEF8E7] text-[#B45309] flex items-center gap-1.5 min-w-0">
-              <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <dt className="sr-only">Engagement Type</dt>
-              <dd className="text-[11px] font-semibold truncate">{s.engagementType ?? '--'}</dd>
-            </div>
-            <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] flex items-center gap-1.5 min-w-0">
-              <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <dt className="text-[11px] font-medium truncate">Additional Availability (Per Week):</dt>
-              <dd className="text-[11px] font-bold shrink-0 tabular-nums">{s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'}</dd>
-            </div>
-          </dl>
-          {(canView || onOpenTimesheets) && (
-            <div className="shrink-0 flex items-center gap-1.5">
-              {onOpenTimesheets && (
-                <button
-                  type="button"
-                  onClick={() => onOpenTimesheets(s)}
-                  aria-label={`Timesheets of ${s.name}`}
-                  title="Timesheets"
-                  className="w-9 h-9 rounded-full bg-[#F1F5F9] text-slate-600 flex items-center justify-center active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-                >
-                  <FileText className="w-4 h-4" />
-                </button>
-              )}
-              {canView && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(s.id)}
-                  aria-label={`View details of ${s.name}`}
-                  title="View Details"
-                  className="w-9 h-9 rounded-full bg-[#2F68FE] text-white flex items-center justify-center shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)] active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        <dl className="px-3.5 pt-2.5 flex flex-wrap gap-1.5">
+          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#FEF8E7] text-[#B45309] flex items-center gap-1.5 min-w-0">
+            <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            <dt className="text-[11px] font-medium truncate">Engagement Type:</dt>
+            <dd className="text-[11px] font-bold shrink-0">{s.engagementType ?? '--'}</dd>
+          </div>
+          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] flex items-center gap-1.5 min-w-0">
+            <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            <dt className="text-[11px] font-medium truncate">Additional Availability (Per Week):</dt>
+            <dd className="text-[11px] font-bold shrink-0 tabular-nums">{s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'}</dd>
+          </div>
+        </dl>
+
+        {(canView || onOpenTimesheets) ? (
+          <div className="px-3.5 pt-3 pb-3.5 flex items-center gap-2">
+            {onOpenTimesheets && (
+              <button
+                type="button"
+                onClick={() => onOpenTimesheets(s)}
+                aria-label={`Timesheets of ${s.name}`}
+                className="flex-1 h-10 rounded-full bg-[#F1F5F9] text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+              >
+                <FileText className="w-4 h-4 shrink-0" />
+                Timesheets
+              </button>
+            )}
+            {canView && (
+              <button
+                type="button"
+                onClick={() => setSelectedId(s.id)}
+                aria-label={`View details of ${s.name}`}
+                className="flex-1 h-10 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)] active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+              >
+                <Eye className="w-4 h-4 shrink-0" />
+                View Details
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="pb-3.5" />
+        )}
       </article>
     </li>
   );
