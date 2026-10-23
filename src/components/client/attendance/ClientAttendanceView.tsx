@@ -3,12 +3,14 @@ import {
   ArrowRight,
   Calendar,
   CalendarCheck,
+  CalendarDays,
   Check,
   CheckCheck,
   ChevronDown,
   FilePenLine,
   Clock,
   Home,
+  Info,
   Building2,
   MessageSquareText,
   SearchX,
@@ -20,7 +22,7 @@ import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { RangeCalendar, formatShortDate, toDateKey } from '../../../design-system/components/RangeCalendar';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, Card, DateField, DesignVersion, EmptyCard, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, DateField, DesignVersion, EmptyCard, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { STATUS_LABEL, STATUS_PILL } from '../staff/tabs/StaffAttendancePanel';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
@@ -263,73 +265,6 @@ const AttendanceFilterSheet: React.FC<{
 
 /* --------------------------------- Pieces --------------------------------- */
 
-/** Label / value pair = one desktop table column */
-const Field: React.FC<{
-  label: string;
-  value: React.ReactNode;
-  wide?: boolean;
-  accent?: boolean;
-}> = ({ label, value, wide, accent }) => (
-  <div className={`min-w-0 ${wide ? 'col-span-2' : ''}`}>
-    <dt className="text-[11px] text-slate-400">{label}</dt>
-    <dd className={`mt-0.5 text-[12.5px] font-semibold tabular-nums break-words ${accent ? 'text-[#4F46E5]' : 'text-[#1E293B]'}`}>{value || '--'}</dd>
-  </div>
-);
-
-const CardHead: React.FC<{
-  member?: ClientStaffMember;
-  tint: number;
-  pill: React.ReactNode;
-}> = ({ member, tint, pill }) => (
-  <div className="px-4 pt-4 pb-3 flex items-center gap-3">
-    {member && <StaffAvatar name={member.name} tint={tint} />}
-    <span className="flex-1 min-w-0">
-      <span className="block text-[11px] text-slate-400">Staff Name</span>
-      <span className="block text-[14px] font-bold truncate">{member?.name ?? 'Staff'}</span>
-    </span>
-    {pill}
-  </div>
-);
-
-/** V1: Date / Work Mode soft chips under the card head */
-const MetaChip: React.FC<{ icon: React.ElementType; label: string; value: React.ReactNode }> = ({ icon: Icon, label, value }) => (
-  <div className="min-w-0 flex items-center gap-2 p-2 rounded-xl bg-[#F8FAFC] border border-[#EBF0F7]">
-    <span className="w-7 h-7 rounded-lg bg-white border border-[#E0E9FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-      <Icon className="w-3.5 h-3.5" />
-    </span>
-    <span className="min-w-0">
-      <dt className="text-[10px] text-slate-400 leading-tight">{label}</dt>
-      <dd className="text-[11.5px] font-semibold text-[#1E293B] truncate">{value || '--'}</dd>
-    </span>
-  </div>
-);
-
-/** V1: punch figures as a 4-up tile strip */
-const TimeTiles: React.FC<{ checkIn: string | null; checkOut: string | null; office: string | null; overtime: string | null }> = ({
-  checkIn,
-  checkOut,
-  office,
-  overtime,
-}) => {
-  const hasOt = Boolean(overtime && overtime !== '00:00');
-  const tiles = [
-    { label: 'Check In', value: checkIn, tone: 'text-[#1E293B]' },
-    { label: 'Check Out', value: checkOut, tone: 'text-[#1E293B]' },
-    { label: 'Total Office Time', value: office, tone: 'text-[#2F68FE]' },
-    { label: 'Overtime', value: overtime, tone: hasOt ? 'text-[#4F46E5]' : 'text-[#1E293B]' },
-  ];
-  return (
-    <dl className="grid grid-cols-2 gap-2">
-      {tiles.map((t) => (
-        <div key={t.label} className="min-w-0 px-3 py-2.5 rounded-xl bg-linear-to-br from-[#F5F8FF] to-white border border-[#E0E9FF]">
-          <dt className="text-[10.5px] text-slate-500 leading-tight">{t.label}</dt>
-          <dd className={`mt-1 text-[14px] font-extrabold tabular-nums leading-tight ${t.tone}`}>{t.value || '--'}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-};
-
 const shortDate = (iso: string) =>
   parse(iso)!.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -454,6 +389,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
   const [comment, setComment] = useState('');
   const [setOffDate, setSetOffDate] = useState('');
   const [error, setError] = useState('');
+  const [notesFor, setNotesFor] = useState<AmendRequest | null>(null);
 
   useEffect(() => {
     if (!loading) return;
@@ -548,25 +484,45 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     const note = day.status === 'Holiday' ? holidayName(day.date) : null;
     return (
       <li key={`${member.id}-${day.date}`}>
-        <Card className="overflow-hidden">
-          <CardHead
-            member={member}
-            tint={tintOf(member.id)}
-            pill={<span className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>}
-          />
-          <div className="px-4 pb-4 space-y-3">
-            <dl className="grid grid-cols-2 gap-2">
-              <MetaChip icon={Calendar} label="Date" value={shortDate(day.date)} />
-              <MetaChip icon={day.workMode === 'WFH' ? Home : Building2} label="Work Mode" value={day.workMode ? WORK_MODE_LABEL[day.workMode] : null} />
-            </dl>
-            <TimeTiles checkIn={day.checkIn} checkOut={day.checkOut} office={day.officeTime} overtime={day.overtime} />
-            <dl className="pt-3 border-t border-dashed border-slate-200 grid grid-cols-2 gap-x-3 gap-y-3">
-              <Field label="Level" value={member.level} />
-              <Field label="Status" value={note ? `${STATUS_LABEL[day.status]} (${note})` : STATUS_LABEL[day.status]} />
-              <Field label="Designation" value={member.designation} wide />
-            </dl>
+        <article className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
+          <div className="p-3.5 pb-3 flex items-start gap-3">
+            <StaffAvatar name={member.name} tint={tintOf(member.id)} />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-[#1E293B] truncate">{member.name}</h3>
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+                <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+                {shortDate(day.date)}
+                <span className="text-slate-300">·</span>
+                {day.workMode ? WORK_MODE_LABEL[day.workMode] : '--'}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                {member.designation || '--'} <span className="text-slate-300">·</span> {member.level || '--'}
+              </p>
+            </div>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
           </div>
-        </Card>
+          <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
+            {[
+              { label: 'Check In', value: day.checkIn, tone: 'text-[#1E293B]' },
+              { label: 'Check Out', value: day.checkOut, tone: 'text-[#1E293B]' },
+              { label: 'Total Office Time', value: day.officeTime, tone: 'text-[#2F68FE]' },
+              { label: 'Overtime', value: day.overtime, tone: day.overtime && day.overtime !== '00:00' ? 'text-[#4F46E5]' : 'text-[#1E293B]' },
+            ].map((t) => (
+              <div key={t.label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{t.label}</dt>
+                <dd className={`font-bold tabular-nums ${t.tone}`}>{t.value || '--'}</dd>
+              </div>
+            ))}
+          </dl>
+          {note ? (
+            <p className="p-3.5 pt-3 flex items-center gap-2 text-xs font-medium text-slate-400">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              {note}
+            </p>
+          ) : (
+            <div className="h-3.5" />
+          )}
+        </article>
       </li>
     );
   };
@@ -577,69 +533,83 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     const times = amendTimes(r);
     return (
       <li key={r.id}>
-        <Card className="overflow-hidden">
-          <CardHead
-            member={m}
-            tint={tintOf(r.staffId)}
-            pill={<span className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>}
-          />
-          <div className="px-4 pb-4 space-y-3">
-            <dl className="grid grid-cols-2 gap-2">
-              <MetaChip icon={Calendar} label="Date" value={shortDate(r.date)} />
-              <MetaChip icon={r.workMode === 'WFH' ? Home : Building2} label="Work Mode" value={WORK_MODE_LABEL[r.workMode]} />
-            </dl>
-            <TimeTiles checkIn={r.requestedIn} checkOut={r.requestedOut} office={times.office} overtime={times.overtime} />
-            <dl className="pt-3 border-t border-dashed border-slate-200 grid grid-cols-2 gap-x-3 gap-y-3">
-              <Field label="Designation" value={m?.designation} wide />
-              <Field label="Request Type" value={r.reason} />
-              <Field label="Recorded As" value={r.recordedStatus} />
-            </dl>
-
-            {r.staffNote && (
-              <div className="p-3 rounded-2xl rounded-tl-md bg-[#EFF6FF] border border-[#DBEAFE]">
-                <p className="text-[10.5px] font-semibold text-[#2F68FE]">Reason</p>
-                <p className="mt-0.5 text-[12px] text-slate-700 leading-relaxed">{r.staffNote}</p>
-              </div>
-            )}
-
-            {r.status !== 'Pending' && (
-              <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] space-y-1">
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                  <span className="w-5 h-5 rounded-full bg-white border border-[#E0E9FF] text-[#2F68FE] flex items-center justify-center">
-                    <MessageSquareText className="w-3 h-3" />
-                  </span>
-                  Your comment
-                  {r.decidedOn ? ` · ${formatAmendDate(r.decidedOn)}` : ''}
-                </p>
-                <p className="text-[12px] text-slate-700">{r.clientComment || '-'}</p>
-                {r.setOffDate && <p className="text-[11px] text-slate-500">Hours to be made up on {formatAmendDate(r.setOffDate)}</p>}
-              </div>
-            )}
+        <article
+          className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden ${
+            r.status === 'Pending' ? 'border-[#FDE68A]' : 'border-[#EBF0F7]'
+          }`}
+        >
+          <div className="p-3.5 pb-3 flex items-start gap-3">
+            {m && <StaffAvatar name={m.name} tint={tintOf(r.staffId)} />}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</h3>
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+                <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+                {shortDate(r.date)}
+                <span className="text-slate-300">·</span>
+                {WORK_MODE_LABEL[r.workMode]}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 truncate">{m?.designation || '--'}</p>
+            </div>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>
           </div>
 
-          {r.status === 'Pending' && canDecide && (
-            <div className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-2.5">
+          <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
+            {[
+              { label: 'Check In', value: r.requestedIn, tone: 'text-[#1E293B]' },
+              { label: 'Check Out', value: r.requestedOut, tone: 'text-[#1E293B]' },
+              { label: 'Total Office Time', value: times.office, tone: 'text-[#2F68FE]' },
+              { label: 'Overtime', value: times.overtime, tone: times.overtime && times.overtime !== '00:00' ? 'text-[#4F46E5]' : 'text-[#1E293B]' },
+            ].map((t) => (
+              <div key={t.label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{t.label}</dt>
+                <dd className={`font-bold tabular-nums ${t.tone}`}>{t.value || '--'}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <dl className="px-3.5 pt-3 space-y-1.5 text-[11px]">
+            <div className="flex items-center gap-2 min-w-0">
+              <dt className="text-slate-500 font-medium shrink-0">Request Type</dt>
+              <dd className="ml-auto px-2 py-0.5 rounded-md bg-blue-50 text-[#2F68FE] font-semibold truncate">{r.reason || '--'}</dd>
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <dt className="text-slate-500 font-medium shrink-0">Recorded As</dt>
+              <dd className="ml-auto px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold truncate">{r.recordedStatus || '--'}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-3 px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setNotesFor(r)}
+              disabled={!r.staffNote && r.status === 'Pending'}
+              className={`h-9 px-3 -ml-1 rounded-xl text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-300 flex items-center gap-1.5 active:bg-blue-50 cursor-pointer disabled:cursor-default ${FOCUS}`}
+            >
+              <MessageSquareText className="w-4 h-4" />
+              {r.status === 'Pending' ? 'Reason' : 'Reason & Comment'}
+            </button>
+            {r.status === 'Pending' && canDecide && (
+              <div className="ml-auto flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => open([r.id], 'Rejected')}
-                  className={`h-11 rounded-full border border-rose-200 bg-white text-rose-500 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-rose-50 cursor-pointer ${FOCUS}`}
+                  className={`h-9 px-3.5 rounded-xl border border-rose-200 text-rose-600 text-[11px] font-bold flex items-center gap-1 active:bg-rose-50 cursor-pointer ${FOCUS}`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                   Reject
                 </button>
                 <button
                   type="button"
                   onClick={() => open([r.id], 'Approved')}
-                  className={`h-11 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+                  className={`h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1 active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   Approve
                 </button>
               </div>
-            </div>
-          )}
-        </Card>
+            )}
+          </div>
+        </article>
       </li>
     );
   };
@@ -670,7 +640,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             <PunchStrip checkIn={day.checkIn} checkOut={day.checkOut} office={day.officeTime} overtime={day.overtime} />
             <dl className="divide-y divide-dashed divide-slate-200">
               <RowV2 label="Designation">{member.designation}</RowV2>
-              <RowV2 label="Status">{note ? `${STATUS_LABEL[day.status]} (${note})` : STATUS_LABEL[day.status]}</RowV2>
+              {note && <RowV2 label="Holiday">{note}</RowV2>}
             </dl>
           </div>
         </article>
@@ -1117,6 +1087,46 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 className={`h-12 rounded-xl text-white text-xs font-bold cursor-pointer ${decision.status === 'Approved' ? 'bg-[#2F68FE] active:bg-[#1D4ED8]' : 'bg-rose-500 active:bg-rose-600'}`}
               >
                 {decision.status === 'Approved' ? 'Approve' : 'Reject'}
+              </button>
+            </div>
+          </>
+        )}
+      </BottomSheet>
+
+      <BottomSheet isOpen={Boolean(notesFor)} onClose={() => setNotesFor(null)} maxHeight="max-h-[80%]">
+        {notesFor && (
+          <>
+            <SheetHeader
+              title={notesFor.status === 'Pending' ? 'Reason' : 'Reason & Comment'}
+              subtitle={`${memberOf(notesFor.staffId)?.name ?? 'Staff'} · ${shortDate(notesFor.date)}`}
+              onClose={() => setNotesFor(null)}
+            />
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3">
+              <div className="p-3 rounded-2xl rounded-tl-md bg-[#EFF6FF] border border-[#DBEAFE]">
+                <p className="text-[10.5px] font-semibold text-[#2F68FE]">Reason</p>
+                <p className="mt-0.5 text-[12px] text-slate-700 leading-relaxed">{notesFor.staffNote || '-'}</p>
+              </div>
+              {notesFor.status !== 'Pending' && (
+                <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] space-y-1">
+                  <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                    <span className="w-5 h-5 rounded-full bg-white border border-[#E0E9FF] text-[#2F68FE] flex items-center justify-center">
+                      <MessageSquareText className="w-3 h-3" />
+                    </span>
+                    Your comment
+                    {notesFor.decidedOn ? ` · ${formatAmendDate(notesFor.decidedOn)}` : ''}
+                  </p>
+                  <p className="text-[12px] text-slate-700">{notesFor.clientComment || '-'}</p>
+                  {notesFor.setOffDate && <p className="text-[11px] text-slate-500">Hours to be made up on {formatAmendDate(notesFor.setOffDate)}</p>}
+                </div>
+              )}
+            </div>
+            <div className="p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => setNotesFor(null)}
+                className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </>
