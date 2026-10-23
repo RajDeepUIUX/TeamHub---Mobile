@@ -22,8 +22,10 @@ import {
   Upload,
   ChevronDown,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { QualificationSheet, parseQualificationData } from './QualificationSheet';
+import { citiesOf, statesOf } from '../../data/locations';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
@@ -373,6 +375,24 @@ const FieldInput: React.FC<{
   const value = values[f.key];
   const border = error ? 'border-rose-300' : 'border-slate-200';
 
+  // State / City: locked until the level above is chosen; a dropdown when we have the list, else free text
+  if (f.location === 'state' || f.location === 'city') {
+    const country = (values.country as string) || null;
+    const state = (values.state as string) || '';
+    const parentMissing = f.location === 'state' ? !country : !state.trim();
+    if (parentMissing) {
+      return (
+        <div className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center text-xs font-medium text-slate-400 truncate">
+          {f.location === 'state' ? 'Select country first' : 'Select state first'}
+        </div>
+      );
+    }
+    const list = f.location === 'state' ? statesOf(country) : citiesOf(country, state);
+    if (list) {
+      return <Dropdown ariaLabel={f.label} value={(value as string) || null} placeholder="Select" options={list} onChange={onChange} />;
+    }
+  }
+
   if (isReadOnly(f)) {
     const text =
       f.type === 'auto'
@@ -591,6 +611,17 @@ const FieldGrid: React.FC<{
     return nameField ? String(values[nameField.key] ?? '') : '';
   };
   const gap = editing ? 'gap-x-3 gap-y-3.5' : 'gap-x-4 gap-y-3.5';
+  // Country → State → City: a new Country clears State and City, a new State clears City
+  const changeWithCascade = (f: ProfileField, v: ProfileValue) => {
+    const changed = values[f.key] !== v;
+    onChange(f.key, v);
+    if (!changed) return;
+    const below = f.location === 'country' ? ['state', 'city'] : f.location === 'state' ? ['city'] : [];
+    below.forEach((loc) => {
+      const dep = fields.find((x) => x.location === loc);
+      if (dep && values[dep.key]) onChange(dep.key, '');
+    });
+  };
   const render = (f: ProfileField) => {
     if (f.question) {
       const key = errorKey(f.key);
@@ -717,7 +748,7 @@ const FieldGrid: React.FC<{
             )}
           </label>
         )}
-        <FieldInput field={f} values={values} error={error} onChange={(v) => onChange(f.key, v)} />
+        <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
         {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
       </div>
     );
@@ -1107,7 +1138,8 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const [draft, setDraft] = useState<MyProfileData>(profile);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [lockedTabHint, setLockedTabHint] = useState(false);
+  // Bumped on each blocked tab tap (0 = hidden), so the warning replays every time
+  const [lockedTabHint, setLockedTabHint] = useState(0);
   const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel'>(null);
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
@@ -1139,7 +1171,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
 
   useEffect(() => {
     if (!lockedTabHint) return;
-    const t = setTimeout(() => setLockedTabHint(false), 2200);
+    const t = setTimeout(() => setLockedTabHint(0), 2600);
     return () => clearTimeout(t);
   }, [lockedTabHint]);
 
@@ -1304,7 +1336,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   aria-selected={on}
                   onClick={() => {
                     if (on) return;
-                    if (editing) return setLockedTabHint(true);
+                    if (editing) return setLockedTabHint((n) => n + 1);
                     setTab(t.id);
                   }}
                   className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
@@ -1322,10 +1354,18 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               );
             })}
           </div>
-          {lockedTabHint && (
-            <p className="mx-4 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
-              Save or cancel your changes before switching tabs.
-            </p>
+          {/* Re-keyed on each blocked tap so the shake replays */}
+          {lockedTabHint > 0 && (
+            <div
+              key={lockedTabHint}
+              role="alert"
+              className="attention-shake mx-4 my-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-amber-100 border border-amber-300 shadow-[0_4px_12px_rgba(217,119,6,0.18)]"
+            >
+              <span className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4" />
+              </span>
+              <p className="text-[11.5px] font-semibold text-amber-900 leading-snug">Save or cancel your changes before switching tabs.</p>
+            </div>
           )}
         </nav>
 

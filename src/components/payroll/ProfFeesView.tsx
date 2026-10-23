@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
+import { LocationFields } from '../common/LocationFields';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
@@ -70,7 +71,6 @@ const RELATIONSHIPS = [
   'Cousin',
 ];
 const QUALIFICATIONS = ['Graduate', 'Post Graduate'];
-const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates', 'Singapore'];
 const BANKS = [
   'State Bank of India',
   'HDFC Bank',
@@ -439,28 +439,16 @@ const AccountCard: React.FC<{
             <Field label="Land Mark" htmlFor={id('landmark')}>
               {text('landmark')}
             </Field>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Field label="City" htmlFor={id('city')}>
-                {text('city')}
-              </Field>
-              <Field label="State" htmlFor={id('state')}>
-                {text('state')}
-              </Field>
-              <Field label="Country">
-                <Dropdown
-                  size="md"
-                  ariaLabel="Country"
-                  sheetTitle="Country"
-                  value={a.country || null}
-                  placeholder="Select"
-                  options={COUNTRIES}
-                  onChange={(v) => onChange({ country: v })}
-                />
-              </Field>
-              <Field label="Zip" htmlFor={id('zip')}>
-                {text('zip', { inputMode: 'numeric', maxLength: 6, transform: digits })}
-              </Field>
-            </div>
+            {/* Country | State, City | Zip: shared cascade (State needs Country, City needs State) */}
+            <LocationFields
+              value={{ country: a.country || null, state: a.state, city: a.city }}
+              onChange={(p) => onChange({ ...p, country: p.country ?? a.country })}
+              extra={
+                <Field label="Zip" htmlFor={id('zip')}>
+                  {text('zip', { inputMode: 'numeric', maxLength: 6, transform: digits })}
+                </Field>
+              }
+            />
           </div>
         )}
       </div>

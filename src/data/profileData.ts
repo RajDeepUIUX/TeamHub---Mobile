@@ -1,5 +1,8 @@
 /** My Profile: schema-driven tabs, mirroring the web profile. Tabs without a schema yet show a placeholder. */
 
+// Full shared country list (the Country › State › City cascade data lives in ./locations)
+import { COUNTRY_OPTIONS } from './locations';
+
 export type ProfileFieldType =
   | 'text'
   | 'email'
@@ -60,6 +63,8 @@ export interface ProfileField {
   emptyText?: string;
   /** Question fields: extra single-choice asked when the answer is "Yes" */
   followUp?: { key: string; label: string; options: { value: string; hint: string }[] };
+  /** Country → State → City cascade (values under the keys "country" / "state" / "city"): State waits for Country, City for State */
+  location?: 'country' | 'state' | 'city';
 }
 
 /** A repeatable list inside a section (Family Members, Qualifications, Experience) */
@@ -153,7 +158,7 @@ const experienceMonths = (v: ProfileValues) =>
 /* ---------------------------------- Options --------------------------------- */
 
 const YES_NO = ['Yes', 'No'];
-export const FAMILY_RELATIONS = ['Sister', 'Brother', 'Friend', 'Father in Law', 'Mother in Law', 'Brother in Law', 'Sister in Law'];
+export const FAMILY_RELATIONS = ['Sister', 'Brother', 'Friend', 'Father in Law', 'Mother in Law', 'Sister in Law', 'Brother in Law', 'Cousin'];
 
 // Education master list (web app), sorted A–Z for the searchable sheet
 const EDUCATION_OPTIONS = [
@@ -224,7 +229,6 @@ const SUBJECT_OPTIONS = [
   'Visual Communication',
   'Other',
 ];
-const COUNTRY_OPTIONS = ['India', 'United States', 'Canada', 'United Kingdom', 'Other'];
 const COMPANY_TYPE_OPTIONS = ['CPA Firm', 'Accounting / KPO', 'IT / Software', 'Other'];
 const DESIGNATION_OPTIONS = ['Designer', 'Senior Designer', 'Lead Designer', 'Developer', 'Accountant', 'Senior Accountant', 'Others'];
 
@@ -403,9 +407,9 @@ export const PROFILE_TABS: ProfileTab[] = [
             { key: 'subject', label: 'Subject / Specialization', type: 'select', required: true, full: true, options: SUBJECT_OPTIONS },
             { key: 'school', label: 'School / College Name', type: 'text', full: true },
             { key: 'board', label: 'University Board', type: 'text' },
-            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS },
-            { key: 'state', label: 'State', type: 'text' },
-            { key: 'city', label: 'City', type: 'text' },
+            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, location: 'country' },
+            { key: 'state', label: 'State', type: 'text', location: 'state' },
+            { key: 'city', label: 'City', type: 'text', location: 'city' },
             { key: 'year', label: 'Year of Completion', type: 'year' },
             { key: 'certificate', label: 'Education Certificate', type: 'file', full: true },
           ],
@@ -447,7 +451,7 @@ export const PROFILE_TABS: ProfileTab[] = [
           },
           fields: [
             { key: 'companyType', label: 'Type of Company', type: 'select', required: true, options: COMPANY_TYPE_OPTIONS },
-            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS },
+            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, location: 'country' },
             { key: 'otherCompanyType', label: 'Other Company Type', type: 'text', full: true, showIf: (v) => v.companyType === 'Other' },
             { key: 'company', label: 'Name of the Company', type: 'text', required: true, full: true },
             { key: 'designation', label: 'Designation', type: 'select', required: true, options: DESIGNATION_OPTIONS },

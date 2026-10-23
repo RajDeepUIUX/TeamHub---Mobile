@@ -19,7 +19,7 @@ import {
   emptyExpenseItem,
   formatRupees,
 } from '../../data/reimbursementData';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { FileUploadField } from '../common/FileUploadField';
 import { TeamOutingSheet, SubmitAttentionSheet, formatOutingDate } from './TeamOutingSheets';
 import { CommentThreadSheet } from '../common/CommentThreadSheet';
 
@@ -115,7 +115,6 @@ const ExpenseItemCard: React.FC<{
   onChange: (patch: Partial<ExpenseItem>) => void;
   onRemove: () => void;
 }> = ({ index, item, withDate, asksOutingDetails = false, errors, canRemove, onChange, onRemove }) => {
-  const fileRef = useRef<AttachmentInputHandle>(null);
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isOutingOpen, setIsOutingOpen] = useState(false);
   const label = (text: string, required = false) => (
@@ -283,77 +282,12 @@ const ExpenseItemCard: React.FC<{
 
       <div>
         {label('Receipt', withDate)}
-        {item.receiptName ? (
-          (() => {
-            const isPdf = /\.pdf$/i.test(item.receiptName);
-            return (
-              <div className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
-                <span
-                  className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 ${
-                    isPdf ? 'bg-rose-50 text-rose-500' : 'bg-sky-50 text-sky-600'
-                  }`}
-                >
-                  {isPdf ? <FileText className="w-4.5 h-4.5" /> : <ImageIcon className="w-4.5 h-4.5" />}
-                  <span className="text-[8px] font-extrabold uppercase leading-none mt-0.5">
-                    {item.receiptName.split('.').pop()?.slice(0, 4)}
-                  </span>
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-xs font-semibold text-[#1E293B] truncate">{item.receiptName}</span>
-                  <span className="mt-0.5 flex items-center gap-1 text-[10.5px] font-semibold text-emerald-600">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Uploaded
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="h-8 px-2.5 rounded-lg text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
-                >
-                  Replace
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onChange({ receiptName: null })}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 active:text-rose-500 cursor-pointer"
-                  aria-label="Remove receipt"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            );
-          })()
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className={`w-full p-3 rounded-xl border-2 border-dashed flex items-center gap-3 text-left transition-colors active:scale-[0.99] cursor-pointer ${
-              errors.receiptName ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-gradient-to-br from-blue-50/70 to-white active:bg-blue-50'
-            }`}
-          >
-            <span
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
-                errors.receiptName ? 'bg-white text-rose-500' : 'bg-white text-[#2F68FE] border border-blue-100'
-              }`}
-            >
-              <Upload className="w-4.5 h-4.5" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className={`block text-xs font-bold ${errors.receiptName ? 'text-rose-600' : 'text-[#2F68FE]'}`}>Upload receipt</span>
-              <span className="block mt-0.5 text-[10.5px] text-slate-400">PDF, JPG or PNG</span>
-            </span>
-            <span className="h-7 px-2.5 rounded-lg bg-[#2F68FE] text-white text-[10.5px] font-bold flex items-center shrink-0">Browse</span>
-          </button>
-        )}
-        <AttachmentInput
-          title="Upload Receipt"
-          ref={fileRef}
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onChange({ receiptName: file.name });
-            e.target.value = '';
-          }}
+        <FileUploadField
+          fileName={item.receiptName}
+          onChange={(receiptName) => onChange({ receiptName })}
+          label="Upload receipt"
+          sheetTitle="Upload Receipt"
+          invalid={Boolean(errors.receiptName)}
         />
         {err(errors.receiptName)}
       </div>

@@ -22,7 +22,6 @@ import { Dropdown } from '../../design-system/components/Dropdown';
 import { AddressType, DeliveryAddress } from '../../types/workTiming';
 import {
   COUNTRIES,
-  INDIAN_STATES,
   MAX_ASSET_QTY,
   SAVED_ADDRESSES,
   WFH_ASSETS,
@@ -33,6 +32,7 @@ import {
 import { Declarant } from '../../data/staffDeclaration';
 import { StaffDeclarationSheet } from './StaffDeclarationSheet';
 import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { LocationFields } from '../common/LocationFields';
 
 /** Form state for the Work From Home sections */
 export interface WfhFormState {
@@ -350,41 +350,27 @@ export const WfhRequestFields: React.FC<WfhRequestFieldsProps> = ({
 
           <TextField label="Address" value={f.address.address} error={errors.address} onChange={(v) => setAddress({ address: v }, 'address')} />
           <TextField label="Land Mark" value={f.address.landmark} error={errors.landmark} onChange={(v) => setAddress({ landmark: v }, 'landmark')} />
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-600">
-                Country <span className="text-rose-500">*</span>
-              </label>
-              <Dropdown size="md" ariaLabel="Country" value={f.address.country} options={COUNTRIES} onChange={(v) => setAddress({ country: v }, 'country')} />
-              <FieldError message={errors.country} />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-[11px] font-semibold text-slate-600">
-                State <span className="text-rose-500">*</span>
-              </label>
-              <Dropdown
-                size="md"
-                ariaLabel="State"
-                value={f.address.state}
-                placeholder="Select"
-                options={INDIAN_STATES}
-                menuMinWidth={180}
-                onChange={(v) => setAddress({ state: v }, 'state')}
+          {/* Country | State, City | Zip: shared cascade (State needs Country, City needs State) */}
+          <LocationFields
+            required
+            countries={COUNTRIES}
+            value={{ country: f.address.country || null, state: f.address.state, city: f.address.city }}
+            errors={{ country: errors.country, state: errors.state, city: errors.city }}
+            onChange={(p) => {
+              onChange({ ...f, address: { ...f.address, ...p, country: p.country ?? f.address.country } });
+              (Object.keys(p) as string[]).forEach(clearError);
+            }}
+            extra={
+              <TextField
+                label="Zip"
+                value={f.address.zip}
+                inputMode="numeric"
+                maxLength={6}
+                error={errors.zip}
+                onChange={(v) => setAddress({ zip: v.replace(/\D/g, '') }, 'zip')}
               />
-              <FieldError message={errors.state} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <TextField label="City" value={f.address.city} error={errors.city} onChange={(v) => setAddress({ city: v }, 'city')} />
-            <TextField
-              label="Zip"
-              value={f.address.zip}
-              inputMode="numeric"
-              maxLength={6}
-              error={errors.zip}
-              onChange={(v) => setAddress({ zip: v.replace(/\D/g, '') }, 'zip')}
-            />
-          </div>
+            }
+          />
         </FormSection>
       )}
 

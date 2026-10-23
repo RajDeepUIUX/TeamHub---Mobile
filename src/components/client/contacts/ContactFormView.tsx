@@ -3,8 +3,8 @@ import { ArrowLeft, Check, Loader2, Mail } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { ConfirmSheet, DateField, fieldInputClass } from '../staff/tabs/StaffTabParts';
-import { ErrorText, Label, LockedField } from '../profile/ProfileParts';
-import { CLIENT_COUNTRIES, statesOf, timeZoneLabel } from '../data/clientUserProfileData';
+import { DisabledSelect, ErrorText, Label, LockedField } from '../profile/ProfileParts';
+import { CLIENT_COUNTRIES, citiesOf, statesOf, timeZoneLabel } from '../data/clientUserProfileData';
 import {
   CONTACT_DESIGNATIONS,
   CONTACT_LIMITS,
@@ -293,7 +293,7 @@ export const ContactFormView: React.FC<Props> = ({ contact, others, company, onB
               options={CLIENT_COUNTRIES}
               onChange={(c) => {
                 if (c === draft.country) return;
-                setDraft((d) => ({ ...d, country: c, state: '' }));
+                setDraft((d) => ({ ...d, country: c, state: '', city: '' }));
               }}
             />
           </div>
@@ -305,11 +305,28 @@ export const ContactFormView: React.FC<Props> = ({ contact, others, company, onB
               value={draft.state || null}
               placeholder={draft.country ? 'Select state' : 'Select country first'}
               options={statesOf(draft.country)}
-              onChange={(s) => set('state', s)}
+              onChange={(s) => s !== draft.state && setDraft((d) => ({ ...d, state: s, city: '' }))}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {text('city', 'City', { autoComplete: 'address-level2' })}
+            {/* City follows State (and State follows Country) */}
+            <div className="space-y-1.5 min-w-0">
+              <Label text="City" />
+              {!draft.state ? (
+                <DisabledSelect text="Pick state" />
+              ) : citiesOf(draft.country, draft.state).length ? (
+                <Dropdown
+                  ariaLabel="City"
+                  sheetTitle="City"
+                  value={draft.city || null}
+                  placeholder="Select city"
+                  options={citiesOf(draft.country, draft.state)}
+                  onChange={(c) => set('city', c)}
+                />
+              ) : (
+                <input type="text" autoComplete="address-level2" value={draft.city} onChange={(e) => set('city', e.target.value)} className={fieldInputClass()} />
+              )}
+            </div>
             <label className="block space-y-1.5">
               <Label text="Zip Code" />
               <input
