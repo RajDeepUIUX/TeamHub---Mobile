@@ -38,7 +38,7 @@ const AssessmentFilterSheet: React.FC<{
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-5">
         <div className="space-y-2">
           <span className="text-xs font-bold text-[#1E293B]">Assessment Name</span>
-          <ChoiceTiles multiple={false} options={[ALL, ...names]} selected={[draft.name]} onChange={(v) => setDraft((d) => ({ ...d, name: v[0] ?? ALL }))} />
+          <ChoiceTiles multiple={false} stacked options={[ALL, ...names]} selected={[draft.name]} onChange={(v) => setDraft((d) => ({ ...d, name: v[0] ?? ALL }))} />
         </div>
         <DateField label="Assigned On" value={draft.assignedOn} onChange={(iso) => setDraft((d) => ({ ...d, assignedOn: iso }))} />
         <DateField label="Completed On" value={draft.completedOn} onChange={(iso) => setDraft((d) => ({ ...d, completedOn: iso }))} />

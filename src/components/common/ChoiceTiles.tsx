@@ -7,14 +7,16 @@ interface ChoiceTilesProps {
   onChange: (next: string[]) => void;
   /** Single choice behaves like radio tiles (tap again keeps it); multi toggles each tile */
   multiple?: boolean;
+  /** One tile per row with wrapping labels, for long option names */
+  stacked?: boolean;
 }
 
 /**
  * Side-by-side tiles for filters with only a couple of options (used instead of chips or a dropdown).
  * Multi-select tiles show a checkbox; single-select tiles show a radio.
  */
-export const ChoiceTiles: React.FC<ChoiceTilesProps> = ({ options, selected, onChange, multiple = true }) => (
-  <div className={`grid gap-2 ${options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`} role={multiple ? 'group' : 'radiogroup'}>
+export const ChoiceTiles: React.FC<ChoiceTilesProps> = ({ options, selected, onChange, multiple = true, stacked = false }) => (
+  <div className={`grid gap-2 ${stacked ? 'grid-cols-1' : options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`} role={multiple ? 'group' : 'radiogroup'}>
     {options.map((option) => {
       const on = selected.includes(option);
       return (
@@ -26,7 +28,7 @@ export const ChoiceTiles: React.FC<ChoiceTilesProps> = ({ options, selected, onC
           onClick={() =>
             onChange(multiple ? (on ? selected.filter((v) => v !== option) : [...selected, option]) : [option])
           }
-          className={`h-11 px-3 rounded-xl border flex items-center gap-2.5 text-left text-xs transition-colors cursor-pointer ${
+          className={`${stacked ? 'min-h-11 py-2.5' : 'h-11'} px-3 rounded-xl border flex items-center gap-2.5 text-left text-xs transition-colors cursor-pointer ${
             on ? 'border-[#2F68FE] bg-blue-50/70 font-semibold text-[#1E293B]' : 'border-slate-200 bg-white font-medium text-slate-600 active:bg-slate-50'
           }`}
         >
@@ -43,7 +45,7 @@ export const ChoiceTiles: React.FC<ChoiceTilesProps> = ({ options, selected, onC
               {on && <span className="w-2 h-2 rounded-full bg-[#2F68FE]" />}
             </span>
           )}
-          <span className="truncate">{option}</span>
+          <span className={stacked ? 'min-w-0 break-words leading-snug' : 'truncate'}>{option}</span>
         </button>
       );
     })}
