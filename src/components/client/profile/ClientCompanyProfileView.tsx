@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, Download, FileText, Image as ImageIcon, Pencil } from 'lucide-react';
+import { Check, Download, FileText, Image as ImageIcon, Pencil } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
-import { avatarTint, initialsOf } from '../../home/celebrationUtils';
-import { ConfirmSheet, DesignVersion, Pill, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
+import { ConfirmSheet, DesignVersion, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { CompanyLogoSheet } from './CompanyLogoSheet';
 import {
@@ -20,7 +19,6 @@ import {
   COMPANY_LIMITS,
   ClientAgreement,
   ClientCompanyProfile,
-  ClientFirmContact,
   EMPLOYEE_SIZES,
   INDUSTRY_OPTIONS,
   SERVICE_OPTIONS,
@@ -31,7 +29,6 @@ import {
 } from '../data/clientCompanyProfileData';
 
 const LOAD_MS = 600;
-const CONTACTS_PREVIEW = 3;
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 type FieldKey =
@@ -137,22 +134,18 @@ const Values: React.FC<{ v2: boolean; rows: ValueRow[] }> = ({ v2, rows }) =>
 
 /**
  * Company Profile (desktop Account → Company Profile). Desktop now opens MyCPE ONE's common company profile,
- * so B's sections, fields and validation are used; A adds Legal Agreements and the Contact Person list.
+ * so B's sections, fields and validation are used; A adds Legal Agreements.
  * Edits sync the firm to MyCPE ONE (Part F #15).
  */
 export const ClientCompanyProfileView: React.FC<{
   profile: ClientCompanyProfile;
   logoUrl: string | null;
   agreements: ClientAgreement[];
-  contacts: ClientFirmContact[];
   onSave: (profile: ClientCompanyProfile) => void;
   onLogoChange: (url: string | null) => void;
-  /** Client Contacts module; omitted when the role can't open it */
-  onOpenContacts?: () => void;
-  onContactManager: () => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
-}> = ({ profile, logoUrl, agreements, contacts, onSave, onLogoChange, onOpenContacts, onContactManager, onBack }) => {
+}> = ({ profile, logoUrl, agreements, onSave, onLogoChange, onBack }) => {
   const perm = useClientPermission('company-profile');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -657,53 +650,6 @@ export const ClientCompanyProfileView: React.FC<{
                     </ul>
                   </Section>
                 )}
-
-                <Section
-                  v2={v2}
-                  title="Contact Persons"
-                  action={
-                    onOpenContacts && (
-                      <button
-                        type="button"
-                        onClick={onOpenContacts}
-                        className="h-8 -my-1 -mr-1.5 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] cursor-pointer"
-                      >
-                        Manage
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    )
-                  }
-                >
-                  <ul className={v2 ? 'rounded-xl bg-[#F8FAFC] border border-slate-100 divide-y divide-slate-100' : '-mx-1 -my-1 divide-y divide-dashed divide-[#E4E2FB]'}>
-                    {contacts.slice(0, CONTACTS_PREVIEW).map((c, i) => (
-                      <li key={c.id} className={`min-h-14 py-2 flex items-center gap-3 ${v2 ? 'px-3' : 'px-1'}`}>
-                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${avatarTint(i)}`} aria-hidden>
-                          {initialsOf(c.name)}
-                        </span>
-                        <span className="flex-1 min-w-0">
-                          <span className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-[13px] font-semibold text-[#1E293B] truncate">{c.name}</span>
-                            {c.isPrimary && <Pill tone="green">Primary</Pill>}
-                          </span>
-                          <span className="block text-[11px] text-slate-400 break-all">{c.email}</span>
-                        </span>
-                        <Pill tone={c.isAdmin ? 'indigo' : 'slate'}>{c.role || 'Manager'}</Pill>
-                      </li>
-                    ))}
-                  </ul>
-                  {contacts.length > CONTACTS_PREVIEW && (
-                    <p className="mt-2.5 text-[11px] text-slate-400">
-                      +{contacts.length - CONTACTS_PREVIEW} more {contacts.length - CONTACTS_PREVIEW === 1 ? 'contact' : 'contacts'}
-                    </p>
-                  )}
-                </Section>
-
-                <p className="px-1 text-[11px] text-slate-400 leading-relaxed">
-                  Need to change the company email?{' '}
-                  <button type="button" onClick={onContactManager} className="font-bold text-[#2F68FE] cursor-pointer">
-                    Contact your Account Manager
-                  </button>
-                </p>
               </>
             )}
           </div>

@@ -143,12 +143,13 @@ const initialRole = (): UserRole => {
   return USER_ROLES.find((role) => role.toLowerCase() === r) ?? 'Staff';
 };
 
-/** A real phone (touch screen, phone/tablet width): show the app full screen instead of the studio mockup */
+/** A real phone (touch screen, phone/tablet width — or a phone turned landscape): show the app full screen instead of the studio mockup */
+const PHONE_QUERY = '(pointer: coarse) and (max-width: 820px), (pointer: coarse) and (max-height: 500px)';
 const detectPhone = () => {
   const frame = urlParams.get('frame');
   if (frame === '1') return false;
   if (frame === '0') return true;
-  return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse) and (max-width: 820px)').matches;
+  return typeof window !== 'undefined' && window.matchMedia(PHONE_QUERY).matches;
 };
 
 export default function App() {
@@ -157,7 +158,7 @@ export default function App() {
   const [isPhone, setIsPhone] = useState(detectPhone);
 
   useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse) and (max-width: 820px)');
+    const mq = window.matchMedia(PHONE_QUERY);
     const update = () => setIsPhone(detectPhone());
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
