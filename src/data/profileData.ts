@@ -79,6 +79,8 @@ export interface ProfileField {
   fills?: { when: ProfileValue; values: Record<string, ProfileValue> };
   /** Dropdowns: offer "— Select —" at the top so the choice can be undone */
   clearable?: boolean;
+  /** Text field that accepts digits only (e.g. PTIN Number) */
+  digitsOnly?: boolean;
 }
 
 /** A repeatable list inside a section (Family Members, Qualifications, Experience) */
@@ -244,7 +246,7 @@ const SUBJECT_OPTIONS = [
   'Other',
 ];
 /** PTIN Status choices */
-const PTIN_STATUS_OPTIONS = ['Active', 'Applied', 'Expired', 'Not Applicable'];
+const PTIN_STATUS_OPTIONS = ['Applied', 'Active', 'Inactive', 'Not Required'];
 const COMPANY_TYPE_OPTIONS = ['CPA Firm', 'Accounting / KPO', 'IT / Software', 'Other'];
 /** Type of Work Done (MYCPE ONE web list) */
 const WORK_TYPE_OPTIONS = [
@@ -506,6 +508,7 @@ export const PROFILE_TABS: ProfileTab[] = [
             label: 'PTIN Number',
             editLabel: 'Enter your PTIN Number',
             type: 'text',
+            digitsOnly: true,
             hint: 'Preparer Tax Identification Number (IRS)',
           },
         ],
@@ -884,10 +887,10 @@ export const MY_PROFILE_SEED: MyProfileData = {
     prefLateAvailability: 'Yes',
     prefLateApplies: 'Peak / Busy Seasons Only',
     prefEarlyFridays: 'Yes',
-    otHours: '',
-    otClientType: '',
-    otAvailabilityType: '',
-    otEaSupport: '',
+    otHours: '6',
+    otClientType: 'New',
+    otAvailabilityType: 'Temporary (15th Jan–15th Apr)',
+    otEaSupport: 'No',
 
     // Profile Introduction Video (none yet)
     introVideoType: '',
@@ -895,7 +898,7 @@ export const MY_PROFILE_SEED: MyProfileData = {
     introVideoUrl: '',
     introVideoAddedOn: '',
 
-    ptinStatus: 'Not Applicable',
+    ptinStatus: 'Not Required',
     ptinNumber: '',
     pursuingEA: 'No',
     pursuingCPA: 'No',

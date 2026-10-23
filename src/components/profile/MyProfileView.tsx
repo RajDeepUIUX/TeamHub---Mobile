@@ -23,6 +23,7 @@ import {
   ChevronDown,
   X,
   AlertTriangle,
+  Lock,
 } from 'lucide-react';
 import { QualificationSheet, parseQualificationData } from './QualificationSheet';
 import { citiesOf, statesOf } from '../../data/locations';
@@ -57,6 +58,8 @@ interface MyProfileViewProps {
   title?: string;
   /** Open straight into edit mode (e.g. from "Edit Profile") */
   startEditing?: boolean;
+  /** Tells the parent whether there are unsaved edits (it then asks before leaving for another module) */
+  onDirtyChange?: (dirty: boolean) => void;
   onBack: () => void;
   onSave: (profile: MyProfileData) => void;
   /** Short toast for actions outside the form (e.g. "coming soon") */
@@ -544,7 +547,7 @@ const FieldInput: React.FC<{
         />
       );
     default: {
-      const numeric = f.type === 'tel' || f.type === 'number' || f.type === 'year';
+      const numeric = f.type === 'tel' || f.type === 'number' || f.type === 'year' || Boolean(f.digitsOnly);
       return (
         <input
           type={f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text'}
@@ -1179,15 +1182,13 @@ const SkillsSection: React.FC<{
 
 /* ---------------------------------- Screen ---------------------------------- */
 
-export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, title = 'My Profile', startEditing, onBack, onSave, onNotify }) => {
+export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, title = 'My Profile', startEditing, onBack, onSave, onNotify, onDirtyChange }) => {
   const [tab, setTab] = useState<ProfileTabId>('personal');
   const [editing, setEditing] = useState(Boolean(startEditing));
   const [draft, setDraft] = useState<MyProfileData>(profile);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  // Bumped on each blocked tab tap (0 = hidden), so the warning replays every time
-  const [lockedTabHint, setLockedTabHint] = useState(0);
-  const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel'>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel' | { tab: ProfileTabId }>(null);
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1211,16 +1212,17 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const canEdit = current.sections.some((s) => s.video || s.list || s.skills || s.fields?.some((f) => !isReadOnly(f)));
   const shown = editing ? draft : profile;
   const dirty = editing && JSON.stringify(draft) !== JSON.stringify(profile);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty]);
+  // Leaving the screen clears it
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => onDirtyChange?.(false), []);
 
   useEffect(() => {
     tabRefs.current[tab]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [tab]);
-
-  useEffect(() => {
-    if (!lockedTabHint) return;
-    const t = setTimeout(() => setLockedTabHint(0), 2600);
-    return () => clearTimeout(t);
-  }, [lockedTabHint]);
 
   useEffect(() => {
     if (!scrollToItem) return;
@@ -1256,8 +1258,37 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   };
 
   const save = () => {
+    // Edits can span tabs, so check every tab; remember which tab holds the first problem
     const found: Record<string, string> = {};
-    current.sections.forEach((s) => {
+    let firstTab: ProfileTabId | null = null;
+    PROFILE_TABS.forEach((t) => {
+      const before = Object.keys(found).length;
+      checkSections(t.sections, found);
+      if (!firstTab && Object.keys(found).length > before) firstTab = t.id;
+    });
+    setErrors(found);
+    const first = Object.keys(found)[0];
+    if (first) {
+      if (firstTab && firstTab !== tab) setTab(firstTab);
+      // wait for the tab to render before scrolling to the field
+      setTimeout(() => scrollRef.current?.querySelector(`[data-field="${first}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      if (firstTab && firstTab !== tab) onNotify?.(`Fix the highlighted fields in ${PROFILE_TABS.find((t) => t.id === firstTab)!.label}.`);
+      return;
+    }
+    setSaving(true);
+    setTimeout(() => {
+      const lists = Object.fromEntries(
+        Object.entries(draft.lists).map(([k, items]) => [k, items.map(({ [NEW_FLAG]: _new, ...rest }) => rest as ProfileListItem)])
+      );
+      onSave({ ...draft, lists });
+      setSaving(false);
+      setEditing(false);
+    }, 500);
+  };
+
+  /** Adds an error message per invalid field in these sections to `found` */
+  const checkSections = (sections: typeof current.sections, found: Record<string, string>) => {
+    sections.forEach((s) => {
       if (s.fields) {
         visibleFields(s.fields, draft.values).forEach((f) => {
           const msg = validate(f, draft.values);
@@ -1277,21 +1308,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         );
       }
     });
-    setErrors(found);
-    const first = Object.keys(found)[0];
-    if (first) {
-      scrollRef.current?.querySelector(`[data-field="${first}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setSaving(true);
-    setTimeout(() => {
-      const lists = Object.fromEntries(
-        Object.entries(draft.lists).map(([k, items]) => [k, items.map(({ [NEW_FLAG]: _new, ...rest }) => rest as ProfileListItem)])
-      );
-      onSave({ ...draft, lists });
-      setSaving(false);
-      setEditing(false);
-    }, 500);
   };
 
   const hasReadOnly = current.sections.some((s) => s.fields?.some((f) => f.locked));
@@ -1375,11 +1391,12 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   aria-selected={on}
                   onClick={() => {
                     if (on) return;
-                    if (editing) return setLockedTabHint((n) => n + 1);
+                    // Unsaved changes: confirm before moving to another tab (Discard drops them)
+                    if (dirty) return setConfirmDiscard({ tab: t.id });
                     setTab(t.id);
                   }}
                   className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on ? 'text-[#2F68FE]' : `text-slate-500 active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
+                    on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -1393,19 +1410,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               );
             })}
           </div>
-          {/* Re-keyed on each blocked tap so the shake replays */}
-          {lockedTabHint > 0 && (
-            <div
-              key={lockedTabHint}
-              role="alert"
-              className="attention-shake mx-4 my-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-amber-100 border border-amber-300 shadow-[0_4px_12px_rgba(217,119,6,0.18)]"
-            >
-              <span className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4" />
-              </span>
-              <p className="text-[11.5px] font-semibold text-amber-900 leading-snug">Save or cancel your changes before switching tabs.</p>
-            </div>
-          )}
         </nav>
 
         <div className="px-4 pb-6 space-y-3">
@@ -1455,10 +1459,20 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   <section key={section.title} className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
                     <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
                       <h3 className="text-[13px] font-bold text-[#1E293B] leading-snug">{section.title}</h3>
-                      {section.badge && (
+                      {section.badge ? (
                         <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[9.5px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">
                           {section.badge}
                         </span>
+                      ) : (
+                        // Editing, but nothing here can be changed (all fields are managed by HR / computed)
+                        editing &&
+                        (section.fields ?? []).length > 0 &&
+                        visibleFields(section.fields ?? [], shown.values).every(isReadOnly) && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-[9.5px] font-bold uppercase tracking-wide text-slate-500 shrink-0">
+                            <Lock className="w-3 h-3" />
+                            View Only
+                          </span>
+                        )
                       )}
                     </div>
                     {section.description && (
@@ -1486,7 +1500,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
       </div>
 
       {/* Footer: Edit (view mode) or Cancel / Save (edit mode) */}
-      {hasContent && canEdit && (
+      {(editing || (hasContent && canEdit)) && (
         <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           {editing ? (
             <div className="grid grid-cols-[1fr_2fr] gap-2.5">
@@ -1527,7 +1541,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         </div>
         <div className="px-5 pt-2 pb-4">
           <h2 className="text-base font-bold text-[#1E293B]">Discard your changes?</h2>
-          <p className="mt-1 text-xs text-slate-500">Your edits to {current.label} haven't been saved.</p>
+          <p className="mt-1 text-xs text-slate-500">Your profile edits haven't been saved.</p>
         </div>
         <div className="grid grid-cols-2 gap-3 px-4 pb-6">
           <button
@@ -1544,6 +1558,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               setConfirmDiscard(null);
               stopEdit();
               if (then === 'back') onBack();
+              if (then && typeof then === 'object') setTab(then.tab);
             }}
             className="h-12 rounded-xl bg-rose-600 text-white text-xs font-bold active:bg-rose-700 cursor-pointer"
           >
