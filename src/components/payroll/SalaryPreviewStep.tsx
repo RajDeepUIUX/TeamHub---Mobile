@@ -15,22 +15,55 @@ export const SalaryPreviewStep: React.FC<{
   const s = salaryStructure(ctc, choices);
   const tax = estimateTax(ctc, statutory, choices);
   const deductions = PROFESSIONAL_TAX_ANNUAL + tax;
-  const inHand = s.totalSalary - deductions;
+
+  const isOld = choices.regime === 'Old';
+  // Old regime splits extra exempt allowances out of Other Allowance (Hostel and LTA at 8% of Basic, Children Education
+  // ₹3,000/month), each funded from what's left so the rows always add up to Total Salary
+  let pool = s.other;
+  const take = (want: number) => {
+    const got = isOld ? Math.min(pool, want) : 0;
+    pool -= got;
+    return got;
+  };
+  const hostel = take(Math.round(s.basic * 0.08));
+  const cea = take(36000);
+  const lta = take(Math.round(s.basic * 0.08));
+  const other = pool;
+  // The employee's own PF contribution is deducted from pay (both regimes)
+  const pfEmployee = s.pf;
+  const allDeductions = deductions + pfEmployee;
+  const takeHome = s.totalSalary - allDeductions;
+
+  // Salary rows differ by regime; benefits and deductions are laid out the same way
+  const salaryRows: { label: string; yearly: number; tone?: RowTone }[] = isOld
+    ? [
+        { label: 'Basic', yearly: s.basic },
+        { label: 'HRA (Availed and Claimed)', yearly: s.hra },
+        { label: 'Conveyance', yearly: s.conveyance },
+        { label: 'Hostel Allowance', yearly: hostel },
+        { label: 'Children Education Allowance', yearly: cea },
+        { label: 'LTA (Availed and Claimed)', yearly: lta },
+        { label: 'Other Allowance', yearly: other },
+      ]
+    : [
+        { label: 'Basic Salary', yearly: s.basic },
+        { label: 'HRA', yearly: s.hra },
+        { label: 'Conveyance', yearly: s.conveyance },
+        { label: 'Other Allowance', yearly: s.other },
+      ];
 
   const rows: { label: string; yearly: number; tone?: RowTone }[] = [
-    { label: 'Basic Salary', yearly: s.basic },
-    { label: 'HRA', yearly: s.hra },
-    { label: 'Conveyance', yearly: s.conveyance },
-    { label: 'Other Allowance', yearly: s.other },
+    ...salaryRows,
     { label: 'Total Salary (a)', yearly: s.totalSalary, tone: 'subtotal' },
+    ...(s.pf ? [{ label: 'Provident Fund - Employer', yearly: s.pf }] : []),
+    ...(s.nps ? [{ label: 'NPS - Employer Contribution', yearly: s.nps }] : []),
     { label: 'Gratuity', yearly: s.gratuity },
-    ...(s.pf ? [{ label: 'Provident Fund', yearly: s.pf }] : []),
-    ...(s.nps ? [{ label: 'NPS', yearly: s.nps }] : []),
-    { label: 'Total Benefit (b)', yearly: s.totalBenefit, tone: 'subtotal' as const },
-    { label: 'Total CTC (a+b)', yearly: s.totalSalary + s.totalBenefit, tone: 'ctc' as const },
+    { label: 'Total Benefit (b)', yearly: s.totalBenefit, tone: 'subtotal' },
+    { label: 'Total CTC (a+b)', yearly: s.totalSalary + s.totalBenefit, tone: 'ctc' },
     { label: 'Professional Tax', yearly: PROFESSIONAL_TAX_ANNUAL },
+    ...(pfEmployee ? [{ label: 'Provident Fund - Employee', yearly: pfEmployee }] : []),
     { label: 'Income Tax - Salary (Tentative)', yearly: tax },
-    { label: 'Deductions (c)', yearly: deductions, tone: 'subtotal' as const },
+    { label: 'Deductions (c)', yearly: allDeductions, tone: 'subtotal' },
   ];
 
   return (
@@ -106,11 +139,11 @@ export const SalaryPreviewStep: React.FC<{
           <div className="mt-1.5 grid grid-cols-2 gap-3">
             <div>
               <p className="text-[10px] text-slate-400">Monthly</p>
-              <p className="text-base font-extrabold tabular-nums">{inr(perMonth(inHand))}</p>
+              <p className="text-base font-extrabold tabular-nums">{inr(perMonth(takeHome))}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-slate-400">Yearly</p>
-              <p className="text-base font-extrabold tabular-nums">{inr(inHand)}</p>
+              <p className="text-base font-extrabold tabular-nums">{inr(takeHome)}</p>
             </div>
           </div>
         </div>

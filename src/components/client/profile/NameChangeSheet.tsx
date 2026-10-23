@@ -11,6 +11,7 @@ import {
   NAME_MAX,
   NAME_REASON_MAX,
 } from '../data/clientUserProfileData';
+import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
 
 type Errors = Partial<Record<'firstName' | 'lastName' | 'reason' | 'files', string>>;
 
@@ -35,7 +36,7 @@ export const NameChangeSheet: React.FC<{
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<AttachmentInputHandle>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -138,7 +139,7 @@ export const NameChangeSheet: React.FC<{
           <span className="block text-xs font-bold text-[#1E293B]">
             Official ID Proof<span className="text-rose-500"> *</span>
           </span>
-          <input ref={fileInput} type="file" accept=".pdf,.jpg,.jpeg,.png" multiple className="hidden" onChange={addFiles} />
+          <AttachmentInput ref={fileInput} title="Official ID Proof" accept=".pdf,.jpg,.jpeg,.png" multiple onChange={addFiles} />
           {files.length < ID_PROOF_MAX_FILES && (
             <button
               type="button"

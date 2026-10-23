@@ -3,6 +3,8 @@ import { ArrowUpRight, Check, FileText, Loader2, UserCircle2, Users, X } from 'l
 import { BottomSheet } from '../common/BottomSheet';
 
 export type LetterStatus = 'none' | 'generating' | 'ready';
+/** E-signature progress: not sent, sent to the employee, employee signed, authorized signatory completed */
+export type ESignStatus = 'none' | 'sent' | 'signed' | 'completed';
 
 const AFTER_SIGNING = [
   'Employee receives the appraisal letter for e-signature.',
@@ -24,6 +26,8 @@ export const SignatureStep: React.FC<{
   onViewLetters: () => void;
   onCloseLetters: () => void;
   onSendForESign: () => void;
+  /** Employee e-signature progress */
+  eSign: ESignStatus;
 }> = ({
   staffName,
   letter,
@@ -35,7 +39,11 @@ export const SignatureStep: React.FC<{
   onViewLetters,
   onCloseLetters,
   onSendForESign,
-}) => (
+  eSign,
+}) => {
+  // Employee has signed (the authorized signatory may have completed too)
+  const signed = eSign === 'signed' || eSign === 'completed';
+  return (
   <>
     <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
       <h3 className="px-4 py-3.5 border-b border-slate-100 text-sm font-bold text-[#1E293B]">What happens after signing?</h3>
@@ -71,13 +79,41 @@ export const SignatureStep: React.FC<{
             <span className="w-9 h-9 rounded-lg bg-blue-50 text-[#2F68FE] flex items-center justify-center shrink-0">
               <UserCircle2 className="w-5 h-5" />
             </span>
-            <div className="min-w-0">
+            <div className="flex-1 min-w-0">
               <p className="text-[10.5px] text-slate-500">Employee Signature</p>
               <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] truncate">{staffName}</p>
             </div>
+            {/* Signed: status on the right, centred with the name (like the web) */}
+            {signed && (
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 shrink-0 animate-in fade-in duration-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                Letter Signed
+              </span>
+            )}
           </div>
-          <div className={`mt-3 grid gap-2 ${letter === 'ready' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {letter === 'ready' ? (
+          {/* Sent: status under the name with only Re-Generate left (a new version resets it) */}
+          {eSign === 'sent' && (
+            <p className="mt-2.5 flex items-center gap-2 text-[11px] font-semibold">
+              <span className="flex items-center gap-1.5 text-orange-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" aria-hidden="true" />
+                Letter Sent
+              </span>
+              <span className="w-px h-3 bg-slate-200" aria-hidden="true" />
+              <span className="text-slate-500">E-Sign Pending</span>
+            </p>
+          )}
+          {/* Signed: nothing left to do on the employee side */}
+          {!signed && (
+          <div className={`mt-3 grid gap-2 ${letter === 'ready' && eSign === 'none' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {eSign === 'sent' ? (
+              <button
+                type="button"
+                onClick={onGenerate}
+                className="h-10 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+              >
+                Re-Generate Letter
+              </button>
+            ) : letter === 'ready' ? (
               <>
                 <button
                   type="button"
@@ -106,6 +142,7 @@ export const SignatureStep: React.FC<{
               </button>
             )}
           </div>
+          )}
         </li>
 
         {/* Authorized signatory */}
@@ -114,10 +151,23 @@ export const SignatureStep: React.FC<{
             <Users className="w-5 h-5" />
           </span>
           <p className="flex-1 min-w-0 text-[11.5px] text-slate-600">Authorized Signatory</p>
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" aria-hidden="true" />
-            Not Sent
-          </span>
+          {/* Pending once the employee has signed, then completed */}
+          {eSign === 'completed' ? (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 shrink-0 animate-in fade-in duration-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              E-Sign Completed
+            </span>
+          ) : eSign === 'signed' ? (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-600 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500" aria-hidden="true" />
+              E-Sign Pending
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" aria-hidden="true" />
+              Not Sent
+            </span>
+          )}
         </li>
       </ol>
     </section>
@@ -180,4 +230,5 @@ export const SignatureStep: React.FC<{
       </div>
     </BottomSheet>
   </>
-);
+  );
+};

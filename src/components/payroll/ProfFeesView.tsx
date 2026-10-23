@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, Wand2, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
@@ -649,6 +649,8 @@ export const ProfFeesView: React.FC<{
     if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250);
   };
   const [accounts, setAccounts] = useState<ProfFeeAccount[]>(initialAccounts);
+  const feesTotal = totalProfFees(accounts);
+  const liveMain = Math.max(0, mainPackage - feesTotal);
   const [errors, setErrors] = useState<Record<string, AccountErrors>>({});
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -719,47 +721,63 @@ export const ProfFeesView: React.FC<{
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
         {/* Staff summary */}
+        {/* Gross stays fixed; professional fees come out of the main (salary) package, live as amounts are typed */}
         <dl className="grid grid-cols-2 gap-2.5 p-3 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs text-xs">
-          {[
-            { label: 'Staff Name', value: staffName },
-            { label: 'Date Of Joining', value: joiningDate },
-            { label: 'Gross Actual Package', value: inr(grossPackage) },
-            { label: 'Main Staff Package', value: inr(mainPackage) },
-          ].map((x) => (
-            <div key={x.label} className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
-              <dt className="text-[10.5px] text-slate-500">{x.label}</dt>
-              <dd className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums">{x.value}</dd>
-            </div>
-          ))}
+          <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+            <dt className="text-[10.5px] text-slate-500">Gross Actual Package</dt>
+            <dd className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums">{inr(grossPackage)}</dd>
+          </div>
+          <div
+            className={`px-3 py-2 rounded-xl border min-w-0 transition-colors ${
+              feesTotal > 0 ? 'bg-[#EEF4FF] border-[#DBE6FE]' : 'bg-slate-50 border-slate-100'
+            }`}
+          >
+            <dt className="text-[10.5px] text-slate-500">Main Staff Package</dt>
+            <dd key={liveMain} className="mt-0.5 font-bold text-[#1E293B] truncate tabular-nums animate-in fade-in duration-300">
+              {inr(liveMain)}
+            </dd>
+          </div>
+          {feesTotal > 0 && (
+            <p className="col-span-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-rose-50/60 border border-rose-100 text-[11px] animate-in fade-in duration-200">
+              <span className="text-slate-600">Professional fees deducted</span>
+              <span className="font-bold text-rose-600 tabular-nums">− {inr(feesTotal)}</span>
+            </p>
+          )}
         </dl>
 
         {/* Manage family members */}
         <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5 space-y-3">
           <div>
             <h3 className="text-[13px] font-bold text-[#1E293B]">Manage Family Members</h3>
-            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
-              Select family members to add professional fee accounts or{' '}
-              <button
-                type="button"
-                onClick={() => setIsAddOpen(true)}
-                className="font-semibold text-[#2F68FE] underline underline-offset-2 cursor-pointer"
-              >
-                click here
-              </button>{' '}
-              to add new family member.
-            </p>
+            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">Select family members to add professional fee accounts.</p>
           </div>
           <button
             type="button"
             onClick={() => setIsPickerOpen(true)}
             className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 text-xs shadow-2xs cursor-pointer active:bg-slate-50"
           >
+            <Users className={`w-4 h-4 shrink-0 ${selectedIds.length ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
             <span className={`flex-1 text-left ${selectedIds.length ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-500'}`}>
               {selectedIds.length
                 ? `${selectedIds.length} member${selectedIds.length > 1 ? 's' : ''} selected`
                 : 'Select members'}
             </span>
             <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+          </button>
+
+          {/* Someone not in the list yet */}
+          <div className="flex items-center gap-2 text-[10.5px] font-semibold text-slate-400">
+            <span className="flex-1 h-px bg-slate-100" />
+            Not in the list?
+            <span className="flex-1 h-px bg-slate-100" />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddOpen(true)}
+            className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 flex items-center justify-center gap-2 text-xs font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Family Member
           </button>
         </section>
 

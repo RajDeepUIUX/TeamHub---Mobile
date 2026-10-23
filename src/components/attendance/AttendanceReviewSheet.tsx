@@ -36,11 +36,6 @@ export const AttendanceReviewSheet: React.FC<AttendanceReviewSheetProps> = ({ re
   const isApprove = active.decision === 'approved';
 
   const confirm = () => {
-    // A rejection must explain why; the note on approval is optional
-    if (!isApprove && !comment.trim()) {
-      setError('Please give a reason for rejecting this request.');
-      return;
-    }
     setSaving(true);
     setTimeout(() => onConfirm(r.id, active.decision, comment.trim()), 500);
   };
@@ -105,7 +100,7 @@ export const AttendanceReviewSheet: React.FC<AttendanceReviewSheetProps> = ({ re
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">
             {isApprove ? 'Note' : 'Reason for rejection'}{' '}
-            {isApprove ? <span className="font-medium text-slate-400">(Optional)</span> : <span className="text-rose-500">*</span>}
+            <span className="font-medium text-slate-400">(Optional)</span>
           </label>
           <div className="relative">
             <textarea

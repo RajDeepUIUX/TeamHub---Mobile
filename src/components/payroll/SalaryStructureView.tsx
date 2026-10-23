@@ -12,10 +12,10 @@ import {
   X,
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
-import { SalaryComponentsStep, ComponentChoices, DEFAULT_CHOICES } from './SalaryComponentsStep';
+import { SalaryComponentsStep, ComponentChoices, DEFAULT_CHOICES, salaryStructure } from './SalaryComponentsStep';
 import { FamilyMember, ProfFeeAccount, ProfFeesView, totalProfFees } from './ProfFeesView';
 import { SalaryPreviewStep } from './SalaryPreviewStep';
-import { LetterStatus, SignatureStep } from './SignatureStep';
+import { ESignStatus, LetterStatus, SignatureStep } from './SignatureStep';
 
 /* ---------------------------------- Data ---------------------------------- */
 
@@ -211,27 +211,60 @@ const Stepper: React.FC<{ current: number }> = ({ current }) => (
 
 /* ------------------------------- Wizard screen ------------------------------- */
 
+/** What was declared, kept once both signatures are done so it can be viewed later */
+export interface DeclarationRecord {
+  choices: ComponentChoices;
+  profAccounts: ProfFeeAccount[];
+  familyMembers: FamilyMember[];
+  letterVersions: number;
+}
+
 const DeclarationWizard: React.FC<{
   declaration: SalaryDeclaration;
   onBack: () => void;
   onComingSoon: (step: string) => void;
-}> = ({ declaration: d, onBack, onComingSoon }) => {
+  /** View Details: same steps, nothing can be changed */
+  readOnly?: boolean;
+  /** Saved declaration to show (view mode) */
+  initial?: DeclarationRecord;
+  /** Fired once both signatures are complete */
+  onCompleted?: (record: DeclarationRecord) => void;
+}> = ({ declaration: d, onBack, onComingSoon, readOnly = false, initial, onCompleted }) => {
   const [step, setStep] = useState(0);
-  const [choices, setChoices] = useState<ComponentChoices>(DEFAULT_CHOICES);
+  const [choices, setChoices] = useState<ComponentChoices>(initial?.choices ?? DEFAULT_CHOICES);
   const scrollRef = useRef<HTMLDivElement>(null);
   const goTo = (s: number) => {
     setStep(s);
     scrollRef.current?.scrollTo({ top: 0 });
   };
-  const [profAccounts, setProfAccounts] = useState<ProfFeeAccount[]>([]);
+  // Once every signature is done there's nothing to go back and change, so Back returns to the listing
+  const goBack = () => (step === 0 || (!readOnly && eSign === 'completed') ? onBack() : goTo(step - 1));
+  const [profAccounts, setProfAccounts] = useState<ProfFeeAccount[]>(initial?.profAccounts ?? []);
   const [isProfFeesOpen, setIsProfFeesOpen] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(d.familyMembers);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(initial?.familyMembers ?? d.familyMembers);
   const isLastStep = step === STEPS.length - 1;
-  const [letter, setLetter] = useState<LetterStatus>('none');
+  const [letter, setLetter] = useState<LetterStatus>(initial ? 'ready' : 'none');
   const [isLetterConfirmOpen, setIsLetterConfirmOpen] = useState(false);
-  const [letterVersions, setLetterVersions] = useState(0);
+  const [letterVersions, setLetterVersions] = useState(initial?.letterVersions ?? 0);
+  const [eSign, setESign] = useState<ESignStatus>(initial ? 'completed' : 'none');
+  // Both signatures done: hand the declaration back so the listing gets a "View Details" entry
+  useEffect(() => {
+    if (!readOnly && eSign === 'completed') onCompleted?.({ choices, profAccounts, familyMembers, letterVersions });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eSign]);
+  // Demo: the employee signs 5 seconds after the letter is sent, then the authorized signatory 3 seconds later
+  // (regenerating the letter before then cancels it)
+  useEffect(() => {
+    const next =
+      eSign === 'sent' ? { status: 'signed' as const, ms: 5000 } : eSign === 'signed' ? { status: 'completed' as const, ms: 3000 } : null;
+    if (!next) return;
+    const t = setTimeout(() => setESign(next.status), next.ms);
+    return () => clearTimeout(t);
+  }, [eSign]);
   const [isLettersOpen, setIsLettersOpen] = useState(false);
   const generateLetter = () => {
+    // A new version replaces the one that was sent, so it has to be sent again
+    setESign('none');
     setLetter('generating');
     setTimeout(() => {
       setLetter('ready');
@@ -246,7 +279,8 @@ const DeclarationWizard: React.FC<{
         staffName={d.staffName}
         joiningDate={d.joiningDate}
         grossPackage={d.revisedCtc}
-        mainPackage={d.revisedCtc}
+        // Main package before professional fees (Flexi / Meal already taken out if opted in); the screen deducts fees live
+        mainPackage={salaryStructure(d.revisedCtc, { ...choices, profFeesAllocation: 0 }).main}
         members={familyMembers}
         initialAccounts={profAccounts}
         onCancel={() => setIsProfFeesOpen(false)}
@@ -266,7 +300,7 @@ const DeclarationWizard: React.FC<{
         <div className="flex items-center h-14 px-4 relative">
           <button
             type="button"
-            onClick={() => (step > 0 ? goTo(step - 1) : onBack())}
+            onClick={goBack}
             className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
             aria-label="Back"
           >
@@ -294,11 +328,15 @@ const DeclarationWizard: React.FC<{
             onCloseConfirm={() => setIsLetterConfirmOpen(false)}
             onViewLetters={() => setIsLettersOpen(true)}
             onCloseLetters={() => setIsLettersOpen(false)}
-            onSendForESign={() => onComingSoon('Sending for e-sign')}
+            eSign={eSign}
+            onSendForESign={() => setESign('sent')}
           />
         )}
 
-        {step === 1 && <SalaryComponentsStep
+        {step === 1 && (
+          // View Details: everything shown as declared, nothing can be changed
+          <fieldset disabled={readOnly} className="min-w-0 space-y-3.5">
+          <SalaryComponentsStep
             ctc={d.revisedCtc}
             pool={d.otherAllowanceBase}
             statutory={d.statutoryDeduction}
@@ -308,7 +346,9 @@ const DeclarationWizard: React.FC<{
             choices={choices}
             onChange={setChoices}
             onManageProfFees={() => setIsProfFeesOpen(true)}
-          />}
+          />
+          </fieldset>
+        )}
 
         {step === 0 && (
         <>
@@ -377,7 +417,7 @@ const DeclarationWizard: React.FC<{
         <button
           type="button"
           disabled={step === 0}
-          onClick={() => goTo(step - 1)}
+          onClick={goBack}
           className="h-12 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold disabled:opacity-40 active:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
         >
           Back
@@ -388,7 +428,7 @@ const DeclarationWizard: React.FC<{
             onClick={() => goTo(step + 1)}
             className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] cursor-pointer"
           >
-            {step === 0 ? 'Next' : 'Save & Next'}
+            {step === 0 || readOnly ? 'Next' : 'Save & Next'}
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
@@ -402,16 +442,48 @@ const DeclarationWizard: React.FC<{
 
 export const SalaryStructureView: React.FC<{
   declarations: SalaryDeclaration[];
+  /** Declarations finished (both signatures done): listed again with View Details */
+  submissions: { declarationId: string; record: DeclarationRecord }[];
+  onSubmitted: (declarationId: string, record: DeclarationRecord) => void;
   onBack: () => void;
   onToast: (msg: string) => void;
-}> = ({ declarations, onBack, onToast }) => {
-  const [panFor, setPanFor] = useState<SalaryDeclaration | null>(null);
-  const [open, setOpen] = useState<SalaryDeclaration | null>(null);
+}> = ({ declarations, submissions, onBack, onToast, onSubmitted }) => {
+  // Each declaration, followed by its finished submission(s) (opened read-only)
+  type Entry = { key: string; declaration: SalaryDeclaration; record?: DeclarationRecord };
+  const entries: Entry[] = declarations.flatMap((d) => [
+    { key: d.id, declaration: d },
+    ...submissions.filter((s) => s.declarationId === d.id).map((s, i) => ({ key: `${d.id}-done-${i}`, declaration: d, record: s.record })),
+  ]);
+  // PAN check before anything salary-related: revealing the CTC amounts, or continuing to the declaration
+  const [panFor, setPanFor] = useState<{ entry: Entry; then: 'reveal' | 'open' } | null>(null);
+  const [open, setOpen] = useState<Entry | null>(null);
+  // Once the PAN is verified, revealing the CTC amounts doesn't ask again (Continue always does)
+  const [verified, setVerified] = useState(false);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+
+  const setShown = (id: string, show: boolean) =>
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      if (show) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const toggleAmounts = (e: Entry) => {
+    if (revealed.has(e.key)) setShown(e.key, false);
+    else if (verified) setShown(e.key, true);
+    else setPanFor({ entry: e, then: 'reveal' });
+  };
+  // Continue / View Details always ask for the PAN, even if the amounts were already revealed
+  const continueWith = (e: Entry) => setPanFor({ entry: e, then: 'open' });
 
   if (open) {
     return (
       <DeclarationWizard
-        declaration={open}
+        key={open.key}
+        declaration={open.declaration}
+        readOnly={Boolean(open.record)}
+        initial={open.record}
+        onCompleted={(record) => onSubmitted(open.declaration.id, record)}
         onBack={() => setOpen(null)}
         onComingSoon={(s) => onToast(`${s} is coming soon.`)}
       />
@@ -435,54 +507,101 @@ export const SalaryStructureView: React.FC<{
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-8 space-y-3.5">
-        {declarations.map((d) => (
-          <article
-            key={d.id}
-            onClick={() => setPanFor(d)}
-            className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] transition-transform cursor-pointer"
-          >
-            <div className="p-3.5 pb-3">
-              <p className="text-[10.5px] text-slate-500">Staff Name</p>
-              <h3 className="mt-0.5 text-sm font-bold text-[#1E293B]">
-                {d.staffName}
-              </h3>
-            </div>
+        {entries.map((e) => {
+          const d = e.declaration;
+          const shown = revealed.has(e.key);
+          return (
+            <article
+              key={e.key}
+              className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden"
+            >
+              <dl className="mx-3.5 mt-3.5 grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { label: 'Effective Month & Year', value: d.effectiveMonth, wide: true },
+                  { label: 'Reporting Manager', value: d.reportingManager },
+                  { label: 'CTM', value: d.ctm },
+                ].map((x) => (
+                  <div key={x.label} className={`px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0 ${x.wide ? 'col-span-2' : ''}`}>
+                    <dt className="text-[10.5px] text-slate-500">{x.label}</dt>
+                    <dd className="mt-0.5 font-bold text-[#1E293B] truncate">{x.value}</dd>
+                  </div>
+                ))}
 
-            <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
-              {[
-                { label: 'Effective Month & Year', value: d.effectiveMonth, wide: true },
-                { label: 'Reporting Manager', value: d.reportingManager },
-                { label: 'CTM', value: d.ctm },
-              ].map((x) => (
-                <div key={x.label} className={`px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 min-w-0 ${x.wide ? 'col-span-2' : ''}`}>
-                  <dt className="text-[10.5px] text-slate-500">{x.label}</dt>
-                  <dd className="mt-0.5 font-bold text-[#1E293B] truncate">{x.value}</dd>
-                </div>
-              ))}
-            </dl>
+                {/* CTC: hidden until the PAN is entered; tap again to hide */}
+                {[
+                  { label: 'Current CTC', value: d.currentCtc, lead: false },
+                  { label: 'Revised CTC', value: d.revisedCtc, lead: true },
+                ].map((x) => (
+                  <button
+                    key={x.label}
+                    type="button"
+                    onClick={() => toggleAmounts(e)}
+                    aria-label={shown ? `Hide ${x.label}` : `Show ${x.label}`}
+                    className={`px-3 py-2 rounded-xl border min-w-0 text-left transition-colors cursor-pointer ${
+                      x.lead ? 'bg-[#F5F8FF] border-[#DBE6FE] active:bg-[#EEF4FF]' : 'bg-slate-50 border-slate-100 active:bg-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-1.5">
+                      <span className="text-[10.5px] text-slate-500 truncate">{x.label}</span>
+                      {shown ? (
+                        <EyeOff className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" />
+                      )}
+                    </span>
+                    {shown ? (
+                      <span
+                        className={`block mt-0.5 font-bold tabular-nums truncate animate-in fade-in duration-300 ${
+                          x.lead ? 'text-[#2F68FE]' : 'text-[#1E293B]'
+                        }`}
+                      >
+                        {inr(x.value)}
+                      </span>
+                    ) : (
+                      <span className="mt-0.5 flex items-center gap-1 font-bold text-slate-400">
+                        <span className="tracking-[0.2em]">₹••••••</span>
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </dl>
 
-            <div className="p-3.5 pt-3">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPanFor(d);
-                }}
-                className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] cursor-pointer"
-              >
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </article>
-        ))}
+              <div className="p-3.5 pt-3">
+                <button
+                  type="button"
+                  onClick={() => continueWith(e)}
+                  className={`w-full h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
+                    e.record
+                      ? 'border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50'
+                      : 'bg-[#2F68FE] text-white active:bg-[#1D4ED8]'
+                  }`}
+                >
+                  {e.record ? (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      View Details
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       <PanVerifySheet
         isOpen={Boolean(panFor)}
         onClose={() => setPanFor(null)}
         onVerified={() => {
-          setOpen(panFor);
+          if (!panFor) return;
+          setVerified(true);
+          if (panFor.then === 'open') setOpen(panFor.entry);
+          else setShown(panFor.entry.key, true);
           setPanFor(null);
         }}
       />

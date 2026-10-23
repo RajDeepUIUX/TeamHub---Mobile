@@ -62,6 +62,7 @@ import {
   ClientImportantUpdate,
   offshoreStaffFrom,
 } from './data/clientDashboardData';
+import type { UserRole } from '../../types/user';
 
 /** Dashboard overlays (Important Updates opens when the app opens) */
 type ClientOverlay = 'updates' | 'services' | 'news' | 'manager' | 'role' | null;
@@ -109,9 +110,11 @@ const updatesSession = { dismissed: false, read: false };
  */
 interface ClientAppProps {
   onLogout: () => void;
+  /** Prototype: switch to the Staff / Manager app from the side menu */
+  onSwitchRole?: (role: UserRole) => void;
 }
 
-export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
+export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) => {
   // Signed-in client (User Profile); name + photo show in the header, drawer and greetings
   const [profile, setProfile] = useState<ClientUserProfile>(CLIENT_USER_PROFILE_SEED);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -428,6 +431,13 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
           updatesSession.dismissed = false;
           onLogout();
         }}
+        onSwitchRole={
+          onSwitchRole &&
+          ((r) => {
+            setIsMenuOpen(false);
+            onSwitchRole(r);
+          })
+        }
       />
       <div
         key={isNotificationsOpen ? 'notifications' : `${tab}-${moreModuleId ?? ''}-${tabResets}`}

@@ -3,6 +3,7 @@ import { Building2, Check, ImagePlus, Trash2 } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { SheetHeader } from '../staff/tabs/StaffTabParts';
 import { COMPANY_LOGO_MAX_KB, COMPANY_LOGO_TYPES } from '../data/clientCompanyProfileData';
+import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
 
 /**
  * B "Company Logo" modal: pick PNG / JPG (≤800 KB, no crop) → preview → Save; remove the saved logo;
@@ -17,7 +18,7 @@ export const CompanyLogoSheet: React.FC<{
   const [preview, setPreview] = useState<string | null>(logoUrl);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<AttachmentInputHandle>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -104,7 +105,7 @@ export const CompanyLogoSheet: React.FC<{
           {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
-      <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg" className="hidden" onChange={pick} />
+      <AttachmentInput ref={fileInput} title="Company Logo" accept=".png,.jpg,.jpeg" onChange={pick} />
     </BottomSheet>
   );
 };
