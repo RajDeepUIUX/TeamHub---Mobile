@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, CalendarRange, Download, FileDown, FolderSearch, Loader2, ReceiptText, Search, SearchX, SlidersHorizontal, Users, X } from 'lucide-react';
+import { CalendarDays, CalendarRange, Download, FileDown, FolderSearch, Loader2, ReceiptText, Search, SearchX, SlidersHorizontal, Users, X, ChevronRight } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { ScreenHeader, DesignVersion, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
@@ -216,40 +216,40 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               <dt className="text-[10.5px] font-semibold text-slate-500">Amount</dt>
               <dd className="text-[20px] leading-tight font-extrabold text-[#1E293B] tabular-nums truncate">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
             </div>
+            <div className="shrink-0 pl-3 border-l border-[#DBEAFE] text-right">
+              <dt className="flex items-center justify-end gap-1 text-[10.5px] font-semibold text-slate-500">
+                <Users className="w-3 h-3 text-[#2F68FE]" />
+                Employee
+              </dt>
+              <dd className="mt-1 flex items-center justify-end gap-1 tabular-nums">
+                {isManual ? (
+                  <span className="text-[14px] font-bold text-[#1E293B]">-</span>
+                ) : (
+                  <>
+                    <span className="min-w-[28px] h-6 px-2 rounded-full bg-white border border-[#BFDBFE] text-[12px] font-extrabold text-[#2F68FE] inline-flex items-center justify-center">
+                      {lineCount}
+                    </span>
+                    {staffIds.length > 0 && <span className="text-[10.5px] font-semibold text-slate-400">of {inv.lines.length}</span>}
+                  </>
+                )}
+              </dd>
+            </div>
           </div>
 
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            <div className="min-w-0 p-2.5 rounded-2xl bg-[#F8FAFC] border border-slate-100">
+          <div className="mt-2.5 grid grid-cols-2 rounded-2xl bg-[#F8FAFC] border border-slate-100 divide-x divide-slate-200/70">
+            <div className="min-w-0 px-3 py-2.5">
               <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                 <CalendarDays className="w-3 h-3 text-[#2F68FE] shrink-0" />
                 <span className="truncate">Invoice Created On</span>
               </dt>
-              <dd className="mt-1 text-[11.5px] font-bold text-[#1E293B] tabular-nums truncate">{formatInvoiceDate(inv.createdOn)}</dd>
+              <dd className="mt-1 text-[12px] font-bold text-[#1E293B] tabular-nums truncate">{formatInvoiceDate(inv.createdOn)}</dd>
             </div>
-            <div className="min-w-0 p-2.5 rounded-2xl bg-[#F8FAFC] border border-slate-100">
+            <div className="min-w-0 px-3 py-2.5">
               <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                 <CalendarRange className="w-3 h-3 text-[#2F68FE] shrink-0" />
                 <span className="truncate">Period</span>
               </dt>
-              <dd className="mt-1 text-[11.5px] font-bold text-[#1E293B] tabular-nums leading-snug break-words">{formatInvoicePeriod(inv)}</dd>
-            </div>
-            <div className="min-w-0 p-2.5 rounded-2xl bg-[#F8FAFC] border border-slate-100">
-              <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
-                <Users className="w-3 h-3 text-[#2F68FE] shrink-0" />
-                <span className="truncate">Employee</span>
-              </dt>
-              <dd className="mt-1 text-[11.5px] font-bold text-[#1E293B] tabular-nums">
-                {isManual ? (
-                  '-'
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <span className="min-w-[26px] h-5 px-1.5 rounded-full bg-[#2F68FE] text-white text-[10.5px] font-bold inline-flex items-center justify-center">
-                      {lineCount}
-                    </span>
-                    {staffIds.length > 0 && <span className="text-[10.5px] font-semibold text-slate-400">of {inv.lines.length}</span>}
-                  </span>
-                )}
-              </dd>
+              <dd className="mt-1 text-[12px] font-bold text-[#1E293B] tabular-nums leading-snug break-words">{formatInvoicePeriod(inv)}</dd>
             </div>
           </div>
         </dl>
@@ -290,15 +290,18 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
     const { isManual, lineCount, showPdf, showEmployees } = cardData(inv);
     const accent = INVOICE_STATUS_ACCENT[inv.status];
     return (
-      <li key={inv.id} className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+      <li key={inv.id} className="relative bg-white border border-[#DCE3ED] rounded-2xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(15,23,42,0.10)]">
         <span className={`absolute left-0 inset-y-0 w-1 ${accent.rail}`} aria-hidden />
         <dl>
-          <div className="pl-4 pr-3.5 pt-3 pb-2.5 flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="pl-4 pr-3.5 pt-3.5 pb-3 flex items-center gap-3">
+            <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accent.soft} ${accent.text}`} aria-hidden>
+              <ReceiptText className="w-5 h-5" />
+            </span>
+            <div className="flex-1 min-w-0">
               <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Invoice No.</dt>
               <dd className="mt-0.5 text-[14px] font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</dd>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 self-start">
               <dt className="sr-only">Payment Status</dt>
               <dd>
                 <InvoiceStatusPill status={inv.status} />
@@ -306,58 +309,64 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
             </div>
           </div>
 
-          <div className="ml-4 mr-3.5 border-t border-dashed border-slate-200 py-1.5 text-[11.5px]">
-            <div className="flex items-center justify-between gap-3 py-1.5">
-              <dt className="flex items-center gap-1.5 text-slate-400">
-                <CalendarDays className="w-3.5 h-3.5" />
+          <div className="ml-4 mr-3.5 border-t border-dashed border-slate-200 divide-y divide-dashed divide-slate-100 text-[11.5px]">
+            <div className="flex items-center justify-between gap-3 py-2">
+              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
+                  <CalendarDays className="w-3.5 h-3.5" />
+                </span>
                 Invoice Created On
               </dt>
-              <dd className="font-semibold text-slate-700 tabular-nums">{formatInvoiceDate(inv.createdOn)}</dd>
+              <dd className="font-bold text-[#1E293B] tabular-nums">{formatInvoiceDate(inv.createdOn)}</dd>
             </div>
-            <div className="flex items-start justify-between gap-3 py-1.5">
-              <dt className="flex items-center gap-1.5 text-slate-400 shrink-0">
-                <CalendarRange className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between gap-3 py-2">
+              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
+                  <CalendarRange className="w-3.5 h-3.5" />
+                </span>
                 Period
               </dt>
-              <dd className="font-semibold text-slate-700 tabular-nums text-right">{formatInvoicePeriod(inv)}</dd>
+              <dd className="font-bold text-[#1E293B] tabular-nums text-right leading-snug">{formatInvoicePeriod(inv)}</dd>
             </div>
-            <div className="flex items-center justify-between gap-3 py-1.5">
-              <dt className="flex items-center gap-1.5 text-slate-400">
-                <Users className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between gap-3 py-2">
+              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
+                  <Users className="w-3.5 h-3.5" />
+                </span>
                 Employee
               </dt>
-              <dd className="font-semibold text-slate-700 tabular-nums">
+              <dd className="font-bold text-[#1E293B] tabular-nums">
                 {isManual ? (
                   '-'
                 ) : (
                   <span className="flex items-center gap-1">
-                    <span className="min-w-[24px] h-5 px-1.5 rounded-md bg-[#EFF6FF] text-[#2F68FE] text-[11px] font-bold inline-flex items-center justify-center">
+                    <span className="min-w-[26px] h-[22px] px-1.5 rounded-full bg-[#2F68FE] text-white text-[11px] font-bold inline-flex items-center justify-center">
                       {lineCount}
                     </span>
-                    {staffIds.length > 0 && <span className="text-[11px] text-slate-400">of {inv.lines.length}</span>}
+                    {staffIds.length > 0 && <span className="text-[11px] font-semibold text-slate-400">of {inv.lines.length}</span>}
                   </span>
                 )}
               </dd>
             </div>
           </div>
 
-          <div className={`pl-4 pr-3.5 py-2.5 flex items-center justify-between gap-3 ${accent.soft}`}>
-            <dt className={`text-[11px] font-bold ${accent.text}`}>Amount</dt>
-            <dd className="text-[17px] font-extrabold text-[#1E293B] tabular-nums">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
+          <div className={`mx-3 mt-1 mb-3 px-3.5 py-3 rounded-xl flex items-center justify-between gap-3 ${accent.soft}`}>
+            <dt className={`text-[10.5px] font-bold uppercase tracking-wide ${accent.text}`}>Amount</dt>
+            <dd className="text-[19px] leading-none font-extrabold text-[#1E293B] tabular-nums truncate">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
           </div>
         </dl>
 
         {(showPdf || showEmployees) && (
-          <div className="flex divide-x divide-slate-100 border-t border-slate-100">
+          <div className="flex divide-x divide-slate-100 border-t border-slate-100 bg-[#FAFBFD]">
             {showPdf && (
               <button
                 type="button"
                 onClick={() => downloadPdf(inv)}
                 disabled={busy !== null}
                 aria-label={`Download invoice ${inv.invoiceNo}`}
-                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-[11.5px] font-bold text-[#2F68FE] active:bg-[#EFF6FF] disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
+                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-[11.5px] font-bold text-slate-600 active:bg-[#EFF6FF] disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
               >
-                {pdfBusy(inv) ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                {pdfBusy(inv) ? <Loader2 className="w-4 h-4 animate-spin text-[#2F68FE]" /> : <FileDown className="w-4 h-4 text-[#2F68FE]" />}
                 Invoice
               </button>
             )}
@@ -370,6 +379,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               >
                 <FolderSearch className="w-4 h-4" />
                 Employees
+                <ChevronRight className="w-3.5 h-3.5 -ml-0.5" />
               </button>
             )}
           </div>

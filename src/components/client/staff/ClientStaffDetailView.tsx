@@ -64,7 +64,7 @@ const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
   SOP: ListChecks,
 };
 
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
+const DESIGN_VERSIONS = ['V1', 'V2', 'V3'] as const;
 
 /** Changes made on this screen, kept in ClientApp so they survive Back and module switches */
 export interface StaffProfileEdits {
@@ -83,6 +83,35 @@ const InfoListV2: React.FC<{ groups: InfoGroup[] }> = ({ groups }) => (
         <RowList className="mt-3 border-t border-slate-100" rows={g.fields} />
       </Card>
     ))}
+  </div>
+);
+
+/** V3 info section: one card per group, tinted icon heading, each field in its own soft tile (long values span the row) */
+const InfoTilesV3: React.FC<{ groups: InfoGroup[] }> = ({ groups }) => (
+  <div className="mt-3 space-y-3">
+    {groups.map((g) => {
+      const Icon = g.icon;
+      return (
+        <section key={g.title} className="bg-white rounded-2xl border border-[#EBF0F7] shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)] p-3.5">
+          <h4 className="flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
+            <span className="w-7 h-7 rounded-lg bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0" aria-hidden="true">
+              <Icon className="w-3.5 h-3.5" />
+            </span>
+            {g.title}
+          </h4>
+          <dl className="mt-3 grid grid-cols-2 gap-2">
+            {g.fields
+              .filter((f) => f.value)
+              .map((f) => (
+                <div key={f.label} className={`min-w-0 px-3 py-2.5 rounded-xl bg-[#F8FAFC] ${f.wide ? 'col-span-2' : ''}`}>
+                  <dt className="text-[10.5px] font-semibold text-slate-400 leading-snug">{f.label}</dt>
+                  <dd className="mt-0.5 text-[12.5px] font-bold text-[#1E293B] leading-snug break-words tabular-nums">{f.value}</dd>
+                </div>
+              ))}
+          </dl>
+        </section>
+      );
+    })}
   </div>
 );
 
@@ -119,7 +148,7 @@ interface ClientStaffDetailViewProps {
   /** Saved Reporting To / SOP changes for this staff member */
   edits?: StaffProfileEdits;
   onEdit?: (patch: StaffProfileEdits) => void;
-  /** Follows the My Staff V1 / V2 switch */
+  /** Follows the My Staff V1 / V2 / V3 switch */
   version?: DesignVersion;
   onVersionChange?: (v: DesignVersion) => void;
 }
@@ -140,7 +169,9 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
   version = 'V1',
   onVersionChange,
 }) => {
-  const v2 = version === 'V2';
+  const v3 = version === 'V3';
+  // V3 reuses the V2 card layouts inside each tab
+  const v2 = version === 'V2' || v3;
   const [tab, setTab] = useState<StaffProfileTab>(initialTab ?? 'Personal Information');
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -161,7 +192,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
     const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [v2]);
+  }, [v2, v3]);
 
   const work = useMemo(() => {
     const info = workInfoFor(member);
@@ -186,7 +217,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
     onEdit?.({ sops: next });
   };
 
-  const info = (groups: InfoGroup[]) => (v2 ? <InfoListV2 groups={groups} /> : <InfoCard groups={groups} />);
+  const info = (groups: InfoGroup[]) => (v3 ? <InfoTilesV3 groups={groups} /> : v2 ? <InfoListV2 groups={groups} /> : <InfoCard groups={groups} />);
 
   const panel = () => {
     switch (tab) {
@@ -285,6 +316,91 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
       version={onVersionChange ? { versions: DESIGN_VERSIONS, value: version, onChange: onVersionChange } : undefined}
     />
   );
+
+  if (v3) {
+    return (
+      <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
+        {header}
+
+        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
+          {/* Compact profile card: avatar + name / designation / email, status on the right */}
+          <div className="px-4 pt-3">
+            <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)] overflow-hidden">
+              <div className="px-3.5 py-3 flex items-center gap-3">
+                <span className="p-0.5 rounded-full bg-linear-to-br from-[#2F68FE] to-[#4F46E5] shrink-0">
+                  <span className="block rounded-full ring-2 ring-white">
+                    <StaffAvatar name={member.name} tint={tint} />
+                  </span>
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-[14px] font-extrabold text-[#1E293B] leading-tight truncate">{member.name}</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-500 leading-snug truncate">{member.designation}</p>
+                  <a
+                    href={`mailto:${member.email}`}
+                    className="mt-1 inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-[#2F68FE] active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] rounded"
+                  >
+                    <Mail className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{member.email}</span>
+                  </a>
+                </div>
+                <span className="self-start shrink-0">
+                  <StaffStatusPill status={member.status} />
+                </span>
+              </div>
+              {leaving && (
+                <p className="px-3.5 py-2 border-t border-[#FDE68A] bg-[#FEF8E7] text-[11px] text-amber-800 flex items-center gap-1.5">
+                  <CalendarX className="w-3.5 h-3.5 shrink-0 text-[#D97706]" aria-hidden="true" />
+                  Last working day: <strong className="font-bold">{formatStaffDate(member.lastWorkingDay!)}</strong>
+                </p>
+              )}
+            </section>
+          </div>
+
+          {/* Desktop tab bar → sticky scrolling pill chips (icon + label) */}
+          <div ref={tabsSentinelRef} className="h-px mt-3" aria-hidden="true" />
+          <nav
+            className={`sticky top-0 z-10 py-2.5 transition-colors duration-200 ${
+              tabsStuck ? 'bg-[#F8FAFC]/95 backdrop-blur-md border-b border-slate-200/80' : 'border-b border-transparent'
+            }`}
+            aria-label="Staff profile sections"
+          >
+            <div ref={tabsRef} className="flex gap-2 overflow-x-auto no-scrollbar px-4" role="tablist">
+              {STAFF_PROFILE_TABS.map((t) => {
+                const Icon = TAB_ICONS[t];
+                const on = t === tab;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setTab(t)}
+                    className={`h-9 pl-1 pr-3.5 rounded-full flex items-center gap-2 text-[12px] font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                      on
+                        ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)]'
+                        : 'bg-white border border-[#EBF0F7] text-slate-600 active:bg-slate-50'
+                    }`}
+                  >
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${on ? 'bg-white/20' : 'bg-[#EEF2FF] text-[#2F68FE]'}`}
+                      aria-hidden="true"
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div key={tab} className="px-4 animate-in fade-in slide-in-from-bottom-1 duration-200" role="tabpanel" aria-label={tab}>
+            {panel()}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (v2) {
     const idx = STAFF_PROFILE_TABS.indexOf(tab);

@@ -143,7 +143,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
   const [seenTabs, setSeenTabs] = useState<ClientFeedTab[]>([CLIENT_FEED_TABS[0]]);
   const [updates, setUpdates] = useState<ClientImportantUpdate[]>(CLIENT_IMPORTANT_UPDATES_SEED);
   const [updatesRead, setUpdatesRead] = useState(updatesSession.read);
-  const unreadUpdates = updatesRead ? 0 : updates.length;
 
   // Skip keeps Important Updates for the next visit; Mark As Read clears them
   const [overlay, setOverlay] = useState<ClientOverlay>(() => (updatesSession.dismissed || updatesSession.read ? null : 'updates'));
@@ -424,10 +423,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
         version={APP_VERSION}
         onOpenModule={(m) => openModule(m.id)}
         onOpenProfile={() => openModule('user-profile')}
-        onOpenRole={() => {
-          setIsMenuOpen(false);
-          setOverlay('role');
-        }}
         onLogout={() => {
           setIsMenuOpen(false);
           // Skipped Important Updates show again after the next sign in
@@ -456,12 +451,10 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout }) => {
             userName={userName}
             posts={posts}
             staff={offshoreStaff}
-            unreadUpdates={unreadUpdates}
             seenTabs={seenTabs}
             loading={dashLoading}
             onSeeTab={(t) => setSeenTabs((prev) => (prev.includes(t) ? prev : [...prev, t]))}
             onUpdatePost={(id, patch) => setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))}
-            onOpenUpdates={() => setOverlay('updates')}
             onHireNewStaff={canList('staff-hub') ? () => openModule('staff-hub') : undefined}
             onOpenMyStaff={canList('my-staff') ? () => openTab('staff') : undefined}
           />
