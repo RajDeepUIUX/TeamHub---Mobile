@@ -329,7 +329,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
     </li>
   );
 
-  /* ---------- Card (V2): soft indigo card, white fact panel, filled action pair ---------- */
+  /* ---------- Card (V2): white card, accent strip, icon fact list, split action footer ---------- */
 
   const cardV2 = (s: ClientStaffMember) => {
     const facts = [
@@ -337,19 +337,24 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
       { icon: CalendarDays, tint: 'bg-[#E8F8F0] text-[#10B981]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
       { icon: BriefcaseBusiness, tint: 'bg-[#FEF8E7] text-[#D97706]', label: 'Engagement Type', value: s.engagementType ?? '--' },
       { icon: MapPin, tint: 'bg-[#EFF6FF] text-[#2F68FE]', label: 'Location', value: s.location },
+      {
+        icon: Clock,
+        tint: 'bg-[#F5F3FF] text-[#7C3AED]',
+        label: 'Additional Availability (Per Week)',
+        value: s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--',
+      },
     ];
     const actions = canView || onOpenTimesheets;
     return (
       <li key={s.id}>
-        <article className="relative isolate overflow-hidden p-3 rounded-2xl border border-[#D6E0FF] bg-linear-to-br from-[#E3EBFF] via-[#EEF2FF] to-[#F1EDFF] shadow-[0_10px_24px_-14px_rgba(79,70,229,0.45)]">
-          <span aria-hidden="true" className="absolute -z-10 -top-14 -right-10 w-36 h-36 rounded-full bg-[#2F68FE]/10 blur-2xl pointer-events-none" />
-          <span aria-hidden="true" className="absolute -z-10 -bottom-16 -left-12 w-40 h-40 rounded-full bg-[#4F46E5]/10 blur-2xl pointer-events-none" />
+        <article className="relative overflow-hidden rounded-2xl border border-[#E6EBF5] bg-white shadow-[0_8px_20px_-14px_rgba(15,23,42,0.35)]">
+          <span aria-hidden="true" className="block h-1 bg-linear-to-r from-[#2F68FE] to-[#4F46E5]" />
           <button
             type="button"
             onClick={() => setSelectedId(s.id)}
             disabled={!canView}
             aria-label={`View ${s.name}`}
-            className="w-full px-1 pt-0.5 pb-3 flex items-center gap-3 text-left rounded-xl active:opacity-75 disabled:active:opacity-100 transition-opacity cursor-pointer disabled:cursor-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+            className="w-full px-3.5 pt-3 pb-3 flex items-center gap-3 text-left active:bg-slate-50 disabled:active:bg-transparent transition-colors cursor-pointer disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
           >
             <span className="p-0.5 rounded-full bg-linear-to-br from-[#2F68FE] to-[#4F46E5] shrink-0">
               <span className="block rounded-full ring-2 ring-white">
@@ -367,43 +372,29 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
           </button>
 
           {/* Desktop table columns */}
-          <dl className="rounded-xl bg-white border border-white shadow-[0_2px_8px_-4px_rgba(15,23,42,0.12)] overflow-hidden">
-            <div className="grid grid-cols-2">
-              {facts.map((f, idx) => {
-                const Icon = f.icon;
-                return (
-                  <div
-                    key={f.label}
-                    className={`min-w-0 px-3 py-2.5 flex items-center gap-2.5 ${idx % 2 === 0 ? 'border-r border-[#EEF2F7]' : ''} ${idx < 2 ? 'border-b border-[#EEF2F7]' : ''}`}
-                  >
-                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.tint}`} aria-hidden="true">
-                      <Icon className="w-4 h-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <dt className="text-[10.5px] font-semibold text-slate-400 truncate">{f.label}</dt>
-                      <dd className="text-[12px] font-bold text-[#1E293B] truncate tabular-nums">{f.value}</dd>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="px-3 py-2.5 border-t border-[#EEF2F7] bg-[#F8FAFF] flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
-              <dt className="flex-1 min-w-0 text-[11px] font-semibold text-slate-500 truncate">Additional Availability (Per Week)</dt>
-              <dd className="shrink-0 text-[12px] font-bold text-[#1E293B] tabular-nums">
-                {s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'}
-              </dd>
-            </div>
+          <dl className="mx-3.5 border-t border-dashed border-[#E2E8F0] divide-y divide-[#F1F5F9]">
+            {facts.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div key={f.label} className="min-w-0 py-2 flex items-center gap-2.5">
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${f.tint}`} aria-hidden="true">
+                    <Icon className="w-3.5 h-3.5" />
+                  </span>
+                  <dt className="flex-1 min-w-0 text-[11.5px] font-medium text-slate-500 truncate">{f.label}</dt>
+                  <dd className="shrink-0 max-w-[50%] text-[12px] font-bold text-[#1E293B] text-right truncate tabular-nums">{f.value}</dd>
+                </div>
+              );
+            })}
           </dl>
 
           {actions && (
-            <div className="mt-3 flex gap-2">
+            <div className="mt-1 flex border-t border-[#EEF2F7] divide-x divide-[#EEF2F7]">
               {canView && (
                 <button
                   type="button"
                   onClick={() => setSelectedId(s.id)}
                   aria-label={`View details of ${s.name}`}
-                  className="flex-1 h-10 rounded-xl bg-linear-to-r from-[#2F68FE] to-[#4F46E5] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)] active:opacity-90 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                  className="flex-1 h-11 bg-[#F5F8FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#E8EFFF] cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   <Eye className="w-4 h-4 shrink-0" />
                   View Details
@@ -414,7 +405,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
                   type="button"
                   onClick={() => onOpenTimesheets(s)}
                   aria-label={`Timesheets of ${s.name}`}
-                  className="flex-1 h-10 rounded-xl bg-white border border-[#DCE4FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#EFF6FF] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                  className="flex-1 h-11 bg-white text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   <FileText className="w-4 h-4 shrink-0" />
                   Timesheets
@@ -432,8 +423,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   const cardV3 = (s: ClientStaffMember) => (
     <li key={s.id}>
       <article className="relative bg-white rounded-2xl border border-[#EBF0F7] shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)] overflow-hidden">
-        <span aria-hidden="true" className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" />
-        <div className="pl-4 pr-3.5 pt-3.5 flex items-center gap-3">
+        <div className="px-3.5 pt-3.5 flex items-center gap-3">
           <button
             type="button"
             onClick={() => setSelectedId(s.id)}
@@ -451,7 +441,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         </div>
 
         {/* Desktop table columns */}
-        <dl className="mt-3 mx-3.5 ml-4 grid grid-cols-3 rounded-xl bg-[#F8FAFC] divide-x divide-[#EBF0F7]">
+        <dl className="mt-3 mx-3.5 grid grid-cols-3 rounded-xl bg-[#F8FAFC] divide-x divide-[#EBF0F7]">
           {[
             ['Level', s.level],
             ['Joining Date', formatStaffDate(s.joiningDate)],
@@ -464,7 +454,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
           ))}
         </dl>
 
-        <div className="pl-4 pr-3.5 pt-2.5 pb-3.5 flex items-end gap-2">
+        <div className="px-3.5 pt-2.5 pb-3.5 flex items-end gap-2">
           <dl className="flex-1 min-w-0 flex flex-wrap gap-1.5">
             <div className="max-w-full h-7 px-2.5 rounded-full bg-[#FEF8E7] text-[#B45309] flex items-center gap-1.5 min-w-0">
               <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
