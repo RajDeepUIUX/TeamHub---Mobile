@@ -11,7 +11,7 @@ import {
   lastWorkingDateFor,
   toISODate,
 } from '../../data/resignationData';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { MultiFileUploadField } from '../common/FileUploadField';
 
 export interface ResignationFormData {
   resignationDate: string;
@@ -41,15 +41,8 @@ export const ApplyResignationView: React.FC<ApplyResignationViewProps> = ({ empl
   const [isReasonsOpen, setIsReasonsOpen] = useState(false);
   const [errors, setErrors] = useState<{ reasons?: string; email?: string; agreed?: string }>({});
   const [submitting, setSubmitting] = useState(false);
-  const fileInputRef = useRef<AttachmentInputHandle>(null);
 
   const emailTemplate = RESIGNATION_EMAIL_TEMPLATE(REPORTING_MANAGER, formatResignationDate(lastWorkingDate), employeeName);
-
-  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const names = Array.from(e.target.files ?? []).map((f) => f.name);
-    e.target.value = '';
-    if (names.length) setAttachments((prev) => [...prev, ...names.filter((n) => !prev.includes(n))]);
-  };
 
   const quickFill = () => {
     setReasons(['Better Opportunity', 'Relocation']);
@@ -220,47 +213,7 @@ export const ApplyResignationView: React.FC<ApplyResignationViewProps> = ({ empl
             <label className="block text-xs font-bold text-[#1E293B]">
               File Upload <span className="font-medium text-slate-400">(Optional)</span>
             </label>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-3.5 flex items-center gap-3 text-left active:bg-blue-50/60 transition-colors cursor-pointer"
-            >
-              <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-                <Paperclip className="w-4.5 h-4.5" />
-              </span>
-              <span>
-                <span className="block text-xs font-bold text-[#2F68FE]">Add files</span>
-                <span className="block text-[11px] text-slate-400">PDF, DOC, PPT, JPG, PNG</span>
-              </span>
-            </button>
-            <AttachmentInput
-          title="Add Attachments"
-              ref={fileInputRef}
-              multiple
-              accept={ACCEPTED_ATTACHMENTS}
-              onChange={handleFiles}
-            />
-            {attachments.length > 0 && (
-              <ul className="space-y-1.5 pt-1">
-                {attachments.map((name) => (
-                  <li
-                    key={name}
-                    className="flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-100 rounded-xl text-xs"
-                  >
-                    <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="flex-1 min-w-0 truncate font-medium text-slate-700">{name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setAttachments((prev) => prev.filter((n) => n !== name))}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-                      aria-label={`Remove ${name}`}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <MultiFileUploadField files={attachments} onChange={setAttachments} label="Add files" types="PDF, DOC, PPT, JPG, PNG" accept={ACCEPTED_ATTACHMENTS} />
           </div>
 
           {/* Terms */}

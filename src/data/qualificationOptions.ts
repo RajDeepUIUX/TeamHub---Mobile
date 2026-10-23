@@ -69,4 +69,4 @@ export const SUBJECT_OPTIONS = EDUCATION_OPTIONS.map((o) =>
 
 
 // Location lists live in ./locations (shared app-wide); re-exported for existing imports
-export { COUNTRY_OPTIONS, LOCATIONS, citiesOf, statesOf } from './locations';
+export { COUNTRY_OPTIONS, citiesOf, statesOf } from './locations';

@@ -35,7 +35,7 @@ import {
   validateCore,
 } from '../data/clientRequirementsData';
 import { RequirementStepper } from './RequirementParts';
-import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
+import { FileUploadField } from '../../common/FileUploadField';
 
 interface Props {
   /** Present when editing: domain, profile, hours, level, timeline, start date and staff count are locked (desktop update ignores them) */
@@ -105,7 +105,6 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState('');
   const bodyRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<AttachmentInputHandle>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const isEdit = Boolean(editing);
@@ -536,34 +535,19 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
       <Section icon={FileText} title="Job Description" subtitle="Upload a file or write it yourself">
         <div className="space-y-1.5">
           <span className="block text-xs font-bold text-[#1E293B]">Upload Job Description</span>
-          <AttachmentInput ref={fileRef} title="Upload Job Description" accept={JD_ACCEPT} onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-          {fileName ? (
-            <div className="p-3 rounded-xl border border-slate-200 bg-white flex items-center gap-3">
-              <span className="w-10 h-10 rounded-lg bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5" />
-              </span>
-              <span className="flex-1 min-w-0 text-[12px] font-bold text-[#1E293B] truncate">{fileName}</span>
-              <button
-                type="button"
-                onClick={() => setFileName('')}
-                aria-label="Remove file"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={aiBusy}
-              className="w-full py-5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center gap-1 active:bg-slate-100 disabled:opacity-60 cursor-pointer"
-            >
-              <Upload className="w-5 h-5 text-[#2F68FE]" />
-              <span className="text-xs font-bold text-[#2F68FE]">Choose a file</span>
-              <span className="text-[11px] text-slate-400">PDF, DOCX, JPG or PNG · up to {JD_MAX_MB} MB</span>
-            </button>
-          )}
+          {/* Same upload UI as the rest of the app; the file is checked (type, size) before it's accepted */}
+          <FileUploadField
+            fileName={fileName || null}
+            onChange={(name) => !name && setFileName('')}
+            onFile={pickFile}
+            label="Choose a file"
+            types="PDF, DOCX, JPG or PNG"
+            maxSizeMB={JD_MAX_MB}
+            accept={JD_ACCEPT}
+            sheetTitle="Upload Job Description"
+            invalid={Boolean(fileError)}
+            disabled={aiBusy}
+          />
           {fileError && (
             <p className="px-0.5 text-[11px] font-medium text-rose-500" role="alert">
               {fileError}

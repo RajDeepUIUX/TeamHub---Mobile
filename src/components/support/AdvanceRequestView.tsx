@@ -20,7 +20,7 @@ import {
   monthlyDeduction,
   requestAvailability,
 } from '../../data/advanceSalaryData';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { FileUploadField, MultiFileUploadField } from '../common/FileUploadField';
 
 export type AdvanceDraft = Pick<
   AdvanceRequest,
@@ -61,104 +61,20 @@ const FileField: React.FC<{
   multiple?: boolean;
   error?: string;
   onChange: (files: string[]) => void;
-}> = ({ label, files, multiple, error, onChange }) => {
-  const inputRef = useRef<AttachmentInputHandle>(null);
-  const pick = () => inputRef.current?.click();
-
-  return (
-    <div data-invalid={Boolean(error) || undefined}>
-      <FieldLabel>{label}</FieldLabel>
-
-      {/* Uploaded files */}
-      {files.length > 0 && (
-        <ul className="space-y-1.5">
-          {files.map((name) => (
-            <li
-              key={name}
-              className="flex items-center gap-2.5 pl-2.5 pr-1.5 py-2 rounded-xl border border-emerald-100 bg-emerald-50/40"
-            >
-              <span className="w-8 h-8 rounded-lg bg-white border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4" />
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[12px] font-semibold text-[#1E293B] truncate">{name}</span>
-                <span className="flex items-center gap-1 text-[10.5px] font-medium text-emerald-600">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Uploaded
-                </span>
-              </span>
-              {!multiple && (
-                <button
-                  type="button"
-                  onClick={pick}
-                  className="h-7 px-2.5 rounded-lg text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
-                >
-                  Replace
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => onChange(files.filter((f) => f !== name))}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:bg-rose-50 cursor-pointer"
-                aria-label={`Remove ${name}`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Upload target: shown when empty, and as "add more" for multi-file fields */}
-      {(files.length === 0 || multiple) &&
-        (files.length === 0 ? (
-          <button
-            type="button"
-            onClick={pick}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border-[1.5px] border-dashed text-left transition-colors cursor-pointer ${
-              error
-                ? 'border-rose-300 bg-rose-50/40 active:bg-rose-50'
-                : 'border-indigo-200 bg-indigo-50/40 active:bg-indigo-50'
-            }`}
-          >
-            <span className="w-9 h-9 rounded-xl bg-white border border-indigo-100 text-[#4F46E5] flex items-center justify-center shrink-0 shadow-2xs">
-              <UploadCloud className="w-4.5 h-4.5" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[12px] font-bold text-[#1E293B]">
-                Tap to upload{multiple ? ' files' : ''}
-              </span>
-              <span className="block text-[10.5px] text-slate-400">PDF, JPG or PNG · up to 5 MB</span>
-            </span>
-            <span className="h-7 px-3 rounded-lg bg-[#2F68FE] text-white text-[11px] font-bold flex items-center shrink-0">Browse</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={pick}
-            className="mt-1.5 w-full h-9 rounded-xl border border-dashed border-indigo-200 text-[#4F46E5] text-[11.5px] font-bold flex items-center justify-center gap-1.5 active:bg-indigo-50 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add more files
-          </button>
-        ))}
-
-      <AttachmentInput
-        ref={inputRef}
-        multiple={multiple}
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={(e) => {
-          const picked = Array.from(e.target.files ?? []).map((f) => f.name);
-          if (picked.length) onChange(multiple ? [...files, ...picked.filter((n) => !files.includes(n))] : picked.slice(0, 1));
-          e.target.value = '';
-        }}
-      />
-      <div className="mt-1">
-        <ErrorText message={error} />
-      </div>
+}> = ({ label, files, multiple, error, onChange }) => (
+  <div data-invalid={Boolean(error) || undefined}>
+    <FieldLabel>{label}</FieldLabel>
+    {/* Same upload UI as the rest of the app */}
+    {multiple ? (
+      <MultiFileUploadField files={files} onChange={onChange} invalid={Boolean(error)} />
+    ) : (
+      <FileUploadField fileName={files[0] ?? null} onChange={(name) => onChange(name ? [name] : [])} label="Tap to upload" invalid={Boolean(error)} />
+    )}
+    <div className="mt-1">
+      <ErrorText message={error} />
     </div>
-  );
-};
+  </div>
+);
 
 const emptyCheques = (): AdvanceCheque[] => [0, 1, 2].map(() => ({ number: '', file: '' }));
 

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { QualificationSheet, parseQualificationData } from './QualificationSheet';
 import { citiesOf, statesOf } from '../../data/locations';
+import { FileUploadField } from '../common/FileUploadField';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
@@ -325,47 +326,6 @@ const TimeField: React.FC<{ label: string; value: string; error: boolean; onChan
   );
 };
 
-/** Pick a document; only the file name is kept in this prototype */
-const FileField: React.FC<{ value: string; onChange: (name: string) => void }> = ({ value, onChange }) => {
-  const ref = useRef<AttachmentInputHandle>(null);
-  const [error, setError] = useState('');
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2 h-11 pl-3 pr-1.5 bg-white border border-slate-200 rounded-xl">
-        <FileText className={`w-4 h-4 shrink-0 ${value ? 'text-[#2F68FE]' : 'text-slate-300'}`} />
-        <span className={`flex-1 min-w-0 truncate text-[12.5px] font-medium ${value ? 'text-[#1E293B]' : 'text-slate-400'}`}>
-          {value || 'No file chosen'}
-        </span>
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          className="h-8 px-2.5 rounded-lg bg-blue-50 text-[#2F68FE] text-[11px] font-bold flex items-center gap-1 active:bg-blue-100 cursor-pointer shrink-0"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {value ? 'Replace' : 'Upload'}
-        </button>
-        <AttachmentInput
-          ref={ref}
-          accept="application/pdf,image/png,image/jpeg"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = '';
-            if (!file) return;
-            if (file.size > MAX_FILE_BYTES) return setError('File is too large. Maximum size is 10 MB.');
-            setError('');
-            onChange(file.name);
-          }}
-        />
-      </div>
-      {error ? (
-        <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>
-      ) : (
-        <p className="px-0.5 text-[10.5px] text-slate-400">PDF, JPG or PNG · up to 10 MB</p>
-      )}
-    </div>
-  );
-};
-
 const FieldInput: React.FC<{
   field: ProfileField;
   values: ProfileValues;
@@ -410,7 +370,16 @@ const FieldInput: React.FC<{
   }
   switch (f.type) {
     case 'select':
-      return <Dropdown ariaLabel={f.label} value={(value as string) || null} placeholder="Select" options={f.options ?? []} onChange={onChange} />;
+      return (
+        <Dropdown
+          ariaLabel={f.label}
+          value={(value as string) || null}
+          placeholder="Select"
+          // Clearable: once something is chosen, "— Select —" at the top undoes it
+          options={f.clearable && value ? [{ value: '', label: '— Select —' }, ...(f.options ?? []).map((o) => ({ value: o, label: o }))] : f.options ?? []}
+          onChange={onChange}
+        />
+      );
     case 'toggle':
       return (
         <div role="radiogroup" aria-label={f.label} className={`h-11 p-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 border ${error ? 'border-rose-300' : 'border-transparent'}`}>
@@ -488,7 +457,8 @@ const FieldInput: React.FC<{
         />
       );
     case 'file':
-      return <FileField value={(value as string) ?? ''} onChange={onChange} />;
+      // Same upload UI as the rest of the app
+      return <FileUploadField fileName={(value as string) || null} onChange={(name) => onChange(name ?? '')} label={`Upload ${f.label}`} sheetTitle={f.label} maxSizeMB={10} />;
     case 'days': {
       const days = f.options ?? WEEKDAYS;
       const picked = (value as string[]) ?? [];
@@ -593,6 +563,8 @@ const FieldInput: React.FC<{
 /** 2-column grid of fields (view or edit), with Father / Mother style sub-groups */
 /** Profile value key holding a family member's qualifications & certificates (JSON) */
 const qualKey = (group: string) => `qual${group}`;
+/** Groups that are family members (get the insurance option and Qualification & Certificate) */
+const FAMILY_GROUPS = ['Father', 'Mother', 'Guardian'];
 const FieldGrid: React.FC<{
   fields: ProfileField[];
   values: ProfileValues;
@@ -620,6 +592,17 @@ const FieldGrid: React.FC<{
     below.forEach((loc) => {
       const dep = fields.find((x) => x.location === loc);
       if (dep && values[dep.key]) onChange(dep.key, '');
+    });
+    // Defaults that come with a choice (e.g. pursuing CPA → Regime "Old"), only where nothing is set yet
+    if (f.fills && v === f.fills.when) {
+      Object.entries(f.fills.values).forEach(([k, val]) => {
+        if (!values[k]) onChange(k, val);
+      });
+    }
+    // Explicit dependents (e.g. a new CPA regime empties BEC and the BAR / TCP / ISC choice)
+    f.clears?.forEach((k) => {
+      const dep = fields.find((x) => x.key === k);
+      if (values[k]) onChange(k, dep?.type === 'checkbox' ? false : '');
     });
   };
   const render = (f: ProfileField) => {
@@ -735,12 +718,76 @@ const FieldGrid: React.FC<{
     }
     const key = errorKey(f.key);
     const error = errors[key] ?? '';
+
+    // Exam parts as full-width cards: a checkbox (e.g. "I have cleared Part 1 …") or a dropdown (the CPA
+    // BAR / TCP / ISC discipline). The linked Date of Completion opens inside the same card once it's ticked
+    // or chosen, so the two clearly belong together.
+    const detail = fields.find((x) => x.detailOf === f.key);
+    if ((f.type === 'checkbox' && !f.inHeader) || detail) {
+      const on = Boolean(values[f.key]);
+      const detailKey = detail ? errorKey(detail.key) : '';
+      const isCheckbox = f.type === 'checkbox';
+      return (
+        <div
+          key={f.key}
+          data-field={key}
+          className={`col-span-2 rounded-xl border transition-colors ${on ? 'border-[#2F68FE]/40 bg-blue-50/50' : 'border-slate-200 bg-white'}`}
+        >
+          {isCheckbox ? (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              onClick={() => changeWithCascade(f, !on)}
+              className="w-full flex items-start gap-3 p-3 text-left cursor-pointer"
+            >
+              <span
+                className={`mt-px w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
+                }`}
+                aria-hidden="true"
+              >
+                {on && <Check className="w-3 h-3 stroke-[3]" />}
+              </span>
+              <span className={`flex-1 min-w-0 text-[12px] leading-snug ${on ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-700'}`}>
+                {f.checkboxText ?? f.label}
+              </span>
+            </button>
+          ) : (
+            <div className="p-3 space-y-1.5">
+              <label className="block text-[11px] font-semibold text-slate-600">
+                {f.editLabel ?? f.label}
+                {f.required && <span className="text-rose-500"> *</span>}
+              </label>
+              <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
+              {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
+            </div>
+          )}
+          {on && detail && (
+            <div data-field={detailKey} className={`px-3 pb-3 space-y-1.5 animate-in fade-in duration-200 ${isCheckbox ? 'pl-11' : ''}`}>
+              <label className="block text-[11px] font-semibold text-slate-600">
+                {detail.editLabel ?? detail.label}
+                {detail.required && <span className="text-rose-500"> *</span>}
+              </label>
+              <FieldInput
+                field={detail}
+                values={values}
+                error={errors[detailKey] ?? ''}
+                onChange={(v) => changeWithCascade(detail, v)}
+              />
+              {errors[detailKey] && <p className="px-0.5 text-[11px] font-medium text-rose-500">{errors[detailKey]}</p>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div key={f.key} data-field={key} className={`space-y-1.5 ${isWide(f) ? 'col-span-2' : 'min-w-0'}`}>
         {f.type !== 'checkbox' && (
           <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 min-w-0">
-            <span className="truncate">
-              {f.label}
+            <span className="leading-snug">
+              {f.editLabel ?? f.label}
               {f.required && !isReadOnly(f) && <span className="text-rose-500"> *</span>}
             </span>
             {f.type === 'auto' && !hideAutoTags && (
@@ -757,18 +804,18 @@ const FieldGrid: React.FC<{
   return (
     <>
     <div className={`grid grid-cols-2 items-start ${gap}`}>
-      {groupRuns(visibleFields(fields, values)).map((run, i) =>
+      {groupRuns(visibleFields(fields, values).filter((x) => (editing || !x.editOnly) && !x.detailOf)).map((run, i) =>
         run.group ? (
           // Each group (Father, Mother…) is its own card so the people are easy to tell apart (view and edit)
           <div key={`run-${i}`} className="col-span-2 rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border-b border-slate-200">
               <span className="w-7 h-7 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
-                <User className="w-3.5 h-3.5" />
+                {FAMILY_GROUPS.includes(run.group) ? <User className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
               </span>
-              <span className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] capitalize truncate">{run.group.toLowerCase()}</span>
+              <span className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] truncate">{run.group}</span>
               {/* Yes/no options (e.g. insurance) sit on the right of the person's header */}
               {run.fields
-                .filter((f) => f.type === 'checkbox')
+                .filter((f) => f.type === 'checkbox' && f.inHeader)
                 .map((f) => {
                   const on = Boolean(values[f.key]);
                   return editing ? (
@@ -802,7 +849,7 @@ const FieldGrid: React.FC<{
                   );
                 })}
             </div>
-            <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => f.type !== 'checkbox').map(render)}</div>
+            <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => !(f.type === 'checkbox' && f.inHeader)).map(render)}</div>
             {/* Family member's qualifications & certificates (edited in a sheet, saved with the profile draft) */}
             {(() => {
               const group = run.group;
@@ -812,7 +859,7 @@ const FieldGrid: React.FC<{
               const summary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
                 .filter(Boolean)
                 .join(' · ');
-              if (!editing && !summary) return null;
+              if (!FAMILY_GROUPS.includes(group) || (!editing && !summary)) return null;
               return (
                 <div className="px-3.5 pb-3.5">
                   {editing ? (
@@ -1262,19 +1309,14 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold screen-title screen-title-tight">{editing ? 'Edit Profile' : title}</h1>
+            {/* The title already says "Edit Profile", so no separate "Editing" chip */}
+            <h1 className="text-base font-bold screen-title">{editing ? 'Edit Profile' : title}</h1>
           </div>
-          {editing && (
-            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1">
-              <Pencil className="w-3 h-3" />
-              Editing
-            </span>
-          )}
         </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Identity card: who (avatar, name, role, department) over three quick facts */}
+        {/* Identity card: avatar, name, "role · department · ID", over three quick facts */}
         <section className="m-4 mb-3 bg-white rounded-3xl border border-[#EBF0F7] overflow-hidden">
           <div className="p-4 flex items-center gap-3.5">
             <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5 shrink-0">
@@ -1283,15 +1325,12 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h2 className="text-[17px] font-extrabold leading-tight truncate">{v.fullName as string}</h2>
-                <BadgeCheck className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+                <BadgeCheck className="w-5 h-5 text-white fill-[#2F68FE] shrink-0" aria-label="Verified" />
               </div>
-              <p className="mt-0.5 text-[12px] font-medium text-slate-500 truncate">{v.designation as string}</p>
-              {v.department && (
-                <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[10.5px] font-semibold text-[#2F68FE]">
-                  <BriefcaseBusiness className="w-3 h-3" />
-                  {v.department as string}
-                </span>
-              )}
+              {/* Designation · Department · Employee ID, as on the web profile */}
+              <p className="mt-1 text-[12px] font-medium text-slate-500 leading-snug">
+                {[v.designation, v.department, v.employeeId].filter(Boolean).join(' · ')}
+              </p>
             </div>
           </div>
 

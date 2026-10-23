@@ -240,13 +240,7 @@ export const ClientUserProfileView: React.FC<{
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         {editing ? (
           <div className="px-4 pt-4">
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="text-xl font-extrabold leading-tight">Edit Basic Details</h1>
-              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1 shrink-0">
-                <Pencil className="w-3 h-3" />
-                Editing
-              </span>
-            </div>
+            <h1 className="text-xl font-extrabold leading-tight">Edit Basic Details</h1>
             <p className="mt-1 text-[11.5px] text-slate-500">Fields marked * are required. Locked fields are managed by MyCPE ONE.</p>
           </div>
         ) : (

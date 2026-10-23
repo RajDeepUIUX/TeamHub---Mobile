@@ -1447,13 +1447,16 @@ export default function App() {
                 />
               ) : isProfileOpen && profileModule === 'My Profile' ? (
                 <MyProfileView
-                  profile={myProfile}
+                  // Managers also see how many people report to them (Team Members)
+                  profile={isManager ? { ...myProfile, values: { ...myProfile.values, teamMembers: String(myTeam.length) } } : myProfile}
                   photoUrl={profilePhoto}
                   startEditing={myProfileStartEditing}
                   onBack={() => setProfileModule(null)}
                   onNotify={showToast}
                   onSave={(next) => {
-                    setMyProfile(next);
+                    // Team Members is derived for managers, never stored
+                    const { teamMembers: _derived, ...values } = next.values;
+                    setMyProfile({ ...next, values });
                     showToast('Profile updated.');
                   }}
                 />
