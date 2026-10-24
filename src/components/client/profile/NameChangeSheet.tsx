@@ -11,7 +11,7 @@ import {
   NAME_MAX,
   NAME_REASON_MAX,
 } from '../data/clientUserProfileData';
-import { AttachmentInput, AttachmentInputHandle } from '../../common/AttachmentInput';
+import { MultiFileUploadField } from '../../common/FileUploadField';
 
 type Errors = Partial<Record<'firstName' | 'lastName' | 'reason' | 'files', string>>;
 
@@ -36,7 +36,6 @@ export const NameChangeSheet: React.FC<{
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
-  const fileInput = useRef<AttachmentInputHandle>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -50,9 +49,7 @@ export const NameChangeSheet: React.FC<{
 
   const clear = (key: keyof Errors) => errors[key] && setErrors((e) => ({ ...e, [key]: '' }));
 
-  const addFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(e.target.files ?? []);
-    e.target.value = '';
+  const addFiles = (picked: File[]) => {
     if (!picked.length) return;
     const bad = picked.find((f) => !ID_PROOF_TYPES.includes(f.type));
     if (bad) return setErrors((x) => ({ ...x, files: 'Only PDF, JPG or PNG files are allowed.' }));
@@ -139,44 +136,21 @@ export const NameChangeSheet: React.FC<{
           <span className="block text-xs font-bold text-[#1E293B]">
             Official ID Proof<span className="text-rose-500"> *</span>
           </span>
-          <AttachmentInput ref={fileInput} title="Official ID Proof" accept=".pdf,.jpg,.jpeg,.png" multiple onChange={addFiles} />
-          {files.length < ID_PROOF_MAX_FILES && (
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              className={`mt-1.5 w-full border-2 border-dashed rounded-2xl p-3.5 flex items-center gap-3 text-left transition-colors cursor-pointer ${
-                errors.files ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-blue-50/20 active:bg-blue-50/60'
-              }`}
-            >
-              <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-                <UploadCloud className="w-4.5 h-4.5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-bold text-[#2F68FE]">Add file</span>
-                <span className="block text-[11px] text-slate-400">
-                  Passport, driver's license or marriage certificate · PDF, JPG, PNG (max {ID_PROOF_MAX_MB} MB)
-                </span>
-              </span>
-            </button>
-          )}
-          {files.length > 0 && (
-            <ul className="mt-2 space-y-1.5">
-              {files.map((f, i) => (
-                <li key={`${f.name}-${i}`} className="flex items-center gap-2.5 pl-3 pr-1 h-11 rounded-xl bg-slate-50 border border-slate-100">
-                  <FileText className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                  <span className="flex-1 min-w-0 truncate text-xs font-medium text-[#1E293B]">{f.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setFiles((list) => list.filter((_, idx) => idx !== i))}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200 shrink-0 cursor-pointer"
-                    aria-label={`Remove ${f.name}`}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          {/* Same upload UI as the rest of the app; type, size and count are checked in addFiles */}
+          <div className="mt-1.5">
+            <MultiFileUploadField
+              files={files.map((x) => x.name)}
+              onChange={(names) => setFiles((list) => list.filter((x) => names.includes(x.name)))}
+              onFiles={addFiles}
+              maxFiles={ID_PROOF_MAX_FILES}
+              label="Add file"
+              types="Passport, driver's license or marriage certificate · PDF, JPG, PNG"
+              maxSizeMB={ID_PROOF_MAX_MB}
+              accept=".pdf,.jpg,.jpeg,.png"
+              sheetTitle="Official ID Proof"
+              invalid={Boolean(errors.files)}
+            />
+          </div>
           {errors.files && <p className="mt-1.5 px-0.5 text-[11px] font-medium text-rose-500">{errors.files}</p>}
         </div>
       </div>

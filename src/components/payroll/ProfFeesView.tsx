@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
+import { LocationFields } from '../common/LocationFields';
+import { FileUploadField } from '../common/FileUploadField';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
 
 /* ---------------------------------- Model ---------------------------------- */
 
@@ -70,7 +71,6 @@ const RELATIONSHIPS = [
   'Cousin',
 ];
 const QUALIFICATIONS = ['Graduate', 'Post Graduate'];
-const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates', 'Singapore'];
 const BANKS = [
   'State Bank of India',
   'HDFC Bank',
@@ -210,47 +210,12 @@ const UploadField: React.FC<{
   fileName: string | null;
   error?: string;
   onChange: (name: string | null) => void;
-}> = ({ label, fileName, error, onChange }) => {
-  const ref = useRef<AttachmentInputHandle>(null);
-  return (
-    <Field label={label} required error={error}>
-      {fileName ? (
-        <div className="flex items-center gap-2 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50">
-          <FileText className="w-4 h-4 text-[#2F68FE] shrink-0" />
-          <span className="flex-1 min-w-0 text-xs font-semibold text-[#1E293B] truncate">{fileName}</span>
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200 cursor-pointer shrink-0"
-            aria-label={`Remove ${label}`}
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          className={`w-full h-11 px-3 rounded-xl border border-dashed flex items-center justify-center gap-1.5 text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${
-            error ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-blue-50/30'
-          }`}
-        >
-          <Upload className="w-4 h-4 shrink-0" />
-          Choose File
-        </button>
-      )}
-      <AttachmentInput
-        ref={ref}
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onChange(file.name);
-          e.target.value = '';
-        }}
-      />
-    </Field>
-  );
-};
+}> = ({ label, fileName, error, onChange }) => (
+  <Field label={label} required error={error}>
+    {/* Same upload UI as the rest of the app */}
+    <FileUploadField fileName={fileName} onChange={onChange} label={`Upload ${label}`} sheetTitle={label} invalid={Boolean(error)} />
+  </Field>
+);
 
 const SubHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <h4 className="pt-4 mt-1 border-t border-slate-100 text-[13px] font-bold text-[#1E293B]">{children}</h4>
@@ -439,28 +404,16 @@ const AccountCard: React.FC<{
             <Field label="Land Mark" htmlFor={id('landmark')}>
               {text('landmark')}
             </Field>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Field label="City" htmlFor={id('city')}>
-                {text('city')}
-              </Field>
-              <Field label="State" htmlFor={id('state')}>
-                {text('state')}
-              </Field>
-              <Field label="Country">
-                <Dropdown
-                  size="md"
-                  ariaLabel="Country"
-                  sheetTitle="Country"
-                  value={a.country || null}
-                  placeholder="Select"
-                  options={COUNTRIES}
-                  onChange={(v) => onChange({ country: v })}
-                />
-              </Field>
-              <Field label="Zip" htmlFor={id('zip')}>
-                {text('zip', { inputMode: 'numeric', maxLength: 6, transform: digits })}
-              </Field>
-            </div>
+            {/* Country | State, City | Zip: shared cascade (State needs Country, City needs State) */}
+            <LocationFields
+              value={{ country: a.country || null, state: a.state, city: a.city }}
+              onChange={(p) => onChange({ ...p, country: p.country ?? a.country })}
+              extra={
+                <Field label="Zip" htmlFor={id('zip')}>
+                  {text('zip', { inputMode: 'numeric', maxLength: 6, transform: digits })}
+                </Field>
+              }
+            />
           </div>
         )}
       </div>

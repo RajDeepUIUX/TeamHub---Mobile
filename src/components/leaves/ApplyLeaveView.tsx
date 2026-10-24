@@ -13,7 +13,7 @@ import { LeaveDurationType, LeaveDayItem, LeaveRequest } from '../../types/leave
 import { SelectDateRangeSheet, formatLeaveDate, parseLeaveDate } from './SelectDateRangeSheet';
 import { SelectDurationSheet } from './SelectDurationSheet';
 import { SelectReasonSheet } from './SelectReasonSheet';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { FileUploadField } from '../common/FileUploadField';
 
 export const LEAVE_REASONS = [
   'Medical (Personal)',
@@ -89,7 +89,6 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
   // Description & Attachment
   const [description, setDescription] = useState(initialRequest?.description ?? '');
   const [attachment, setAttachment] = useState<string | null>(initialRequest?.attachmentName ?? null);
-  const attachmentRef = useRef<AttachmentInputHandle>(null);
 
   // Sheets
   const [isDateSheetOpen, setIsDateSheetOpen] = useState(false);
@@ -123,12 +122,6 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
       setDayItems((prev) =>
         prev.map((item, idx) => (idx === editingDayIndex ? { ...item, duration: dur } : item))
       );
-    }
-  };
-
-  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAttachment(e.target.files[0].name);
     }
   };
 
@@ -363,42 +356,7 @@ export const ApplyLeaveView: React.FC<ApplyLeaveViewProps> = ({
         {/* Attachment Card */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-[#1E293B]">Attachment</label>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => attachmentRef.current?.click()}
-            className="border-2 border-dashed border-blue-200 bg-blue-50/20 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-50/60 cursor-pointer transition-colors"
-          >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-              <Paperclip className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              {attachment ? (
-                <div>
-                  <span className="text-xs font-bold text-[#2F68FE] block truncate">{attachment}</span>
-                  <span className="text-[10px] text-emerald-600 font-medium">Ready to upload</span>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-xs font-bold text-[#2F68FE] block">Add attachment</span>
-                  <span className="text-[11px] text-slate-400 block font-normal">PDF, JPG or PNG (Max 5 MB)</span>
-                </div>
-              )}
-            </div>
-            {attachment && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAttachment(null);
-                }}
-                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-          <AttachmentInput ref={attachmentRef} title="Add Attachment" accept=".pdf,.jpg,.jpeg,.png" onChange={handleAttachmentUpload} />
+          <FileUploadField fileName={attachment} onChange={setAttachment} label="Add attachment" sheetTitle="Add Attachment" />
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { formatStaffDate } from '../../data/clientStaffData';
 import { SOP_DECISIONS, SopRecord, SopStatus } from '../../data/clientStaffProfileData';
 import { ACCENT, AccentCard, Card, ConfirmSheet, EmptyCard, FieldGrid, Pill, RowList, Tone, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
-import { AttachmentInput, AttachmentInputHandle } from '../../../common/AttachmentInput';
+import { FileUploadField } from '../../../common/FileUploadField';
 
 interface StaffSopTabProps {
   staffName: string;
@@ -43,7 +43,6 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
   const [touched, setTouched] = useState(false);
   const [progress, setProgress] = useState(0);
   const [aiSteps, setAiSteps] = useState(0);
-  const fileInput = useRef<AttachmentInputHandle>(null);
 
   useEffect(() => {
     if (!genOpen) return;
@@ -82,6 +81,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
   if (!file) errors.file = 'Please upload a file';
   else if (!formats.includes(extOf(file.name))) errors.file = `Unsupported format. Use ${formats.map((f) => f.toUpperCase()).join(', ')}`;
   else if (mode === 'ai' && file.size > MAX_VIDEO_MB * 1024 * 1024) errors.file = `Video is larger than ${MAX_VIDEO_MB}MB`;
+  else if (mode === 'document' && file.size > 10 * 1024 * 1024) errors.file = 'File is larger than 10 MB';
   const valid = !errors.name && !errors.file;
 
   const addSop = (kind: Mode, steps?: number) => {
@@ -388,32 +388,20 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                 <span className="text-xs font-bold text-[#1E293B]">
                   Upload File<span className="text-rose-500"> *</span>
                 </span>
-                <AttachmentInput
-                  ref={fileInput}
-                  title="Upload File"
-                  accept={formats.map((f) => `.${f}`).join(',')}
-                  onChange={(e) => {
-                    setFile(e.target.files?.[0] ?? null);
-                    e.target.value = ''; // lets the same file be picked again
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  className={`mt-1.5 w-full border-2 border-dashed rounded-2xl p-3.5 flex items-center gap-3 text-left transition-colors cursor-pointer ${
-                    touched && errors.file ? 'border-rose-300 bg-rose-50/40' : 'border-blue-200 bg-blue-50/20 active:bg-blue-50/60'
-                  }`}
-                >
-                  <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2F68FE] shrink-0">
-                    {mode === 'ai' ? <Video className="w-4.5 h-4.5" /> : <UploadCloud className="w-4.5 h-4.5" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold text-[#2F68FE] break-all">{file ? file.name : mode === 'ai' ? 'Add video' : 'Add file'}</span>
-                    <span className="block text-[11px] text-slate-400">
-                      {mode === 'document' ? 'PDF, DOC, DOCX, XLS, XLSX, CSV' : `MP4, WebM, MOV, AVI (max ${MAX_VIDEO_MB}MB)`}
-                    </span>
-                  </span>
-                </button>
+                {/* Same upload UI as the rest of the app; format / size are checked by the form */}
+                <div className="mt-1.5">
+                  <FileUploadField
+                    fileName={file?.name ?? null}
+                    onChange={(name) => !name && setFile(null)}
+                    onFile={setFile}
+                    label={mode === 'ai' ? 'Add video' : 'Add file'}
+                    types={mode === 'document' ? 'PDF, DOC, DOCX, XLS, XLSX, CSV' : 'MP4, WebM, MOV, AVI'}
+                    maxSizeMB={mode === 'ai' ? MAX_VIDEO_MB : 10}
+                    accept={formats.map((x) => `.${x}`).join(',')}
+                    sheetTitle="Upload File"
+                    invalid={touched && Boolean(errors.file)}
+                  />
+                </div>
                 {touched && errors.file && <p className="mt-1.5 px-0.5 text-[11px] font-medium text-rose-500">{errors.file}</p>}
                 {mode === 'ai' && (
                   <p className="mt-2 flex items-start gap-1.5 text-[11px] text-slate-500">

@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, GraduationCap, Award, Plus, Trash2, Upload, X } from 'lucide-react';
+import { ChevronRight, GraduationCap, Award, Plus, Trash2, X } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { Dropdown } from '../../design-system/components/Dropdown';
-import { AttachmentInput, AttachmentInputHandle } from '../common/AttachmentInput';
+import { FileUploadField } from '../common/FileUploadField';
+import { initialsOf } from '../home/celebrationUtils';
+import { EDUCATION_OPTIONS, SUBJECT_OPTIONS } from '../../data/qualificationOptions';
+import { LocationFields } from '../common/LocationFields';
 
 /* ---------------------------------- Model ---------------------------------- */
 
@@ -32,9 +35,6 @@ export interface QualificationData {
   certifications: Certification[];
 }
 
-const EDUCATION = ['10th', '12th', 'Diploma', "Bachelor's Degree", "Master's Degree", 'Doctorate'];
-const SUBJECTS = ['Commerce', 'Science', 'Arts', 'Accounting', 'Finance', 'Engineering', 'Computer Science', 'Management', 'Law', 'Other'];
-const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates', 'Other'];
 const CERT_NAMES = ['CA', 'CPA', 'CMA', 'CS', 'ACCA', 'CFA', 'Other'];
 const CERT_TYPES = ['Professional', 'Academic', 'Online Course', 'Other'];
 
@@ -79,48 +79,6 @@ const Label: React.FC<{ text: string; required?: boolean }> = ({ text, required 
 
 const Err: React.FC<{ m?: string }> = ({ m }) => (m ? <p className="mt-1 px-0.5 text-[11px] font-medium text-rose-500">{m}</p> : null);
 
-/** Choose File / chosen file row */
-const FilePick: React.FC<{ name: string | null; title: string; onPick: (name: string | null) => void }> = ({ name, title, onPick }) => {
-  const ref = useRef<AttachmentInputHandle>(null);
-  return (
-    <>
-      {name ? (
-        <div className="flex items-center gap-2.5 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50">
-          <FileText className="w-4 h-4 text-[#2F68FE] shrink-0" />
-          <span className="flex-1 min-w-0 text-xs font-semibold text-[#1E293B] truncate">{name}</span>
-          <button
-            type="button"
-            onClick={() => onPick(null)}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-200 cursor-pointer"
-            aria-label="Remove file"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          className="w-full h-11 px-3.5 rounded-xl border border-dashed border-blue-200 bg-blue-50/30 flex items-center justify-center gap-2 text-xs font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
-        >
-          <Upload className="w-4 h-4" />
-          Choose File
-        </button>
-      )}
-      <AttachmentInput
-        ref={ref}
-        title={title}
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onPick(f.name);
-          e.target.value = '';
-        }}
-      />
-    </>
-  );
-};
-
 const ItemCard: React.FC<{ id: string; title: string; onDelete: () => void; children: React.ReactNode }> = ({ id, title, onDelete, children }) => (
   <div data-entry={id} className="rounded-xl border border-slate-200 bg-white overflow-hidden scroll-mt-2 animate-in fade-in duration-200">
     <div className="flex items-center justify-between px-3.5 py-2 bg-slate-50 border-b border-slate-200">
@@ -138,46 +96,72 @@ const ItemCard: React.FC<{ id: string; title: string; onDelete: () => void; chil
   </div>
 );
 
-/** One section (Academic Qualification / Certifications): header, its entries or an empty state, and the add button */
+const TONES = {
+  blue: { tile: 'bg-[#2F68FE] text-white', soft: 'from-[#EEF4FF] to-white border-[#DBE6FE]', text: 'text-[#2F68FE]', chip: 'bg-blue-50 text-[#2F68FE]', ring: 'active:bg-[#EEF4FF]' },
+  violet: { tile: 'bg-violet-600 text-white', soft: 'from-violet-50 to-white border-violet-100', text: 'text-violet-600', chip: 'bg-violet-50 text-violet-600', ring: 'active:bg-violet-50' },
+} as const;
+
+/**
+ * One section (Academic Qualification / Certifications).
+ * Empty: a single tappable tile inviting the first entry. With entries: header + count, the entries, and "Add another".
+ */
 const SectionCard: React.FC<{
   icon: React.ReactNode;
   title: string;
   hint: string;
   count: number;
   addLabel: string;
-  emptyText: string;
+  /** Button under existing entries, e.g. "Add another qualification" */
+  addAnotherLabel: string;
+  tone: keyof typeof TONES;
   onAdd: () => void;
   children: React.ReactNode;
-}> = ({ icon, title, hint, count, addLabel, emptyText, onAdd, children }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-    <div className="flex items-center gap-3 px-3.5 py-3">
-      <span className="w-10 h-10 rounded-xl bg-blue-50 text-[#2F68FE] flex items-center justify-center shrink-0">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-[#1E293B] flex items-center gap-1.5">
-          {title}
-          {count > 0 && (
-            <span className="min-w-5 h-5 px-1.5 rounded-full bg-blue-50 text-[#2F68FE] text-[10.5px] font-bold flex items-center justify-center tabular-nums">
-              {count}
-            </span>
-          )}
-        </h3>
-        <p className="text-[11px] text-slate-500 truncate">{hint}</p>
-      </div>
-    </div>
-    <div className="px-3.5 pb-3.5 space-y-2.5">
-      {count === 0 && <p className="py-2 text-center text-[11px] text-slate-400">{emptyText}</p>}
-      {children}
+}> = ({ icon, title, hint, count, addLabel, addAnotherLabel, tone, onAdd, children }) => {
+  const t = TONES[tone];
+  if (count === 0) {
+    return (
       <button
         type="button"
         onClick={onAdd}
-        className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
+        className={`w-full p-4 rounded-2xl border bg-gradient-to-br ${t.soft} shadow-2xs flex items-center gap-3.5 text-left transition-transform active:scale-[0.99] cursor-pointer`}
       >
-        <Plus className="w-4 h-4 stroke-[2.5]" />
-        {addLabel}
+        <span className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${t.tile}`}>{icon}</span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-bold text-[#1E293B]">{title}</span>
+          <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">{hint}</span>
+          <span className={`mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold ${t.text}`}>
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            {addLabel}
+          </span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
       </button>
-    </div>
-  </section>
-);
+    );
+  }
+  return (
+    <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+      <div className={`flex items-center gap-3 px-3.5 py-3 bg-gradient-to-br ${t.soft} border-b`}>
+        <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.tile}`}>{icon}</span>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-[#1E293B]">{title}</h3>
+          <p className="text-[11px] text-slate-500 truncate">{hint}</p>
+        </div>
+        <span className={`min-w-6 h-6 px-2 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums ${t.chip}`}>{count}</span>
+      </div>
+      <div className="p-3 space-y-2.5">
+        {children}
+        <button
+          type="button"
+          onClick={onAdd}
+          className={`w-full h-10 rounded-xl border border-dashed border-slate-300 flex items-center justify-center gap-1.5 text-xs font-bold ${t.text} ${t.ring} cursor-pointer`}
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          {addAnotherLabel}
+        </button>
+      </div>
+    </section>
+  );
+};
 
 /* ---------------------------------- Sheet ---------------------------------- */
 
@@ -267,10 +251,16 @@ export const QualificationSheet: React.FC<{
       <div className="pt-3 pb-1 flex justify-center shrink-0">
         <div className="w-10 h-1 bg-slate-300 rounded-full" />
       </div>
-      <div className="flex items-start justify-between gap-3 px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
-        <div className="min-w-0">
-          <h2 className="text-base font-bold text-[#1E293B]">Qualification &amp; Certificate</h2>
-          <p className="text-[11px] text-slate-500 truncate">{subtitle}</p>
+      <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Whose details these are */}
+          <span className="w-10 h-10 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center text-xs font-bold shrink-0">
+            {initialsOf(subtitle.split(' · ')[1] || subtitle)}
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-[#1E293B]">Qualification &amp; Certificate</h2>
+            <p className="text-[11px] text-slate-500 truncate">{subtitle}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -285,24 +275,25 @@ export const QualificationSheet: React.FC<{
       <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4 space-y-5 bg-[#F8FAFC]">
         {/* 1. Academic Qualification */}
         <SectionCard
-          icon={<GraduationCap className="w-5 h-5" />}
+          icon={<GraduationCap className="w-5.5 h-5.5" />}
           title="Academic Qualification"
           hint="Schooling, degrees and diplomas"
           count={quals.length}
           addLabel="Add Qualification"
-          emptyText="No qualifications added yet"
+          addAnotherLabel="Add another qualification"
+          tone="blue"
           onAdd={addQual}
         >
           {quals.map((q, i) => (
             <ItemCard key={q.id} id={q.id} title={`Qualification ${i + 1}`} onDelete={() => setQuals((prev) => prev.filter((x) => x.id !== q.id))}>
               <div>
                 <Label text="Education" required />
-                <Dropdown size="md" forceSheet ariaLabel="Education" value={q.education} placeholder="— Select —" options={EDUCATION} onChange={(v) => patchQ(q.id, { education: v })} />
+                <Dropdown size="md" forceSheet ariaLabel="Education" value={q.education} placeholder="— Select —" options={EDUCATION_OPTIONS} onChange={(v) => patchQ(q.id, { education: v })} />
                 <Err m={errors[`${q.id}.education`]} />
               </div>
               <div>
                 <Label text="Subject/Specialization" required />
-                <Dropdown size="md" forceSheet ariaLabel="Subject/Specialization" value={q.subject} placeholder="— Select —" options={SUBJECTS} onChange={(v) => patchQ(q.id, { subject: v })} />
+                <Dropdown size="md" forceSheet ariaLabel="Subject/Specialization" value={q.subject} placeholder="— Select —" options={SUBJECT_OPTIONS} onChange={(v) => patchQ(q.id, { subject: v })} />
                 <Err m={errors[`${q.id}.subject`]} />
               </div>
               <div>
@@ -313,36 +304,27 @@ export const QualificationSheet: React.FC<{
                 <Label text="University Board" />
                 <input value={q.board} onChange={(e) => patchQ(q.id, { board: e.target.value })} className={inputCls()} />
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="min-w-0">
-                  <Label text="Country" />
-                  <Dropdown size="md" forceSheet ariaLabel="Country" value={q.country} placeholder="— Select —" options={COUNTRIES} onChange={(v) => patchQ(q.id, { country: v })} />
-                </div>
-                <div className="min-w-0">
-                  <Label text="State" />
-                  <input value={q.state} onChange={(e) => patchQ(q.id, { state: e.target.value })} className={inputCls()} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="min-w-0">
-                  <Label text="City" />
-                  <input value={q.city} onChange={(e) => patchQ(q.id, { city: e.target.value })} className={inputCls()} />
-                </div>
-                <div className="min-w-0">
-                  <Label text="Year of completion" />
-                  <input
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={q.year}
-                    onChange={(e) => patchQ(q.id, { year: e.target.value.replace(/\D/g, '') })}
-                    className={inputCls(Boolean(errors[`${q.id}.year`]))}
-                  />
-                  <Err m={errors[`${q.id}.year`]} />
-                </div>
-              </div>
+              {/* Country | State, City | Year of completion: shared cascade (State needs Country, City needs State) */}
+              <LocationFields
+                value={{ country: q.country, state: q.state, city: q.city }}
+                onChange={(p) => patchQ(q.id, p)}
+                extra={
+                  <>
+                    <Label text="Year of completion" />
+                    <input
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={q.year}
+                      onChange={(e) => patchQ(q.id, { year: e.target.value.replace(/\D/g, '') })}
+                      className={inputCls(Boolean(errors[`${q.id}.year`]))}
+                    />
+                    <Err m={errors[`${q.id}.year`]} />
+                  </>
+                }
+              />
               <div>
                 <Label text="Education Certificates And Qualification" />
-                <FilePick name={q.file} title="Education Certificate" onPick={(file) => patchQ(q.id, { file })} />
+                <FileUploadField fileName={q.file} label="Upload certificate" sheetTitle="Education Certificate" onChange={(file) => patchQ(q.id, { file })} />
               </div>
             </ItemCard>
           ))}
@@ -350,12 +332,13 @@ export const QualificationSheet: React.FC<{
 
         {/* 2. Certifications */}
         <SectionCard
-          icon={<Award className="w-5 h-5" />}
+          icon={<Award className="w-5.5 h-5.5" />}
           title="Certifications"
           hint="Professional certificates like CA, CPA or CMA"
           count={certs.length}
           addLabel="Add More"
-          emptyText="No certifications added yet"
+          addAnotherLabel="Add another certificate"
+          tone="violet"
           onAdd={addCert}
         >
           {certs.map((c, i) => (
@@ -374,7 +357,7 @@ export const QualificationSheet: React.FC<{
               </div>
               <div>
                 <Label text="Attachment" />
-                <FilePick name={c.file} title="Certificate" onPick={(file) => patchC(c.id, { file })} />
+                <FileUploadField fileName={c.file} label="Upload certificate" sheetTitle="Certificate" onChange={(file) => patchC(c.id, { file })} />
               </div>
               <div>
                 <Label text="Percentage" />

@@ -22,8 +22,12 @@ import {
   Upload,
   ChevronDown,
   X,
+  AlertTriangle,
+  Lock,
 } from 'lucide-react';
 import { QualificationSheet, parseQualificationData } from './QualificationSheet';
+import { citiesOf, statesOf } from '../../data/locations';
+import { FileUploadField } from '../common/FileUploadField';
 import { ProfileAvatar } from './ProfileAvatar';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { BottomSheet } from '../common/BottomSheet';
@@ -54,6 +58,8 @@ interface MyProfileViewProps {
   title?: string;
   /** Open straight into edit mode (e.g. from "Edit Profile") */
   startEditing?: boolean;
+  /** Tells the parent whether there are unsaved edits (it then asks before leaving for another module) */
+  onDirtyChange?: (dirty: boolean) => void;
   onBack: () => void;
   onSave: (profile: MyProfileData) => void;
   /** Short toast for actions outside the form (e.g. "coming soon") */
@@ -323,47 +329,6 @@ const TimeField: React.FC<{ label: string; value: string; error: boolean; onChan
   );
 };
 
-/** Pick a document; only the file name is kept in this prototype */
-const FileField: React.FC<{ value: string; onChange: (name: string) => void }> = ({ value, onChange }) => {
-  const ref = useRef<AttachmentInputHandle>(null);
-  const [error, setError] = useState('');
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2 h-11 pl-3 pr-1.5 bg-white border border-slate-200 rounded-xl">
-        <FileText className={`w-4 h-4 shrink-0 ${value ? 'text-[#2F68FE]' : 'text-slate-300'}`} />
-        <span className={`flex-1 min-w-0 truncate text-[12.5px] font-medium ${value ? 'text-[#1E293B]' : 'text-slate-400'}`}>
-          {value || 'No file chosen'}
-        </span>
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          className="h-8 px-2.5 rounded-lg bg-blue-50 text-[#2F68FE] text-[11px] font-bold flex items-center gap-1 active:bg-blue-100 cursor-pointer shrink-0"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {value ? 'Replace' : 'Upload'}
-        </button>
-        <AttachmentInput
-          ref={ref}
-          accept="application/pdf,image/png,image/jpeg"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = '';
-            if (!file) return;
-            if (file.size > MAX_FILE_BYTES) return setError('File is too large. Maximum size is 10 MB.');
-            setError('');
-            onChange(file.name);
-          }}
-        />
-      </div>
-      {error ? (
-        <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>
-      ) : (
-        <p className="px-0.5 text-[10.5px] text-slate-400">PDF, JPG or PNG · up to 10 MB</p>
-      )}
-    </div>
-  );
-};
-
 const FieldInput: React.FC<{
   field: ProfileField;
   values: ProfileValues;
@@ -372,6 +337,24 @@ const FieldInput: React.FC<{
 }> = ({ field: f, values, error, onChange }) => {
   const value = values[f.key];
   const border = error ? 'border-rose-300' : 'border-slate-200';
+
+  // State / City: locked until the level above is chosen; a dropdown when we have the list, else free text
+  if (f.location === 'state' || f.location === 'city') {
+    const country = (values.country as string) || null;
+    const state = (values.state as string) || '';
+    const parentMissing = f.location === 'state' ? !country : !state.trim();
+    if (parentMissing) {
+      return (
+        <div className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center text-xs font-medium text-slate-400 truncate">
+          {f.location === 'state' ? 'Select country first' : 'Select state first'}
+        </div>
+      );
+    }
+    const list = f.location === 'state' ? statesOf(country) : citiesOf(country, state);
+    if (list) {
+      return <Dropdown ariaLabel={f.label} value={(value as string) || null} placeholder="Select" options={list} onChange={onChange} />;
+    }
+  }
 
   if (isReadOnly(f)) {
     const text =
@@ -390,7 +373,16 @@ const FieldInput: React.FC<{
   }
   switch (f.type) {
     case 'select':
-      return <Dropdown ariaLabel={f.label} value={(value as string) || null} placeholder="Select" options={f.options ?? []} onChange={onChange} />;
+      return (
+        <Dropdown
+          ariaLabel={f.label}
+          value={(value as string) || null}
+          placeholder="Select"
+          // Clearable: once something is chosen, "— Select —" at the top undoes it
+          options={f.clearable && value ? [{ value: '', label: '— Select —' }, ...(f.options ?? []).map((o) => ({ value: o, label: o }))] : f.options ?? []}
+          onChange={onChange}
+        />
+      );
     case 'toggle':
       return (
         <div role="radiogroup" aria-label={f.label} className={`h-11 p-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 border ${error ? 'border-rose-300' : 'border-transparent'}`}>
@@ -468,7 +460,8 @@ const FieldInput: React.FC<{
         />
       );
     case 'file':
-      return <FileField value={(value as string) ?? ''} onChange={onChange} />;
+      // Same upload UI as the rest of the app
+      return <FileUploadField fileName={(value as string) || null} onChange={(name) => onChange(name ?? '')} label={`Upload ${f.label}`} sheetTitle={f.label} maxSizeMB={10} />;
     case 'days': {
       const days = f.options ?? WEEKDAYS;
       const picked = (value as string[]) ?? [];
@@ -554,7 +547,7 @@ const FieldInput: React.FC<{
         />
       );
     default: {
-      const numeric = f.type === 'tel' || f.type === 'number' || f.type === 'year';
+      const numeric = f.type === 'tel' || f.type === 'number' || f.type === 'year' || Boolean(f.digitsOnly);
       return (
         <input
           type={f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text'}
@@ -573,6 +566,8 @@ const FieldInput: React.FC<{
 /** 2-column grid of fields (view or edit), with Father / Mother style sub-groups */
 /** Profile value key holding a family member's qualifications & certificates (JSON) */
 const qualKey = (group: string) => `qual${group}`;
+/** Groups that are family members (get the insurance option and Qualification & Certificate) */
+const FAMILY_GROUPS = ['Father', 'Mother', 'Guardian'];
 const FieldGrid: React.FC<{
   fields: ProfileField[];
   values: ProfileValues;
@@ -591,6 +586,28 @@ const FieldGrid: React.FC<{
     return nameField ? String(values[nameField.key] ?? '') : '';
   };
   const gap = editing ? 'gap-x-3 gap-y-3.5' : 'gap-x-4 gap-y-3.5';
+  // Country → State → City: a new Country clears State and City, a new State clears City
+  const changeWithCascade = (f: ProfileField, v: ProfileValue) => {
+    const changed = values[f.key] !== v;
+    onChange(f.key, v);
+    if (!changed) return;
+    const below = f.location === 'country' ? ['state', 'city'] : f.location === 'state' ? ['city'] : [];
+    below.forEach((loc) => {
+      const dep = fields.find((x) => x.location === loc);
+      if (dep && values[dep.key]) onChange(dep.key, '');
+    });
+    // Defaults that come with a choice (e.g. pursuing CPA → Regime "Old"), only where nothing is set yet
+    if (f.fills && v === f.fills.when) {
+      Object.entries(f.fills.values).forEach(([k, val]) => {
+        if (!values[k]) onChange(k, val);
+      });
+    }
+    // Explicit dependents (e.g. a new CPA regime empties BEC and the BAR / TCP / ISC choice)
+    f.clears?.forEach((k) => {
+      const dep = fields.find((x) => x.key === k);
+      if (values[k]) onChange(k, dep?.type === 'checkbox' ? false : '');
+    });
+  };
   const render = (f: ProfileField) => {
     if (f.question) {
       const key = errorKey(f.key);
@@ -704,12 +721,76 @@ const FieldGrid: React.FC<{
     }
     const key = errorKey(f.key);
     const error = errors[key] ?? '';
+
+    // Exam parts as full-width cards: a checkbox (e.g. "I have cleared Part 1 …") or a dropdown (the CPA
+    // BAR / TCP / ISC discipline). The linked Date of Completion opens inside the same card once it's ticked
+    // or chosen, so the two clearly belong together.
+    const detail = fields.find((x) => x.detailOf === f.key);
+    if ((f.type === 'checkbox' && !f.inHeader) || detail) {
+      const on = Boolean(values[f.key]);
+      const detailKey = detail ? errorKey(detail.key) : '';
+      const isCheckbox = f.type === 'checkbox';
+      return (
+        <div
+          key={f.key}
+          data-field={key}
+          className={`col-span-2 rounded-xl border transition-colors ${on ? 'border-[#2F68FE]/40 bg-blue-50/50' : 'border-slate-200 bg-white'}`}
+        >
+          {isCheckbox ? (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              onClick={() => changeWithCascade(f, !on)}
+              className="w-full flex items-start gap-3 p-3 text-left cursor-pointer"
+            >
+              <span
+                className={`mt-px w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'border-slate-300 bg-white'
+                }`}
+                aria-hidden="true"
+              >
+                {on && <Check className="w-3 h-3 stroke-[3]" />}
+              </span>
+              <span className={`flex-1 min-w-0 text-[12px] leading-snug ${on ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-700'}`}>
+                {f.checkboxText ?? f.label}
+              </span>
+            </button>
+          ) : (
+            <div className="p-3 space-y-1.5">
+              <label className="block text-[11px] font-semibold text-slate-600">
+                {f.editLabel ?? f.label}
+                {f.required && <span className="text-rose-500"> *</span>}
+              </label>
+              <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
+              {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
+            </div>
+          )}
+          {on && detail && (
+            <div data-field={detailKey} className={`px-3 pb-3 space-y-1.5 animate-in fade-in duration-200 ${isCheckbox ? 'pl-11' : ''}`}>
+              <label className="block text-[11px] font-semibold text-slate-600">
+                {detail.editLabel ?? detail.label}
+                {detail.required && <span className="text-rose-500"> *</span>}
+              </label>
+              <FieldInput
+                field={detail}
+                values={values}
+                error={errors[detailKey] ?? ''}
+                onChange={(v) => changeWithCascade(detail, v)}
+              />
+              {errors[detailKey] && <p className="px-0.5 text-[11px] font-medium text-rose-500">{errors[detailKey]}</p>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div key={f.key} data-field={key} className={`space-y-1.5 ${isWide(f) ? 'col-span-2' : 'min-w-0'}`}>
         {f.type !== 'checkbox' && (
           <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 min-w-0">
-            <span className="truncate">
-              {f.label}
+            <span className="leading-snug">
+              {f.editLabel ?? f.label}
               {f.required && !isReadOnly(f) && <span className="text-rose-500"> *</span>}
             </span>
             {f.type === 'auto' && !hideAutoTags && (
@@ -717,7 +798,7 @@ const FieldGrid: React.FC<{
             )}
           </label>
         )}
-        <FieldInput field={f} values={values} error={error} onChange={(v) => onChange(f.key, v)} />
+        <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
         {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
       </div>
     );
@@ -726,18 +807,18 @@ const FieldGrid: React.FC<{
   return (
     <>
     <div className={`grid grid-cols-2 items-start ${gap}`}>
-      {groupRuns(visibleFields(fields, values)).map((run, i) =>
+      {groupRuns(visibleFields(fields, values).filter((x) => (editing || !x.editOnly) && !x.detailOf)).map((run, i) =>
         run.group ? (
           // Each group (Father, Mother…) is its own card so the people are easy to tell apart (view and edit)
           <div key={`run-${i}`} className="col-span-2 rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border-b border-slate-200">
               <span className="w-7 h-7 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
-                <User className="w-3.5 h-3.5" />
+                {FAMILY_GROUPS.includes(run.group) ? <User className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
               </span>
-              <span className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] capitalize truncate">{run.group.toLowerCase()}</span>
+              <span className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] truncate">{run.group}</span>
               {/* Yes/no options (e.g. insurance) sit on the right of the person's header */}
               {run.fields
-                .filter((f) => f.type === 'checkbox')
+                .filter((f) => f.type === 'checkbox' && f.inHeader)
                 .map((f) => {
                   const on = Boolean(values[f.key]);
                   return editing ? (
@@ -771,7 +852,7 @@ const FieldGrid: React.FC<{
                   );
                 })}
             </div>
-            <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => f.type !== 'checkbox').map(render)}</div>
+            <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => !(f.type === 'checkbox' && f.inHeader)).map(render)}</div>
             {/* Family member's qualifications & certificates (edited in a sheet, saved with the profile draft) */}
             {(() => {
               const group = run.group;
@@ -781,7 +862,7 @@ const FieldGrid: React.FC<{
               const summary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
                 .filter(Boolean)
                 .join(' · ');
-              if (!editing && !summary) return null;
+              if (!FAMILY_GROUPS.includes(group) || (!editing && !summary)) return null;
               return (
                 <div className="px-3.5 pb-3.5">
                   {editing ? (
@@ -1101,14 +1182,13 @@ const SkillsSection: React.FC<{
 
 /* ---------------------------------- Screen ---------------------------------- */
 
-export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, title = 'My Profile', startEditing, onBack, onSave, onNotify }) => {
+export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl, title = 'My Profile', startEditing, onBack, onSave, onNotify, onDirtyChange }) => {
   const [tab, setTab] = useState<ProfileTabId>('personal');
   const [editing, setEditing] = useState(Boolean(startEditing));
   const [draft, setDraft] = useState<MyProfileData>(profile);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [lockedTabHint, setLockedTabHint] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel'>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel' | { tab: ProfileTabId }>(null);
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1132,16 +1212,17 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const canEdit = current.sections.some((s) => s.video || s.list || s.skills || s.fields?.some((f) => !isReadOnly(f)));
   const shown = editing ? draft : profile;
   const dirty = editing && JSON.stringify(draft) !== JSON.stringify(profile);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty]);
+  // Leaving the screen clears it
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => onDirtyChange?.(false), []);
 
   useEffect(() => {
     tabRefs.current[tab]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [tab]);
-
-  useEffect(() => {
-    if (!lockedTabHint) return;
-    const t = setTimeout(() => setLockedTabHint(false), 2200);
-    return () => clearTimeout(t);
-  }, [lockedTabHint]);
 
   useEffect(() => {
     if (!scrollToItem) return;
@@ -1177,8 +1258,37 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   };
 
   const save = () => {
+    // Edits can span tabs, so check every tab; remember which tab holds the first problem
     const found: Record<string, string> = {};
-    current.sections.forEach((s) => {
+    let firstTab: ProfileTabId | null = null;
+    PROFILE_TABS.forEach((t) => {
+      const before = Object.keys(found).length;
+      checkSections(t.sections, found);
+      if (!firstTab && Object.keys(found).length > before) firstTab = t.id;
+    });
+    setErrors(found);
+    const first = Object.keys(found)[0];
+    if (first) {
+      if (firstTab && firstTab !== tab) setTab(firstTab);
+      // wait for the tab to render before scrolling to the field
+      setTimeout(() => scrollRef.current?.querySelector(`[data-field="${first}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      if (firstTab && firstTab !== tab) onNotify?.(`Fix the highlighted fields in ${PROFILE_TABS.find((t) => t.id === firstTab)!.label}.`);
+      return;
+    }
+    setSaving(true);
+    setTimeout(() => {
+      const lists = Object.fromEntries(
+        Object.entries(draft.lists).map(([k, items]) => [k, items.map(({ [NEW_FLAG]: _new, ...rest }) => rest as ProfileListItem)])
+      );
+      onSave({ ...draft, lists });
+      setSaving(false);
+      setEditing(false);
+    }, 500);
+  };
+
+  /** Adds an error message per invalid field in these sections to `found` */
+  const checkSections = (sections: typeof current.sections, found: Record<string, string>) => {
+    sections.forEach((s) => {
       if (s.fields) {
         visibleFields(s.fields, draft.values).forEach((f) => {
           const msg = validate(f, draft.values);
@@ -1198,21 +1308,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         );
       }
     });
-    setErrors(found);
-    const first = Object.keys(found)[0];
-    if (first) {
-      scrollRef.current?.querySelector(`[data-field="${first}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setSaving(true);
-    setTimeout(() => {
-      const lists = Object.fromEntries(
-        Object.entries(draft.lists).map(([k, items]) => [k, items.map(({ [NEW_FLAG]: _new, ...rest }) => rest as ProfileListItem)])
-      );
-      onSave({ ...draft, lists });
-      setSaving(false);
-      setEditing(false);
-    }, 500);
   };
 
   const hasReadOnly = current.sections.some((s) => s.fields?.some((f) => f.locked));
@@ -1230,19 +1325,14 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             >
               <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <h1 className="text-base font-bold screen-title screen-title-tight">{editing ? 'Edit Profile' : title}</h1>
+            {/* The title already says "Edit Profile", so no separate "Editing" chip */}
+            <h1 className="text-base font-bold screen-title">{editing ? 'Edit Profile' : title}</h1>
           </div>
-          {editing && (
-            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[10.5px] font-bold flex items-center gap-1">
-              <Pencil className="w-3 h-3" />
-              Editing
-            </span>
-          )}
         </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Identity card: who (avatar, name, role, department) over three quick facts */}
+        {/* Identity card: avatar, name, "role · department · ID", over three quick facts */}
         <section className="m-4 mb-3 bg-white rounded-3xl border border-[#EBF0F7] overflow-hidden">
           <div className="p-4 flex items-center gap-3.5">
             <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5 shrink-0">
@@ -1251,15 +1341,12 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h2 className="text-[17px] font-extrabold leading-tight truncate">{v.fullName as string}</h2>
-                <BadgeCheck className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+                <BadgeCheck className="w-5 h-5 text-white fill-[#2F68FE] shrink-0" aria-label="Verified" />
               </div>
-              <p className="mt-0.5 text-[12px] font-medium text-slate-500 truncate">{v.designation as string}</p>
-              {v.department && (
-                <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[10.5px] font-semibold text-[#2F68FE]">
-                  <BriefcaseBusiness className="w-3 h-3" />
-                  {v.department as string}
-                </span>
-              )}
+              {/* Designation · Department · Employee ID, as on the web profile */}
+              <p className="mt-1 text-[12px] font-medium text-slate-500 leading-snug">
+                {[v.designation, v.department, v.employeeId].filter(Boolean).join(' · ')}
+              </p>
             </div>
           </div>
 
@@ -1304,11 +1391,12 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   aria-selected={on}
                   onClick={() => {
                     if (on) return;
-                    if (editing) return setLockedTabHint(true);
+                    // Unsaved changes: confirm before moving to another tab (Discard drops them)
+                    if (dirty) return setConfirmDiscard({ tab: t.id });
                     setTab(t.id);
                   }}
                   className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    on ? 'text-[#2F68FE]' : `text-slate-500 active:text-[#1E293B] ${editing ? 'opacity-45' : ''}`
+                    on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -1322,11 +1410,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               );
             })}
           </div>
-          {lockedTabHint && (
-            <p className="mx-4 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 animate-in fade-in duration-150">
-              Save or cancel your changes before switching tabs.
-            </p>
-          )}
         </nav>
 
         <div className="px-4 pb-6 space-y-3">
@@ -1376,10 +1459,20 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                   <section key={section.title} className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
                     <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
                       <h3 className="text-[13px] font-bold text-[#1E293B] leading-snug">{section.title}</h3>
-                      {section.badge && (
+                      {section.badge ? (
                         <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[9.5px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">
                           {section.badge}
                         </span>
+                      ) : (
+                        // Editing, but nothing here can be changed (all fields are managed by HR / computed)
+                        editing &&
+                        (section.fields ?? []).length > 0 &&
+                        visibleFields(section.fields ?? [], shown.values).every(isReadOnly) && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-[9.5px] font-bold uppercase tracking-wide text-slate-500 shrink-0">
+                            <Lock className="w-3 h-3" />
+                            View Only
+                          </span>
+                        )
                       )}
                     </div>
                     {section.description && (
@@ -1407,7 +1500,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
       </div>
 
       {/* Footer: Edit (view mode) or Cancel / Save (edit mode) */}
-      {hasContent && canEdit && (
+      {(editing || (hasContent && canEdit)) && (
         <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           {editing ? (
             <div className="grid grid-cols-[1fr_2fr] gap-2.5">
@@ -1448,7 +1541,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         </div>
         <div className="px-5 pt-2 pb-4">
           <h2 className="text-base font-bold text-[#1E293B]">Discard your changes?</h2>
-          <p className="mt-1 text-xs text-slate-500">Your edits to {current.label} haven't been saved.</p>
+          <p className="mt-1 text-xs text-slate-500">Your profile edits haven't been saved.</p>
         </div>
         <div className="grid grid-cols-2 gap-3 px-4 pb-6">
           <button
@@ -1465,6 +1558,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               setConfirmDiscard(null);
               stopEdit();
               if (then === 'back') onBack();
+              if (then && typeof then === 'object') setTab(then.tab);
             }}
             className="h-12 rounded-xl bg-rose-600 text-white text-xs font-bold active:bg-rose-700 cursor-pointer"
           >

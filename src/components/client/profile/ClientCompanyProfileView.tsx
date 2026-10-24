@@ -231,7 +231,13 @@ export const ClientCompanyProfileView: React.FC<{
           <div className="relative px-4 pt-4 space-y-3 animate-in fade-in duration-200">
             {editing ? (
               <>
-                <Section v2={v2} title="Company Details">
+                <h1 className="text-xl font-extrabold leading-tight">Edit Company Details</h1>
+                <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 text-[11px] text-slate-500">
+                  <Info className="w-3.5 h-3.5 shrink-0" />
+                  Fields marked * are required.
+                </p>
+
+                <SectionCard title="Company Details">
                   <div className="space-y-4">
                     <label className="block space-y-1.5" data-field="companyName">
                       <Label text="Company Name" required />

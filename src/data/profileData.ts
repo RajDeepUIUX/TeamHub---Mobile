@@ -1,5 +1,8 @@
 /** My Profile: schema-driven tabs, mirroring the web profile. Tabs without a schema yet show a placeholder. */
 
+// Full shared country list (the Country › State › City cascade data lives in ./locations)
+import { COUNTRY_OPTIONS, US_STATES } from './locations';
+
 export type ProfileFieldType =
   | 'text'
   | 'email'
@@ -60,6 +63,24 @@ export interface ProfileField {
   emptyText?: string;
   /** Question fields: extra single-choice asked when the answer is "Yes" */
   followUp?: { key: string; label: string; options: { value: string; hint: string }[] };
+  /** Country → State → City cascade (values under the keys "country" / "state" / "city"): State waits for Country, City for State */
+  location?: 'country' | 'state' | 'city';
+  /** Label used in edit mode when it differs from the view label (as on the web form) */
+  editLabel?: string;
+  /** Only shown while editing (e.g. exam parts behind a Yes) */
+  editOnly?: boolean;
+  /** Group cards: show this yes/no option in the card header (e.g. Opt-in for Insurance) */
+  inHeader?: boolean;
+  /** Renders inside this field's card once it has a value (e.g. Date of Completion under a ticked exam part or a chosen CPA discipline) */
+  detailOf?: string;
+  /** Changing this field empties these ones (answers that only made sense for the old value) */
+  clears?: string[];
+  /** When this field is set to `when`, these values are filled in (only where still empty), e.g. Yes → Regime "Old" */
+  fills?: { when: ProfileValue; values: Record<string, ProfileValue> };
+  /** Dropdowns: offer "— Select —" at the top so the choice can be undone */
+  clearable?: boolean;
+  /** Text field that accepts digits only (e.g. PTIN Number) */
+  digitsOnly?: boolean;
 }
 
 /** A repeatable list inside a section (Family Members, Qualifications, Experience) */
@@ -153,7 +174,7 @@ const experienceMonths = (v: ProfileValues) =>
 /* ---------------------------------- Options --------------------------------- */
 
 const YES_NO = ['Yes', 'No'];
-export const FAMILY_RELATIONS = ['Sister', 'Brother', 'Friend', 'Father in Law', 'Mother in Law', 'Brother in Law', 'Sister in Law'];
+export const FAMILY_RELATIONS = ['Sister', 'Brother', 'Friend', 'Father in Law', 'Mother in Law', 'Sister in Law', 'Brother in Law', 'Cousin'];
 
 // Education master list (web app), sorted A–Z for the searchable sheet
 const EDUCATION_OPTIONS = [
@@ -224,8 +245,19 @@ const SUBJECT_OPTIONS = [
   'Visual Communication',
   'Other',
 ];
-const COUNTRY_OPTIONS = ['India', 'United States', 'Canada', 'United Kingdom', 'Other'];
+/** PTIN Status choices */
+const PTIN_STATUS_OPTIONS = ['Applied', 'Active', 'Inactive', 'Not Required'];
 const COMPANY_TYPE_OPTIONS = ['CPA Firm', 'Accounting / KPO', 'IT / Software', 'Other'];
+/** Type of Work Done (MYCPE ONE web list) */
+const WORK_TYPE_OPTIONS = [
+  'S Corp/1120S', 'US Payroll', 'Payroll Tax Return', '1065 Self-Review', 'Payroll Relief', '1065 Preparation', '1065 Review',
+  'Assist payroll audits', 'Assist payroll queries', 'Payroll Associate', 'Pension compliance', 'Payroll calculations',
+  'Payroll leave calculations', 'Pension deductions', 'Tax withholding payroll', 'Payroll handling', 'Pension submissions',
+  'Payroll filing HMRC', 'Payroll data entry', 'Payroll payments processing', 'Payroll processing deductions',
+  'Payroll checks processing', 'Payroll reports generation', 'Payroll deductions management', 'Payroll benefits deductions',
+  'Payroll recording', 'Payroll audit understanding', 'Payroll auditing knowledge', 'Payroll audit advanced',
+  'Payroll schedule recording', 'Payroll audit final', 'Payroll ultimate', 'W-2 Payroll',
+];
 const DESIGNATION_OPTIONS = ['Designer', 'Senior Designer', 'Lead Designer', 'Developer', 'Accountant', 'Senior Accountant', 'Others'];
 
 // Skill Set master lists (from the web app)
@@ -294,6 +326,58 @@ const INTERVIEW_SLOTS = Array.from({ length: 10 }, (_, i) => `${13 + i}:00-${14 
 const usingGuardian = (v: ProfileValues) => v.guardianInstead === 'Yes';
 const usingParents = (v: ProfileValues) => v.guardianInstead !== 'Yes';
 
+/* ------------------------- Professional exams (EA / CPA / CMA) ------------------------- */
+
+/** `when`: extra condition for the part (e.g. BEC only applies to the old CPA regime) */
+type ExamPart = { key: string; text: string; when?: (v: ProfileValues) => boolean };
+const EA_PARTS: ExamPart[] = [
+  { key: 'eaPart1', text: 'I have cleared Part 1 of EA Examination (Individuals)' },
+  { key: 'eaPart2', text: 'I have cleared Part 2 of EA Examination (Businesses)' },
+  { key: 'eaPart3', text: 'I have cleared Part 3 of EA Examination (Representation, Practice and Procedures)' },
+];
+const CPA_PARTS: ExamPart[] = [
+  { key: 'cpaAUD', text: 'I have cleared Auditing and Attestation (AUD) exam' },
+  { key: 'cpaBEC', text: 'I have cleared Business Environment and Concepts (BEC) exam', when: (v) => v.cpaRegime !== 'New' },
+  { key: 'cpaFAR', text: 'I have cleared Financial Accounting and Reporting (FAR)' },
+  { key: 'cpaREG', text: 'I have cleared Regulation (REG)' },
+];
+/** New CPA regime: the discipline section (as listed on the web) */
+const CPA_DISCIPLINES = ['Business Analysis and Reporting (BAR)', 'Tax Compliance and Planning (TCP)', 'Information Systems and Controls (ISC)'];
+const CMA_PARTS: ExamPart[] = [
+  { key: 'cmaPart1', text: 'I have cleared Part 1: Financial Planning, Performance, and Analytics' },
+  { key: 'cmaPart2', text: 'I have cleared Part 2: Strategic Financial Management' },
+];
+
+/** Each part: an "I have cleared …" checkbox, and once ticked its Date of Completion (edit form only) */
+const examParts = (pursuingKey: string, group: string, parts: ExamPart[]): ProfileField[] =>
+  parts.flatMap((p) => [
+    {
+      key: p.key,
+      label: p.text,
+      checkboxText: p.text,
+      type: 'checkbox' as const,
+      full: true,
+      editOnly: true,
+      group,
+      showIf: (v: ProfileValues) => v[pursuingKey] === 'Yes' && (p.when?.(v) ?? true),
+    },
+    {
+      key: `${p.key}Date`,
+      label: 'Date of Completion',
+      detailOf: p.key,
+      type: 'date' as const,
+      full: true,
+      editOnly: true,
+      group,
+      showIf: (v: ProfileValues) => v[pursuingKey] === 'Yes' && (p.when?.(v) ?? true) && Boolean(v[p.key]),
+    },
+  ]);
+
+/** Certificate / license fields appear once every part of the exam is cleared */
+const allPartsCleared = (v: ProfileValues, parts: ExamPart[]) => parts.filter((p) => p.when?.(v) ?? true).every((p) => Boolean(v[p.key]));
+/** CPA: the four parts, where the new regime swaps BEC for a chosen BAR / TCP / ISC discipline */
+const cpaAllCleared = (v: ProfileValues) => allPartsCleared(v, CPA_PARTS) && (v.cpaRegime !== 'New' || Boolean(v.cpaDiscipline));
+
 export const PROFILE_TABS: ProfileTab[] = [
   {
     id: 'personal',
@@ -326,6 +410,7 @@ export const PROFILE_TABS: ProfileTab[] = [
           { key: 'fatherPhone', label: 'Phone', type: 'tel', required: true, group: 'Father', showIf: usingParents },
           {
             key: 'fatherInsurance',
+            inHeader: true,
             label: 'Insurance',
             checkboxText: 'Opt-in for Insurance',
             type: 'checkbox',
@@ -338,6 +423,7 @@ export const PROFILE_TABS: ProfileTab[] = [
           { key: 'motherPhone', label: 'Phone', type: 'tel', group: 'Mother', showIf: usingParents },
           {
             key: 'motherInsurance',
+            inHeader: true,
             label: 'Insurance',
             checkboxText: 'Opt-in for Insurance',
             type: 'checkbox',
@@ -385,10 +471,12 @@ export const PROFILE_TABS: ProfileTab[] = [
           { key: 'joiningDate', label: 'Date of Joining', type: 'date', locked: true },
           {
             key: 'mycpeExperience',
-            label: 'Years at MYCPE',
+            label: 'Years of Experience at MYCPE',
             type: 'auto',
             compute: (v) => tenureFrom(v.joiningDate as string),
           },
+          // Managers only: filled in from their team when a manager views their own profile
+          { key: 'teamMembers', label: 'Team Members', editLabel: 'Number of Team Members in Team', type: 'text', locked: true, showIf: (v) => Boolean(v.teamMembers) },
         ],
       },
       {
@@ -401,29 +489,144 @@ export const PROFILE_TABS: ProfileTab[] = [
           fields: [
             { key: 'education', label: 'Education', type: 'select', required: true, full: true, options: EDUCATION_OPTIONS },
             { key: 'subject', label: 'Subject / Specialization', type: 'select', required: true, full: true, options: SUBJECT_OPTIONS },
-            { key: 'school', label: 'School / College Name', type: 'text', full: true },
+            { key: 'school', label: 'School / College', editLabel: 'School/College Name', type: 'text', full: true },
             { key: 'board', label: 'University Board', type: 'text' },
-            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS },
-            { key: 'state', label: 'State', type: 'text' },
-            { key: 'city', label: 'City', type: 'text' },
+            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, location: 'country' },
+            { key: 'state', label: 'State', type: 'text', location: 'state' },
+            { key: 'city', label: 'City', type: 'text', location: 'city' },
             { key: 'year', label: 'Year of Completion', type: 'year' },
-            { key: 'certificate', label: 'Education Certificate', type: 'file', full: true },
+            { key: 'certificate', label: 'Certificate', editLabel: 'Education Certificates And Qualification', type: 'file', full: true },
           ],
         },
       },
       {
         title: 'PTIN Details',
         fields: [
-          { key: 'ptinStatus', label: 'PTIN Status', type: 'text', locked: true },
-          { key: 'ptinNumber', label: 'PTIN Number', type: 'text', locked: true, hint: 'Preparer Tax Identification Number (IRS)' },
+          { key: 'ptinStatus', label: 'PTIN Status', type: 'select', required: true, options: PTIN_STATUS_OPTIONS },
+          {
+            key: 'ptinNumber',
+            label: 'PTIN Number',
+            editLabel: 'Enter your PTIN Number',
+            type: 'text',
+            digitsOnly: true,
+            hint: 'Preparer Tax Identification Number (IRS)',
+          },
         ],
       },
       {
         title: 'Professional Qualification (EA / CPA / CMA)',
+        // Each exam is its own card. On "Yes": Start Date, the exam parts (each cleared part asks for its
+        // completion date), and once every part is cleared the certificate (+ license / membership no.).
+        // The detail fields are edit-only; view mode shows just "Pursuing EA / CPA / CMA", as on the web.
         fields: [
-          { key: 'pursuingEA', label: 'Pursuing EA', type: 'toggle', locked: true, options: YES_NO },
-          { key: 'pursuingCPA', label: 'Pursuing CPA', type: 'toggle', locked: true, options: YES_NO },
-          { key: 'pursuingCMA', label: 'Pursuing CMA', type: 'toggle', locked: true, options: YES_NO },
+          { key: 'pursuingEA', label: 'Pursuing EA', editLabel: 'Are you pursuing EA', type: 'toggle', full: true, options: YES_NO, group: 'EA' },
+          { key: 'eaStartDate', label: 'Start Date', type: 'date', required: true, full: true, editOnly: true, group: 'EA', showIf: (v) => v.pursuingEA === 'Yes' },
+          ...examParts('pursuingEA', 'EA', EA_PARTS),
+          {
+            key: 'eaCertificate',
+            label: 'EA Certificate',
+            type: 'file',
+            full: true,
+            editOnly: true,
+            group: 'EA',
+            showIf: (v) => v.pursuingEA === 'Yes' && allPartsCleared(v, EA_PARTS),
+          },
+
+          {
+            key: 'pursuingCPA',
+            label: 'Pursuing CPA',
+            editLabel: 'Are you pursuing CPA',
+            type: 'toggle',
+            full: true,
+            options: YES_NO,
+            group: 'CPA',
+            // The regime starts on Old, as on the web
+            fills: { when: 'Yes', values: { cpaRegime: 'Old' } },
+          },
+          { key: 'cpaStartDate', label: 'Start Date', type: 'date', required: true, full: true, editOnly: true, group: 'CPA', showIf: (v) => v.pursuingCPA === 'Yes' },
+          {
+            key: 'cpaRegime',
+            label: 'Select Regime',
+            type: 'select',
+            options: ['Old', 'New'],
+            editOnly: true,
+            group: 'CPA',
+            // BEC belongs to the old regime and BAR / TCP / ISC to the new one, so switching starts them fresh
+            clears: ['cpaBEC', 'cpaBECDate', 'cpaDiscipline', 'cpaDisciplineDate'],
+            showIf: (v) => v.pursuingCPA === 'Yes',
+          },
+          { key: 'cpaState', label: 'State', type: 'select', options: US_STATES, editOnly: true, group: 'CPA', showIf: (v) => v.pursuingCPA === 'Yes' },
+          // Order as on the web: AUD, then BEC (old regime) or the BAR / TCP / ISC discipline (new regime), then FAR, REG
+          ...examParts('pursuingCPA', 'CPA', CPA_PARTS.slice(0, 2)),
+          // New regime: the discipline is its own part card — pick it, then its Date of Completion appears
+          {
+            key: 'cpaDiscipline',
+            label: 'Select BAR/TCP/ISC',
+            type: 'select',
+            options: CPA_DISCIPLINES,
+            clearable: true,
+            // Clearing or changing the discipline also drops its completion date
+            clears: ['cpaDisciplineDate'],
+            full: true,
+            editOnly: true,
+            group: 'CPA',
+            showIf: (v) => v.pursuingCPA === 'Yes' && v.cpaRegime === 'New',
+          },
+          {
+            key: 'cpaDisciplineDate',
+            label: 'Date of Completion',
+            type: 'date',
+            full: true,
+            editOnly: true,
+            group: 'CPA',
+            detailOf: 'cpaDiscipline',
+            showIf: (v) => v.pursuingCPA === 'Yes' && v.cpaRegime === 'New' && Boolean(v.cpaDiscipline),
+          },
+          ...examParts('pursuingCPA', 'CPA', CPA_PARTS.slice(2)),
+          {
+            key: 'cpaLicense',
+            label: 'CPA License Number',
+            editLabel: 'Enter your CPA License Number',
+            placeholder: 'Enter CPA License Number',
+            type: 'text',
+            full: true,
+            editOnly: true,
+            group: 'CPA',
+            showIf: (v) => v.pursuingCPA === 'Yes' && cpaAllCleared(v),
+          },
+          {
+            key: 'cpaCertificate',
+            label: 'CPA Certificate',
+            type: 'file',
+            full: true,
+            editOnly: true,
+            group: 'CPA',
+            showIf: (v) => v.pursuingCPA === 'Yes' && cpaAllCleared(v),
+          },
+
+          { key: 'pursuingCMA', label: 'Pursuing CMA', editLabel: 'Are you pursuing CMA', type: 'toggle', full: true, options: YES_NO, group: 'CMA' },
+          { key: 'cmaStartDate', label: 'Start Date', type: 'date', required: true, full: true, editOnly: true, group: 'CMA', showIf: (v) => v.pursuingCMA === 'Yes' },
+          ...examParts('pursuingCMA', 'CMA', CMA_PARTS),
+          {
+            key: 'imaNumber',
+            label: 'IMA Membership Number',
+            editLabel: 'Enter your IMA Membership Number',
+            placeholder: 'Enter IMA Membership Number',
+            type: 'text',
+            full: true,
+            editOnly: true,
+            group: 'CMA',
+            showIf: (v) => v.pursuingCMA === 'Yes' && allPartsCleared(v, CMA_PARTS),
+          },
+          {
+            key: 'cmaCertificate',
+            label: 'CMA Certificate',
+            type: 'file',
+            full: true,
+            editOnly: true,
+            group: 'CMA',
+            showIf: (v) => v.pursuingCMA === 'Yes' && allPartsCleared(v, CMA_PARTS),
+          },
         ],
       },
       {
@@ -438,18 +641,18 @@ export const PROFILE_TABS: ProfileTab[] = [
               formatMonths(items.filter(pick).reduce((n, v) => n + experienceMonths(v), 0));
             const known = ['India', 'United States', 'Canada'];
             return [
-              { label: 'Total Experience', value: sum(() => true), highlight: true },
-              { label: 'India', value: sum((v) => v.country === 'India') },
-              { label: 'US', value: sum((v) => v.country === 'United States') },
-              { label: 'Canada', value: sum((v) => v.country === 'Canada') },
-              { label: 'Other Country', value: sum((v) => !known.includes(v.country as string)) },
+              { label: 'Total Experience (In Years)', value: sum(() => true), highlight: true },
+              { label: 'India Experience (In Years)', value: sum((v) => v.country === 'India') },
+              { label: 'US Experience (In Years)', value: sum((v) => v.country === 'United States') },
+              { label: 'Canada Experience (In Years)', value: sum((v) => v.country === 'Canada') },
+              { label: 'Other Country Experience (In Years)', value: sum((v) => !known.includes(v.country as string)) },
             ];
           },
           fields: [
             { key: 'companyType', label: 'Type of Company', type: 'select', required: true, options: COMPANY_TYPE_OPTIONS },
-            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS },
+            { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, location: 'country' },
             { key: 'otherCompanyType', label: 'Other Company Type', type: 'text', full: true, showIf: (v) => v.companyType === 'Other' },
-            { key: 'company', label: 'Name of the Company', type: 'text', required: true, full: true },
+            { key: 'company', label: 'Company', editLabel: 'Name of the Company', type: 'text', required: true, full: true },
             { key: 'designation', label: 'Designation', type: 'select', required: true, options: DESIGNATION_OPTIONS },
             { key: 'currentOrg', label: 'Current Organization', type: 'toggle', options: YES_NO },
             { key: 'otherDesignation', label: 'Other Designation', type: 'text', full: true, showIf: (v) => v.designation === 'Others' },
@@ -463,9 +666,8 @@ export const PROFILE_TABS: ProfileTab[] = [
               showIf: (v) => v.currentOrg !== 'Yes',
             },
             { key: 'experience', label: 'Experience', type: 'auto', compute: (v) => formatMonths(experienceMonths(v)) },
-            { key: 'workType', label: 'Type of Work Done', type: 'text', full: true },
+            { key: 'workType', label: 'Type of Work Done', type: 'multiselect', full: true, options: WORK_TYPE_OPTIONS },
             { key: 'responsibilities', label: 'Roles and Responsibility', type: 'textarea', full: true },
-            { key: 'letter', label: 'Experience Letter', type: 'file', full: true },
           ],
         },
       },
@@ -685,10 +887,10 @@ export const MY_PROFILE_SEED: MyProfileData = {
     prefLateAvailability: 'Yes',
     prefLateApplies: 'Peak / Busy Seasons Only',
     prefEarlyFridays: 'Yes',
-    otHours: '',
-    otClientType: '',
-    otAvailabilityType: '',
-    otEaSupport: '',
+    otHours: '6',
+    otClientType: 'New',
+    otAvailabilityType: 'Temporary (15th Jan–15th Apr)',
+    otEaSupport: 'No',
 
     // Profile Introduction Video (none yet)
     introVideoType: '',
@@ -696,7 +898,7 @@ export const MY_PROFILE_SEED: MyProfileData = {
     introVideoUrl: '',
     introVideoAddedOn: '',
 
-    ptinStatus: '',
+    ptinStatus: 'Not Required',
     ptinNumber: '',
     pursuingEA: 'No',
     pursuingCPA: 'No',
@@ -760,7 +962,7 @@ export const MY_PROFILE_SEED: MyProfileData = {
         currentOrg: 'No',
         joiningDate: '2021-04-05',
         lastWorkingDate: '2024-11-22',
-        workType: 'Product & UX design',
+        workType: ['Payroll reports generation', 'Payroll data entry'],
         responsibilities: 'Owned design for client onboarding and billing flows; ran usability tests and maintained the design system.',
         letter: 'Infostretch-experience-letter.pdf',
       },
@@ -775,7 +977,7 @@ export const MY_PROFILE_SEED: MyProfileData = {
         currentOrg: 'No',
         joiningDate: '2017-07-03',
         lastWorkingDate: '2021-03-31',
-        workType: 'Web & brand design',
+        workType: ['US Payroll', 'Payroll Tax Return'],
         responsibilities: '',
         letter: 'PixelOrbit-relieving-letter.pdf',
       },

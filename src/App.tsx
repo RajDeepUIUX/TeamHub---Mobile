@@ -31,6 +31,7 @@ import { AddWFOSheet } from './components/wfo/AddWFOSheet';
 import { INITIAL_WFO_RECORDS, TEAM_WFO_RECORDS_SEED, WFO_MANAGER, WFO_TEAM, formatINR as formatWFOINR, wfoAllowanceFor } from './data/wfoData';
 import { TeamWFOView, WFODecision } from './components/wfo/TeamWFOView';
 import { BottomSheetProvider } from './context/BottomSheetContext';
+import { BottomSheet } from './components/common/BottomSheet';
 import { LeavesView } from './components/leaves/LeavesView';
 import { ApplyLeaveView as LeavesApplyView } from './components/leaves/ApplyLeaveView';
 import { LeaveSubmittedModal } from './components/leaves/LeaveSubmittedModal';
@@ -206,6 +207,11 @@ export default function App() {
   const [salarySubmissions, setSalarySubmissions] = useState<{ declarationId: string; record: DeclarationRecord }[]>([]);
   // Side drawer (replaces the More tab). Modules opened from it return to the tab they were opened on
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Unsaved profile edits: leaving for another module (menu, notifications, bottom nav) asks first; switching
+  // profile tabs never does. A ref so a confirmed action does not ask again.
+  const profileDirtyRef = useRef(false);
+  const [pendingLeave, setPendingLeave] = useState<null | (() => void)>(null);
+  const askToLeave = (action: () => void) => setPendingLeave(() => action);
   const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
   // Company Feed: shared by every role; read state + the user's reactions live for the session
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
@@ -625,6 +631,7 @@ export default function App() {
   const unreadNotifications = myNotifications.filter((n) => !n.read).length;
 
   const openNotification = (n: AppNotification) => {
+    if (profileDirtyRef.current) return askToLeave(() => openNotification(n));
     setMyNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     if (!n.link) return;
     setIsNotificationsOpen(false);
@@ -751,6 +758,7 @@ export default function App() {
   // Screens that live under the hidden 'more' tab (the rest open in Attendance or the profile flow)
   const MORE_SCREENS = ['my-team', 'recognitions', 'training-request', 'training-need', 'company-feed', 'policies', 'expense-reimbursement', 'salary-structure-declaration', 'work-timing', 'ot-request'];
   const openFromDrawer = (m: MoreModule) => {
+    if (profileDirtyRef.current) return askToLeave(() => openFromDrawer(m));
     setIsMenuOpen(false);
     setIsNotificationsOpen(false);
     setCelebrationsTab(null);
@@ -781,6 +789,7 @@ export default function App() {
   };
 
   const handleAppTabChange = (tab: AppTab) => {
+    if (profileDirtyRef.current) return askToLeave(() => handleAppTabChange(tab));
     setCelebrationsTab(null);
     setIsProfileOpen(false);
     setProfileModule(null);
@@ -1448,13 +1457,17 @@ export default function App() {
                 />
               ) : isProfileOpen && profileModule === 'My Profile' ? (
                 <MyProfileView
-                  profile={myProfile}
+                  onDirtyChange={(d) => (profileDirtyRef.current = d)}
+                  // Managers also see how many people report to them (Team Members)
+                  profile={isManager ? { ...myProfile, values: { ...myProfile.values, teamMembers: String(myTeam.length) } } : myProfile}
                   photoUrl={profilePhoto}
                   startEditing={myProfileStartEditing}
                   onBack={() => setProfileModule(null)}
                   onNotify={showToast}
                   onSave={(next) => {
-                    setMyProfile(next);
+                    // Team Members is derived for managers, never stored
+                    const { teamMembers: _derived, ...values } = next.values;
+                    setMyProfile({ ...next, values });
                     showToast('Profile updated.');
                   }}
                 />
@@ -1804,6 +1817,7 @@ export default function App() {
               ) : appTab === 'more' && moreModule === 'my-team' && isManager ? (
                 editingMember ? (
                   <MyProfileView
+                    onDirtyChange={(d) => (profileDirtyRef.current = d)}
                     key={editingMember.staffCode}
                     profile={memberProfile(editingMember)}
                     photoUrl={isSelf(editingMember) ? profilePhoto : null}
@@ -2617,6 +2631,38 @@ export default function App() {
               appliedAt={submittedLeave?.appliedAt ?? ''}
               onDone={handleLeaveSubmittedDone}
             />
+
+            {/* Leaving the profile for another module with unsaved edits */}
+            <BottomSheet isOpen={pendingLeave !== null} onClose={() => setPendingLeave(null)} maxHeight="max-h-[50%]">
+              <div className="pt-3 pb-1 flex justify-center shrink-0">
+                <div className="w-10 h-1 bg-slate-300 rounded-full" />
+              </div>
+              <div className="px-5 pt-2 pb-4">
+                <h2 className="text-base font-bold text-[#1E293B]">Discard your changes?</h2>
+                <p className="mt-1 text-xs text-slate-500">Your profile edits haven't been saved.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 px-4 pb-6">
+                <button
+                  type="button"
+                  onClick={() => setPendingLeave(null)}
+                  className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const go = pendingLeave;
+                    setPendingLeave(null);
+                    profileDirtyRef.current = false;
+                    go?.();
+                  }}
+                  className="h-12 rounded-xl bg-rose-600 text-white text-xs font-bold active:bg-rose-700 cursor-pointer"
+                >
+                  Discard
+                </button>
+              </div>
+            </BottomSheet>
           </MobileDeviceFrame>
         </BottomSheetProvider>
       </div>
