@@ -85,12 +85,16 @@ export interface ProfileField {
 
 /** A repeatable list inside a section (Family Members, Qualifications, Experience) */
 export interface ProfileListConfig {
+  /** Heading when the list sits inside a section that also has fields (e.g. Family Members under Family Details) */
+  title?: string;
   key: string;
   /** "Qualification" → "Qualification 1", "New qualification" */
   itemLabel: string;
   addLabel: string;
   emptyText: string;
   fields: ProfileField[];
+  /** Entries are added / edited in a bottom sheet instead of inline (Academic Qualification) */
+  sheet?: 'qualification';
   /** Stat tiles shown above the items */
   summary?: (items: ProfileListItem[]) => { label: string; value: string; highlight?: boolean }[];
 }
@@ -437,13 +441,12 @@ export const PROFILE_TABS: ProfileTab[] = [
           { key: 'maritalStatus', label: 'Marital Status', type: 'select', required: true, options: ['Single', 'Married', 'Divorced', 'Widowed'] },
           { key: 'children', label: 'Number of Children', type: 'number', showIf: (v) => v.maritalStatus !== 'Single' },
         ],
-      },
-      {
-        title: 'Family Members',
+        // Family members are part of Family Details (one card): parents / guardian above, the members list below
         list: {
+          title: 'Family Members',
           key: 'familyMembers',
           itemLabel: 'Member',
-          addLabel: 'Add Member',
+          addLabel: 'Add Family Member',
           emptyText: 'No family members added',
           fields: [
             { key: 'name', label: 'Name', type: 'text', required: true, full: true, placeholder: 'Enter full name' },
@@ -483,6 +486,7 @@ export const PROFILE_TABS: ProfileTab[] = [
         title: 'Academic Qualification',
         list: {
           key: 'qualifications',
+          sheet: 'qualification',
           itemLabel: 'Qualification',
           addLabel: 'Add Qualification',
           emptyText: 'No qualifications added',

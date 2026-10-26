@@ -1033,10 +1033,14 @@ export default function App() {
   // Prototype stand-in for the IT team: ~3.5s after a request is approved, IT marks its review done
   const IT_REVIEW_DELAY_MS = 3500;
   const itReviewTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Requests already Approved in the demo data when the app loads are left alone; otherwise every refresh
+  // would fire "IT review done" toasts a few seconds later (even on the sign-in page)
+  const approvedAtLoad = useRef<Set<string> | null>(null);
   useEffect(() => {
     const approved = [...flexRequests, ...teamFlexRequests, ...managerFlexRequests].filter((r) => r.status === 'Approved');
+    if (!approvedAtLoad.current) approvedAtLoad.current = new Set(approved.map((r) => r.id));
     approved.forEach((req) => {
-      if (itReviewTimers.current.has(req.id)) return;
+      if (itReviewTimers.current.has(req.id) || approvedAtLoad.current!.has(req.id)) return;
       const timer = setTimeout(() => {
         itReviewTimers.current.delete(req.id);
         const itReviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });

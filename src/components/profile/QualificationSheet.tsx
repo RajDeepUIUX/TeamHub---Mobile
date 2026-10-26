@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronRight, GraduationCap, Award, Plus, Trash2, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, GraduationCap, Award, Plus, Trash2, X } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { FileUploadField } from '../common/FileUploadField';
@@ -95,6 +95,58 @@ const ItemCard: React.FC<{ id: string; title: string; onDelete: () => void; chil
     <div className="p-3.5 space-y-3">{children}</div>
   </div>
 );
+
+/** The fields of one qualification, shared by Qualification & Certificate and Add Qualification */
+const QualificationFields: React.FC<{ q: Qualification; errors: Errors; onPatch: (p: Partial<Qualification>) => void }> = ({ q, errors, onPatch }) => (
+  <>
+    <div>
+      <Label text="Education" required />
+      <Dropdown size="md" forceSheet ariaLabel="Education" value={q.education} placeholder="— Select —" options={EDUCATION_OPTIONS} onChange={(v) => onPatch({ education: v })} />
+      <Err m={errors[`${q.id}.education`]} />
+    </div>
+    <div>
+      <Label text="Subject/Specialization" required />
+      <Dropdown size="md" forceSheet ariaLabel="Subject/Specialization" value={q.subject} placeholder="— Select —" options={SUBJECT_OPTIONS} onChange={(v) => onPatch({ subject: v })} />
+      <Err m={errors[`${q.id}.subject`]} />
+    </div>
+    <div>
+      <Label text="School/College Name" />
+      <input value={q.school} onChange={(e) => onPatch({ school: e.target.value })} className={inputCls()} />
+    </div>
+    <div>
+      <Label text="University Board" />
+      <input value={q.board} onChange={(e) => onPatch({ board: e.target.value })} className={inputCls()} />
+    </div>
+    {/* Country | State, City | Year of completion: shared cascade (State needs Country, City needs State) */}
+    <LocationFields
+      value={{ country: q.country, state: q.state, city: q.city }}
+      onChange={(p) => onPatch(p)}
+      extra={
+        <>
+          <Label text="Year of completion" />
+          <input
+            inputMode="numeric"
+            maxLength={4}
+            value={q.year}
+            onChange={(e) => onPatch({ year: e.target.value.replace(/\D/g, '') })}
+            className={inputCls(Boolean(errors[`${q.id}.year`]))}
+          />
+          <Err m={errors[`${q.id}.year`]} />
+        </>
+      }
+    />
+    <div>
+      <Label text="Education Certificates And Qualification" />
+      <FileUploadField fileName={q.file} label="Upload certificate" sheetTitle="Education Certificate" onChange={(file) => onPatch({ file })} />
+    </div>
+  </>
+);
+
+const validateQualification = (q: Qualification, e: Errors) => {
+  if (!q.education) e[`${q.id}.education`] = 'Select the education.';
+  if (!q.subject) e[`${q.id}.subject`] = 'Select the subject.';
+  if (q.year && !/^\d{4}$/.test(q.year)) e[`${q.id}.year`] = 'Enter a 4-digit year.';
+};
 
 const TONES = {
   blue: { tile: 'bg-[#2F68FE] text-white', soft: 'from-[#EEF4FF] to-white border-[#DBE6FE]', text: 'text-[#2F68FE]', chip: 'bg-blue-50 text-[#2F68FE]', ring: 'active:bg-[#EEF4FF]' },
@@ -227,11 +279,7 @@ export const QualificationSheet: React.FC<{
 
   const save = () => {
     const e: Errors = {};
-    quals.filter(qStarted).forEach((q) => {
-      if (!q.education) e[`${q.id}.education`] = 'Select the education.';
-      if (!q.subject) e[`${q.id}.subject`] = 'Select the subject.';
-      if (q.year && !/^\d{4}$/.test(q.year)) e[`${q.id}.year`] = 'Enter a 4-digit year.';
-    });
+    quals.filter(qStarted).forEach((q) => validateQualification(q, e));
     certs.filter(cStarted).forEach((c) => {
       if (!c.name) e[`${c.id}.name`] = 'Select the certificate.';
       if (!c.type) e[`${c.id}.type`] = 'Select the type.';
@@ -286,46 +334,7 @@ export const QualificationSheet: React.FC<{
         >
           {quals.map((q, i) => (
             <ItemCard key={q.id} id={q.id} title={`Qualification ${i + 1}`} onDelete={() => setQuals((prev) => prev.filter((x) => x.id !== q.id))}>
-              <div>
-                <Label text="Education" required />
-                <Dropdown size="md" forceSheet ariaLabel="Education" value={q.education} placeholder="— Select —" options={EDUCATION_OPTIONS} onChange={(v) => patchQ(q.id, { education: v })} />
-                <Err m={errors[`${q.id}.education`]} />
-              </div>
-              <div>
-                <Label text="Subject/Specialization" required />
-                <Dropdown size="md" forceSheet ariaLabel="Subject/Specialization" value={q.subject} placeholder="— Select —" options={SUBJECT_OPTIONS} onChange={(v) => patchQ(q.id, { subject: v })} />
-                <Err m={errors[`${q.id}.subject`]} />
-              </div>
-              <div>
-                <Label text="School/College Name" />
-                <input value={q.school} onChange={(e) => patchQ(q.id, { school: e.target.value })} className={inputCls()} />
-              </div>
-              <div>
-                <Label text="University Board" />
-                <input value={q.board} onChange={(e) => patchQ(q.id, { board: e.target.value })} className={inputCls()} />
-              </div>
-              {/* Country | State, City | Year of completion: shared cascade (State needs Country, City needs State) */}
-              <LocationFields
-                value={{ country: q.country, state: q.state, city: q.city }}
-                onChange={(p) => patchQ(q.id, p)}
-                extra={
-                  <>
-                    <Label text="Year of completion" />
-                    <input
-                      inputMode="numeric"
-                      maxLength={4}
-                      value={q.year}
-                      onChange={(e) => patchQ(q.id, { year: e.target.value.replace(/\D/g, '') })}
-                      className={inputCls(Boolean(errors[`${q.id}.year`]))}
-                    />
-                    <Err m={errors[`${q.id}.year`]} />
-                  </>
-                }
-              />
-              <div>
-                <Label text="Education Certificates And Qualification" />
-                <FileUploadField fileName={q.file} label="Upload certificate" sheetTitle="Education Certificate" onChange={(file) => patchQ(q.id, { file })} />
-              </div>
+              <QualificationFields q={q} errors={errors} onPatch={(p) => patchQ(q.id, p)} />
             </ItemCard>
           ))}
         </SectionCard>
@@ -388,6 +397,200 @@ export const QualificationSheet: React.FC<{
           className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
         >
           Save Changes
+        </button>
+      </div>
+    </BottomSheet>
+  );
+};
+
+/* ------------------------- Add / Edit Qualification ------------------------- */
+
+/**
+ * Professional › Academic Qualification. "Add Qualification" lands straight on a blank form (no second tap),
+ * with "Add another qualification" to enter several at once. Tapping a saved entry edits just that one.
+ */
+export const AcademicQualificationSheet: React.FC<{
+  isOpen: boolean;
+  /** The entry being edited; none = adding new ones */
+  editing?: Qualification | null;
+  onClose: () => void;
+  onSave: (entries: Qualification[]) => void;
+}> = ({ isOpen, editing, onClose, onSave }) => {
+  const [quals, setQuals] = useState<Qualification[]>([]);
+  const [errors, setErrors] = useState<Errors>({});
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // Fixed when the sheet opens so the title doesn't flip while it slides away
+  const [isEdit, setIsEdit] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsEdit(Boolean(editing));
+    const first = editing ? { ...editing } : emptyQualification();
+    setQuals([first]);
+    setOpenId(first.id);
+    setErrors({});
+    bodyRef.current?.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const patch = (id: string, p: Partial<Qualification>) => {
+    setQuals((prev) => prev.map((q) => (q.id === id ? { ...q, ...p } : q)));
+    setErrors((prev) => {
+      const next = { ...prev };
+      Object.keys(p).forEach((k) => delete next[`${id}.${k}`]);
+      return next;
+    });
+  };
+  const reveal = (id: string) =>
+    requestAnimationFrame(() => bodyRef.current?.querySelector(`[data-entry="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // A new entry opens and the others fold up
+  const addAnother = () => {
+    const q = emptyQualification();
+    setQuals((prev) => [...prev, q]);
+    setOpenId(q.id);
+    reveal(q.id);
+  };
+  const toggle = (id: string) => {
+    setOpenId((cur) => (cur === id ? null : id));
+    if (openId !== id) reveal(id);
+  };
+  const remove = (id: string) =>
+    setQuals((prev) => {
+      const next = prev.filter((x) => x.id !== id);
+      // Removing the open one opens the last remaining
+      if (openId === id) setOpenId(next[next.length - 1]?.id ?? null);
+      return next;
+    });
+
+  const started = (q: Qualification) =>
+    Boolean(q.education || q.subject || q.school || q.board || q.country || q.state || q.city || q.year || q.file);
+
+  const save = () => {
+    // Extra cards left blank are dropped; if nothing was filled, the first card asks for its required fields
+    const filled = quals.filter(started);
+    const toCheck = filled.length ? filled : quals.slice(0, 1);
+    const e: Errors = {};
+    toCheck.forEach((q) => validateQualification(q, e));
+    setErrors(e);
+    if (Object.keys(e).length) {
+      // Open the first entry with a problem so its errors are visible
+      const firstBad = toCheck.find((q) => Object.keys(e).some((k) => k.startsWith(`${q.id}.`)));
+      if (firstBad) setOpenId(firstBad.id);
+      requestAnimationFrame(() =>
+        bodyRef.current?.querySelector('p.text-rose-500')?.parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      );
+      return;
+    }
+    onSave(filled);
+  };
+
+  const count = quals.filter(started).length;
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[94%]">
+      <div className="pt-3 pb-1 flex justify-center shrink-0">
+        <div className="w-10 h-1 bg-slate-300 rounded-full" />
+      </div>
+      <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-10 h-10 rounded-xl bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <GraduationCap className="w-5 h-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-[#1E293B]">{isEdit ? 'Edit Qualification' : 'Add Qualification'}</h2>
+            <p className="text-[11px] text-slate-500 truncate">Schooling, degrees and diplomas</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer shrink-0"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4 space-y-3 bg-[#F8FAFC]">
+        {quals.map((q, i) => {
+          if (quals.length === 1)
+            // A single entry needs no card chrome: just the form
+            return (
+              <div key={q.id} data-entry={q.id} className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
+                <QualificationFields q={q} errors={errors} onPatch={(p) => patch(q.id, p)} />
+              </div>
+            );
+          // Several: an accordion, only the one being filled is open
+          const open = openId === q.id;
+          const bad = Object.keys(errors).some((k) => k.startsWith(`${q.id}.`));
+          const summary = [q.subject, q.school, q.year].filter(Boolean).join(' · ');
+          return (
+            <div
+              key={q.id}
+              data-entry={q.id}
+              className={`rounded-xl border bg-white overflow-hidden scroll-mt-2 ${bad ? 'border-rose-300' : open ? 'border-[#2F68FE]/40 ring-2 ring-[#2F68FE]/10' : 'border-slate-200'}`}
+            >
+              <div className={`flex items-center gap-2.5 pl-3.5 pr-2 py-2.5 ${open ? 'bg-blue-50/60 border-b border-blue-100' : ''}`}>
+                <button type="button" onClick={() => toggle(q.id)} className="flex-1 min-w-0 flex items-center gap-2.5 text-left cursor-pointer">
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      bad ? 'bg-rose-100 text-rose-500' : open ? 'bg-[#2F68FE] text-white' : 'bg-blue-100 text-[#2F68FE]'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-[#1E293B] truncate">{q.education || `Qualification ${i + 1}`}</span>
+                    <span className={`block text-[11px] truncate ${bad ? 'text-rose-500 font-medium' : 'text-slate-500'}`}>
+                      {bad ? 'Needs attention' : summary || (started(q) ? 'In progress' : 'Not filled yet')}
+                    </span>
+                  </span>
+                  <ChevronDown className={`w-4.5 h-4.5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(q.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-500 active:bg-rose-50 cursor-pointer shrink-0"
+                  aria-label={`Delete qualification ${i + 1}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              {open && (
+                <div className="p-3.5 space-y-3 animate-in fade-in duration-200">
+                  <QualificationFields q={q} errors={errors} onPatch={(p) => patch(q.id, p)} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={addAnother}
+            className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/40 bg-white flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#EEF4FF] cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            Add another qualification
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0 bg-white">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+        >
+          {isEdit ? 'Save Changes' : count > 1 ? `Add ${count} Qualifications` : 'Add Qualification'}
         </button>
       </div>
     </BottomSheet>
