@@ -36,6 +36,7 @@ import { DateWheelSheet, todayIso } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
 import { TimeWheelSheet } from '../common/TimeWheelSheet';
 import { IntroVideoSection } from './IntroVideoSection';
+import { useEdgeBounce } from '../../hooks/useEdgeBounce';
 import {
   MyProfileData,
   PROFILE_TABS,
@@ -1506,6 +1507,9 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
     else addItem(config);
   };
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
+  // Tab strip: small bounce when scrolled past either end
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEdgeBounce(tabStripRef);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Tabs are transparent at rest; once pinned to the top they get a backdrop so content doesn't show through
   const tabsSentinelRef = useRef<HTMLDivElement>(null);
@@ -1695,12 +1699,14 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
         <div ref={tabsSentinelRef} className="h-px -mb-px" aria-hidden="true" />
         <nav
-          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 transition-colors duration-200 ${
-            tabsStuck ? 'bg-[#F5F7FB]/95 backdrop-blur-md' : 'bg-transparent'
+          // Solid page colour (not see-through / blurred): text on a translucent layer renders at a different
+          // weight on Windows, which made the labels look bold on some tabs (e.g. Intro Video)
+          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 bg-[#F5F7FB] transition-shadow duration-200 ${
+            tabsStuck ? 'shadow-[0_1px_0_rgba(15,23,42,0.04)]' : ''
           }`}
           aria-label="Profile sections"
         >
-          <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
+          <div ref={tabStripRef} className="flex gap-1 overflow-x-auto overscroll-x-contain no-scrollbar px-2" role="tablist">
             {PROFILE_TABS.map((t) => {
               const Icon = TAB_ICONS[t.id];
               const on = t.id === tab;
