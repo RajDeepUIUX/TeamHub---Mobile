@@ -108,13 +108,11 @@ const ExpenseItemCard: React.FC<{
   item: ExpenseItem;
   /** Reimbursement claims also ask when the expense happened */
   withDate: boolean;
-  /** Advance requests: choosing Team Outing opens the Team Outing sheet */
-  asksOutingDetails?: boolean;
   errors: ItemErrors;
   canRemove: boolean;
   onChange: (patch: Partial<ExpenseItem>) => void;
   onRemove: () => void;
-}> = ({ index, item, withDate, asksOutingDetails = false, errors, canRemove, onChange, onRemove }) => {
+}> = ({ index, item, withDate, errors, canRemove, onChange, onRemove }) => {
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isOutingOpen, setIsOutingOpen] = useState(false);
   const label = (text: string, required = false) => (
@@ -157,8 +155,8 @@ const ExpenseItemCard: React.FC<{
             placeholder="Select"
             options={EXPENSE_CATEGORIES}
             onChange={(v) => {
-              // Advance: Team Outing asks for the outing date and employees first
-              if (asksOutingDetails && v === 'Team Outing') setIsOutingOpen(true);
+              // Team Outing asks for the outing date and employees first (advance and reimbursement)
+              if (v === 'Team Outing') setIsOutingOpen(true);
               else onChange({ category: v, outing: undefined });
             }}
           />
@@ -200,7 +198,8 @@ const ExpenseItemCard: React.FC<{
         initial={item.outing}
         onClose={() => setIsOutingOpen(false)}
         onSubmit={(outing) => {
-          onChange({ category: 'Team Outing', outing });
+          // Claims: the outing date is the expense date, so it isn't asked twice
+          onChange({ category: 'Team Outing', outing, ...(withDate ? { expenseDate: outing.date } : {}) });
           setIsOutingOpen(false);
         }}
       />
@@ -399,7 +398,6 @@ const ExpenseForm: React.FC<{
             index={idx}
             item={it}
             withDate={isClaim}
-            asksOutingDetails={!isClaim}
             errors={errors[it.id] ?? {}}
             canRemove={items.length > 1}
             onChange={(patch) => update(it.id, patch)}

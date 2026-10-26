@@ -94,7 +94,10 @@ export interface ProfileListConfig {
   emptyText: string;
   fields: ProfileField[];
   /** Entries are added / edited in a bottom sheet instead of inline (Academic Qualification) */
-  sheet?: 'qualification';
+  sheet?: 'qualification' | 'form';
+  /** In the sheet's accordion: a collapsed entry's heading / one-line summary */
+  entryTitle?: (v: ProfileValues) => string;
+  entrySummary?: (v: ProfileValues) => string;
   /** Stat tiles shown above the items */
   summary?: (items: ProfileListItem[]) => { label: string; value: string; highlight?: boolean }[];
 }
@@ -474,7 +477,7 @@ export const PROFILE_TABS: ProfileTab[] = [
           { key: 'joiningDate', label: 'Date of Joining', type: 'date', locked: true },
           {
             key: 'mycpeExperience',
-            label: 'Years of Experience at MYCPE',
+            label: 'Experience at MYCPE',
             type: 'auto',
             compute: (v) => tenureFrom(v.joiningDate as string),
           },
@@ -637,6 +640,12 @@ export const PROFILE_TABS: ProfileTab[] = [
         title: 'Experience',
         list: {
           key: 'experiences',
+          sheet: 'form',
+          entryTitle: (v) => String(v.company || v.companyType || ''),
+          entrySummary: (v) =>
+            [v.designation === 'Others' ? v.otherDesignation : v.designation, v.joiningDate && formatMonths(experienceMonths(v))]
+              .filter(Boolean)
+              .join(' · '),
           itemLabel: 'Experience',
           addLabel: 'Add Experience',
           emptyText: 'No previous experience added',

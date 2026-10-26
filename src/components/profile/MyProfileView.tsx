@@ -623,11 +623,9 @@ const FieldGrid: React.FC<{
   errors: Record<string, string>;
   errorKey: (fieldKey: string) => string;
   onChange: (fieldKey: string, v: ProfileValue) => void;
-  /** The section already carries an "Auto" tag */
-  hideAutoTags?: boolean;
   /** List item that is a person: adds their Qualification & Certificate (subtitle like "Sister · Emma Smith") */
   memberQualification?: { subtitle: string };
-}> = ({ fields, values, editing, errors, errorKey, onChange, hideAutoTags, memberQualification }) => {
+}> = ({ fields, values, editing, errors, errorKey, onChange, memberQualification }) => {
   // Which family member's Qualification & Certificate sheet is open
   const [qualFor, setQualFor] = useState<string | null>(null);
   // e.g. "Robert Smith": the group's Full Name, shown under the sheet title
@@ -844,13 +842,11 @@ const FieldGrid: React.FC<{
       <div key={f.key} data-field={key} className={`space-y-1.5 ${isWide(f) ? 'col-span-2' : 'min-w-0'}`}>
         {f.type !== 'checkbox' && (
           <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 min-w-0">
-            <span className="leading-snug">
+            {/* Labels stay on one line so the inputs in a row line up */}
+            <span className="leading-snug truncate" title={f.editLabel ?? f.label}>
               {f.editLabel ?? f.label}
               {f.required && !isReadOnly(f) && <span className="text-rose-500"> *</span>}
             </span>
-            {f.type === 'auto' && !hideAutoTags && (
-              <span className="px-1.5 py-px rounded-md bg-blue-50 text-[9px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">Auto</span>
-            )}
           </label>
         )}
         <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
@@ -1123,6 +1119,218 @@ const ListSection: React.FC<{
   );
 };
 
+/* ------------------------------ List entry sheet ------------------------------ */
+
+const ENTRY_SHEET_ICONS: Record<string, React.ReactNode> = {
+  experiences: <BriefcaseBusiness className="w-5 h-5" />,
+};
+
+/**
+ * Add / edit a list's entries in a bottom sheet (config.sheet === 'form', e.g. Experience).
+ * "Add" lands straight on a blank form; "Add another" stacks more as an accordion where only one is open.
+ */
+const ListEntrySheet: React.FC<{
+  config: ProfileListConfig;
+  isOpen: boolean;
+  /** The entry being edited; none = adding new ones */
+  editing: ProfileListItem | null;
+  onClose: () => void;
+  onSave: (entries: ProfileListItem[]) => void;
+}> = ({ config, isOpen, editing, onClose, onSave }) => {
+  const [entries, setEntries] = useState<ProfileListItem[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Fixed when the sheet opens so the title doesn't flip while it slides away
+  const [isEdit, setIsEdit] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const noun = config.itemLabel.toLowerCase();
+
+  const blank = (): ProfileListItem => ({ id: `${config.key}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const first = editing ? { ...editing } : blank();
+    setIsEdit(Boolean(editing));
+    setEntries([first]);
+    setOpenId(first.id);
+    setErrors({});
+    bodyRef.current?.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const reveal = (id: string) =>
+    requestAnimationFrame(() => bodyRef.current?.querySelector(`[data-entry="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // FieldGrid can fire several changes at once (location cascade), so update functionally
+  const patch = (id: string, key: string, value: ProfileValue) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
+    setErrors((prev) => {
+      const k = listErrorKey(config.key, id, key);
+      if (!prev[k]) return prev;
+      const next = { ...prev };
+      delete next[k];
+      return next;
+    });
+  };
+  const addAnother = () => {
+    const e = blank();
+    setEntries((prev) => [...prev, e]);
+    setOpenId(e.id);
+    reveal(e.id);
+  };
+  const toggle = (id: string) => {
+    setOpenId((cur) => (cur === id ? null : id));
+    if (openId !== id) reveal(id);
+  };
+  const remove = (id: string) => {
+    const next = entries.filter((e) => e.id !== id);
+    setEntries(next);
+    if (openId === id) setOpenId(next[next.length - 1]?.id ?? null);
+  };
+
+  const started = (e: ProfileListItem) =>
+    Object.entries(e).some(([k, v]) => k !== 'id' && (Array.isArray(v) ? v.length > 0 : Boolean(v)));
+  const hasError = (id: string) => Object.keys(errors).some((k) => k.startsWith(listErrorKey(config.key, id, '')) && errors[k]);
+
+  const save = () => {
+    // Extra entries left blank are dropped; if nothing was filled, the first one asks for its required fields
+    const filled = entries.filter(started);
+    const toCheck = filled.length ? filled : entries.slice(0, 1);
+    const found: Record<string, string> = {};
+    toCheck.forEach((e) =>
+      visibleFields(config.fields, e).forEach((f) => {
+        const msg = validate(f, e);
+        if (msg) found[listErrorKey(config.key, e.id, f.key)] = msg;
+      })
+    );
+    setErrors(found);
+    const firstKey = Object.keys(found)[0];
+    if (firstKey) {
+      const bad = toCheck.find((e) => firstKey.startsWith(listErrorKey(config.key, e.id, '')));
+      if (bad) setOpenId(bad.id);
+      setTimeout(() => bodyRef.current?.querySelector(`[data-field="${firstKey}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      return;
+    }
+    onSave(filled);
+  };
+
+  const count = entries.filter(started).length;
+  const grid = (e: ProfileListItem) => (
+    <FieldGrid
+      fields={config.fields}
+      values={e}
+      editing
+      errors={errors}
+      errorKey={(k) => listErrorKey(config.key, e.id, k)}
+      onChange={(k, v) => patch(e.id, k, v)}
+    />
+  );
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[94%]">
+      <div className="pt-3 pb-1 flex justify-center shrink-0">
+        <div className="w-10 h-1 bg-slate-300 rounded-full" />
+      </div>
+      <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-10 h-10 rounded-xl bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-sm">
+            {ENTRY_SHEET_ICONS[config.key] ?? <FileText className="w-5 h-5" />}
+          </span>
+          <h2 className="text-base font-bold text-[#1E293B] truncate">{isEdit ? `Edit ${config.itemLabel}` : config.addLabel}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer shrink-0"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4 space-y-3 bg-[#F8FAFC]">
+        {entries.map((e, i) => {
+          if (entries.length === 1)
+            // A single entry needs no card chrome: just the form
+            return (
+              <div key={e.id} data-entry={e.id} className="rounded-xl border border-slate-200 bg-white p-3.5">
+                {grid(e)}
+              </div>
+            );
+          // Several: an accordion, only the one being filled is open
+          const open = openId === e.id;
+          const bad = hasError(e.id);
+          const lead = config.entryTitle?.(e) || `${config.itemLabel} ${i + 1}`;
+          const summary = config.entrySummary?.(e) || (started(e) ? 'In progress' : 'Not filled yet');
+          return (
+            <div
+              key={e.id}
+              data-entry={e.id}
+              className={`rounded-xl border bg-white overflow-hidden scroll-mt-2 ${
+                bad ? 'border-rose-300' : open ? 'border-[#2F68FE]/40 ring-2 ring-[#2F68FE]/10' : 'border-slate-200'
+              }`}
+            >
+              <div className={`flex items-center gap-2.5 pl-3.5 pr-2 py-2.5 ${open ? 'bg-blue-50/60 border-b border-blue-100' : ''}`}>
+                <button type="button" onClick={() => toggle(e.id)} className="flex-1 min-w-0 flex items-center gap-2.5 text-left cursor-pointer">
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      bad ? 'bg-rose-100 text-rose-500' : open ? 'bg-[#2F68FE] text-white' : 'bg-blue-100 text-[#2F68FE]'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-[#1E293B] truncate">{lead}</span>
+                    <span className={`block text-[11px] truncate ${bad ? 'text-rose-500 font-medium' : 'text-slate-500'}`}>
+                      {bad ? 'Needs attention' : summary}
+                    </span>
+                  </span>
+                  <ChevronDown className={`w-4.5 h-4.5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(e.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-500 active:bg-rose-50 cursor-pointer shrink-0"
+                  aria-label={`Delete ${noun} ${i + 1}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              {open && <div className="p-3.5 animate-in fade-in duration-200">{grid(e)}</div>}
+            </div>
+          );
+        })}
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={addAnother}
+            className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/40 bg-white flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#EEF4FF] cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            Add another {noun}
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0 bg-white">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+        >
+          {isEdit ? 'Save Changes' : count > 1 ? `${config.addLabel.replace(/^Add /, 'Add ' + count + ' ')}s` : config.addLabel}
+        </button>
+      </div>
+    </BottomSheet>
+  );
+};
+
 /* ------------------------------- Skills sections ----------------------------- */
 
 /** Read-only strength meter for view mode */
@@ -1289,6 +1497,14 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
   // Academic Qualification: add several / edit one in a sheet (editId null = adding)
   const [qualSheet, setQualSheet] = useState<{ listKey: string; editId: string | null } | null>(null);
+  // Experience: same idea with the list's own fields (kept after closing so the sheet can slide away)
+  const [entrySheet, setEntrySheet] = useState<{ config: ProfileListConfig; editId: string | null; open: boolean } | null>(null);
+  /** Add (id null) or edit an entry of a list: in its sheet, or inline for lists without one */
+  const openEntry = (config: ProfileListConfig, id: string | null) => {
+    if (config.sheet === 'qualification') setQualSheet({ listKey: config.key, editId: id });
+    else if (config.sheet === 'form') setEntrySheet({ config, editId: id, open: true });
+    else addItem(config);
+  };
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   // Tabs are transparent at rest; once pinned to the top they get a backdrop so content doesn't show through
@@ -1550,8 +1766,8 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     items={shown.lists[section.list.key] ?? []}
                     editing={editing}
                     errors={errors}
-                    onAdd={() => (section.list!.sheet ? setQualSheet({ listKey: section.list!.key, editId: null }) : addItem(section.list!))}
-                    onEditItem={(id) => setQualSheet({ listKey: section.list!.key, editId: id })}
+                    onAdd={() => openEntry(section.list!, null)}
+                    onEditItem={(id) => openEntry(section.list!, id)}
                     onRemove={(id) => updateList(section.list!.key, (items) => items.filter((it) => it.id !== id))}
                     onChange={(id, key, value) => {
                       updateList(section.list!.key, (items) => items.map((it) => (it.id === id ? { ...it, [key]: value } : it)));
@@ -1591,7 +1807,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                       errors={errors}
                       errorKey={(k) => k}
                       onChange={setValue}
-                      hideAutoTags={Boolean(section.badge)}
                     />
                     {/* Fields + a list in one card (Family Details: parents / guardian, then Family Members) */}
                     {section.list && (
@@ -1656,7 +1871,27 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         </div>
       )}
 
-      {/* Discard confirmation */}
+      {/* Experience (and other sheet: 'form' lists): add several / edit one */}
+      {entrySheet && (
+        <ListEntrySheet
+          config={entrySheet.config}
+          isOpen={entrySheet.open}
+          editing={entrySheet.editId ? draft.lists[entrySheet.config.key]?.find((it) => it.id === entrySheet.editId) ?? null : null}
+          onClose={() => setEntrySheet((s) => s && { ...s, open: false })}
+          onSave={(entries) => {
+            const { config, editId } = entrySheet;
+            updateList(config.key, (items) =>
+              editId ? items.map((it) => (it.id === editId ? { ...entries[0], id: editId } : it)) : [...items, ...entries]
+            );
+            // Fields on the entries were checked in the sheet; drop any stale page errors for them
+            setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(`${config.key}-`))));
+            if (!editId && entries[0]) setScrollToItem(entries[0].id);
+            setEntrySheet((s) => s && { ...s, open: false });
+          }}
+        />
+      )}
+
+      {/* Academic Qualification */}
       <AcademicQualificationSheet
         isOpen={qualSheet !== null}
         editing={(() => {
