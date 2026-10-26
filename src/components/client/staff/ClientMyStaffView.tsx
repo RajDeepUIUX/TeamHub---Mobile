@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BriefcaseBusiness, CalendarDays, ChevronRight, Clock, Eye, FileText, Layers, Loader2, MapPin, Search, UsersRound, X } from 'lucide-react';
+import { BriefcaseBusiness, CalendarDays, Clock, Eye, FileText, Layers, Loader2, MapPin, Search, UsersRound, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import {
@@ -17,7 +17,7 @@ import { ClientStaffDetailView, StaffProfileEdits } from './ClientStaffDetailVie
 import type { AmendRequest } from '../data/clientAttendanceData';
 import { DesignVersion, ScreenHeader } from './tabs/StaffTabParts';
 
-const DESIGN_VERSIONS = ['V1', 'V2', 'V3'] as const;
+const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 type ListKey = 'level' | 'designation' | 'engagementType' | 'location';
 const LIST_LABELS: Record<ListKey, string> = { level: 'Level', designation: 'Designation', engagementType: 'Engagement Type', location: 'Location' };
@@ -51,7 +51,7 @@ const LOAD_MS = 600;
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading staff">
     {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3 shadow-2xs">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">
@@ -78,7 +78,6 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   // Shared by the list and Staff Details
   const [version, setVersion] = useState<DesignVersion>('V1');
   const v2 = version === 'V2';
-  const v3 = version === 'V3';
   const listTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,7 +175,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         }}
         placeholder="Search By Name"
         className={`w-full h-11 pl-10 pr-9 border rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden ${
-          v3 ? 'bg-white border-transparent' : v2 ? 'bg-[#F8FAFC] border-[#EBF0F7] focus:bg-white' : 'bg-white border-slate-200 shadow-2xs'
+          'bg-slate-50 border-slate-200 focus:bg-white'
         }`}
       />
       {query && (
@@ -199,9 +198,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         {applied.map((a) => (
           <span
             key={a.key}
-            className={`shrink-0 h-7 pl-2.5 pr-1.5 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 max-w-[260px] ${
-              v2 ? 'rounded-lg bg-white border border-[#C7D7FE]' : 'rounded-full bg-[#EEF2FF]'
-            }`}
+            className="shrink-0 h-7 pl-2.5 pr-1.5 rounded-full bg-[#EEF2FF] text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 max-w-[260px]"
           >
             <span className="truncate">{a.label}</span>
             <button
@@ -211,7 +208,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
                 reload();
               }}
               aria-label={`Remove ${a.label}`}
-              className={`w-4 h-4 rounded-full flex items-center justify-center cursor-pointer ${v2 ? 'bg-[#EEF2FF]' : 'bg-white/80'}`}
+              className="w-4 h-4 rounded-full bg-white/80 flex items-center justify-center cursor-pointer"
             >
               <X className="w-2.5 h-2.5" />
             </button>
@@ -227,8 +224,8 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   );
 
   const emptyState = (
-    <div className="py-12 px-6 flex flex-col items-center text-center bg-white border border-[#DCE3ED] rounded-2xl">
-      <span className={`w-14 h-14 rounded-2xl flex items-center justify-center ${v2 ? 'bg-[#EEF2FF] text-[#2F68FE]' : 'bg-slate-100 text-slate-400'}`}>
+    <div className="py-12 px-6 flex flex-col items-center text-center bg-white border border-[#EBF0F7] rounded-2xl">
+      <span className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
         <UsersRound className="w-6 h-6" />
       </span>
       <p className="mt-3 text-sm font-bold">{staff.length === 0 ? 'No staff hired yet.' : 'No staff match your search.'}</p>
@@ -237,7 +234,9 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         <button
           type="button"
           onClick={clearAll}
-          className="mt-4 h-10 px-5 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+          className={`mt-4 h-10 px-5 rounded-xl text-[#2F68FE] text-xs font-bold cursor-pointer ${
+            v2 ? 'bg-[#EEF2FF] active:bg-[#E0E7FF]' : 'active:bg-blue-50/50'
+          }`}
         >
           Clear All
         </button>
@@ -256,9 +255,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
           setMoreLoading(false);
         }, LOAD_MS);
       }}
-      className={`mt-3 w-full h-11 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-        v2 ? 'rounded-full bg-[#EEF2FF] active:bg-[#E0E7FF]' : 'rounded-xl border border-slate-200 bg-white active:bg-slate-50'
-      }`}
+      className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait active:bg-slate-50 transition-colors cursor-pointer"
     >
       {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
       {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
@@ -268,49 +265,63 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   /* ---------- Card (V1) ---------- */
 
   const card = (s: ClientStaffMember) => (
-    <li key={s.id} className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setSelectedId(s.id)}
-        disabled={!canView}
-        aria-label={`View ${s.name}`}
-        className="w-full p-3.5 pb-3 flex items-center gap-3 text-left active:bg-slate-50 disabled:active:bg-transparent transition-colors cursor-pointer disabled:cursor-default"
-      >
-        <StaffAvatar name={s.name} tint={tintOf(s.id)} />
-        <span className="flex-1 min-w-0">
-          <span className="block text-[13.5px] font-bold text-[#2F68FE] truncate">{s.name}</span>
-          <span className="block text-[11.5px] text-slate-500 break-words">{s.designation}</span>
-        </span>
-        <StaffStatusPill status={s.status} full />
-      </button>
+    <li key={s.id} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+      <div className="p-3.5 space-y-3">
+        <button
+          type="button"
+          onClick={() => setSelectedId(s.id)}
+          disabled={!canView}
+          aria-label={`View ${s.name}`}
+          className="w-full rounded-xl flex items-start gap-3 text-left active:opacity-80 transition-opacity cursor-pointer disabled:cursor-default disabled:active:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+        >
+          <span className="shrink-0">
+            <StaffAvatar name={s.name} tint={tintOf(s.id)} />
+          </span>
+          <span className="flex-1 min-w-0 pt-0.5">
+            <span className="block text-[13px] font-bold text-[#1E293B] leading-5 truncate">{s.name}</span>
+            <span className="block text-[11.5px] text-slate-500 leading-4 break-words">{s.designation}</span>
+          </span>
+          <span className="shrink-0 pt-0.5">
+            <StaffStatusPill status={s.status} full />
+          </span>
+        </button>
 
-      {/* Desktop table columns */}
-      <dl className="mx-3.5 grid grid-cols-2 rounded-xl bg-slate-50 border border-slate-100">
-        {[
-          ['Level', s.level],
-          ['Joining Date', formatStaffDate(s.joiningDate)],
-          ['Engagement Type', s.engagementType ?? '--'],
-          ['Location', s.location],
-          ['Additional Availability (Per Week)', s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'],
-        ].map(([label, value], idx) => (
-          <div key={label} className={`px-2.5 py-2 min-w-0 ${idx === 4 ? 'col-span-2' : ''}`}>
-            <dt className="text-[11px] font-semibold text-slate-400 truncate">{label}</dt>
-            <dd className="mt-0.5 text-[11.5px] font-semibold text-[#1E293B] truncate tabular-nums">{value}</dd>
-          </div>
-        ))}
-      </dl>
+        {/* Desktop table columns */}
+        <dl className="grid grid-cols-2 gap-2">
+          {[
+            ['Level', s.level],
+            ['Joining Date', formatStaffDate(s.joiningDate)],
+            ['Engagement Type', s.engagementType ?? '--'],
+            ['Location', s.location],
+            ['Additional Availability (Per Week)', s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'],
+          ].map(([label, value], idx) => {
+            const lead = idx === 0;
+            return (
+              <div
+                key={label}
+                className={`px-2.5 py-2 rounded-xl min-w-0 border ${idx === 4 ? 'col-span-2' : ''} ${
+                  lead ? 'bg-[#EEF4FF] border-[#DBE6FE]' : 'bg-slate-50 border-slate-100'
+                }`}
+              >
+                <dt className="text-[10px] font-semibold text-slate-500 truncate">{label}</dt>
+                <dd className={`mt-0.5 text-xs font-bold tabular-nums truncate ${lead ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{value}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      </div>
 
       {(canView || onOpenTimesheets) && (
-        <div className="px-3.5 py-3 flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3.5 pb-3.5">
           {canView && (
             <button
               type="button"
               onClick={() => setSelectedId(s.id)}
               aria-label={`View details of ${s.name}`}
-              className="flex-1 h-10 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100 cursor-pointer"
+              className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 active:bg-slate-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
             >
-              <Eye className="w-4 h-4 shrink-0" />
-              View Details
+              <Eye className="w-3.5 h-3.5 shrink-0 text-[#2F68FE]" />
+              <span className="truncate">View Details</span>
             </button>
           )}
           {onOpenTimesheets && (
@@ -318,10 +329,10 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
               type="button"
               onClick={() => onOpenTimesheets(s)}
               aria-label={`Timesheets of ${s.name}`}
-              className="flex-1 h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
+              className="flex-1 min-w-0 h-9 px-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 active:bg-slate-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
             >
-              <FileText className="w-4 h-4 shrink-0" />
-              Timesheets
+              <FileText className="w-3.5 h-3.5 shrink-0 text-[#2F68FE]" />
+              <span className="truncate">Timesheets</span>
             </button>
           )}
         </div>
@@ -329,100 +340,11 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
     </li>
   );
 
-  /* ---------- Card (V2): white card, accent strip, icon fact list, split action footer ---------- */
+  /* ---------- Card (V2): accent rail, identity row, 3-up fact strip, chip row, icon action pair ---------- */
 
-  const cardV2 = (s: ClientStaffMember) => {
-    const facts = [
-      { icon: Layers, tint: 'bg-[#EEF2FF] text-[#4F46E5]', label: 'Level', value: s.level },
-      { icon: CalendarDays, tint: 'bg-[#E8F8F0] text-[#10B981]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
-      { icon: BriefcaseBusiness, tint: 'bg-[#FEF8E7] text-[#D97706]', label: 'Engagement Type', value: s.engagementType ?? '--' },
-      { icon: MapPin, tint: 'bg-[#EFF6FF] text-[#2F68FE]', label: 'Location', value: s.location },
-      {
-        icon: Clock,
-        tint: 'bg-[#F5F3FF] text-[#7C3AED]',
-        label: 'Additional Availability (Per Week)',
-        value: s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--',
-      },
-    ];
-    const actions = canView || onOpenTimesheets;
-    return (
-      <li key={s.id}>
-        <article className="relative overflow-hidden rounded-2xl border border-[#E6EBF5] bg-white shadow-[0_8px_20px_-14px_rgba(15,23,42,0.35)]">
-          <span aria-hidden="true" className="block h-1 bg-linear-to-r from-[#2F68FE] to-[#4F46E5]" />
-          <button
-            type="button"
-            onClick={() => setSelectedId(s.id)}
-            disabled={!canView}
-            aria-label={`View ${s.name}`}
-            className="w-full px-3.5 pt-3 pb-3 flex items-center gap-3 text-left active:bg-slate-50 disabled:active:bg-transparent transition-colors cursor-pointer disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
-          >
-            <span className="p-0.5 rounded-full bg-linear-to-br from-[#2F68FE] to-[#4F46E5] shrink-0">
-              <span className="block rounded-full ring-2 ring-white">
-                <StaffAvatar name={s.name} tint={tintOf(s.id)} />
-              </span>
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="flex items-center gap-2">
-                <span className="flex-1 min-w-0 text-[14px] font-bold text-[#1E293B] leading-snug truncate">{s.name}</span>
-                <StaffStatusPill status={s.status} />
-              </span>
-              <span className="block mt-0.5 text-[11.5px] text-slate-500 leading-snug break-words">{s.designation}</span>
-            </span>
-            {canView && <ChevronRight className="w-5 h-5 text-[#2F68FE]/50 shrink-0" aria-hidden="true" />}
-          </button>
-
-          {/* Desktop table columns */}
-          <dl className="mx-3.5 border-t border-dashed border-[#E2E8F0] divide-y divide-[#F1F5F9]">
-            {facts.map((f) => {
-              const Icon = f.icon;
-              return (
-                <div key={f.label} className="min-w-0 py-2 flex items-center gap-2.5">
-                  <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${f.tint}`} aria-hidden="true">
-                    <Icon className="w-3.5 h-3.5" />
-                  </span>
-                  <dt className="flex-1 min-w-0 text-[11.5px] font-medium text-slate-500 truncate">{f.label}</dt>
-                  <dd className="shrink-0 max-w-[50%] text-[12px] font-bold text-[#1E293B] text-right truncate tabular-nums">{f.value}</dd>
-                </div>
-              );
-            })}
-          </dl>
-
-          {actions && (
-            <div className="mt-1 flex border-t border-[#EEF2F7] divide-x divide-[#EEF2F7]">
-              {canView && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(s.id)}
-                  aria-label={`View details of ${s.name}`}
-                  className="flex-1 h-11 bg-[#F5F8FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#E8EFFF] cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
-                >
-                  <Eye className="w-4 h-4 shrink-0" />
-                  View Details
-                </button>
-              )}
-              {onOpenTimesheets && (
-                <button
-                  type="button"
-                  onClick={() => onOpenTimesheets(s)}
-                  aria-label={`Timesheets of ${s.name}`}
-                  className="flex-1 h-11 bg-white text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
-                >
-                  <FileText className="w-4 h-4 shrink-0" />
-                  Timesheets
-                </button>
-              )}
-            </div>
-          )}
-        </article>
-      </li>
-    );
-  };
-
-  /* ---------- Card (V3): accent rail, identity row, 3-up fact strip, chip row, icon action pair ---------- */
-
-  const cardV3 = (s: ClientStaffMember) => (
+  const cardV2 = (s: ClientStaffMember) => (
     <li key={s.id}>
-      <article className="relative bg-white rounded-2xl border border-[#EBF0F7] shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)] overflow-hidden">
+      <article className="relative bg-white rounded-[20px] border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="px-3.5 pt-3.5 flex items-center gap-3">
           <button
             type="button"
@@ -433,37 +355,37 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
           >
             <StaffAvatar name={s.name} tint={tintOf(s.id)} />
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] font-bold text-[#1E293B] leading-snug truncate">{s.name}</span>
-              <span className="block text-[11.5px] text-slate-500 leading-snug break-words">{s.designation}</span>
+              <span className="block text-sm font-bold text-[#1E293B] leading-snug truncate">{s.name}</span>
+              <span className="block text-[11px] text-slate-400 leading-snug break-words">{s.designation}</span>
             </span>
           </button>
           <StaffStatusPill status={s.status} />
         </div>
 
         {/* Desktop table columns */}
-        <dl className="mt-3 mx-3.5 grid grid-cols-3 rounded-xl bg-[#F8FAFC] divide-x divide-[#EBF0F7]">
+        <dl className="mt-3 mx-3.5 grid grid-cols-3 rounded-xl bg-slate-50/80 border border-slate-100 divide-x divide-slate-100">
           {[
-            { icon: Layers, tint: 'bg-[#EEF2FF] text-[#4F46E5]', label: 'Level', value: s.level },
-            { icon: CalendarDays, tint: 'bg-[#E8F8F0] text-[#10B981]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
-            { icon: MapPin, tint: 'bg-[#EFF6FF] text-[#2F68FE]', label: 'Location', value: s.location },
+            { icon: Layers, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Level', value: s.level },
+            { icon: CalendarDays, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
+            { icon: MapPin, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Location', value: s.location },
           ].map(({ icon: Icon, tint, label, value }) => (
             <div key={label} className="px-2 py-2.5 min-w-0 flex flex-col items-center text-center">
               <span className={`w-7 h-7 rounded-full flex items-center justify-center ${tint}`} aria-hidden="true">
                 <Icon className="w-3.5 h-3.5" />
               </span>
               <dt className="mt-1.5 max-w-full text-[10px] font-semibold text-slate-400 truncate">{label}</dt>
-              <dd className="mt-0.5 max-w-full text-[11.5px] font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
+              <dd className="mt-0.5 max-w-full text-xs font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
             </div>
           ))}
         </dl>
 
         <dl className="px-3.5 pt-2.5 flex flex-wrap gap-1.5">
-          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#FEF8E7] text-[#B45309] flex items-center gap-1.5 min-w-0">
+          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center gap-1.5 min-w-0">
             <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <dt className="text-[11px] font-medium truncate">Engagement Type:</dt>
             <dd className="text-[11px] font-bold shrink-0">{s.engagementType ?? '--'}</dd>
           </div>
-          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] flex items-center gap-1.5 min-w-0">
+          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center gap-1.5 min-w-0">
             <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <dt className="text-[11px] font-medium truncate">Additional Availability (Per Week):</dt>
             <dd className="text-[11px] font-bold shrink-0 tabular-nums">{s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'}</dd>
@@ -471,13 +393,13 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         </dl>
 
         {(canView || onOpenTimesheets) ? (
-          <div className="px-3.5 pt-3 pb-3.5 flex items-center gap-2">
+          <div className="px-3.5 py-3 mt-3 border-t border-slate-100 flex items-center gap-2">
             {onOpenTimesheets && (
               <button
                 type="button"
                 onClick={() => onOpenTimesheets(s)}
                 aria-label={`Timesheets of ${s.name}`}
-                className="flex-1 h-10 rounded-full bg-[#F1F5F9] text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                className="flex-1 h-9 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
               >
                 <FileText className="w-4 h-4 shrink-0" />
                 Timesheets
@@ -488,7 +410,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
                 type="button"
                 onClick={() => setSelectedId(s.id)}
                 aria-label={`View details of ${s.name}`}
-                className="flex-1 h-10 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)] active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                className="flex-1 h-9 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
               >
                 <Eye className="w-4 h-4 shrink-0" />
                 View Details
@@ -507,35 +429,13 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   ) : results.length === 0 ? (
     emptyState
   ) : (
-    <ul className="space-y-3">{visible.map((s) => (v3 ? cardV3(s) : v2 ? cardV2(s) : card(s)))}</ul>
+    <ul className="space-y-3">{visible.map((s) => (v2 ? cardV2(s) : card(s)))}</ul>
   );
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <ScreenHeader title="My Staff" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
-      {v3 ? (
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-          <div ref={listTopRef} />
-          {/* Blue search band under the header */}
-          <div className="px-4 pt-4 pb-5 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] rounded-b-[24px]">
-            <div className="flex items-center gap-2.5">
-              {searchBox}
-              <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
-            </div>
-            {!loading && (
-              <p className="mt-3 px-1 flex items-center gap-2 text-xs font-semibold text-white/90 tabular-nums">
-                <UsersRound className="w-4 h-4" aria-hidden="true" />
-                {results.length} staff
-              </p>
-            )}
-          </div>
-          {appliedRow}
-          <div className="px-4 mt-3">
-            {list}
-            {loadMore}
-          </div>
-        </div>
-      ) : v2 ? (
+      {v2 ? (
         <>
           {/* Search toolbar pinned under the header */}
           <div className="shrink-0 bg-white px-4 py-3 border-b border-[#EBF0F7] flex items-center gap-2.5">
@@ -545,39 +445,28 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
           <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
             <div ref={listTopRef} />
             {appliedRow}
-            <div className="px-4 mt-3">
-              {!loading && (
-                <p className="mb-2.5 px-1 flex items-center gap-2 text-xs font-semibold text-slate-500 tabular-nums">
-                  <span className="w-1 h-3.5 rounded-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden="true" />
-                  {results.length} staff
-                </p>
-              )}
+            <div className="px-4 mt-3.5">
               {list}
               {loadMore}
             </div>
           </div>
         </>
       ) : (
-        <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-          <div ref={listTopRef} className="px-4 pt-4">
-            <div className="flex items-center gap-3 mb-1.5">
-              {!loading && <span className="text-xs font-semibold text-slate-500 tabular-nums">{results.length} staff</span>}
-            </div>
-
-            {/* Search + filters */}
-            <div className="mt-3 flex items-center gap-2.5">
-              {searchBox}
-              <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
+        <>
+          {/* Search + filters pinned under the header */}
+          <div className="shrink-0 bg-white px-4 py-3 border-b border-[#EBF0F7] flex items-center gap-2.5">
+            {searchBox}
+            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
+            <div ref={listTopRef} />
+            {appliedRow}
+            <div className="px-4 mt-3.5">
+              {list}
+              {loadMore}
             </div>
           </div>
-
-          {appliedRow}
-
-          <div className="px-4 mt-3">
-            {list}
-            {loadMore}
-          </div>
-        </div>
+        </>
       )}
 
       <ClientStaffFilterSheet

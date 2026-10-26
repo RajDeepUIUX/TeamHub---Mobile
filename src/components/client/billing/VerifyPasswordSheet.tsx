@@ -56,11 +56,11 @@ export const VerifyPasswordSheet: React.FC<Props> = ({ isOpen, purpose, onClose,
     <BottomSheet isOpen={isOpen} onClose={close} maxHeight="max-h-[70%]">
       <SheetHeader title="Verify Portal Password" subtitle="Sensitive payment details" onClose={close} />
       <div className="px-5 py-4 space-y-4">
-        <div className="flex items-start gap-3 p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE]">
-          <span className="w-10 h-10 rounded-xl bg-white text-[#2F68FE] flex items-center justify-center shrink-0">
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+          <span className="w-10 h-10 rounded-xl bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </span>
-          <p className="text-[12px] text-[#1E3A8A] leading-relaxed">
+          <p className="text-xs font-medium text-[#2F68FE] leading-relaxed">
             Enter your portal password to {purpose}. Details hide again after 2 minutes.
           </p>
         </div>
@@ -97,7 +97,7 @@ export const VerifyPasswordSheet: React.FC<Props> = ({ isOpen, purpose, onClose,
           {error ? (
             <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>
           ) : (
-            <p className="px-0.5 text-[10.5px] text-slate-400">Prototype: any password of {VERIFY_MIN_LENGTH}+ characters works.</p>
+            <p className="px-0.5 text-[11px] font-medium text-slate-400">Prototype: any password of {VERIFY_MIN_LENGTH}+ characters works.</p>
           )}
         </label>
       </div>
@@ -106,7 +106,7 @@ export const VerifyPasswordSheet: React.FC<Props> = ({ isOpen, purpose, onClose,
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer disabled:opacity-60"
+          className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer disabled:opacity-60"
         >
           Cancel
         </button>
@@ -114,7 +114,7 @@ export const VerifyPasswordSheet: React.FC<Props> = ({ isOpen, purpose, onClose,
           type="button"
           onClick={verify}
           disabled={busy}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer disabled:opacity-80 disabled:cursor-wait"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy ? 'Verifying…' : 'Verify'}

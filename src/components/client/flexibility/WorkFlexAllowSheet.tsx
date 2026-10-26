@@ -123,7 +123,7 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
         <div className="px-4 pt-3 space-y-3">
-          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-[#F0F6FF] border border-[#DBEAFE] text-[11.5px] leading-relaxed text-[#1E40AF]">
+          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-blue-50 border border-blue-100 text-xs leading-relaxed text-[#2F68FE]">
             <Info className="w-4 h-4 shrink-0 mt-px" />
             <span>{item.desc}</span>
           </p>
@@ -131,7 +131,7 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
           {needsTiming && (
             <section>
               <h3 className="flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
-                <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10.5px] font-bold flex items-center justify-center">1</span>
+                <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center">1</span>
                 When does this apply?
               </h3>
               <div role="radiogroup" aria-label="When does this apply" className="mt-2 grid grid-cols-2 gap-2">
@@ -145,7 +145,7 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
                       role="radio"
                       aria-checked={on}
                       onClick={() => setDraft((prev) => (prev ? { ...prev, timing: t.key } : prev))}
-                      className={`relative p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`relative p-3 rounded-xl border text-left shadow-2xs transition-all cursor-pointer ${
                         on ? 'border-[#2F68FE] bg-blue-50/50 ring-4 ring-blue-50' : 'border-slate-200 bg-white'
                       }`}
                     >
@@ -157,9 +157,9 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
                         {on && <Check className="w-3 h-3 stroke-[3]" />}
                       </span>
                       <span className="inline-flex px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#4F46E5] text-[10px] font-bold items-center">{t.tag}</span>
-                      <span className="mt-1.5 block text-[12px] font-bold text-[#1E293B] leading-snug">{t.title}</span>
-                      <span className="mt-0.5 block text-[10.5px] text-slate-500 leading-snug">{t.desc}</span>
-                      <span className="mt-1.5 block text-[10.5px] font-semibold text-slate-400 tabular-nums">{count} allowed</span>
+                      <span className="mt-1.5 block text-xs font-bold text-[#1E293B] leading-snug">{t.title}</span>
+                      <span className="mt-0.5 block text-[11px] text-slate-500 leading-snug">{t.desc}</span>
+                      <span className="mt-1.5 block text-[11px] font-semibold text-slate-400 tabular-nums">{count} allowed</span>
                     </button>
                   );
                 })}
@@ -174,7 +174,7 @@ export const WorkFlexAllowSheet: React.FC<Props> = ({ isOpen, flexKey, current, 
           <div className="px-4 pt-3 pb-4">
             {needsTiming && (
               <h3 className="mb-2 flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
-                <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10.5px] font-bold flex items-center justify-center">2</span>
+                <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center">2</span>
                 Who is allowed?
               </h3>
             )}

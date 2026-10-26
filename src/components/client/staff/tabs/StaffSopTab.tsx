@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { CheckCircle2, Eye, FileText, MessageSquare, Pencil, Send, Trash2, Video } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle2, Eye, FileText, Loader2, MessageSquare, Pencil, Send, Sparkles, Trash2, Video } from 'lucide-react';
+import { BottomSheet } from '../../../common/BottomSheet';
 import { CommentThreadSheet } from '../../../common/CommentThreadSheet';
+import { SegmentedTabs } from '../../../../design-system/components/SegmentedTabs';
 import { formatStaffDate } from '../../data/clientStaffData';
-import { SOP_DECISIONS, SopRecord, SopStatus } from '../../data/clientStaffProfileData';
-import { ACCENT, AccentCard, Card, ConfirmSheet, EmptyCard, FieldGrid, Pill, RowList, Tone, useNotice } from './StaffTabParts';
+import { SOP_DECISIONS, SOP_DOC_FORMATS, SOP_VIDEO_FORMATS, SopRecord, SopStatus } from '../../data/clientStaffProfileData';
+import { ACCENT, AccentCard, Card, ConfirmSheet, EmptyCard, Pill, RowList, SheetHeader, TextField, Tone, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
 import { FileUploadField } from '../../../common/FileUploadField';
 
@@ -15,6 +17,8 @@ interface StaffSopTabProps {
   v2?: boolean;
 }
 
+type Mode = 'document' | 'ai';
+type Stage = 'form' | 'uploading' | 'processing' | 'done';
 type Confirm =
   | { kind: 'delete'; sop: SopRecord }
   | { kind: 'publish'; sop: SopRecord }
@@ -22,10 +26,12 @@ type Confirm =
   | null;
 
 const STATUS_TONE: Record<SopStatus, Tone> = { Pending: 'amber', Approved: 'green', Rejected: 'rose', 'Not Required': 'slate' };
+const MAX_VIDEO_MB = 500;
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+const extOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
 /** Desktop "SOP" tab (sop_tab.tpl): status decision, feedback, view, delete, publish */
 export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName, sops, onChange, v2 }) => {
@@ -83,6 +89,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
   else if (mode === 'ai' && file.size > MAX_VIDEO_MB * 1024 * 1024) errors.file = `Video is larger than ${MAX_VIDEO_MB}MB`;
   else if (mode === 'document' && file.size > 10 * 1024 * 1024) errors.file = 'File is larger than 10 MB';
   const valid = !errors.name && !errors.file;
+  const busy = stage === 'uploading' || stage === 'processing';
 
   const addSop = (kind: Mode, steps?: number) => {
     const sop: SopRecord = {
@@ -177,8 +184,8 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                         {s.kind === 'ai' ? <Video className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10.5px] text-slate-400">SOP Name</p>
-                        <p className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{s.name}</p>
+                        <p className="text-[11px] text-slate-400">SOP Name</p>
+                        <p className="text-sm font-bold text-[#1E293B] leading-snug">{s.name}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>
                           {s.published && (
@@ -221,7 +228,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                       <button
                         type="button"
                         onClick={() => setConfirm({ kind: 'publish', sop: s })}
-                        className="mb-3 w-full h-10 rounded-xl bg-linear-to-r from-[#2F68FE] to-[#4F46E5] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:opacity-90 cursor-pointer"
+                        className="mb-3 w-full h-10 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] transition-colors cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" /> Publish SOP
                       </button>
@@ -236,7 +243,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                           type="button"
                           onClick={a.onClick}
                           aria-label={`${a.label} ${s.name}`}
-                          className={`flex-1 h-11 flex items-center justify-center gap-1.5 text-[11.5px] font-bold transition-colors cursor-pointer ${a.cls}`}
+                          className={`flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${a.cls}`}
                         >
                           <Icon className="w-4 h-4" />
                           {a.label}
@@ -261,25 +268,27 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                     {s.kind === 'ai' ? <Video className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10.5px] text-slate-400">SOP Name</p>
+                    <p className="text-[11px] text-slate-400">SOP Name</p>
                     <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{s.name}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10.5px] text-slate-400">Status</p>
-                    <div className="mt-0.5">
-                      <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>
-                    </div>
                   </div>
                 </div>
 
-                <FieldGrid
-                  compact
-                  fields={[
-                    { label: 'Approved/Rejected On', value: s.decidedOn ? formatStaffDate(s.decidedOn) : '-' },
-                    { label: 'Approved/Rejected By', value: s.decidedBy ?? '-' },
-                    { label: 'Created By', value: s.createdBy },
-                  ]}
-                />
+                {/* Approved/Rejected On | By, then Status | Created By (50 / 50) */}
+                <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  {(
+                    [
+                      ['Approved/Rejected On', s.decidedOn ? formatStaffDate(s.decidedOn) : '-'],
+                      ['Approved/Rejected By', s.decidedBy ?? '-'],
+                      ['Status', <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>],
+                      ['Created By', s.createdBy],
+                    ] as [string, React.ReactNode][]
+                  ).map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-[11px] text-slate-400">{label}</dt>
+                      <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
 
                 {perm.edit && s.status === 'Pending' && (
                   <div className="mt-3 grid grid-cols-3 gap-2">
@@ -290,7 +299,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                         onClick={() => setConfirm({ kind: 'status', sop: s, status: d })}
                         className={`h-9 rounded-xl text-[11px] font-bold border cursor-pointer ${
                           d === 'Approved'
-                            ? 'border-[#A7F3D0] bg-[#E8F8F0] text-emerald-700 active:bg-emerald-100'
+                            ? 'border-emerald-200/50 bg-[#E8F8F0] text-emerald-700 active:bg-emerald-100'
                             : d === 'Rejected'
                               ? 'border-rose-200 bg-[#FEF2F2] text-rose-600 active:bg-rose-100'
                               : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
@@ -302,52 +311,53 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                   </div>
                 )}
 
-                <p className="mt-3 pt-3 border-t border-slate-100 text-[10.5px] text-slate-400">Action</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => showNotice(`Opening ${s.name}.`)}
-                    aria-label={`View ${s.name}`}
-                    className="w-9 h-9 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center active:bg-blue-100 cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  {canEdit && (
+                <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                  {/* All four actions don't fit one row: 2 × 2 */}
+                  <div className={canEdit && canDelete ? 'grid grid-cols-2 gap-2' : 'flex items-center gap-2'}>
                     <button
                       type="button"
-                      onClick={() => showNotice(`Opening ${s.name} in the SOP editor.`)}
-                      aria-label={`Edit ${s.name}`}
-                      className="w-9 h-9 rounded-xl border border-slate-200 text-slate-500 flex items-center justify-center active:bg-slate-50 cursor-pointer"
+                      onClick={() => showNotice(`Opening ${s.name}.`)}
+                      aria-label={`View ${s.name}`}
+                      className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100 cursor-pointer"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Eye className="w-4 h-4 shrink-0" /> View
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setFeedbackFor(s.id)}
-                    aria-label={`Feedback on ${s.name}`}
-                    className="relative w-9 h-9 rounded-xl border border-slate-200 text-slate-500 flex items-center justify-center active:bg-slate-50 cursor-pointer"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    {s.feedback.length > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
-                        {s.feedback.length}
-                      </span>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => showNotice(`Opening ${s.name} in the SOP editor.`)}
+                        aria-label={`Edit ${s.name}`}
+                        className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4 shrink-0" /> Edit
+                      </button>
                     )}
-                  </button>
-                  {canDelete && (
                     <button
                       type="button"
-                      onClick={() => setConfirm({ kind: 'delete', sop: s })}
-                      aria-label={`Delete ${s.name}`}
-                      className="w-9 h-9 rounded-xl border border-slate-200 text-rose-500 flex items-center justify-center active:bg-rose-50 cursor-pointer"
+                      onClick={() => setFeedbackFor(s.id)}
+                      aria-label={`Feedback on ${s.name}`}
+                      className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <MessageSquare className="w-4 h-4 shrink-0" /> Feedback
+                      {s.feedback.length > 0 && (
+                        <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums shrink-0">
+                          {s.feedback.length}
+                        </span>
+                      )}
                     </button>
-                  )}
-                  <span className="flex-1" />
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirm({ kind: 'delete', sop: s })}
+                        aria-label={`Delete ${s.name}`}
+                        className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-rose-200 text-rose-500 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-rose-50 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4 shrink-0" /> Delete
+                      </button>
+                    )}
+                  </div>
                   {s.published ? (
-                    <span className="h-9 px-3 rounded-xl bg-[#E8F8F0] border border-[#A7F3D0] text-emerald-700 text-[11.5px] font-bold flex items-center gap-1.5">
+                    <span className="h-9 px-3 rounded-xl bg-[#E8F8F0] border border-emerald-200/50 text-emerald-700 text-xs font-bold flex items-center justify-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" /> Published
                     </span>
                   ) : (
@@ -355,7 +365,7 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                       <button
                         type="button"
                         onClick={() => setConfirm({ kind: 'publish', sop: s })}
-                        className="h-9 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-[11.5px] font-bold flex items-center gap-1.5 active:bg-slate-50 cursor-pointer"
+                        className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" /> Publish SOP
                       </button>

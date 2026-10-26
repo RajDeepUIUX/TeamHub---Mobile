@@ -1,42 +1,49 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Building2, CalendarClock, CalendarRange, Check, CheckCircle2, FileBarChart, UserRound } from 'lucide-react';
 import { NOT_APPLICABLE, RATING_SCALE, SurveyStatus, SurveyType } from '../data/clientFeedbackData';
+import { Pill, Tone } from '../staff/tabs/StaffTabParts';
 
-const STATUS_STYLE: Record<SurveyStatus, string> = {
-  'Not Started': 'bg-[#EFF6FF] text-[#1D4ED8]',
-  'In Progress': 'bg-[#FEF8E7] text-[#D97706]',
-  Completed: 'bg-[#E8F8F0] text-[#10B981]',
-  Expired: 'bg-slate-100 text-slate-500',
+/** Same status → same colour as the other Client modules (redesign 2.5) */
+const STATUS_TONE: Record<SurveyStatus, Tone> = {
+  'Not Started': 'slate',
+  'In Progress': 'amber',
+  Completed: 'green',
+  Expired: 'rose',
 };
 
-export const SurveyStatusPill: React.FC<{ status: SurveyStatus }> = ({ status }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${STATUS_STYLE[status]}`}>{status}</span>
-);
+export const SurveyStatusPill: React.FC<{ status: SurveyStatus }> = ({ status }) => <Pill tone={STATUS_TONE[status]}>{status}</Pill>;
 
-const TYPE_ICON: Record<SurveyType, { icon: React.ElementType; tint: string }> = {
-  service: { icon: Building2, tint: 'bg-[#EEF2FF] text-[#4F46E5]' },
-  staff: { icon: UserRound, tint: 'bg-[#EFF6FF] text-[#2F68FE]' },
-  thirty: { icon: CalendarClock, tint: 'bg-[#E8F8F0] text-[#10B981]' },
-  sixty: { icon: CalendarRange, tint: 'bg-[#FEF8E7] text-[#D97706]' },
-  hbr: { icon: FileBarChart, tint: 'bg-[#FEF2F2] text-rose-500' },
+/** One tile style for every survey type; types differ by icon only (redesign 4) */
+const TYPE_ICON: Record<SurveyType, React.ElementType> = {
+  service: Building2,
+  staff: UserRound,
+  thirty: CalendarClock,
+  sixty: CalendarRange,
+  hbr: FileBarChart,
 };
 
 export const SurveyTypeIcon: React.FC<{ type: SurveyType; size?: 'md' | 'lg' }> = ({ type, size = 'md' }) => {
-  const { icon: Icon, tint } = TYPE_ICON[type];
+  const Icon = TYPE_ICON[type];
   return (
-    <span className={`rounded-xl flex items-center justify-center shrink-0 ${tint} ${size === 'lg' ? 'w-12 h-12' : 'w-10 h-10'}`} aria-hidden="true">
+    <span
+      className={`rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0 ${size === 'lg' ? 'w-11 h-11' : 'w-10 h-10'}`}
+      aria-hidden="true"
+    >
       <Icon className={size === 'lg' ? 'w-6 h-6' : 'w-5 h-5'} />
     </span>
   );
 };
 
-/** Rating colours: 1 = rose … 5 = green (desktop r_one … r_five) */
+/** Rating colours on the status palette: 1–2 = rose, 3 = amber, 4–5 = green (desktop r_one … r_five) */
+const RATE_LOW = { dot: 'bg-[#EF4444]', text: 'text-rose-600', soft: 'bg-[#FEF2F2] text-rose-600' };
+const RATE_MID = { dot: 'bg-[#F59E0B]', text: 'text-[#D97706]', soft: 'bg-[#FEF8E7] text-[#D97706]' };
+const RATE_HIGH = { dot: 'bg-[#10B981]', text: 'text-[#10B981]', soft: 'bg-[#E8F8F0] text-[#10B981]' };
 export const RATING_TONE: Record<number, { dot: string; text: string; soft: string }> = {
-  1: { dot: 'bg-rose-500', text: 'text-rose-600', soft: 'bg-[#FEF2F2] text-rose-600' },
-  2: { dot: 'bg-orange-400', text: 'text-orange-600', soft: 'bg-orange-50 text-orange-600' },
-  3: { dot: 'bg-amber-400', text: 'text-[#D97706]', soft: 'bg-[#FEF8E7] text-[#D97706]' },
-  4: { dot: 'bg-teal-500', text: 'text-teal-600', soft: 'bg-teal-50 text-teal-600' },
-  5: { dot: 'bg-[#10B981]', text: 'text-[#10B981]', soft: 'bg-[#E8F8F0] text-[#10B981]' },
+  1: RATE_LOW,
+  2: RATE_LOW,
+  3: RATE_MID,
+  4: RATE_HIGH,
+  5: RATE_HIGH,
 };
 
 export const ratingLabel = (v: number) => (v === NOT_APPLICABLE ? 'Not Applicable' : RATING_SCALE.find((o) => o.value === v)?.label ?? '');
@@ -44,7 +51,7 @@ export const ratingLabel = (v: number) => (v === NOT_APPLICABLE ? 'Not Applicabl
 /** Read-only answer chip */
 export const RatingChip: React.FC<{ value: number }> = ({ value }) => (
   <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11.5px] font-bold ${
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
       value === NOT_APPLICABLE ? 'bg-slate-100 text-slate-500' : RATING_TONE[value].soft
     }`}
   >
@@ -83,7 +90,7 @@ export const RatingOptions: React.FC<{
               aria-label={`${o.value}, ${o.label}`}
               title={o.label}
               onClick={() => onChange(o.value)}
-              className={`w-9 h-9 rounded-lg border text-[13px] font-bold tabular-nums transition-colors cursor-pointer shrink-0 ${
+              className={`w-9 h-9 rounded-xl border text-[13px] font-bold tabular-nums transition-colors cursor-pointer shrink-0 ${
                 on ? `${RATING_TONE[o.value].dot} border-transparent text-white shadow-xs` : idle
               }`}
             >
@@ -98,8 +105,8 @@ export const RatingOptions: React.FC<{
             aria-checked={isNA}
             aria-label="Not Applicable"
             onClick={() => onChange(NOT_APPLICABLE)}
-            className={`h-9 px-2.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer shrink-0 ${
-              isNA ? 'bg-slate-600 border-slate-600 text-white' : idle
+            className={`h-9 px-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer shrink-0 ${
+              isNA ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : idle
             }`}
           >
             N/A
@@ -108,11 +115,11 @@ export const RatingOptions: React.FC<{
       </div>
       <div className={value !== undefined || hint ? 'mt-1.5' : ''}>
         {value !== undefined && !isNA ? (
-          <span className={`text-[11.5px] font-bold ${RATING_TONE[value].text}`}>{ratingLabel(value)}</span>
+          <span className={`text-[11px] font-bold ${RATING_TONE[value].text}`}>{ratingLabel(value)}</span>
         ) : isNA ? (
-          <span className="text-[11.5px] font-bold text-slate-500">Not Applicable</span>
+          <span className="text-[11px] font-bold text-slate-500">Not Applicable</span>
         ) : hint ? (
-          <span className="text-[10.5px] font-medium text-slate-400 leading-tight">
+          <span className="text-[11px] font-medium text-slate-400 leading-tight">
             1 = Does not meet · 5 = Exceeds expectations
           </span>
         ) : null}
@@ -128,7 +135,7 @@ export const NpsScale: React.FC<{ value: number | undefined; invalid?: boolean; 
   readOnly,
   onChange,
 }) => {
-  const tone = (n: number) => (n <= 6 ? 'bg-rose-500' : n <= 8 ? 'bg-amber-400' : 'bg-[#10B981]');
+  const tone = (n: number) => (n <= 6 ? 'bg-[#EF4444]' : n <= 8 ? 'bg-[#F59E0B]' : 'bg-[#10B981]');
   return (
     <div>
       <div role="radiogroup" aria-label="Score from 0 to 10" className="grid grid-cols-6 gap-1.5">
@@ -153,7 +160,7 @@ export const NpsScale: React.FC<{ value: number | undefined; invalid?: boolean; 
           );
         })}
       </div>
-      <div className="mt-1.5 flex justify-between text-[10.5px] font-medium text-slate-400">
+      <div className="mt-1.5 flex justify-between text-[11px] font-medium text-slate-400">
         <span>0 = Not likely</span>
         <span>10 = Extremely likely</span>
       </div>
@@ -195,9 +202,9 @@ export const useSurveyToast = (bottomClass = 'bottom-4') => {
   const node = text ? (
     <div
       role="status"
-      className={`absolute left-4 right-4 ${bottomClass} z-20 flex items-center gap-2 px-3.5 py-3 rounded-xl bg-[#1E293B] text-white text-[12px] font-semibold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200`}
+      className={`absolute left-4 right-4 ${bottomClass} z-20 flex items-center gap-2 px-4 py-3 rounded-xl bg-[#1E293B] text-white text-xs font-semibold shadow-[0_16px_40px_-12px_rgba(15,23,42,0.28)] animate-in fade-in slide-in-from-bottom-2 duration-200`}
     >
-      <CheckCircle2 className="w-4 h-4 text-[#34D399] shrink-0" />
+      <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
       <span className="flex-1">{text}</span>
     </div>
   ) : null;
@@ -252,7 +259,7 @@ export const SurveySubmittedModal: React.FC<{
           {CONFETTI.map((c, i) => (
             <span key={i} className={`absolute rounded-full ${c.color} ${c.size}`} style={{ top: c.top, left: c.left }} />
           ))}
-          <div className="w-16 h-16 rounded-full bg-[#10B981] flex items-center justify-center shadow-[0_8px_24px_rgba(16,185,129,0.35)] ring-8 ring-emerald-50">
+          <div className="w-16 h-16 rounded-full bg-[#10B981] flex items-center justify-center ring-8 ring-emerald-50">
             <Check className="w-8 h-8 text-white stroke-[3]" />
           </div>
         </div>
@@ -260,7 +267,7 @@ export const SurveySubmittedModal: React.FC<{
           <h2 className="text-base font-extrabold">Survey Submitted</h2>
           <p className="text-xs text-slate-500 leading-relaxed">Thank you! A summary report of your responses is ready to download.</p>
         </div>
-        <div className="mt-4 p-3 bg-slate-50 border border-[#DCE3ED] rounded-2xl">
+        <div className="mt-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
           <span className="block text-xs font-bold truncate">{title}</span>
           <span className="block text-[11px] text-slate-500 truncate">{subtitle}</span>
         </div>

@@ -97,7 +97,7 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
                       {initialsOf(name || c.email)}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10.5px] font-semibold text-slate-400">Contact Name</p>
+                      <p className="text-[11px] font-semibold text-slate-400">Contact Name</p>
                       <p className="text-[14px] font-bold text-[#1E293B] leading-snug break-words">{name || '-'}</p>
                       <span className="mt-1 inline-flex">
                         <Pill tone={c.status === 'Active' ? 'green' : 'slate'}>{c.status}</Pill>
@@ -150,7 +150,7 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-slate-400">Contact Name</p>
-                  <p className="text-[13.5px] font-bold text-[#1E293B] truncate">{name || '-'}</p>
+                  <p className="text-sm font-bold text-[#1E293B] truncate">{name || '-'}</p>
                 </div>
                 <Pill tone={c.status === 'Active' ? 'green' : 'slate'}>{c.status}</Pill>
               </div>
@@ -189,11 +189,6 @@ export const StaffReportingToTab: React.FC<StaffReportingToTabProps> = ({ staffN
             </Card>
             );
           })
-        )}
-        {contacts.length > 0 && (
-          <p className="px-1 text-xs text-slate-500">
-            Showing <span className="font-bold text-[#1E293B]">{contacts.length}</span> Of <span className="font-bold text-[#1E293B]">{contacts.length}</span> Records
-          </p>
         )}
       </div>
 

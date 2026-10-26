@@ -7,13 +7,13 @@ export type Field = { label: string; value: string | null | undefined; wide?: bo
 
 /** Desktop label/value grid: 2 columns on mobile, long values span the row; empty values hidden (desktop `{if !empty}`) */
 export const FieldGrid: React.FC<{ fields: Field[]; compact?: boolean }> = ({ fields, compact }) => (
-  <dl className={`grid grid-cols-2 gap-x-4 ${compact ? 'gap-y-2.5 mt-2.5' : 'gap-y-3.5 mt-3'}`}>
+  <dl className={`grid grid-cols-2 gap-x-4 ${compact ? 'gap-y-2.5 mt-2.5' : 'gap-y-3 mt-3'}`}>
     {fields
       .filter((f) => f.value)
       .map((f) => (
         <div key={f.label} className={`min-w-0 ${f.wide ? 'col-span-2' : ''}`}>
-          <dt className={`${compact ? 'text-[10.5px]' : 'text-[11px]'} text-slate-400`}>{f.label}</dt>
-          <dd className={`mt-0.5 ${compact ? 'text-[12px] font-semibold' : 'text-[13px] font-medium'} text-[#1E293B] leading-snug break-words tabular-nums`}>
+          <dt className={`${compact ? 'text-[11px]' : 'text-[11px]'} text-slate-400`}>{f.label}</dt>
+          <dd className={`mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums`}>
             {f.value}
           </dd>
         </div>
@@ -31,7 +31,7 @@ export const RowList: React.FC<{ rows: Row[]; className?: string }> = ({ rows, c
       .map((r) => (
         <div key={r.label} className={`py-2.5 ${r.wide ? '' : 'flex items-start justify-between gap-4'}`}>
           <dt className="min-w-0 text-[11px] text-slate-400 leading-snug">{r.label}</dt>
-          <dd className={`min-w-0 text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words tabular-nums ${r.wide ? 'mt-0.5' : 'text-right'}`}>
+          <dd className={`min-w-0 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums ${r.wide ? 'mt-0.5' : 'text-right'}`}>
             {r.value}
           </dd>
         </div>
@@ -47,7 +47,7 @@ export const CardHeading: React.FC<{ icon: React.ElementType; title: React.React
   trailing,
 }) => (
   <div className="flex items-center gap-3">
-    <span className="w-9 h-9 rounded-xl bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-8px_rgba(47,104,254,0.9)]" aria-hidden="true">
+    <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
       <Icon className="w-4 h-4" />
     </span>
     <div className="flex-1 min-w-0">
@@ -84,14 +84,14 @@ export function SwitchTiles<T extends string>({
             onClick={() => onChange(o.id)}
             className={`h-13 px-3 rounded-2xl flex items-center gap-2.5 text-left transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
               on
-                ? 'bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white shadow-[0_8px_18px_-10px_rgba(47,104,254,0.9)]'
-                : 'bg-white border border-[#DCE3ED] text-slate-600 active:bg-slate-50'
+                ? 'bg-[#2F68FE] text-white'
+                : 'bg-white border border-[#EBF0F7] text-slate-600 active:bg-slate-50'
             }`}
           >
             <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${on ? 'bg-white/20' : 'bg-[#EEF2FF] text-[#2F68FE]'}`} aria-hidden="true">
               <Icon className="w-4 h-4" />
             </span>
-            <span className="flex-1 min-w-0 text-[12.5px] font-bold leading-tight">{o.label}</span>
+            <span className="flex-1 min-w-0 text-xs font-bold leading-tight">{o.label}</span>
             {o.count !== undefined && (
               <span
                 className={`min-w-6 h-6 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums ${
@@ -128,25 +128,25 @@ export const ACCENT: Record<Tone, string> = {
 /** Section title + optional action; title is left out where the tab pill already names the section */
 export const TabTitle: React.FC<{ title?: string; action?: React.ReactNode }> = ({ title, action }) => (
   <div className={`flex items-center gap-3 min-h-9 ${title ? 'justify-between' : 'justify-end'}`}>
-    {title && <h3 className="px-1 text-base font-extrabold text-[#1E293B]">{title}</h3>}
+    {title && <h3 className="px-1 text-sm font-bold text-[#1E293B]">{title}</h3>}
     {action}
   </div>
 );
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <section className={`bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] ${className}`}>{children}</section>
+  <section className={`bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs ${className}`}>{children}</section>
 );
 
-/** One white card holding titled groups (Personal / Work / Terms tabs) */
+/** One white card per titled group (Personal / Work / Terms tabs), title over a hairline like Staff My Profile */
 export const InfoCard: React.FC<{ groups: { title: string; fields: Field[] }[] }> = ({ groups }) => (
-  <Card className="mt-2.5 p-4">
-    {groups.map((g, idx) => (
-      <div key={g.title} className={idx > 0 ? 'mt-4 pt-4 border-t border-slate-100' : ''}>
-        <h4 className="text-sm font-bold text-[#1D4ED8]">{g.title}</h4>
+  <div className="mt-2.5 space-y-3">
+    {groups.map((g) => (
+      <Card key={g.title} className="p-4">
+        <h4 className="pb-2.5 border-b border-slate-100 text-sm font-bold text-[#1E293B] leading-snug">{g.title}</h4>
         <FieldGrid fields={g.fields} />
-      </div>
+      </Card>
     ))}
-  </Card>
+  </div>
 );
 
 export type Tone = 'green' | 'amber' | 'rose' | 'blue' | 'indigo' | 'slate';
@@ -155,13 +155,13 @@ const TONE: Record<Tone, string> = {
   green: 'bg-[#E8F8F0] text-[#10B981]',
   amber: 'bg-[#FEF8E7] text-[#D97706]',
   rose: 'bg-[#FEF2F2] text-rose-600',
-  blue: 'bg-[#EFF6FF] text-[#1D4ED8]',
+  blue: 'bg-[#EFF6FF] text-[#2F68FE]',
   indigo: 'bg-[#EEF2FF] text-[#4F46E5]',
   slate: 'bg-slate-100 text-slate-500',
 };
 
 export const Pill: React.FC<{ tone: Tone; children: React.ReactNode }> = ({ tone, children }) => (
-  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${TONE[tone]}`}>{children}</span>
+  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold whitespace-nowrap ${TONE[tone]}`}>{children}</span>
 );
 
 export const EmptyCard: React.FC<{ icon: React.ElementType; title: string; text?: string; action?: React.ReactNode }> = ({
@@ -209,7 +209,7 @@ export function ChipRow<T extends string>({
             type="button"
             aria-pressed={on}
             onClick={() => onChange(o)}
-            className={`shrink-0 h-8 pl-3 ${count !== undefined ? 'pr-1.5' : 'pr-3'} rounded-full text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`shrink-0 h-8 pl-3 ${count !== undefined ? 'pr-1.5' : 'pr-3'} rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
             }`}
           >
@@ -361,11 +361,11 @@ export const InfoSheet: React.FC<{ isOpen: boolean; title: string; onClose: () =
   <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[60%]">
     <SheetHeader title={title} onClose={onClose} />
     <div className="px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
-      <div className="flex gap-3 p-3.5 rounded-2xl bg-[#F5F8FF] ring-1 ring-inset ring-[#DBEAFE]">
-        <span className="w-9 h-9 rounded-xl bg-white ring-1 ring-[#DBEAFE] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+      <div className="flex gap-3 p-3.5 rounded-2xl bg-[#F8FAFC] ring-1 ring-inset ring-[#BFDBFE]">
+        <span className="w-9 h-9 rounded-xl bg-white ring-1 ring-[#BFDBFE] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
           <Info className="w-[18px] h-[18px]" />
         </span>
-        <div className="min-w-0 text-[12.5px] text-slate-600 leading-relaxed">{children}</div>
+        <div className="min-w-0 text-xs text-slate-600 leading-relaxed">{children}</div>
       </div>
       {extra}
       <button
@@ -394,7 +394,7 @@ export const ConfirmSheet: React.FC<{
     <SheetHeader title={title} onClose={onClose} />
     <div className="px-5 py-4">
       <p className="text-[13px] text-[#1E293B] leading-relaxed">{message}</p>
-      {note && <p className="mt-2 px-3 py-2 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800">{note}</p>}
+      {note && <p className="mt-2 px-3 py-2 rounded-xl bg-[#FEF8E7] border border-amber-200/50 text-xs text-amber-700">{note}</p>}
     </div>
     <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
       <button type="button" onClick={onClose} className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
@@ -422,7 +422,7 @@ export const useNotice = () => {
   }, []);
   useEffect(() => () => clearTimeout(timer.current), []);
   const node = text ? (
-    <div role="status" className="mb-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#E8F8F0] border border-[#A7F3D0] text-[12px] font-semibold text-emerald-700 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div role="status" className="mb-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#E8F8F0] border border-emerald-200/50 text-[12px] font-semibold text-emerald-700 animate-in fade-in slide-in-from-top-1 duration-200">
       <CheckCircle2 className="w-4 h-4 shrink-0" />
       <span className="flex-1">{text}</span>
     </div>

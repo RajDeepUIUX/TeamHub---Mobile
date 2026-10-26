@@ -17,7 +17,7 @@ export const InfoButton: React.FC<{ label: string; onClick: () => void }> = ({ l
       onClick();
     }}
     aria-label={`About ${label}`}
-    className="w-8 h-8 -my-2 -mr-2 flex items-center justify-center rounded-full text-[#0E9F6E] active:bg-emerald-50 cursor-pointer"
+    className="w-8 h-8 -my-2 -mr-2 flex items-center justify-center rounded-full text-slate-400 active:bg-slate-100 cursor-pointer"
   >
     <Info className="w-4 h-4" />
   </button>
@@ -28,16 +28,16 @@ export const FieldInfoSheet: React.FC<{ info: { title: string; text: string } | 
   <BottomSheet isOpen={Boolean(info)} onClose={onClose} maxHeight="max-h-[70%]">
     <SheetHeader title={info?.title ?? ''} onClose={onClose} />
     <div className="px-5 pt-4 pb-6 overflow-y-auto">
-      <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0]">
-        <span className="w-9 h-9 rounded-xl bg-white text-[#0E9F6E] flex items-center justify-center shrink-0">
+      <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 border border-blue-100">
+        <span className="w-9 h-9 rounded-xl bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
           <Info className="w-4.5 h-4.5" />
         </span>
-        <p className="text-[12.5px] text-[#1E293B] leading-relaxed">{info?.text}</p>
+        <p className="text-xs text-[#1E293B] leading-relaxed">{info?.text}</p>
       </div>
       <button
         type="button"
         onClick={onClose}
-        className="mt-4 w-full h-12 rounded-xl bg-[#4F46E5] text-white text-xs font-bold active:bg-[#4338CA] cursor-pointer"
+        className="mt-4 w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
       >
         Got it
       </button>
@@ -84,18 +84,18 @@ export const SectionCard: React.FC<{ title: string; action?: React.ReactNode; ch
   </Card>
 );
 
-/** Desktop (MyCPE ONE) section card: grey title band + white body */
+/** Section card as on Staff / Manager My Profile: title over a hairline, white body */
 export const BandSectionCard: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, action, children }) => (
-  <section className="bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
-    <div className="min-h-12 px-4 py-2 flex items-center justify-between gap-2 bg-[#F3F4F8]">
-      <h2 className="text-sm font-bold text-[#1E293B]">{title}</h2>
+  <section className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
+    <div className="min-h-8 flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+      <h2 className="text-[13px] font-bold text-[#1E293B] leading-snug">{title}</h2>
       {action}
     </div>
-    <div className="p-4">{children}</div>
+    {children}
   </section>
 );
 
-/** Titled sub-group inside a section card (icon + small caps title, optional right action and hint) */
+/** Titled sub-group inside a section card, boxed like the Father / Mother groups on My Profile */
 export const FieldGroup: React.FC<{
   icon: React.ElementType;
   title: string;
@@ -103,21 +103,19 @@ export const FieldGroup: React.FC<{
   action?: React.ReactNode;
   children: React.ReactNode;
 }> = ({ icon: Icon, title, hint, action, children }) => (
-  <div className="pt-4 mt-4 border-t border-dashed border-slate-200 first:mt-0 first:pt-0 first:border-0">
-    <div className="flex items-center justify-between gap-2 mb-3 min-h-7">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="w-6 h-6 rounded-lg bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
-          <Icon className="w-3.5 h-3.5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">{title}</h3>
-          {hint && <p className="text-[10.5px] text-slate-400 leading-snug truncate">{hint}</p>}
-        </div>
+  <section className="rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs overflow-hidden">
+    <div className="min-h-12 flex items-center gap-2.5 px-3.5 py-2 bg-slate-50 border-b border-slate-100">
+      <span className="w-7 h-7 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-[13px] font-bold text-[#1E293B] truncate">{title}</h3>
+        {hint && <p className="text-[11px] text-slate-500 leading-snug truncate">{hint}</p>}
       </div>
       {action}
     </div>
-    {children}
-  </div>
+    <div className="p-3.5">{children}</div>
+  </section>
 );
 
 /** Selected values under a multi-select, each removable (B tag chips with ✕) */
@@ -180,7 +178,7 @@ export const DisabledSelect: React.FC<{ text: string }> = ({ text }) => (
 
 export const ProfileSkeleton: React.FC<{ label?: string }> = ({ label = 'Loading profile' }) => (
   <div className="px-4 mt-4 space-y-3" aria-busy="true" aria-label={label}>
-    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4">
+    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4">
       <div className="flex items-center gap-3.5">
         <StaffSkeleton className="w-18 h-18 rounded-2xl" />
         <div className="flex-1 space-y-2">
@@ -195,7 +193,7 @@ export const ProfileSkeleton: React.FC<{ label?: string }> = ({ label = 'Loading
       </div>
     </div>
     {[0, 1].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3.5">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 space-y-3.5">
         <StaffSkeleton className="w-28 h-4" />
         <div className="grid grid-cols-2 gap-4">
           {[0, 1, 2, 3].map((j) => (

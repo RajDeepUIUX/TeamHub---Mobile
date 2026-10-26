@@ -60,13 +60,13 @@ export const HubRequirementSheet: React.FC<Props> = ({ isOpen, profile, onClose,
       <SheetHeader title="Add Staff Requirement" subtitle={profile ? `${profile.profile} · ${profile.resumeId}` : undefined} onClose={onClose} />
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
-        <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
+        <p className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-[#2F68FE] leading-snug">
           <Info className="w-4 h-4 shrink-0 mt-px" />
           You don&rsquo;t have a requirement for this profile yet. Add a few details and we&rsquo;ll create it, then shortlist this candidate.
         </p>
 
         {profile && (
-          <div className="px-3.5 py-3 rounded-2xl border border-slate-200 bg-slate-50">
+          <div className="px-3.5 py-3 rounded-2xl border border-slate-100 bg-slate-50">
             <FieldGrid
               compact
               fields={[
@@ -145,7 +145,7 @@ export const HubRequirementSheet: React.FC<Props> = ({ isOpen, profile, onClose,
         </div>
 
         <div>
-          <h3 className="mb-2 text-sm font-bold text-[#1D4ED8]">Choose Next Action</h3>
+          <h3 className="mb-2 text-sm font-bold text-[#1E293B]">Choose Next Action</h3>
           <div className="space-y-2.5" role="radiogroup" aria-label="Next action">
             {NEXT_ACTIONS.map(({ id, icon: Icon, title, text }) => {
               const on = next === id;
@@ -157,15 +157,17 @@ export const HubRequirementSheet: React.FC<Props> = ({ isOpen, profile, onClose,
                   aria-checked={on}
                   onClick={() => setNext(id)}
                   className={`w-full p-3.5 rounded-2xl border flex items-start gap-3 text-left transition-colors cursor-pointer ${
-                    on ? 'border-[#2F68FE] bg-[#EFF6FF]' : 'border-slate-200 bg-white active:bg-slate-50'
+                    on ? 'border-[#2F68FE] bg-blue-50/70' : 'border-slate-200 bg-white active:bg-slate-50'
                   }`}
                 >
-                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <span
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${on ? 'bg-white border border-blue-100 text-[#2F68FE]' : 'bg-slate-100 text-slate-500'}`}
+                  >
                     <Icon className="w-4 h-4" />
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-bold text-[#1E293B]">{title}</span>
-                    <span className="mt-0.5 block text-[11.5px] text-slate-500 leading-snug">{text}</span>
+                    <span className="mt-0.5 block text-[11px] text-slate-500 leading-snug">{text}</span>
                   </span>
                   <span
                     className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${on ? 'border-[#2F68FE] bg-[#2F68FE] text-white' : 'border-slate-300 bg-white'}`}
@@ -181,10 +183,10 @@ export const HubRequirementSheet: React.FC<Props> = ({ isOpen, profile, onClose,
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
-        <button type="button" onClick={onClose} className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
+        <button type="button" onClick={onClose} className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer">
           Cancel
         </button>
-        <button type="button" onClick={submit} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
+        <button type="button" onClick={submit} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
           {next === 'schedule' ? 'Continue to Schedule' : 'Shortlist Candidate'}
         </button>
       </div>
@@ -204,21 +206,21 @@ export const HubShortlistedSheet: React.FC<{
       <div className="w-10 h-1 bg-slate-300 rounded-full" />
     </div>
     <div className="px-5 pt-3 pb-4 flex flex-col items-center text-center">
-      <span className="w-16 h-16 rounded-full bg-[#E8F8F0] text-[#10B981] flex items-center justify-center">
+      <span className="w-16 h-16 rounded-full bg-[#10B981] text-white ring-8 ring-emerald-50 flex items-center justify-center">
         <Check className="w-8 h-8" strokeWidth={2.5} />
       </span>
-      <h2 className="mt-3 text-lg font-extrabold text-[#1E293B]">Requirement Created Successfully!</h2>
+      <h2 className="mt-5 text-base font-extrabold text-[#1E293B]">Requirement Created Successfully!</h2>
       <p className="mt-1 text-xs text-slate-500 leading-relaxed">
         The requirement has been added and <span className="font-bold text-[#1E293B]">{profileLabel}</span> was shortlisted. You can schedule the interview from
         Shortlisted Candidates whenever you&rsquo;re ready.
       </p>
     </div>
     <div className={`grid gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0 ${onViewShortlisted ? 'grid-cols-2' : 'grid-cols-1'}`}>
-      <button type="button" onClick={onKeepBrowsing} className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
+      <button type="button" onClick={onKeepBrowsing} className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer">
         Keep Browsing
       </button>
       {onViewShortlisted && (
-        <button type="button" onClick={onViewShortlisted} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
+        <button type="button" onClick={onViewShortlisted} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
           View Shortlisted
         </button>
       )}

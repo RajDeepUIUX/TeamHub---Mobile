@@ -73,14 +73,14 @@ export const AllowPills: React.FC<{
           aria-checked={on}
           disabled={disabled}
           onClick={() => onChange(v)}
-          className={`flex-1 h-9 rounded-full border text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+          className={`flex-1 h-11 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
             on
               ? yes
-                ? 'bg-[#10B981] border-[#10B981] text-white shadow-[0_4px_12px_-4px_rgba(16,185,129,0.6)]'
-                : 'bg-[#475569] border-[#475569] text-white shadow-[0_4px_12px_-4px_rgba(71,85,105,0.5)]'
+                ? 'bg-[#10B981] border-[#10B981] text-white'
+                : 'bg-[#FEF2F2] border-[#EF4444] text-[#EF4444]'
               : yes
-              ? 'bg-white border-[#A7F3D0] text-[#059669] active:bg-[#F0FDF7]'
-              : 'bg-white border-[#DCE3ED] text-slate-500 active:bg-slate-50'
+              ? 'bg-white border-slate-200 text-[#10B981] active:bg-[#E8F8F0]'
+              : 'bg-white border-slate-200 text-slate-500 active:bg-slate-50'
           }`}
         >
           {yes ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <X className="w-3.5 h-3.5 stroke-[3]" />}
@@ -111,17 +111,17 @@ export const AllowChoice: React.FC<{
           aria-checked={on}
           disabled={disabled}
           onClick={() => onChange(v)}
-          className={`${compact ? 'h-10' : 'h-11'} rounded-xl px-3 border-2 flex items-center gap-2 text-[12.5px] font-bold transition-all duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+          className={`${compact ? 'h-10' : 'h-11'} rounded-xl px-3 border flex items-center gap-2 text-xs font-bold shadow-2xs transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
             on
               ? yes
-                ? 'border-[#10B981] bg-[#ECFDF5] text-[#047857]'
-                : 'border-[#64748B] bg-[#F1F5F9] text-[#334155]'
-              : 'border-[#E2E8F0] bg-white text-slate-500 active:bg-slate-50'
+                ? 'border-[#10B981] bg-[#E8F8F0] text-[#10B981]'
+                : 'border-[#EF4444] bg-[#FEF2F2] text-[#EF4444]'
+              : 'border-slate-200 bg-white text-slate-500 active:bg-slate-50'
           }`}
         >
           <span
             className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              on ? (yes ? 'bg-[#10B981] text-white' : 'bg-[#64748B] text-white') : 'border-2 border-slate-300'
+              on ? (yes ? 'bg-[#10B981] text-white' : 'border-2 border-[#EF4444] text-[#EF4444]') : 'border-2 border-slate-300'
             }`}
             aria-hidden="true"
           >
@@ -164,7 +164,7 @@ export const StaffPickRow: React.FC<{
         <span className="flex-1 min-w-0">
           <span className={`block text-[13px] font-bold truncate ${locked ? 'text-slate-400' : 'text-[#1E293B]'}`}>{staff.name}</span>
           <span className="block text-[11px] text-slate-500 truncate">{staff.designation}</span>
-          <span className="mt-0.5 flex items-center gap-1 text-[10.5px] text-slate-400 tabular-nums">
+          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400 tabular-nums">
             <Clock className="w-3 h-3 shrink-0" />
             <span className="truncate">
               {staff.shift} ({WORK_FLEX_CLIENT_TZ})
@@ -209,7 +209,7 @@ export const SheetFooter: React.FC<{
         type="button"
         onClick={onCancel}
         disabled={saving}
-        className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer disabled:opacity-60"
+        className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer disabled:opacity-60"
       >
         Cancel
       </button>
@@ -217,7 +217,7 @@ export const SheetFooter: React.FC<{
         type="button"
         onClick={onSave}
         disabled={saving || disabled}
-        className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
+        className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {saving && <Loader2 className="w-4 h-4 animate-spin" />}
         {saving ? 'Saving…' : saveLabel}
@@ -231,7 +231,7 @@ export const SelectAllButton: React.FC<{ label: string; onClick: () => void; dis
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className="shrink-0 h-11 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[11.5px] font-bold text-[#2F68FE] active:bg-blue-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    className="shrink-0 h-11 px-3 rounded-xl border border-[#BFDBFE] bg-blue-50 text-[11px] font-bold text-[#2F68FE] active:bg-blue-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
   >
     {label}
   </button>

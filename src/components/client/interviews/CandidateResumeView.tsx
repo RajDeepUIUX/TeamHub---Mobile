@@ -10,6 +10,8 @@ interface Props {
   candidate: ShortlistedCandidate;
   /** `download` permission: certificate, assessment report and proctoring links */
   canDownload: boolean;
+  /** Screen the Back arrow returns to */
+  backLabel?: string;
   onBack: () => void;
 }
 
@@ -54,7 +56,7 @@ export const FileButton: React.FC<{ label: string; onClick: () => void; icon?: R
  * experience, skills, background / psychometric / communication notes, certificates, courses and assessments.
  * The candidate's name is not part of this page on desktop (profile + resume ID only).
  */
-export const CandidateResumeView: React.FC<Props> = ({ candidate, canDownload, onBack }) => {
+export const CandidateResumeView: React.FC<Props> = ({ candidate, canDownload, backLabel = 'Shortlisted Candidates', onBack }) => {
   const [notice, showNotice] = useTimesheetNotice();
   const r = candidate.resume;
   if (!r) return null;
@@ -74,7 +76,7 @@ export const CandidateResumeView: React.FC<Props> = ({ candidate, canDownload, o
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back to Shortlisted Candidates"
+          aria-label={`Back to ${backLabel}`}
           className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />

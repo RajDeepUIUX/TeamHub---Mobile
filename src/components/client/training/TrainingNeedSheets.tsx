@@ -18,7 +18,7 @@ export const TrainingNeedSoftwareSheet: React.FC<{ isOpen: boolean; staffName: s
         <p className="text-xs text-slate-500">No software found</p>
       ) : (
         software.map((s) => (
-          <span key={s} className="px-3 py-1.5 rounded-full bg-[#F2F4F7] text-[12.5px] text-[#475467]">
+          <span key={s} className="px-3 py-1.5 rounded-full bg-slate-100 text-xs font-medium text-slate-600">
             {s}
           </span>
         ))
@@ -82,7 +82,7 @@ export const TrainingNeedNotesSheet: React.FC<NotesProps> = ({ isOpen, staffName
                   <span className="font-bold text-[#1E293B]">{n.mine ? 'You' : n.author}</span>
                   <span className="text-slate-400 tabular-nums">{formatTniNoteDate(n.createdAt)}</span>
                 </p>
-                <p className="mt-1 text-[12.5px] leading-relaxed text-slate-700 break-words">{n.text}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-700 break-words">{n.text}</p>
               </div>
             </div>
           ))
@@ -113,7 +113,7 @@ export const TrainingNeedNotesSheet: React.FC<NotesProps> = ({ isOpen, staffName
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={onClose} className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
+            <button type="button" onClick={onClose} className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer">
               Cancel
             </button>
             <button

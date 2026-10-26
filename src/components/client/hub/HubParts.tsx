@@ -3,26 +3,27 @@ import { Briefcase, Calculator, BookOpenCheck, Lightbulb, Scale, ShieldCheck } f
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 
 /** Domain icon tile (desktop shows a small document icon before the domain) */
-const DOMAIN_ICON: Record<string, { icon: React.ElementType; tint: string }> = {
-  Tax: { icon: Calculator, tint: 'bg-[#EFF6FF] text-[#2F68FE]' },
-  'Accounting & Bookkeeping': { icon: BookOpenCheck, tint: 'bg-[#E8F8F0] text-[#10B981]' },
-  'Audit & Assurance': { icon: ShieldCheck, tint: 'bg-[#EEF2FF] text-[#4F46E5]' },
-  'Business Valuation': { icon: Scale, tint: 'bg-[#FEF8E7] text-[#D97706]' },
-  Advisory: { icon: Lightbulb, tint: 'bg-[#FDF2F8] text-[#DB2777]' },
+const DOMAIN_ICON: Record<string, React.ElementType> = {
+  Tax: Calculator,
+  'Accounting & Bookkeeping': BookOpenCheck,
+  'Audit & Assurance': ShieldCheck,
+  'Business Valuation': Scale,
+  Advisory: Lightbulb,
 };
 
+/** One flat tile for every domain (redesign.md §4: no per-category colour); domains differ by icon only */
 export const DomainTile: React.FC<{ domain: string }> = ({ domain }) => {
-  const { icon: Icon, tint } = DOMAIN_ICON[domain] ?? { icon: Briefcase, tint: 'bg-slate-100 text-slate-500' };
+  const Icon = DOMAIN_ICON[domain] ?? Briefcase;
   return (
-    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${tint}`} aria-hidden="true">
-      <Icon className="w-4 h-4" />
+    <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+      <Icon className="w-5 h-5" />
     </span>
   );
 };
 
-const SKILL_CHIP = 'shrink-0 px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-[#E2E8F0] text-[11px] font-semibold text-slate-600 leading-snug whitespace-nowrap';
+const SKILL_CHIP = 'shrink-0 px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-slate-200 text-[11px] font-semibold text-slate-600 leading-snug whitespace-nowrap';
 const SKILL_MORE =
-  'shrink-0 px-2.5 py-1 rounded-full bg-[#EFF6FF] ring-1 ring-inset ring-[#DBEAFE] text-[11px] font-bold text-[#2F68FE] leading-snug whitespace-nowrap active:bg-blue-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]';
+  'shrink-0 px-2.5 py-1 rounded-full bg-blue-50 ring-1 ring-inset ring-blue-100 text-[11px] font-bold text-[#2F68FE] leading-snug whitespace-nowrap active:bg-blue-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]';
 const SKILL_GAP = 6;
 
 /** Skills on a single line: as many chips as fit, then "Show More (n)" which opens the full list (bottom sheet) */
@@ -94,9 +95,9 @@ export const SkillLine: React.FC<{ skills: string[]; onMore: () => void }> = ({ 
 export const HubListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading resumes">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3">
         <div className="flex items-center gap-2">
-          <StaffSkeleton className="w-7 h-7" />
+          <StaffSkeleton className="w-11 h-11 rounded-xl" />
           <StaffSkeleton className="w-32 h-3" />
         </div>
         <div className="flex items-center justify-between gap-3">

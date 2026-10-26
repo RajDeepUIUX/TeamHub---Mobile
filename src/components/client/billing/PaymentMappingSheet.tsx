@@ -152,7 +152,7 @@ export const PaymentMappingSheet: React.FC<Props> = ({ isOpen, row, isNew, billi
             </div>
           )}
           {type === 'direct' && (
-            <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-[#E8F8F0] border border-[#A7F3D0] text-[11px] leading-relaxed text-emerald-800">
+            <p className="flex gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-medium leading-relaxed text-emerald-700">
               <Info className="w-4 h-4 shrink-0 mt-px" />
               Direct Pay has no saved account to pick — the selected staff are billed through Direct Pay.
             </p>
@@ -172,9 +172,9 @@ export const PaymentMappingSheet: React.FC<Props> = ({ isOpen, row, isNew, billi
 
         <div className="px-4 pt-2 pb-4">
           {freeCount === 0 && !picked.length ? (
-            <p className="py-8 text-center text-[13px] text-slate-400">All staff have mapped payment details.</p>
+            <p className="py-8 text-center text-xs font-medium text-slate-500">All staff have mapped payment details.</p>
           ) : list.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-slate-400">No staff match “{search.trim()}”</p>
+            <p className="py-8 text-center text-xs font-medium text-slate-500">No staff match “{search.trim()}”</p>
           ) : (
             <ul className="space-y-2">
               {list.map((s) => (
@@ -194,10 +194,10 @@ export const PaymentMappingSheet: React.FC<Props> = ({ isOpen, row, isNew, billi
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
-        <button type="button" onClick={onClose} className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
+        <button type="button" onClick={onClose} className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer">
           Cancel
         </button>
-        <button type="button" onClick={save} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
+        <button type="button" onClick={save} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
           {isNew ? 'Add Mapping' : 'Update Mapping'}
         </button>
       </div>

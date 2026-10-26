@@ -374,6 +374,94 @@ export const offshoreStaffFrom = (staff: ClientStaffMember[], today = new Date()
 
 export const OFFSHORE_STAFF_SEED: OffshoreStaff[] = offshoreStaffFrom(MY_STAFF_SEED);
 
+/* --------------------------- Staff Utilization --------------------------- */
+
+/** Desktop Staff Utilization Report date ranges (`staff_utilization_report` daterangepicker); default Last Week */
+export type UtilizationPeriod = 'Current Week' | 'Last Week' | 'Last Month' | 'Last Quarter' | 'Custom Range';
+
+export const UTILIZATION_PERIODS: UtilizationPeriod[] = ['Current Week', 'Last Week', 'Last Month', 'Last Quarter', 'Custom Range'];
+
+export const DEFAULT_UTILIZATION_PERIOD = 'Last Week' satisfies UtilizationPeriod;
+
+/** Desktop ranges: ISO weeks (Mon–Sun), previous calendar month / quarter */
+export const utilizationRangeFor = (period: Exclude<UtilizationPeriod, 'Custom Range'>, today = new Date()): TimesheetRange => {
+  const todayKey = isoOf(today);
+  const monday = addDays(todayKey, -((today.getDay() + 6) % 7));
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  switch (period) {
+    case 'Current Week':
+      return { from: monday, to: todayKey };
+    case 'Last Week':
+      return { from: addDays(monday, -7), to: addDays(monday, -1) };
+    case 'Last Month':
+      return { from: isoOf(new Date(y, m - 1, 1)), to: isoOf(new Date(y, m, 0)) };
+    case 'Last Quarter': {
+      const q = Math.floor(m / 3);
+      return { from: isoOf(new Date(y, (q - 1) * 3, 1)), to: isoOf(new Date(y, q * 3, 0)) };
+    }
+  }
+};
+
+export type UtilizationBandId = 'low' | 'mid' | 'high';
+
+export interface UtilizationBand {
+  id: UtilizationBandId;
+  label: string;
+  name: string;
+}
+
+/** Productivity % split into three ranges (no gaps: ≤30, >30–60, >60) */
+export const UTILIZATION_BANDS: UtilizationBand[] = [
+  { id: 'low', label: '0–30%', name: 'Low' },
+  { id: 'mid', label: '31–60%', name: 'Moderate' },
+  { id: 'high', label: '61–100%', name: 'High' },
+];
+
+export const utilizationBandOf = (pct: number): UtilizationBandId => (pct <= 30 ? 'low' : pct <= 60 ? 'mid' : 'high');
+
+export interface StaffUtilization {
+  id: string;
+  name: string;
+  designation: string;
+  totalSeconds: number;
+  productiveSeconds: number;
+  /** Desktop: round(productive / total × 100, 2) */
+  productivity: number;
+}
+
+const seeded = (key: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 10000) / 10000;
+};
+
+/**
+ * Current staff with tracked time in the range (desktop skips staff with no hours).
+ * Total hours = logged timesheet hours; the productive share is dummy activity data (steady per staff, small swing per range).
+ */
+export const staffUtilizationFor = (staff: ClientStaffMember[], range: TimesheetRange, today = new Date()): StaffUtilization[] => {
+  const current = staff.filter((s) => CURRENT_STAFF_STATUSES.includes(s.status));
+  const totals = new Map<string, number>();
+  timesheetRowsFor(current, range, today).forEach((r) => totals.set(r.staffId, (totals.get(r.staffId) ?? 0) + r.workingSeconds));
+  return current
+    .filter((s) => (totals.get(s.id) ?? 0) > 0)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((s) => {
+      const totalSeconds = totals.get(s.id) ?? 0;
+      const share = Math.min(0.99, Math.max(0.08, 0.12 + seeded(s.id) * 0.86 + (seeded(`${s.id}_${range.from}_${range.to}`) - 0.5) * 0.12));
+      const productiveSeconds = Math.round((totalSeconds * share) / 60) * 60;
+      return {
+        id: s.id,
+        name: s.name,
+        designation: s.designation,
+        totalSeconds,
+        productiveSeconds,
+        productivity: Math.round((productiveSeconds / totalSeconds) * 10000) / 100,
+      };
+    });
+};
+
 /** Attendance amend requests waiting for this client (badge on the Approvals tab) */
 export const PENDING_ATTENDANCE_APPROVALS = 3;
 
@@ -423,7 +511,8 @@ export const CLIENT_IMPORTANT_UPDATES_SEED: ClientImportantUpdate[] = [
 /**
  * Other Modules & Services (desktop header megamenu). Current = MyCPE ONE `my_modules`, Other = `explore_services`
  * (price tag = its `p`) + MSP / MSSP; AssureOne SSO via `dashboard&task=mycpeServiceSSO` → MyCPE ONE `mycpe-service-sso`
- * (type 1 AssurePro, 2 AssureFlow, 3 AssureBooks)
+ * (type 1 AssurePro; AssureBooks / AssureFlow are commented out in `sidebar.tpl`). Benchmarking only shows when `explore_services` has it.
+ * Mobile: dashboard "Services You May Need" card → ClientServicesSheet
  */
 export interface ClientService {
   id: string;
@@ -450,9 +539,9 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
     title: 'Current Services',
     description: 'Solutions currently enabled for your firm.',
     services: [
-      { id: 'erp', title: 'HRMS 24 x 7 (Offshoring)', description: 'End-to-End Team Management, Billing & HR Operations.', state: 'current' },
       { id: 'mycpe', title: 'Continuing Education', description: 'Access CPE, Firm wide compliance and tools for your team.', state: 'enabled', url: 'https://resources.northwindcpa.example/' },
       { id: 'assessment', title: 'Assessments', description: 'Evaluate hiring and team skills with AI-powered assessments.', state: 'enabled', url: 'https://resources.northwindcpa.example/' },
+      { id: 'erp', title: 'HRMS 24 x 7 (Offshoring)', description: 'End-to-End Team Management, Billing & HR Operations.', state: 'current' },
     ],
   },
   {
@@ -460,9 +549,8 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
     title: 'Other Services',
     description: "Additional services and tools available to support your firm's growth.",
     services: [
-      { id: 'wd', title: 'Website Services', description: 'AI-powered CPA websites built & managed for firms.', url: 'https://resources.northwindcpa.example/', tag: 'Starts From $49/month' },
       { id: 'dg', title: 'Digital Marketing', description: 'Growth marketing solutions for CPA & accounting firms.', url: 'https://resources.northwindcpa.example/', tag: 'Starts From $149/month' },
-      { id: 'bm', title: 'Benchmarking Services', description: 'AI-Powered peer comparison & exclusive research reports.', url: 'https://resources.northwindcpa.example/', tag: 'Free Sign up & Unlock Free Reports' },
+      { id: 'wd', title: 'Website Services', description: 'AI-powered CPA websites built & managed for firms.', url: 'https://resources.northwindcpa.example/', tag: 'Starts From $49/month' },
       { id: 'msp', title: 'MSP', description: 'Managed IT services built for CPA and accounting firms.', url: 'https://resources.northwindcpa.example/msp-pricing' },
       { id: 'mssp', title: 'MSSP', description: 'Managed cybersecurity and compliance protection for firms.', url: 'https://resources.northwindcpa.example/mssp-pricing' },
     ],
@@ -473,8 +561,6 @@ export const CLIENT_SERVICE_SECTIONS: ClientServiceSection[] = [
     description: 'AI-first assurance suite. Practice, books, and audit in one workspace.',
     services: [
       { id: 'assurepro', title: 'AssurePro', description: 'AI-first practice management. Your firm, one workspace.', sso: true, url: 'https://pro.assureone.ai/' },
-      { id: 'assurebooks', title: 'AssureBooks', description: 'AI-first bookkeeping. Books that review themselves.', sso: true, url: 'https://accounting.assureone.ai/' },
-      { id: 'assureflow', title: 'AssureFlow', description: 'AI-first audit fieldwork. Audit on autopilot.', sso: true, url: 'https://audit.assureone.ai/' },
     ],
   },
 ];

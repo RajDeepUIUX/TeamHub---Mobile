@@ -33,7 +33,7 @@ interface SurveyFormViewProps {
 
 const keysOf = (q: SurveyQuestion) => (q.kind === 'ratingGroup' || q.kind === 'textGroup' ? q.items.map((i) => i.id) : [q.id]);
 
-const NotAnswered = () => <p className="text-[11.5px] italic text-slate-400">Not answered</p>;
+const NotAnswered = () => <p className="text-[11px] italic text-slate-400">Not answered</p>;
 
 export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, viewNote, onBack, onAnswer, onSubmit }) => {
   const readOnly = mode === 'view';
@@ -112,7 +112,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
     const value = (answers[key] as string | undefined) ?? '';
     if (readOnly) {
       return value ? (
-        <p className="mt-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[12px] text-slate-600 leading-relaxed">“{value}”</p>
+        <p className="mt-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 leading-relaxed">“{value}”</p>
       ) : null;
     }
     const open = openComments.includes(q.id) || value.length > 0;
@@ -128,7 +128,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
       <button
         type="button"
         onClick={() => setOpenComments((prev) => [...prev, q.id])}
-        className="mt-2 h-9 px-1 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[#2F68FE] cursor-pointer"
+        className="mt-2 h-9 px-1 inline-flex items-center gap-1.5 text-xs font-bold text-[#2F68FE] rounded-lg active:bg-blue-50/50 transition-colors cursor-pointer"
       >
         <MessageSquarePlus className="w-4 h-4" /> Add a comment (optional)
       </button>
@@ -137,7 +137,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
 
   const textBox = (key: string, label: string) => {
     const value = (answers[key] as string | undefined) ?? '';
-    if (readOnly) return value ? <p className="text-[12.5px] text-slate-700 leading-relaxed">“{value}”</p> : <NotAnswered />;
+    if (readOnly) return value ? <p className="text-xs text-slate-700 leading-relaxed">“{value}”</p> : <NotAnswered />;
     return (
       <textarea
         value={value}
@@ -172,7 +172,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
               const v = answers[item.id] as number | undefined;
               return (
                 <li key={item.id} data-q={item.id} className={i > 0 ? 'pt-3 border-t border-slate-100' : ''}>
-                  <p className="mb-2 text-[12px] font-semibold text-slate-700 leading-snug">
+                  <p className="mb-2 text-xs font-semibold text-slate-700 leading-snug">
                     {['i', 'ii', 'iii', 'iv', 'v'][i]}. {item.label}
                     {required}
                   </p>
@@ -189,7 +189,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
       case 'text':
         return (
           <>
-            {q.hint && <p className="mb-2 text-[11.5px] text-slate-500">{q.hint}</p>}
+            {q.hint && <p className="mb-2 text-[11px] text-slate-500">{q.hint}</p>}
             {textBox(q.id, q.title)}
           </>
         );
@@ -198,7 +198,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
           <ol className="space-y-3">
             {q.items.map((item, i) => (
               <li key={item.id} data-q={item.id}>
-                <p className="mb-1.5 text-[12px] font-semibold text-slate-700 leading-snug">
+                <p className="mb-1.5 text-xs font-semibold text-slate-700 leading-snug">
                   {['i', 'ii', 'iii'][i]}. {item.label}
                   {required}
                 </p>
@@ -223,9 +223,9 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
                   aria-pressed={on}
                   disabled={readOnly}
                   onClick={() => set(q.id, on ? selected.filter((x) => x !== o) : [...selected, o])}
-                  className={`min-h-9 px-3 py-1.5 rounded-full border text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-default ${
+                  className={`min-h-9 px-3 py-1.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-default ${
                     on
-                      ? 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]'
+                      ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]'
                       : `bg-white text-slate-600 active:bg-slate-50 ${invalid(q.id) ? 'border-rose-200' : 'border-slate-200'}`
                   }`}
                 >
@@ -266,13 +266,13 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
       <section key={sec.id} className="space-y-2.5">
         {(sec.title || sec.prompt) && (
           <div className="px-1 pt-1">
-            {sec.title && <h3 className="text-sm font-extrabold text-[#1D4ED8]">{sec.title}</h3>}
-            {sec.prompt && <p className="mt-0.5 text-[11.5px] text-slate-500 leading-relaxed">{sec.prompt}</p>}
+            {sec.title && <h3 className="text-sm font-bold text-[#1E293B]">{sec.title}</h3>}
+            {sec.prompt && <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">{sec.prompt}</p>}
           </div>
         )}
         {sec.naToggle && (
           <Card className="p-3">
-            <p className="px-1 text-[11.5px] text-slate-500 leading-relaxed">{sec.naToggle.hint}</p>
+            <p className="px-1 text-[11px] text-slate-500 leading-relaxed">{sec.naToggle.hint}</p>
             <button
               type="button"
               role="checkbox"
@@ -295,17 +295,17 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
           </Card>
         )}
         {na ? (
-          <p className="px-1 text-[11.5px] text-slate-400">These questions are skipped because you selected “Not Applicable”.</p>
+          <p className="px-1 text-[11px] text-slate-400">These questions are skipped because you selected “Not Applicable”.</p>
         ) : (
           sec.questions.map((q, i) => {
             const qKeys = keysOf(q);
             const answered = qKeys.every((k) => isAnswered(answers[k]));
             const hasError = showErrors && !readOnly && !answered;
             return (
-              <Card key={q.id} className={`p-4 scroll-mt-3 ${hasError ? 'border-rose-200!' : ''}`}>
+              <Card key={q.id} className={`p-4 scroll-mt-3 ${hasError ? 'border-rose-300!' : ''}`}>
                 <div data-q={qKeys.join(' ')} className="scroll-mt-3">
                   <div className="flex items-start gap-2.5">
-                    <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] text-[11px] font-bold flex items-center justify-center shrink-0 tabular-nums">
+                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-[#2F68FE] text-[11px] font-bold flex items-center justify-center shrink-0 tabular-nums">
                       {i + 1}
                     </span>
                     <h4 className="flex-1 text-[13px] font-bold leading-snug pt-0.5">
@@ -317,7 +317,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
                   {q.kind === 'rating' && q.bullets && (
                     <ul className="mt-2 ml-1 space-y-1">
                       {q.bullets.map((b) => (
-                        <li key={b} className="flex gap-2 text-[11.5px] text-slate-500 leading-relaxed">
+                        <li key={b} className="flex gap-2 text-[11px] text-slate-500 leading-relaxed">
                           <span className="w-1 h-1 rounded-full bg-slate-300 mt-[7px] shrink-0" />
                           {b}
                         </li>
@@ -350,7 +350,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
               onClick={() => setResetOpen(true)}
               aria-label="Reset form"
               title="Reset Form"
-              className="w-9 h-9 -mr-1 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
+              className="w-9 h-9 -mr-1 rounded-full flex items-center justify-center text-slate-600 active:bg-slate-100 cursor-pointer"
             >
               <RotateCcw className="w-4.5 h-4.5" />
             </button>
@@ -363,14 +363,14 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
       {/* Progress (desktop "00 / 00" bar) */}
       {!readOnly && (
         <div className="shrink-0 bg-white border-b border-[#EBF0F7] px-4 py-2.5">
-          <div className="flex items-center justify-between gap-3 text-[11.5px]">
+          <div className="flex items-center justify-between gap-3 text-[11px]">
             <span className="min-w-0 truncate text-slate-500">
               <strong className="text-[#1E293B] tabular-nums">
                 {done} / {keys.length}
               </strong>{' '}
               answered · {subtitle}
             </span>
-            <span className="shrink-0 flex items-center gap-1 text-[10.5px] font-semibold" aria-live="polite">
+            <span className="shrink-0 flex items-center gap-1 text-[10px] font-semibold" aria-live="polite">
               {saving === 'saving' ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
@@ -410,7 +410,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
             />
           </Card>
         ) : (
-          <div className="flex gap-2.5 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-relaxed">
+          <div className="flex gap-2.5 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-[#2F68FE] leading-relaxed">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
             <span>Your answers save automatically. Questions marked * are required.</span>
           </div>
@@ -428,7 +428,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
       </div>
 
       {/* Footer */}
-      <div className="px-4 pt-2.5 pb-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+      <div className="p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0 z-20">
         {readOnly ? (
           <>
             {viewNote && (
@@ -442,7 +442,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
                 type="button"
                 disabled={downloading}
                 onClick={download}
-                className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:cursor-wait cursor-pointer"
+                className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors disabled:cursor-wait cursor-pointer"
               >
                 {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {downloading ? 'Preparing PDF…' : 'Download PDF'}
@@ -451,7 +451,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
               <button
                 type="button"
                 onClick={onBack}
-                className="w-full h-12 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold bg-white active:bg-slate-50 cursor-pointer"
+                className="w-full h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 transition-colors cursor-pointer"
               >
                 Back to Surveys
               </button>
@@ -476,7 +476,7 @@ export const SurveyFormView: React.FC<SurveyFormViewProps> = ({ survey, mode, vi
             <button
               type="button"
               onClick={trySubmit}
-              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer"
+              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
             >
               Submit Survey <Send className="w-4 h-4" />
             </button>

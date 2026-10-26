@@ -1,8 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Download, FileText, Image as ImageIcon, Pencil } from 'lucide-react';
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  Camera,
+  Check,
+  Clock,
+  Download,
+  Factory,
+  FileText,
+  Flag,
+  Globe,
+  Hash,
+  Image as ImageIcon,
+  Info,
+  Landmark,
+  Link2,
+  Mail,
+  MapPin,
+  Phone,
+  Printer,
+  UserCheck,
+  Users,
+} from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
-import { ConfirmSheet, DesignVersion, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
+import { ConfirmSheet, ScreenHeader, fieldInputClass, useNotice } from '../staff/tabs/StaffTabParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { CompanyLogoSheet } from './CompanyLogoSheet';
 import {
@@ -29,7 +52,6 @@ import {
 } from '../data/clientCompanyProfileData';
 
 const LOAD_MS = 600;
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 type FieldKey =
   | 'companyName'
@@ -75,60 +97,58 @@ const validate = (p: ClientCompanyProfile): Errors => {
 
 /* ------------------------------- View parts ------------------------------- */
 
-type ValueRow = { label: string; value: string; wide?: boolean };
+type ValueRow = { label: string; value: string; wide?: boolean; icon?: React.ElementType };
 
-const inputClassV2 = (error?: string) =>
-  `w-full h-11 px-3 bg-[#F8FAFC] border rounded-lg text-xs font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-2 focus:ring-blue-100 select-text ${
-    error ? 'border-rose-300' : 'border-slate-200'
-  }`;
+/** White card with its title over a hairline, like My Profile. `flush` = body without padding (for divided lists) */
+const Section: React.FC<{ title: string; action?: React.ReactNode; flush?: boolean; children: React.ReactNode }> = ({
+  title,
+  action,
+  flush,
+  children,
+}) => (
+  <section className="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
+    <div className={`mx-4 pt-4 pb-2.5 min-h-8 flex items-center justify-between gap-2 border-b border-slate-100 ${flush ? '' : 'mb-3.5'}`}>
+      <h2 className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] leading-snug">{title}</h2>
+      {action}
+    </div>
+    <div className={flush ? '' : 'px-4 pb-4'}>{children}</div>
+  </section>
+);
 
-/** V1 = banded card; V2 = flat card with blue-bar uppercase title */
-const Section: React.FC<{ v2: boolean; title: string; action?: React.ReactNode; children: React.ReactNode }> = ({ v2, title, action, children }) =>
-  v2 ? (
-    <section className="bg-white rounded-2xl border border-[#E6EBF2] shadow-[0_4px_16px_-8px_rgba(15,23,42,0.14)] overflow-hidden">
-      <h2 className="px-4 py-3 flex items-center gap-2.5 border-b border-slate-100 bg-linear-to-r from-[#F3F6FF] to-white text-[13px] font-bold text-[#1E293B]">
-        <span className="w-1 h-4 rounded-full bg-linear-to-b from-[#2F68FE] to-[#4F46E5]" aria-hidden />
-        <span className="flex-1 min-w-0">{title}</span>
-        {action}
-      </h2>
-      <div className="p-4">{children}</div>
-    </section>
-  ) : (
-    <section className="bg-white rounded-[20px] p-4 ring-1 ring-[#ECEAFD] shadow-[0_6px_20px_-10px_rgba(108,92,231,0.28)]">
-      <h2 className="flex items-center gap-2.5 text-sm font-bold text-[#1E293B]">
-        <span className="w-2 h-2 rounded-full bg-[#6C5CE7] ring-4 ring-[#EEEBFD]" aria-hidden />
-        <span className="flex-1 min-w-0">{title}</span>
-        {action}
-      </h2>
-      <div className="mt-3.5 pt-3.5 border-t border-dashed border-[#E4E2FB]">{children}</div>
-    </section>
-  );
+/** Menu-style row: tinted icon tile + value over label, divider inset after the tile */
+const ProfileRow: React.FC<{ icon: React.ElementType; tint: string; last?: boolean; children: React.ReactNode; trailing?: React.ReactNode }> = ({
+  icon: Icon,
+  tint,
+  last,
+  children,
+  trailing,
+}) => (
+  <div className="flex items-center gap-3 pl-3.5">
+    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tint}`}>
+      <Icon className="w-4.5 h-4.5" />
+    </span>
+    <div className={`flex-1 min-w-0 flex items-center gap-2 py-3 pr-3.5 ${last ? '' : 'border-b border-slate-100'}`}>
+      <div className="flex-1 min-w-0">{children}</div>
+      {trailing}
+    </div>
+  </div>
+);
 
-/** V1 = 2-column grid; V2 = label-left / value-right rows */
-const Values: React.FC<{ v2: boolean; rows: ValueRow[] }> = ({ v2, rows }) =>
-  v2 ? (
-    <dl className="rounded-xl bg-[#F8FAFC] border border-slate-100 divide-y divide-slate-100 overflow-hidden">
-      {rows.map((r) => (
-        <div key={r.label} className="px-3 py-2.5 flex items-start justify-between gap-4">
-          <dt className="pt-px text-[11.5px] font-medium text-slate-500 shrink-0">{r.label}</dt>
-          <dd className={`min-w-0 text-right text-[13px] leading-snug break-words ${r.value ? 'font-semibold text-[#1E293B]' : 'italic text-slate-400'}`}>
+/** Menu-style icon rows */
+const Values: React.FC<{ rows: ValueRow[]; tint?: string }> = ({ rows, tint = 'bg-blue-50 text-blue-600' }) => (
+  <dl>
+    {rows.map((r, i) => (
+      <ProfileRow key={r.label} icon={r.icon ?? Building2} tint={tint} last={i === rows.length - 1}>
+        <div className="flex flex-col-reverse">
+          <dt className="text-[11px] text-slate-400">{r.label}</dt>
+          <dd className={`text-[13px] leading-snug break-words tabular-nums ${r.value ? 'font-semibold text-[#1E293B]' : 'italic text-slate-400'}`}>
             {r.value || 'Not added'}
           </dd>
         </div>
-      ))}
-    </dl>
-  ) : (
-    <dl className="grid grid-cols-2 gap-2.5">
-      {rows.map((r) => (
-        <div key={r.label} className={`min-w-0 rounded-xl bg-[#F7F6FE] px-3 py-2.5 ${r.wide ? 'col-span-2' : ''}`}>
-          <dt className="text-[11px] font-medium text-slate-500">{r.label}</dt>
-          <dd className={`mt-0.5 text-[13px] leading-snug break-words ${r.value ? 'font-semibold text-[#1E293B]' : 'italic text-slate-400'}`}>
-            {r.value || 'Not added'}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
+      </ProfileRow>
+    ))}
+  </dl>
+);
 
 /* --------------------------------- Screen --------------------------------- */
 
@@ -155,9 +175,7 @@ export const ClientCompanyProfileView: React.FC<{
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [logoSheet, setLogoSheet] = useState(false);
   const [notice, showNotice] = useNotice();
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
-  const inputClass = v2 ? inputClassV2 : fieldInputClass;
+  const inputClass = fieldInputClass;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -213,31 +231,56 @@ export const ClientCompanyProfileView: React.FC<{
   const states = statesOf(v.country);
   const cities = citiesOf(v.country, v.state);
 
+  /** V1 view mode: gradient hero (header lives inside it) with the profile card overlapping, like Manager My Profile */
+  const heroV1 = !editing;
+
   return (
-    <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
+    <div className={`relative flex-1 flex flex-col text-[#1E293B] overflow-hidden select-none ${heroV1 ? 'bg-[#F5F7FB]' : 'bg-[#F8FAFC]'}`}>
       {/* While editing the back arrow works like Cancel */}
-      <ScreenHeader
-        title={editing ? 'Edit Company Details' : 'Company Profile'}
-        onBack={editing ? () => (dirty ? setConfirmDiscard(true) : stopEdit()) : onBack}
-        backLabel={editing ? 'Cancel editing' : undefined}
-        version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }}
-      />
+      {!heroV1 && (
+        <ScreenHeader
+          title={editing ? 'Edit Company Details' : 'Company Profile'}
+          onBack={editing ? () => (dirty ? setConfirmDiscard(true) : stopEdit()) : onBack}
+          backLabel={editing ? 'Cancel editing' : undefined}
+        />
+      )}
       {notice && <div className="absolute top-3 inset-x-4 z-20 pointer-events-none">{notice}</div>}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
+        {heroV1 && (
+          <div className="relative bg-linear-to-br from-[#4F6BFA] via-[#5B5EF5] to-[#8B5CF6] pb-16">
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+            <div className="absolute top-16 -left-12 w-36 h-36 rounded-full bg-cyan-300/20 blur-2xl" aria-hidden="true" />
+            <header className="relative flex items-center px-4 h-14">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  aria-label="Back to Dashboard"
+                  className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm text-white flex items-center justify-center active:bg-white/25 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[calc(100%-96px)] flex items-center gap-2">
+                <h1 className="min-w-0 text-base font-bold text-white truncate">Company Profile</h1>
+              </div>
+            </header>
+          </div>
+        )}
         {loading ? (
           <ProfileSkeleton label="Loading company profile" />
         ) : (
-          <div className="relative px-4 pt-4 space-y-3 animate-in fade-in duration-200">
+          <div className={`relative px-4 animate-in fade-in duration-200 ${heroV1 ? '-mt-12 pb-2 space-y-3.5' : 'pt-4 space-y-3'}`}>
             {editing ? (
               <>
-                <h1 className="text-xl font-extrabold leading-tight">Edit Company Details</h1>
-                <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 text-[11px] text-slate-500">
+                <h1 className="text-base font-bold leading-tight">Edit Company Details</h1>
+                <p className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-[#2F68FE]">
                   <Info className="w-3.5 h-3.5 shrink-0" />
                   Fields marked * are required.
                 </p>
 
-                <SectionCard title="Company Details">
+                <Section title="Company Details">
                   <div className="space-y-4">
                     <label className="block space-y-1.5" data-field="companyName">
                       <Label text="Company Name" required />
@@ -350,7 +393,7 @@ export const ClientCompanyProfileView: React.FC<{
                   </div>
                 </Section>
 
-                <Section v2={v2} title="Address Information">
+                <Section title="Address Information">
                   <div className="space-y-4">
                     <label className="block space-y-1.5" data-field="address1">
                       <Label text="Address 1" required />
@@ -446,7 +489,7 @@ export const ClientCompanyProfileView: React.FC<{
                   </div>
                 </Section>
 
-                <Section v2={v2} title="Online Presence">
+                <Section title="Online Presence">
                   <div className="space-y-4">
                     {(
                       [
@@ -475,7 +518,7 @@ export const ClientCompanyProfileView: React.FC<{
                   </div>
                 </Section>
 
-                <Section v2={v2} title="Services Provided">
+                <Section title="Services Provided">
                   <div className="space-y-1.5">
                     <MultiSelectDropdown
                       label="Services"
@@ -491,166 +534,143 @@ export const ClientCompanyProfileView: React.FC<{
               </>
             ) : (
               <>
-                {v2 ? (
-                  <section className="relative mt-1 overflow-hidden rounded-2xl px-4 py-4 bg-linear-to-br from-[#2F68FE] to-[#4F46E5] text-white shadow-[0_10px_24px_-12px_rgba(47,104,254,0.7)]">
-                    <span className="absolute -right-8 -top-10 w-32 h-32 rounded-full bg-white/10" aria-hidden />
-                    <span className="absolute right-16 -bottom-12 w-24 h-24 rounded-full bg-white/5" aria-hidden />
-                    <div className="relative flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        <span className="w-14 h-14 rounded-xl bg-white/15 ring-1 ring-white/30 flex items-center justify-center overflow-hidden">
-                          {logoUrl ? (
-                            <img src={logoUrl} alt={`${profile.companyName} logo`} className="w-full h-full object-contain p-1.5 bg-white" />
-                          ) : (
-                            <ImageIcon className="w-6 h-6 text-white/70" aria-hidden />
-                          )}
-                        </span>
-                        {perm.edit && (
-                          <button
-                            type="button"
-                            onClick={() => setLogoSheet(true)}
-                            className="absolute -right-4 -bottom-4 w-11 h-11 flex items-center justify-center cursor-pointer group"
-                            aria-label={logoUrl ? 'Change company logo' : 'Add company logo'}
-                          >
-                            <span className="w-6 h-6 rounded-md bg-white text-[#2F68FE] shadow-sm flex items-center justify-center group-active:bg-blue-50">
-                              <Pencil className="w-3 h-3" />
+                <section className="bg-white rounded-2xl p-4 shadow-[0_8px_24px_-16px_rgba(79,70,229,0.35)] border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                      const avatar = (
+                        <>
+                          <span className="w-13 h-13 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden">
+                            {logoUrl ? (
+                              <img src={logoUrl} alt={`${profile.companyName} logo`} className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <ImageIcon className="w-5 h-5 text-slate-400" aria-hidden />
+                            )}
+                          </span>
+                          {perm.edit && (
+                            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#2F68FE] text-white ring-2 ring-white flex items-center justify-center">
+                              <Camera className="w-2.5 h-2.5" />
                             </span>
-                          </button>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10.5px] font-bold uppercase tracking-wider text-white/70">Company Profile</p>
-                        <h2 className="mt-0.5 text-base font-bold leading-tight truncate">{profile.companyName}</h2>
-                      </div>
-                      {perm.edit && (
+                          )}
+                        </>
+                      );
+                      return perm.edit ? (
                         <button
                           type="button"
-                          onClick={startEdit}
-                          className="h-9 px-3 rounded-lg bg-white text-[#2F68FE] text-xs font-bold shrink-0 active:bg-blue-50 transition-colors cursor-pointer"
+                          onClick={() => setLogoSheet(true)}
+                          className="relative shrink-0 flex cursor-pointer"
+                          aria-label={logoUrl ? 'Change company logo' : 'Add company logo'}
                         >
-                          Update Profile
+                          {avatar}
                         </button>
-                      )}
+                      ) : (
+                        <div className="relative shrink-0 flex">{avatar}</div>
+                      );
+                    })()}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Company Profile</p>
+                      <h2 className="text-base font-bold text-[#1E293B] leading-tight truncate">{profile.companyName}</h2>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
+                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{profile.email}</span>
+                      </p>
                     </div>
-                  </section>
-                ) : (
-                  <section className="bg-[#E4E2FB] rounded-2xl p-4">
-                    <div className="flex items-center gap-3.5">
-                      <div className="relative shrink-0">
-                        <span className="w-16 h-16 rounded-full bg-[#EEF0F4] border-2 border-white flex items-center justify-center overflow-hidden">
-                          {logoUrl ? (
-                            <img src={logoUrl} alt={`${profile.companyName} logo`} className="w-full h-full object-contain p-1.5 bg-white" />
-                          ) : (
-                            <ImageIcon className="w-6 h-6 text-slate-400" aria-hidden />
-                          )}
-                        </span>
-                        {perm.edit && (
-                          <button
-                            type="button"
-                            onClick={() => setLogoSheet(true)}
-                            className="absolute -right-3 -top-3 w-11 h-11 flex items-center justify-center cursor-pointer group"
-                            aria-label={logoUrl ? 'Change company logo' : 'Add company logo'}
-                          >
-                            <span className="w-7 h-7 rounded-full bg-white text-[#1E293B] shadow-sm flex items-center justify-center group-active:bg-slate-100">
-                              <Pencil className="w-3.5 h-3.5" />
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-slate-600">Company Profile</p>
-                        <h2 className="mt-0.5 text-lg font-bold text-[#1E293B] leading-tight truncate">{profile.companyName}</h2>
-                      </div>
-                    </div>
-                    {perm.edit && (
-                      <button
-                        type="button"
-                        onClick={startEdit}
-                        className="mt-4 w-full h-11 rounded-xl bg-[#6C5CE7] text-white text-xs font-bold flex items-center justify-center active:bg-[#5A4BD1] transition-colors cursor-pointer"
-                      >
-                        Update Profile
-                      </button>
-                    )}
-                  </section>
-                )}
+                  </div>
 
-                <Section v2={v2} title="Company Master Profile">
-                  <Values v2={v2}
-                    rows={[
-                      { label: 'Business Type', value: businessTypeLabel(profile.businessType), wide: true },
-                      { label: 'Email', value: profile.email, wide: true },
-                      { label: 'Industry', value: profile.industries.join(', '), wide: true },
+                  <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-3 gap-y-2.5">
+                    {[
+                      { label: 'Business Type', value: businessTypeLabel(profile.businessType) },
                       { label: 'Phone Number', value: profile.phone },
-                      { label: 'Ext', value: profile.ext },
-                      { label: 'Fax', value: profile.fax },
-                      { label: 'Time Zone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '' },
-                      { label: 'No. of Employees', value: profile.employees },
-                      { label: 'No. of Onshore Staff', value: profile.onshoreStaff },
-                    ]}
-                  />
-                </Section>
-
-                <Section v2={v2} title="Address">
-                  <Values v2={v2}
-                    rows={[
-                      { label: 'Address 1', value: profile.address1, wide: true },
-                      { label: 'Address 2', value: profile.address2, wide: true },
-                      { label: 'Country', value: profile.country },
-                      { label: 'State', value: profile.state },
                       { label: 'City', value: profile.city },
-                      { label: 'Zip Code', value: profile.zipCode },
-                    ]}
-                  />
-                </Section>
+                    ].map(({ label, value }) => (
+                      <div key={label} className="min-w-0">
+                        <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
+                        <dd className="text-xs font-semibold text-[#1E293B] truncate tabular-nums">{value || 'Not added'}</dd>
+                      </div>
+                    ))}
+                  </dl>
 
-                <Section v2={v2} title="Online Presence">
-                  <Values v2={v2}
+                  {perm.edit && (
+                    <button
+                      type="button"
+                      onClick={startEdit}
+                      className="mt-3.5 w-full h-10 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center active:bg-[#1D4ED8] transition-colors cursor-pointer"
+                    >
+                      Edit Profile
+                    </button>
+                  )}
+                </section>
+
+                <Section flush title="Company Master Profile">
+                  <Values
+                    tint="bg-blue-50 text-blue-600"
                     rows={[
-                      { label: 'Website', value: shortUrl(profile.website), wide: true },
-                      { label: 'LinkedIn', value: shortUrl(profile.linkedin), wide: true },
-                      { label: 'X', value: shortUrl(profile.twitter), wide: true },
-                      { label: 'Facebook', value: shortUrl(profile.facebook), wide: true },
+                      { label: 'Business Type', value: businessTypeLabel(profile.businessType), wide: true, icon: Briefcase },
+                      { label: 'Email', value: profile.email, wide: true, icon: Mail },
+                      { label: 'Industry', value: profile.industries.join(', '), wide: true, icon: Factory },
+                      { label: 'Phone Number', value: profile.phone, icon: Phone },
+                      { label: 'Ext', value: profile.ext, icon: Hash },
+                      { label: 'Fax', value: profile.fax, icon: Printer },
+                      { label: 'Time Zone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '', icon: Clock },
+                      { label: 'No. of Employees', value: profile.employees, icon: Users },
+                      { label: 'No. of Onshore Staff', value: profile.onshoreStaff, icon: UserCheck },
                     ]}
                   />
                 </Section>
 
-                <Section v2={v2} title="Services Provided">
-                  <Values v2={v2} rows={[{ label: 'Services', value: profile.services.join(', '), wide: true }]} />
+                <Section flush title="Address">
+                  <Values
+                    tint="bg-emerald-50 text-emerald-600"
+                    rows={[
+                      { label: 'Address 1', value: profile.address1, wide: true, icon: MapPin },
+                      { label: 'Address 2', value: profile.address2, wide: true, icon: MapPin },
+                      { label: 'Country', value: profile.country, icon: Flag },
+                      { label: 'State', value: profile.state, icon: Landmark },
+                      { label: 'City', value: profile.city, icon: Building2 },
+                      { label: 'Zip Code', value: profile.zipCode, icon: Hash },
+                    ]}
+                  />
+                </Section>
+
+                <Section flush title="Online Presence">
+                  <Values
+                    tint="bg-indigo-50 text-indigo-600"
+                    rows={[
+                      { label: 'Website', value: shortUrl(profile.website), wide: true, icon: Globe },
+                      { label: 'LinkedIn', value: shortUrl(profile.linkedin), wide: true, icon: Link2 },
+                      { label: 'X', value: shortUrl(profile.twitter), wide: true, icon: Link2 },
+                      { label: 'Facebook', value: shortUrl(profile.facebook), wide: true, icon: Link2 },
+                    ]}
+                  />
+                </Section>
+
+                <Section flush title="Services Provided">
+                  <Values tint="bg-amber-50 text-amber-600" rows={[{ label: 'Services', value: profile.services.join(', '), wide: true, icon: Briefcase }]} />
                 </Section>
 
                 {agreements.length > 0 && (
-                  <Section v2={v2} title="Legal Agreements">
-                    <ul className="space-y-2">
-                      {agreements.map((a) => (
-                        <li
-                          key={a.id}
-                          className={
-                            v2
-                              ? 'min-h-14 pl-2.5 pr-1 py-1.5 flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC]'
-                              : 'min-h-14 pl-2.5 pr-1 py-1.5 flex items-center gap-3 rounded-xl bg-[#F7F6FE]'
-                          }
-                        >
-                          <span
-                            className={`w-9 h-9 flex items-center justify-center shrink-0 ${
-                              v2 ? 'rounded-lg bg-white border border-slate-200 text-[#2F68FE]' : 'rounded-full bg-white text-[#6C5CE7] shadow-xs'
-                            }`}
+                  <Section flush title="Legal Agreements">
+                    <ul>
+                      {agreements.map((a, i) => (
+                        <li key={a.id}>
+                          <ProfileRow
+                            icon={FileText}
+                            tint="bg-slate-100 text-slate-600"
+                            last={i === agreements.length - 1}
+                            trailing={
+                              perm.download && (
+                                <button
+                                  type="button"
+                                  onClick={() => showNotice(`Downloading ${a.fileName}`)}
+                                  aria-label={`Download ${a.fileName}`}
+                                  className="w-11 h-11 -my-2 flex items-center justify-center cursor-pointer shrink-0 rounded-full text-[#2F68FE] active:bg-blue-50"
+                                >
+                                  <Download className="w-4.5 h-4.5" />
+                                </button>
+                              )
+                            }
                           >
-                            <FileText className="w-4.5 h-4.5" />
-                          </span>
-                          <span className={`flex-1 min-w-0 text-[13px] text-[#1E293B] leading-snug break-words ${v2 ? 'font-semibold' : 'font-medium'}`}>
-                            {a.fileName}
-                          </span>
-                          {perm.download && (
-                            <button
-                              type="button"
-                              onClick={() => showNotice(`Downloading ${a.fileName}`)}
-                              aria-label={`Download ${a.fileName}`}
-                              className={`w-11 h-11 flex items-center justify-center cursor-pointer shrink-0 ${
-                                v2 ? 'rounded-lg text-[#2F68FE] active:bg-blue-50' : 'rounded-full text-[#6C5CE7] active:bg-[#EEEBFD]'
-                              }`}
-                            >
-                              <Download className="w-4.5 h-4.5" />
-                            </button>
-                          )}
+                            <span className="block text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{a.fileName}</span>
+                          </ProfileRow>
                         </li>
                       ))}
                     </ul>
@@ -664,18 +684,12 @@ export const ClientCompanyProfileView: React.FC<{
 
       {/* Footer (edit only): Cancel / Save. Update Profile lives in the header banner, like desktop */}
       {!loading && editing && (
-        <div
-          className={`shrink-0 bg-white border-t ${
-            v2 ? 'px-4 py-3 border-slate-200' : 'p-4 pb-5 bg-white/95 backdrop-blur-md border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]'
-          }`}
-        >
-          <div className={`grid gap-2.5 ${v2 ? 'grid-cols-2' : 'grid-cols-[1fr_2fr]'}`}>
+        <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className={`grid gap-2.5 grid-cols-[1fr_2fr]`}>
             <button
               type="button"
               onClick={() => (dirty ? setConfirmDiscard(true) : stopEdit())}
-              className={`border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer ${
-                v2 ? 'h-11 rounded-lg' : 'h-12 rounded-xl'
-              }`}
+              className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
             >
               Cancel
             </button>
@@ -683,9 +697,7 @@ export const ClientCompanyProfileView: React.FC<{
               type="button"
               onClick={save}
               disabled={saving || !dirty}
-              className={`bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed ${
-                v2 ? 'h-11 rounded-lg' : 'h-12 rounded-xl'
-              }`}
+              className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
               {saving ? 'Saving…' : 'Save Changes'}

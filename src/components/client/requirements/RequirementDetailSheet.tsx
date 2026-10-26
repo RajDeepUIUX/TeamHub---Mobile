@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Briefcase, CalendarClock, Clock3, DollarSign, FileText, Info, ListChecks, MessagesSquare, Sparkles, Users, X } from 'lucide-react';
-import { InfoSheet } from '../staff/tabs/StaffTabParts';
+import { Briefcase, CalendarClock, Clock3, DollarSign, FileText, Info, ListChecks, MessagesSquare, Sparkles, Users } from 'lucide-react';
+import { InfoSheet, ScreenHeader } from '../staff/tabs/StaffTabParts';
 import type { DesignVersion } from '../staff/tabs/StaffTabParts';
 import { formatShortDate } from '../data/clientInterviewsData';
 import { StaffRequirement, formatTime12 } from '../data/clientRequirementsData';
@@ -18,8 +18,8 @@ const dash = (v: string | number | null | undefined) => (v === undefined || v ==
 /** Yes / No / Maybe answers as a small badge */
 const Answer: React.FC<{ value: string; square?: boolean }> = ({ value, square }) => {
   if (!value) return <>-</>;
-  const tone = value === 'Yes' ? 'bg-[#E8F8F0] text-[#047857]' : value === 'Maybe' ? 'bg-[#FEF8E7] text-[#B45309]' : 'bg-slate-100 text-slate-600';
-  return <span className={`inline-flex items-center h-6 px-2.5 text-[11.5px] font-bold ${square ? 'rounded-md' : 'rounded-full'} ${tone}`}>{value}</span>;
+  const tone = value === 'Yes' ? 'bg-[#E8F8F0] text-[#10B981]' : value === 'Maybe' ? 'bg-[#FEF8E7] text-[#D97706]' : 'bg-slate-100 text-slate-600';
+  return <span className={`inline-flex items-center h-6 px-2.5 text-[11px] font-bold ${square ? 'rounded-md' : 'rounded-full'} ${tone}`}>{value}</span>;
 };
 
 /** Comma lists as chips */
@@ -29,7 +29,7 @@ const Chips: React.FC<{ items: string[]; square?: boolean }> = ({ items, square 
       {items.map((i) => (
         <span
           key={i}
-          className={`px-2.5 py-1 text-[11.5px] font-medium leading-snug ${square ? 'rounded-md bg-slate-100 text-[#1E293B]' : 'rounded-full bg-[#EEF2FF] text-[#4F46E5]'}`}
+          className={`px-2 py-0.5 text-[11px] font-semibold leading-snug ${square ? 'rounded-md bg-slate-100 text-slate-700' : 'rounded-md bg-blue-50 text-[#2F68FE]'}`}
         >
           {i}
         </span>
@@ -153,7 +153,7 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
     },
   ];
 
-  const jd = <p className="text-[13px] text-[#334155] leading-relaxed whitespace-pre-line break-words">{dash(r.jobDescription)}</p>;
+  const jd = <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-line break-words">{dash(r.jobDescription)}</p>;
 
   /* ------------------------------ V1: soft cards ------------------------------ */
   if (!v2) {
@@ -164,77 +164,65 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
         aria-label="View Requirement"
         className="absolute inset-0 z-40 flex flex-col bg-[#F8FAFC] text-[#1E293B] animate-in fade-in slide-in-from-right-4 duration-200"
       >
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pb-8 select-text">
-          <div className="bg-[#2F68FE] px-4 pt-3 pb-14 rounded-b-[28px]">
-            <div className="h-10 flex items-center justify-between gap-3">
-              <h2 className="text-[15px] font-bold text-white truncate">View Requirement</h2>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center active:bg-white/25 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mt-3 flex items-start gap-3">
-              <span className="w-12 h-12 rounded-2xl bg-white/15 text-white flex items-center justify-center shrink-0">
-                <Briefcase className="w-6 h-6" />
+        <ScreenHeader title="View Requirement" onBack={onClose} backLabel="Close" />
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-8 space-y-3 select-text">
+          <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-4" aria-label="Profile">
+            <div className="flex items-start gap-3">
+              <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                <Briefcase className="w-5 h-5" />
               </span>
               <dl className="min-w-0">
-                <dt className="text-[11px] font-medium text-white/70">Profile</dt>
-                <dd className="mt-0.5 text-[18px] font-extrabold text-white leading-snug break-words">{dash(r.profile)}</dd>
+                <dt className="text-[11px] font-medium text-slate-400">Profile</dt>
+                <dd className="mt-0.5 text-base font-bold text-[#1E293B] leading-snug break-words">{dash(r.profile)}</dd>
                 <dt className="sr-only">Domain</dt>
-                <dd className="mt-1.5 inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-white/15 text-[11px] font-semibold text-white">
-                  <span className="text-white/70">Domain</span>
+                <dd className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE]">
+                  <span className="text-slate-500 font-medium">Domain</span>
                   {dash(r.domain)}
                 </dd>
               </dl>
             </div>
-          </div>
 
-          <dl className="-mt-10 mx-4 grid grid-cols-2 gap-2 p-2 rounded-2xl bg-white border border-slate-100 shadow-[0_10px_24px_-12px_rgba(15,23,42,0.25)]">
-            {keyFacts.map((f) => (
-              <div key={f.label} className="min-w-0 rounded-xl bg-[#F8FAFC] px-3 py-2.5 flex items-start gap-2">
-                <f.icon className="w-4 h-4 mt-0.5 shrink-0 text-[#2F68FE]" aria-hidden="true" />
-                <div className="min-w-0">
-                  <dt className="text-[10.5px] font-medium text-slate-400 leading-tight">{f.label}</dt>
-                  <dd className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug tabular-nums break-words">{f.value}</dd>
+            <dl className="mt-3.5 pt-3.5 border-t border-slate-100 grid grid-cols-2 gap-2">
+              {keyFacts.map((f) => (
+                <div key={f.label} className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-start gap-2">
+                  <f.icon className="w-4 h-4 mt-px shrink-0 text-[#2F68FE]" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <dt className="text-[11px] font-medium text-slate-400 leading-tight">{f.label}</dt>
+                    <dd className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug tabular-nums break-words">{f.value}</dd>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </dl>
+              ))}
+            </dl>
+          </section>
 
-          <div className="px-4 mt-4 space-y-3">
-            {groups.map((g) => (
-              <section key={g.title} className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4" aria-label={g.title}>
-                <h3 className="flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
-                  <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center">
-                    <g.icon className="w-4 h-4" />
-                  </span>
-                  {g.title}
-                </h3>
-                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3.5">
-                  {g.fields.map((f) => (
-                    <div key={f.key} className={`min-w-0 ${f.block ? 'col-span-2' : ''}`}>
-                      <dt className="text-[11px] font-medium text-slate-400 leading-snug">{f.label}</dt>
-                      <dd className="mt-1 text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            ))}
-
-            <section className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4" aria-label="Job Description">
-              <h3 className="flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
-                <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center">
-                  <FileText className="w-4 h-4" />
+          {groups.map((g) => (
+            <section key={g.title} className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-4" aria-label={g.title}>
+              <h3 className="flex items-center gap-2.5 text-sm font-bold text-[#1E293B]">
+                <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                  <g.icon className="w-4 h-4" />
                 </span>
-                Job Description
+                {g.title}
               </h3>
-              <div className="mt-3 p-3 rounded-xl bg-[#F8FAFC] border border-dashed border-[#BFDBFE]">{jd}</div>
+              <dl className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
+                {g.fields.map((f) => (
+                  <div key={f.key} className={`min-w-0 ${f.block ? 'col-span-2' : ''}`}>
+                    <dt className="text-[11px] font-medium text-slate-400 leading-snug">{f.label}</dt>
+                    <dd className="mt-1 text-xs font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
             </section>
-          </div>
+          ))}
+
+          <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-4" aria-label="Job Description">
+            <h3 className="flex items-center gap-2.5 text-sm font-bold text-[#1E293B]">
+              <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </span>
+              Job Description
+            </h3>
+            <div className="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">{jd}</div>
+          </section>
         </div>
       </div>
     );
@@ -248,33 +236,23 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
       aria-label="View Requirement"
       className="absolute inset-0 z-40 flex flex-col bg-[#F8FAFC] text-[#1E293B] animate-in fade-in slide-in-from-right-4 duration-200"
     >
-      <header className="shrink-0 bg-white h-14 px-4 flex items-center gap-2 border-b border-[#EBF0F7]">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#1E293B] active:bg-slate-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-base font-bold truncate">View Requirement</h2>
-      </header>
+      <ScreenHeader title="View Requirement" onBack={onClose} backLabel="Close" />
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pb-8 select-text">
-        <div className="bg-white border-b border-[#EBF0F7] px-4 pt-4 pb-4">
+        <div className="mx-4 mt-4 bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-4">
           <dl>
-            <dt className="text-[10.5px] font-medium text-slate-400">Profile</dt>
-            <dd className="mt-0.5 text-[17px] font-extrabold text-[#1E293B] leading-snug break-words">{dash(r.profile)}</dd>
-            <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
+            <dt className="text-[11px] font-medium text-slate-400">Profile</dt>
+            <dd className="mt-0.5 text-base font-bold text-[#1E293B] leading-snug break-words">{dash(r.profile)}</dd>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
               <dt className="text-slate-500">Domain</dt>
               <dd className="font-semibold text-[#2F68FE]">{dash(r.domain)}</dd>
             </div>
           </dl>
-          <dl className="mt-3.5 grid grid-cols-2 rounded-lg border border-slate-200 overflow-hidden">
+          <dl className="mt-3.5 grid grid-cols-2 rounded-xl bg-slate-50/80 border border-slate-100 overflow-hidden">
             {keyFacts.map((f, i) => (
-              <div key={f.label} className={`min-w-0 px-3 py-2.5 border-slate-200 ${i % 2 === 0 ? 'border-r' : ''} ${i > 1 ? 'border-t' : ''}`}>
-                <dt className="text-[10.5px] font-medium text-slate-500 leading-tight">{f.label}</dt>
-                <dd className={`mt-1 text-[15px] font-extrabold leading-tight tabular-nums break-words ${i === 1 ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{f.value}</dd>
+              <div key={f.label} className={`min-w-0 px-3 py-2.5 border-slate-100 ${i % 2 === 0 ? 'border-r' : ''} ${i > 1 ? 'border-t' : ''}`}>
+                <dt className="text-[11px] font-medium text-slate-500 leading-tight">{f.label}</dt>
+                <dd className={`mt-1 text-base font-extrabold leading-tight tabular-nums break-words ${i === 1 ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>{f.value}</dd>
               </div>
             ))}
           </dl>
@@ -282,22 +260,22 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
 
         <div className="px-4 mt-3 space-y-3">
           {groups.map((g, gi) => (
-            <section key={g.title} className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden" aria-label={g.title}>
-              <h3 className="h-9 px-3.5 flex items-center gap-2 bg-[#F8FAFC] border-b border-[#EBF0F7] text-[11.5px] font-bold text-slate-600">
-                <span className="w-5 h-5 rounded bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{gi + 1}</span>
+            <section key={g.title} className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden" aria-label={g.title}>
+              <h3 className="h-11 px-4 flex items-center gap-2 border-b border-slate-100 text-sm font-bold text-[#1E293B]">
+                <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{gi + 1}</span>
                 {g.title}
               </h3>
-              <dl className="px-3.5 divide-y divide-dashed divide-slate-200">
+              <dl className="px-4 divide-y divide-slate-100">
                 {g.fields.map((f) =>
                   f.block ? (
                     <div key={f.key} className="py-2.5">
-                      <dt className="text-[12px] font-medium text-slate-500 leading-snug">{f.label}</dt>
-                      <dd className="mt-1.5 text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
+                      <dt className="text-[11px] font-medium text-slate-500 leading-snug">{f.label}</dt>
+                      <dd className="mt-1.5 text-xs font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
                     </div>
                   ) : (
                     <div key={f.key} className="py-2.5 flex items-start justify-between gap-3">
-                      <dt className="min-w-0 text-[12px] font-medium text-slate-500 leading-snug">{f.label}</dt>
-                      <dd className="shrink-0 max-w-[55%] text-right text-[12.5px] font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
+                      <dt className="min-w-0 text-[11px] font-medium text-slate-500 leading-snug">{f.label}</dt>
+                      <dd className="shrink-0 max-w-[55%] text-right text-xs font-semibold text-[#1E293B] leading-snug break-words">{f.value}</dd>
                     </div>
                   ),
                 )}
@@ -305,12 +283,12 @@ export const RequirementDetailSheet: React.FC<Props> = ({ isOpen, requirement: r
             </section>
           ))}
 
-          <section className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden" aria-label="Job Description">
-            <h3 className="h-9 px-3.5 flex items-center gap-2 bg-[#F8FAFC] border-b border-[#EBF0F7] text-[11.5px] font-bold text-slate-600">
-              <span className="w-5 h-5 rounded bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{groups.length + 1}</span>
+          <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden" aria-label="Job Description">
+            <h3 className="h-11 px-4 flex items-center gap-2 border-b border-slate-100 text-sm font-bold text-[#1E293B]">
+              <span className="w-5 h-5 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{groups.length + 1}</span>
               Job Description
             </h3>
-            <div className="px-3.5 py-3 border-l-[3px] border-[#2F68FE] m-3 rounded-r-md bg-[#F8FAFC]">{jd}</div>
+            <div className="m-3 px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100">{jd}</div>
           </section>
         </div>
       </div>

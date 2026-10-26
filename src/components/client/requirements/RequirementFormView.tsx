@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, CalendarDays, ChevronDown, Clock3, FileText, Info, Loader2, Lock, Sparkles, Upload, X } from 'lucide-react';
+import { AlertCircle, CalendarDays, ChevronDown, Clock3, FileText, Info, Loader2, Lock, Sparkles, Upload } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { DatePickerSheet } from '../../common/DatePickerSheet';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { TimeWheelSheet } from '../../common/TimeWheelSheet';
-import { ConfirmSheet, fieldInputClass } from '../staff/tabs/StaffTabParts';
+import { ConfirmSheet, ScreenHeader, fieldInputClass } from '../staff/tabs/StaffTabParts';
 import { formatShortDate, isoOfDate } from '../data/clientInterviewsData';
 import {
   BUDGET_RATE_MIN,
@@ -58,7 +58,7 @@ const Field: React.FC<{ label: React.ReactNode; required?: boolean; error?: stri
   children,
 }) => (
   <div className={`min-w-0 space-y-1.5 ${className}`}>
-    <span className="flex items-center gap-1 text-[12.5px] font-medium text-[#344054]">
+    <span className="flex items-center gap-1 text-xs font-bold text-[#1E293B]">
       <span>
         {label}
         {required && <span className="text-rose-500">*</span>}
@@ -74,30 +74,32 @@ const Field: React.FC<{ label: React.ReactNode; required?: boolean; error?: stri
   </div>
 );
 
-/** Desktop steps are one plain form; groups only space the fields */
+const CARD = 'bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4';
+
+/** Desktop steps are one plain form; each group is its own white card (no visible heading, as on desktop) */
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="space-y-4" aria-label={title}>
+  <section className={`${CARD} space-y-4`} aria-label={title}>
     {children}
   </section>
 );
 
 /** Desktop "Nothing selected" select before its parent field is chosen */
 const EmptySelect: React.FC<{ label: string; placeholder?: string }> = ({ label, placeholder = 'Nothing selected' }) => (
-  <div aria-label={label} aria-disabled="true" className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-400 flex items-center justify-between gap-2">
+  <div aria-label={label} aria-disabled="true" className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-400 shadow-2xs flex items-center justify-between gap-2">
     <span className="truncate">{placeholder}</span>
     <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
   </div>
 );
 
 const LockedValue: React.FC<{ value: string; placeholder?: string }> = ({ value, placeholder = '-' }) => (
-  <div className="w-full h-11 px-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs flex items-center justify-between gap-2" aria-disabled="true">
+  <div className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between gap-2 cursor-not-allowed" aria-disabled="true">
     <span className={`truncate ${value ? 'font-semibold text-slate-600' : 'font-medium text-slate-400'}`}>{value || placeholder}</span>
-    <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+    <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
   </div>
 );
 
 const textareaClass =
-  'w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 leading-relaxed focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 resize-none select-text';
+  'w-full p-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 leading-relaxed shadow-2xs focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 resize-none select-text';
 
 /** Desktop "Add Requirement" / "Edit Requirement" offcanvas: Core Details → Additional Details → Job Description */
 export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack, onSubmit }) => {
@@ -214,6 +216,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const yesNo = (label: string, key: 'endClientComm' | 'interviewRequired' | 'technicalAssessment' | 'signTaxReturn' | 'signAuditReport') => (
     <Field label={label}>
       <Dropdown
+        size="md"
         ariaLabel={label}
         value={draft[key] || null}
         placeholder="Select"
@@ -273,7 +276,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
       </Field>
 
       <Field label="Tentative Price" required>
-        <div className="w-full h-11 px-3.5 rounded-xl bg-[#E9ECEF] border border-slate-200 flex items-center text-xs font-semibold text-[#1E293B]" aria-label="Tentative Price" aria-readonly="true">
+        <div className="w-full h-11 px-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center text-xs font-semibold text-[#1E293B] tabular-nums" aria-label="Tentative Price" aria-readonly="true">
           <span className="truncate">{draft.pricing}</span>
         </div>
       </Field>
@@ -308,9 +311,9 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
             onClick={() => setDateOpen(true)}
             aria-label="Expected Start Date"
             aria-invalid={Boolean(errors.startDate)}
-            className={`${fieldInputClass(errors.startDate)} flex items-center gap-2 text-left cursor-pointer`}
+            className={`${fieldInputClass(errors.startDate)} shadow-2xs flex items-center gap-2 text-left cursor-pointer`}
           >
-            <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+            <CalendarDays className="w-4 h-4 text-[#2F68FE] shrink-0" />
             <span className={`truncate ${draft.startDate ? '' : 'text-slate-400'}`}>{draft.startDate ? formatShortDate(draft.startDate) : 'Expected Start Date'}</span>
           </button>
         )}
@@ -334,7 +337,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
 
       <Field label="Preferred Available Upto Time" required error={errors.timezone || errors.availableUpto} className="col-span-2">
         <div className="flex items-stretch">
-          <div className="w-[104px] shrink-0 [&_button]:rounded-r-none [&_button]:bg-[#E2E8F0]">
+          <div className="w-[104px] shrink-0 [&_button]:rounded-r-none [&_button]:bg-slate-100">
             {select('Time Zone', draft.timezone || null, TIMEZONES, (v) => set('timezone', v), 'Select')}
           </div>
           <button
@@ -342,10 +345,10 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
             onClick={() => setTimeOpen(true)}
             aria-label="Preferred Available Upto Time"
             aria-invalid={Boolean(errors.availableUpto)}
-            className={`${fieldInputClass(errors.availableUpto)} -ml-px rounded-l-none flex items-center justify-between gap-2 text-left cursor-pointer`}
+            className={`${fieldInputClass(errors.availableUpto)} -ml-px rounded-l-none shadow-2xs flex items-center justify-between gap-2 text-left cursor-pointer`}
           >
             <span className={`truncate tabular-nums ${draft.availableUpto ? '' : 'text-slate-400'}`}>{draft.availableUpto || '--:--'}</span>
-            <Clock3 className="w-4 h-4 text-slate-400 shrink-0" />
+            <Clock3 className="w-4 h-4 text-[#2F68FE] shrink-0" />
           </button>
         </div>
       </Field>
@@ -373,7 +376,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
         {yesNo('Do you want staff to directly communicate with your clients?', 'endClientComm')}
 
         <Field label="Reporting To">
-          <Dropdown ariaLabel="Reporting To" value={draft.reportingTo || null} placeholder="Select" options={REPORTING_OPTIONS} onChange={(v) => set('reportingTo', v)} />
+          <Dropdown size="md" ariaLabel="Reporting To" value={draft.reportingTo || null} placeholder="Select" options={REPORTING_OPTIONS} onChange={(v) => set('reportingTo', v)} />
         </Field>
 
         <MultiSelectDropdown
@@ -389,17 +392,17 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <span className="block text-[11px] font-semibold text-slate-500">Seasonal</span>
-              <Dropdown ariaLabel="Seasonal overtime" value={draft.overtimeSeasonal || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeSeasonal', v)} />
+              <Dropdown size="md" ariaLabel="Seasonal overtime" value={draft.overtimeSeasonal || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeSeasonal', v)} />
             </div>
             <div className="space-y-1">
               <span className="block text-[11px] font-semibold text-slate-500">ROY</span>
-              <Dropdown ariaLabel="ROY overtime" value={draft.overtimeRoy || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeRoy', v)} />
+              <Dropdown size="md" ariaLabel="ROY overtime" value={draft.overtimeRoy || null} placeholder="Select" options={OVERTIME_OPTIONS} onChange={(v) => set('overtimeRoy', v)} />
             </div>
           </div>
         </div>
 
         <Field label="Does the staff required to travel to US?">
-          <Dropdown ariaLabel="Travel to US" value={draft.travelUS || null} placeholder="Select" options={['Yes', 'No', 'Maybe']} onChange={(v) => set('travelUS', v as RequirementDraft['travelUS'])} />
+          <Dropdown size="md" ariaLabel="Travel to US" value={draft.travelUS || null} placeholder="Select" options={['Yes', 'No', 'Maybe']} onChange={(v) => set('travelUS', v as RequirementDraft['travelUS'])} />
         </Field>
       </Section>
 
@@ -466,7 +469,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const description = (
     <>
       <Section title="Generate with AI">
-        <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
+        <p className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-[#2F68FE] leading-snug">
           <Info className="w-4 h-4 shrink-0 mt-px" />
           To generate an AI-powered Job Description, complete: No. of Staff, Domain, Work Mode, Technical Skills and Software Skills
           {Number(draft.level.replace(/\D/g, '')) >= 4 ? ' and Qualification.' : '.'}
@@ -476,13 +479,13 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
           type="button"
           onClick={generate}
           disabled={aiBusy}
-          className="w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-wait cursor-pointer"
+          className="w-full h-12 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-2 active:bg-blue-50 transition-colors disabled:opacity-60 disabled:cursor-wait cursor-pointer"
         >
           {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {aiBusy ? 'Preparing…' : draft.jobDescription ? 'Regenerate with AI' : 'Generate with AI'}
         </button>
         {aiMissing.length > 0 && (
-          <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[11.5px] text-rose-600 leading-snug" role="alert">
+          <p className="flex items-start gap-2 p-3 rounded-xl bg-[#FFF1F2] border border-[#FECDD3] text-xs text-rose-600 leading-snug" role="alert">
             <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
             <span>Complete these first: {aiMissing.join(', ')}.</span>
           </p>
@@ -529,44 +532,34 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
   const lastLabel = isEdit ? 'Update' : 'Submit';
 
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col bg-white text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
-      <header className="shrink-0 bg-[#2F68FE] h-14 pl-4 pr-3 flex items-center justify-between gap-3">
-        <h1 className="text-base font-bold text-white truncate">{isEdit ? 'Edit Requirement' : 'Add Requirement'}</h1>
-        <button
-          type="button"
-          onClick={back}
-          aria-label="Close"
-          className="w-9 h-9 rounded-lg bg-white/95 text-[#1E293B] flex items-center justify-center active:bg-white shrink-0 cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </header>
+    <div className="relative flex-1 min-h-0 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
+      <ScreenHeader title={isEdit ? 'Edit Requirement' : 'Add Requirement'} onBack={back} backLabel="Close" />
 
-      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-3 pb-6">
+      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-6">
         <RequirementStepper step={step} />
         {step === 1 && !isEdit && (
-          <p className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-slate-600 leading-snug">
-            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <p className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-[#2F68FE] leading-snug">
+            <Info className="w-4 h-4 shrink-0 mt-px" />
             To schedule the interview, please provide a few role-specific details. These help us clearly define your hiring requirement, align this candidate
             accurately, and identify any additional suitable candidates for the same role. Once completed, you can proceed to select the interview date and
             available time slots.
           </p>
         )}
         {isEdit && step === 1 && (
-          <p className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800 leading-snug">
-            <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <p className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-[#FEF8E7] border border-amber-200/50 text-xs text-amber-700 leading-snug">
+            <Lock className="w-4 h-4 shrink-0 mt-px" />
             Hiring type, domain, profile, hours, level, timeline, start date and staff count can&rsquo;t be changed. Contact your account manager if they need to change.
           </p>
         )}
-        <div className="mt-4 space-y-4">{step === 1 ? core : step === 2 ? additional : description}</div>
+        {step === 1 ? <div className={`mt-4 ${CARD}`}>{core}</div> : <div className="mt-4 space-y-3">{step === 2 ? additional : description}</div>}
       </div>
 
-      <div className="shrink-0 bg-white border-t border-[#EBF0F7] px-4 py-3 pb-5 flex items-center justify-end gap-2.5">
+      <div className="shrink-0 z-20 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => setStep((s) => (s - 1) as 1 | 2)}
           disabled={saving || step === 1}
-          className="h-11 min-w-[104px] px-4 rounded-lg border border-[#2F68FE]/50 text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           Previous
         </button>
@@ -574,7 +567,7 @@ export const RequirementFormView: React.FC<Props> = ({ editing, initial, onBack,
           type="button"
           onClick={next}
           disabled={saving || aiBusy}
-          className="h-11 min-w-[104px] px-4 rounded-lg bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-wait cursor-pointer"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-wait cursor-pointer"
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Saving…' : step === 3 ? lastLabel : 'Next'}

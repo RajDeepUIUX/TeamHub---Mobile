@@ -40,28 +40,30 @@ export const SurveyIntroView: React.FC<{ survey: ClientSurvey; onBack: () => voi
           <div className="flex items-center gap-3">
             <SurveyTypeIcon type={survey.type} size="lg" />
             <div className="min-w-0">
-              <h2 className="text-[15px] font-extrabold leading-snug">{SURVEY_TYPE_LABEL[survey.type]}</h2>
-              <p className={`text-[11.5px] font-semibold ${left <= 5 ? 'text-[#D97706]' : 'text-slate-500'}`}>
+              <h2 className="text-base font-bold leading-snug">{SURVEY_TYPE_LABEL[survey.type]}</h2>
+              <p className={`text-xs font-semibold ${left <= 5 ? 'text-[#D97706]' : 'text-slate-500'}`}>
                 Expires in {left} {left === 1 ? 'day' : 'days'}
               </p>
             </div>
           </div>
-          <FieldGrid
-            compact
-            fields={[
-              { label: 'Staff Name', value: survey.staffName },
-              { label: 'Assigned To', value: survey.assignedTo },
-              { label: 'Period', value: survey.period },
-            ]}
-          />
+          <div className="mt-3 border-t border-slate-100">
+            <FieldGrid
+              compact
+              fields={[
+                { label: 'Staff Name', value: survey.staffName },
+                { label: 'Assigned To', value: survey.assignedTo },
+                { label: 'Period', value: survey.period },
+              ]}
+            />
+          </div>
         </Card>
 
         <Card className="p-4">
-          <h3 className="text-sm font-bold text-[#1D4ED8]">Purpose</h3>
-          <p className="mt-1.5 text-[12.5px] text-slate-600 leading-relaxed">{intro.purpose}</p>
+          <h3 className="text-sm font-bold text-[#1E293B]">Purpose</h3>
+          <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">{intro.purpose}</p>
           <div className="mt-3 flex gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
             <Lock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            <p className="text-[11.5px] text-slate-500 leading-relaxed">
+            <p className="text-[11px] text-slate-500 leading-relaxed">
               <strong className="text-slate-700">Confidentiality: </strong>
               {SURVEY_CONFIDENTIALITY}
             </p>
@@ -69,8 +71,8 @@ export const SurveyIntroView: React.FC<{ survey: ClientSurvey; onBack: () => voi
         </Card>
 
         <Card className="p-4">
-          <h3 className="text-sm font-bold text-[#1D4ED8]">How to rate</h3>
-          <p className="mt-1 text-[11.5px] text-slate-500">
+          <h3 className="text-sm font-bold text-[#1E293B]">How to rate</h3>
+          <p className="mt-1 text-[11px] text-slate-500">
             {survey.type === 'service' ? 'Please provide ratings for each question as below.' : 'Please provide ratings to staff members for each question as below.'}
           </p>
           <ul className="mt-3 space-y-1.5">
@@ -86,29 +88,29 @@ export const SurveyIntroView: React.FC<{ survey: ClientSurvey; onBack: () => voi
         </Card>
 
         <Card className="p-4">
-          <h3 className="text-sm font-bold text-[#1D4ED8]">Information & Instructions</h3>
+          <h3 className="text-sm font-bold text-[#1E293B]">Information & Instructions</h3>
           <ul className="mt-2.5 space-y-2.5">
             {instructions.map(({ icon: Icon, text }) => (
               <li key={text} className="flex gap-2.5">
-                <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-                  <Icon className="w-3.5 h-3.5" />
+                <span className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4" />
                 </span>
-                <span className="text-[12px] text-slate-600 leading-relaxed pt-1">{text}</span>
+                <span className="text-xs text-slate-600 leading-relaxed pt-1.5">{text}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-3 pt-3 border-t border-slate-100 text-[11.5px] text-slate-500 leading-relaxed">
+          <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
             We appreciate your time in helping us evaluate and improve our team’s performance and service quality. Your feedback is vital in ensuring we
             deliver the best possible experience.
           </p>
         </Card>
       </div>
 
-      <div className="px-4 pt-3 pb-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+      <div className="p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0 z-20">
         <button
           type="button"
           onClick={onStart}
-          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer"
+          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
         >
           {SURVEY_START_LABEL[survey.type]} <ArrowRight className="w-4 h-4" />
         </button>

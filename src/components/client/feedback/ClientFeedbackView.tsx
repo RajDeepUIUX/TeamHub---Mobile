@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CalendarPlus, CalendarRange, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw, SearchX, SlidersHorizontal, UserRound, X } from 'lucide-react';
+import { CalendarPlus, CalendarRange, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw, SearchX, SlidersHorizontal, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import {
   ClientSurvey,
@@ -7,7 +7,6 @@ import {
   SURVEY_TYPES,
   SURVEY_TYPE_LABEL,
   SurveyAnswers,
-  SurveyStatus,
   SurveyType,
   daysLeft,
   expiryDate,
@@ -20,7 +19,7 @@ import { ScreenHeader, Card, DesignVersion, EmptyCard } from '../staff/tabs/Staf
 import { EMPTY_FEEDBACK_FILTERS, FeedbackFilterSheet, FeedbackFilters, feedbackFilterCount } from './FeedbackFilterSheet';
 import { SurveyFormView } from './SurveyFormView';
 import { SurveyIntroView } from './SurveyIntroView';
-import { SurveyStatusPill, SurveyTypeIcon, useSurveyToast } from './SurveyParts';
+import { SurveyStatusPill, useSurveyToast } from './SurveyParts';
 import { useClientPermission } from '../context/ClientPermissionContext';
 
 type Screen = { mode: 'list' } | { mode: 'intro' | 'form' | 'view'; id: string };
@@ -38,43 +37,17 @@ interface ClientFeedbackViewProps {
 const LOAD_MS = 600;
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
-/** V2 card header band per survey type (type icon colours) */
-const TYPE_BAND: Record<SurveyType, string> = {
-  service: 'bg-gradient-to-b from-[#E0E7FF] to-[#EEF2FF]',
-  staff: 'bg-gradient-to-b from-[#DBEAFE] to-[#EFF6FF]',
-  thirty: 'bg-gradient-to-b from-[#D1FAE5] to-[#E8F8F0]',
-  sixty: 'bg-gradient-to-b from-[#FDECC8] to-[#FEF8E7]',
-  hbr: 'bg-gradient-to-b from-[#FFE4E6] to-[#FEF2F2]',
-};
-
-/** V2 status chip: white chip, coloured dot + text (stays readable on every band) */
-const STATUS_CHIP: Record<SurveyStatus, { dot: string; text: string }> = {
-  'Not Started': { dot: 'bg-[#2F68FE]', text: 'text-[#1D4ED8]' },
-  'In Progress': { dot: 'bg-[#F59E0B]', text: 'text-[#D97706]' },
-  Completed: { dot: 'bg-[#10B981]', text: 'text-[#059669]' },
-  Expired: { dot: 'bg-slate-400', text: 'text-slate-500' },
-};
-
-
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0].toUpperCase())
-    .join('');
-
 const ListSkeleton: React.FC<{ v2: boolean }> = ({ v2 }) => (
   <div className={v2 ? 'space-y-4' : 'space-y-3'} aria-busy="true" aria-label="Loading surveys">
     {[0, 1, 2].map((i) =>
       v2 ? (
-        <div key={i} className="bg-white rounded-[20px] overflow-hidden border border-[#E6ECF5]">
-          <div className="bg-slate-50 px-3.5 pt-3.5 pb-8 flex items-center gap-2.5">
+        <div key={i} className="bg-white rounded-[20px] overflow-hidden border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+          <div className="p-3.5 flex items-center gap-2.5">
             <StaffSkeleton className="w-10 h-10 rounded-xl" />
             <StaffSkeleton className="flex-1 h-4" />
             <StaffSkeleton className="w-16 h-5 rounded-md" />
           </div>
-          <div className="-mt-5 mx-3 p-3 rounded-xl bg-white border border-[#E2E8F0] flex items-center gap-3">
+          <div className="mx-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
             <StaffSkeleton className="w-10 h-10 rounded-full" />
             <StaffSkeleton className="flex-1 h-4" />
           </div>
@@ -85,7 +58,7 @@ const ListSkeleton: React.FC<{ v2: boolean }> = ({ v2 }) => (
           </div>
         </div>
       ) : (
-        <div key={i} className="bg-white border border-[#DCE3ED] rounded-[20px] p-4 space-y-3">
+        <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 space-y-1.5">
               <StaffSkeleton className="w-40 h-3.5" />
@@ -237,9 +210,8 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   /* ---------- List ---------- */
   const actionButton = (s: ClientSurvey) => {
     const status = surveyStatus(s);
-    const outline = v2
-      ? 'h-9 px-3 rounded-lg bg-[#EEF2FF] text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1.5 active:bg-[#E0E7FF] shrink-0 cursor-pointer disabled:cursor-wait'
-      : 'h-9 px-3.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1.5 active:bg-blue-100 shrink-0 cursor-pointer disabled:cursor-wait';
+    const outline =
+      'h-9 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 transition-colors shrink-0 cursor-pointer disabled:cursor-wait';
     const pdf = perm.download && (
       <button
         type="button"
@@ -250,9 +222,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
         className={
           s.type === 'hbr'
             ? outline
-            : v2
-              ? 'w-9 h-9 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center active:bg-slate-200 shrink-0 cursor-pointer disabled:cursor-wait'
-              : 'w-9 h-9 rounded-full border border-slate-200 bg-white text-slate-500 flex items-center justify-center active:bg-slate-50 shrink-0 cursor-pointer disabled:cursor-wait'
+            : 'w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-500 flex items-center justify-center active:bg-slate-50 transition-colors shrink-0 cursor-pointer disabled:cursor-wait'
         }
       >
         {downloadingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -279,11 +249,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
         <button
           type="button"
           onClick={() => open(s)}
-          className={
-            v2
-              ? 'h-9 px-3.5 rounded-lg bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center gap-1.5 active:bg-[#1D4ED8] shrink-0 cursor-pointer'
-              : 'h-9 px-4 rounded-full bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] shrink-0 cursor-pointer'
-          }
+          className="h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors shrink-0 cursor-pointer"
         >
           {status === 'In Progress' ? <RotateCw className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
           {status === 'In Progress' ? 'Resume Survey' : 'Start Survey'}
@@ -332,18 +298,22 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   const cardV1 = (s: ClientSurvey) => {
     const { status, clickable, expires, tone } = cardInfo(s);
     const expiresTile =
-      tone === 'expired' ? 'bg-[#FEF2F2] text-rose-500' : tone === 'soon' ? 'bg-[#FEF8E7] text-[#D97706]' : 'bg-[#F8FAFC] text-[#1E293B]';
+      tone === 'expired'
+        ? 'bg-[#FEF2F2] border-rose-100 text-rose-600'
+        : tone === 'soon'
+          ? 'bg-[#FEF8E7] border-amber-100 text-[#D97706]'
+          : 'bg-slate-50 border-slate-100 text-[#1E293B]';
     return (
       <li key={s.id}>
-        <Card className="overflow-hidden rounded-[20px]">
+        <Card className="overflow-hidden">
           <div className="p-4">
             <div className="flex items-start gap-3">
               <span className="flex-1 min-w-0">
-                <span className="block text-[10.5px] font-semibold text-slate-400">Survey Type</span>
-                <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-[14px]')}</span>
+                <span className="block text-[11px] font-medium text-slate-400">Survey Type</span>
+                <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-sm')}</span>
               </span>
               <span className="shrink-0 flex flex-col items-end">
-                <span className="text-[10.5px] font-semibold text-slate-400">Status</span>
+                <span className="text-[11px] font-medium text-slate-400">Status</span>
                 <span className="mt-0.5">
                   <SurveyStatusPill status={status} />
                 </span>
@@ -355,35 +325,35 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                 { label: 'Staff Name', value: s.staffName ?? '-' },
                 { label: 'Period', value: s.period ?? '-' },
               ].map(({ label, value }) => (
-                <div key={label} className="min-w-0 px-3 py-2 rounded-xl bg-[#EFF6FF]">
+                <div key={label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
                   <span className="block text-[10px] font-semibold text-slate-400">{label}</span>
-                  <span className="block text-[12px] font-bold text-[#1E293B] truncate">{value}</span>
+                  <span className="block text-xs font-bold text-[#1E293B] truncate">{value}</span>
                 </div>
               ))}
             </div>
 
             <dl className="mt-2 grid grid-cols-3 gap-2">
-              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-[#F8FAFC] border border-slate-100">
+              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
                 <dt className="text-[10px] font-semibold text-slate-400">Assigned On</dt>
-                <dd className="mt-0.5 text-[11.5px] font-bold text-[#1E293B] tabular-nums leading-snug">{formatSurveyDate(s.assignedOn)}</dd>
+                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] tabular-nums leading-snug">{formatSurveyDate(s.assignedOn)}</dd>
               </div>
-              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-[#F8FAFC] border border-slate-100">
+              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
                 <dt className="text-[10px] font-semibold text-slate-400">Submitted On</dt>
-                <dd className="mt-0.5 text-[11.5px] font-bold text-[#1E293B] tabular-nums leading-snug">
+                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] tabular-nums leading-snug">
                   {s.submittedOn ? formatSurveyDate(s.submittedOn) : '-'}
                 </dd>
               </div>
-              <div className={`min-w-0 px-2.5 py-2 rounded-xl ${expiresTile}`}>
+              <div className={`min-w-0 px-2.5 py-2 rounded-xl border ${expiresTile}`}>
                 <dt className="text-[10px] font-semibold text-slate-400">Expires In</dt>
-                <dd className="mt-0.5 text-[11.5px] font-bold tabular-nums leading-snug">{expires}</dd>
+                <dd className="mt-0.5 text-xs font-bold tabular-nums leading-snug">{expires}</dd>
               </div>
             </dl>
           </div>
 
-          <div className="px-4 pb-4 flex items-center gap-2">
+          <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-2">
             <span className="flex-1 min-w-0">
               <span className="block text-[10px] font-semibold text-slate-400">Submitted By</span>
-              <span className="block text-[11.5px] font-bold text-[#1E293B] truncate">{s.completed ? s.assignedTo : '-'}</span>
+              <span className="block text-xs font-bold text-[#1E293B] truncate">{s.completed ? s.assignedTo : '-'}</span>
             </span>
             {actionButton(s)}
           </div>
@@ -392,80 +362,60 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     );
   };
 
-  /** V2 — type-tinted header band, floating staff panel, icon stepper Assigned → Submitted → Expires, Submitted By footer + compact actions */
+  /** V2 — person-card layout: type header, staff summary panel, stepper Assigned → Submitted → Expires, Submitted By footer + compact actions */
   const cardV2 = (s: ClientSurvey) => {
     const { status, clickable, expires, tone } = cardInfo(s);
     const hasExpiry = expires !== '-';
+    const upcoming = 'bg-white text-slate-400 border border-slate-300';
     const steps = [
-      { label: 'Assigned On', value: formatSurveyDate(s.assignedOn), icon: CalendarPlus, tint: 'bg-[#2F68FE] text-white shadow-[0_4px_10px_-4px_rgba(47,104,254,0.7)]', valueClass: 'text-[#1E293B]' },
+      { label: 'Assigned On', value: formatSurveyDate(s.assignedOn), icon: CalendarPlus, tint: 'bg-[#2F68FE] text-white', valueClass: 'text-[#1E293B]' },
       {
         label: 'Submitted On',
         value: s.submittedOn ? formatSurveyDate(s.submittedOn) : '-',
         icon: CheckCircle2,
-        tint: s.submittedOn ? 'bg-[#10B981] text-white shadow-[0_4px_10px_-4px_rgba(16,185,129,0.7)]' : 'bg-white text-slate-400 border-2 border-dashed border-slate-300',
+        tint: s.submittedOn ? 'bg-[#2F68FE] text-white' : upcoming,
         valueClass: 'text-[#1E293B]',
       },
       {
         label: 'Expires In',
         value: expires,
         icon: Hourglass,
-        tint: !hasExpiry
-          ? 'bg-white text-slate-400 border-2 border-dashed border-slate-300'
-          : tone === 'expired'
-            ? 'bg-rose-500 text-white shadow-[0_4px_10px_-4px_rgba(244,63,94,0.7)]'
-            : tone === 'soon'
-              ? 'bg-[#F59E0B] text-white shadow-[0_4px_10px_-4px_rgba(245,158,11,0.7)]'
-              : 'bg-[#4F46E5] text-white shadow-[0_4px_10px_-4px_rgba(79,70,229,0.7)]',
+        tint: !hasExpiry ? upcoming : tone === 'expired' ? 'bg-[#EF4444] text-white' : tone === 'soon' ? 'bg-[#F59E0B] text-white' : 'bg-[#2F68FE] text-white',
         valueClass:
           tone === 'expired'
             ? 'px-1.5 rounded-md bg-[#FEF2F2] text-rose-600'
             : tone === 'soon'
-              ? 'px-1.5 rounded-md bg-[#FEF8E7] text-[#B45309]'
+              ? 'px-1.5 rounded-md bg-[#FEF8E7] text-[#D97706]'
               : 'text-[#1E293B]',
       },
     ];
-    const segment = [
-      s.submittedOn ? 'bg-gradient-to-r from-[#2F68FE] to-[#10B981]' : 'bg-gradient-to-r from-[#2F68FE] to-[#CBD5E1]',
-      status === 'Completed' ? 'bg-[#10B981]' : status === 'Expired' ? 'bg-rose-300' : 'bg-[#CBD5E1]',
-    ];
+    const segment = [s.submittedOn ? 'bg-[#2F68FE]' : 'bg-slate-300', status === 'Completed' ? 'bg-[#2F68FE]' : 'bg-slate-300'];
     return (
       <li key={s.id}>
-        <section className="bg-white rounded-[20px] overflow-hidden border border-[#E6ECF5] shadow-[0_10px_28px_-16px_rgba(15,23,42,0.28)]">
-          <div className={`px-4 pt-3.5 pb-10 ${TYPE_BAND[s.type]}`}>
+        <section className="bg-white rounded-[20px] overflow-hidden border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+          <div className="p-3.5">
             <div className="flex items-start gap-3">
-              <span className="p-1 rounded-2xl bg-white shadow-[0_4px_10px_-6px_rgba(15,23,42,0.3)] shrink-0">
-                <SurveyTypeIcon type={s.type} />
-              </span>
               <span className="flex-1 min-w-0 pt-0.5">
-                <span className="block text-[10px] font-semibold text-slate-600">Survey Type</span>
-                <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-[15px]')}</span>
+                <span className="block text-[11px] font-medium text-slate-400">Survey Type</span>
+                <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-sm')}</span>
               </span>
               <span className="shrink-0 pt-0.5 flex flex-col items-end">
-                <span className="text-[10px] font-semibold text-slate-600">Status</span>
-                <span
-                  className={`mt-1 h-6 px-2 rounded-full bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.2)] text-[10.5px] font-bold flex items-center gap-1.5 whitespace-nowrap ${STATUS_CHIP[status].text}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CHIP[status].dot}`} aria-hidden="true" />
-                  {status}
+                <span className="text-[11px] font-medium text-slate-400">Status</span>
+                <span className="mt-0.5">
+                  <SurveyStatusPill status={status} />
                 </span>
               </span>
             </div>
           </div>
 
-          <div className="-mt-7 mx-3.5 px-3 py-2.5 rounded-2xl bg-white border border-[#E6ECF5] shadow-[0_8px_18px_-12px_rgba(15,23,42,0.35)] flex items-center gap-2.5">
-            <span
-              className="w-10 h-10 rounded-full bg-[#2F68FE] text-white text-[12px] font-bold flex items-center justify-center ring-4 ring-[#EFF6FF] shrink-0"
-              aria-hidden="true"
-            >
-              {s.staffName ? initials(s.staffName) : <UserRound className="w-4.5 h-4.5" />}
-            </span>
+          <div className="mx-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-2.5">
             <span className="flex-1 min-w-0">
               <span className="block text-[10px] font-semibold text-slate-400">Staff Name</span>
-              <span className="block text-[13px] font-bold text-[#1E293B] truncate">{s.staffName ?? '-'}</span>
+              <span className="block text-sm font-bold text-[#1E293B] truncate">{s.staffName ?? '-'}</span>
             </span>
             <span className="shrink-0 flex flex-col items-end">
               <span className="text-[10px] font-semibold text-slate-400">Period</span>
-              <span className="mt-0.5 h-6 px-2 rounded-lg bg-[#EFF6FF] text-[#2F68FE] text-[11px] font-bold flex items-center gap-1">
+              <span className="mt-0.5 px-2 py-0.5 rounded-md bg-blue-50 text-[#2F68FE] text-[11px] font-semibold flex items-center gap-1">
                 <CalendarRange className="w-3 h-3" aria-hidden="true" />
                 {s.period ?? '-'}
               </span>
@@ -484,25 +434,17 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                     <Icon className="w-4 h-4" />
                   </span>
                   <span className="mt-1.5 text-[10px] font-semibold text-slate-400">{st.label}</span>
-                  <span className={`mt-0.5 text-[11.5px] font-bold tabular-nums leading-5 ${st.valueClass}`}>{st.value}</span>
+                  <span className={`mt-0.5 text-xs font-bold tabular-nums leading-5 ${st.valueClass}`}>{st.value}</span>
                 </li>
               );
             })}
           </ol>
 
-          <div className="mt-4 px-3.5 py-3 bg-[#F8FAFC] border-t border-[#EEF2F7] flex items-center gap-2.5">
+          <div className="mt-4 px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-2.5">
             <span className="flex-1 min-w-0 flex items-center gap-2">
-              <span
-                className={`w-7 h-7 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${
-                  s.completed ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-white border border-dashed border-slate-300 text-slate-400'
-                }`}
-                aria-hidden="true"
-              >
-                {s.completed ? initials(s.assignedTo) : <UserRound className="w-3.5 h-3.5" />}
-              </span>
               <span className="min-w-0">
                 <span className="block text-[10px] font-semibold text-slate-400">Submitted By</span>
-                <span className="block text-[11.5px] font-bold text-[#1E293B] truncate">{s.completed ? s.assignedTo : '-'}</span>
+                <span className="block text-xs font-bold text-[#1E293B] truncate">{s.completed ? s.assignedTo : '-'}</span>
               </span>
             </span>
             {actionButton(s)}
@@ -517,16 +459,14 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
       {applied.map((a) => (
         <span
           key={a.key}
-          className={`shrink-0 h-7 pl-2.5 pr-1 border text-[11px] font-semibold flex items-center gap-1 ${
-            v2 ? 'max-w-full rounded-lg bg-[#EFF6FF] border-transparent text-[#1D4ED8]' : 'rounded-full bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]'
-          }`}
+          className={`shrink-0 h-7 pl-2.5 pr-1 rounded-full border border-blue-100 bg-blue-50 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 ${v2 ? 'max-w-full' : ''}`}
         >
           {a.label}
           <button
             type="button"
             onClick={() => applyFilters(a.next)}
             aria-label={`Remove ${a.label}`}
-            className={`w-5 h-5 flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer ${v2 ? 'rounded' : 'rounded-full'}`}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
           >
             <X className="w-3 h-3" />
           </button>
@@ -541,10 +481,10 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     <div className="px-4 pt-3">
       <div className="flex items-center gap-2.5">
         <span className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="w-9 h-9 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-            <ClipboardCheck className="w-4.5 h-4.5" />
+          <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+            <ClipboardCheck className="w-4 h-4" />
           </span>
-          <span className="min-w-0 truncate text-[15px] font-bold text-[#1E293B] tabular-nums">{countLabel}</span>
+          <span className="min-w-0 truncate text-sm font-bold text-[#1E293B] tabular-nums">{countLabel}</span>
         </span>
         <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
       </div>
@@ -554,7 +494,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
           <button
             type="button"
             onClick={clearAll}
-            className="shrink-0 h-7 px-3 rounded-full bg-[#EEF2FF] text-[11px] font-bold text-[#2F68FE] active:bg-[#E0E7FF] cursor-pointer"
+            className="shrink-0 h-7 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer"
           >
             Clear All
           </button>
@@ -565,15 +505,15 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
 
   const toolbarV2 = (
     <div className="px-4 pt-3">
-      <div className="h-12 pl-2 pr-1.5 rounded-xl bg-[#2F68FE] flex items-center gap-2 text-white shadow-[0_8px_18px_-12px_rgba(47,104,254,0.8)]">
-        <span className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0" aria-hidden="true">
-          <ClipboardCheck className="w-4 h-4" />
+      <div className="h-14 pl-2.5 pr-2.5 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs flex items-center gap-2.5">
+        <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+          <ClipboardCheck className="w-4.5 h-4.5" />
         </span>
         <span className="flex-1 min-w-0 flex items-baseline gap-1">
           {!loading && (
             <>
-              <span className="text-[17px] font-bold leading-none tabular-nums">{results.length}</span>
-              <span className="text-[11.5px] font-semibold text-white/80 truncate">{results.length === 1 ? 'survey' : 'surveys'}</span>
+              <span className="text-lg font-extrabold leading-none text-[#1E293B] tabular-nums">{results.length}</span>
+              <span className="text-xs font-semibold text-slate-500 truncate">{results.length === 1 ? 'survey' : 'surveys'}</span>
             </>
           )}
         </span>
@@ -581,7 +521,9 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
           type="button"
           onClick={() => setFilterOpen(true)}
           aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-          className="h-9 pl-2.5 pr-2 rounded-lg bg-white text-[#2F68FE] text-[12px] font-bold flex items-center gap-1.5 shrink-0 active:bg-blue-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
+          className={`h-9 pl-2.5 pr-2 rounded-xl border text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+            filterCount > 0 ? 'bg-blue-50 border-[#2F68FE]' : 'bg-white border-slate-200 active:bg-blue-50'
+          }`}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
           Filter
@@ -590,7 +532,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
               {filterCount}
             </span>
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-[#93C5FD]" aria-hidden="true" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -601,7 +543,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
           <button
             type="button"
             onClick={clearAll}
-            className="shrink-0 h-7 px-2 rounded-lg bg-[#FEF2F2] text-[11px] font-bold text-rose-500 flex items-center gap-1 active:bg-rose-100 cursor-pointer"
+            className="shrink-0 h-7 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-1 active:bg-blue-50 transition-colors cursor-pointer"
           >
             <X className="w-3 h-3" />
             Clear All
@@ -630,7 +572,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                   <button
                     type="button"
                     onClick={clearAll}
-                    className={`mt-4 h-10 px-5 bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer ${v2 ? 'rounded-xl' : 'rounded-full'}`}
+                    className="mt-4 h-10 px-4 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 transition-colors cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -652,9 +594,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className={`mt-3 w-full h-11 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'rounded-2xl border border-dashed border-[#93C5FD] bg-white active:bg-[#EFF6FF]' : 'rounded-full border border-[#BFDBFE] bg-white active:bg-slate-50'
-                  }`}
+                  className="mt-3 w-full h-11 rounded-xl border border-[#2F68FE] bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-blue-50 disabled:cursor-wait transition-colors cursor-pointer"
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}

@@ -119,14 +119,63 @@ export const formatExpiry = (value: string) => {
   return y ? `${m.padStart(2, '0')}/${y.slice(-2)}` : value;
 };
 
+/** A card works until the end of its expiry month: "11-2026" → Nov 30, 2026 23:59:59 */
+const cardLastDayOf = (expiry: string) => {
+  const [m, y] = expiry.split('-').map(Number);
+  return m && y ? new Date(y, m, 0, 23, 59, 59) : null;
+};
+
 /** Card expired before this month / expires within 60 days (Added by designer) */
 export const cardExpiryState = (expiry: string, today = new Date()): 'expired' | 'soon' | 'ok' => {
-  const [m, y] = expiry.split('-').map(Number);
-  if (!m || !y) return 'ok';
-  const lastDay = new Date(y, m, 0, 23, 59, 59);
+  const lastDay = cardLastDayOf(expiry);
+  if (!lastDay) return 'ok';
   if (lastDay < new Date(today.getFullYear(), today.getMonth(), 1)) return 'expired';
   return lastDay.getTime() - today.getTime() < 60 * 86_400_000 ? 'soon' : 'ok';
 };
+
+/** One Dashboard "Action Required" row */
+export interface BillingActionItem {
+  id: string;
+  state: 'soon' | 'expired';
+  title: string;
+  description: string;
+  /** Pill text: "Expires in 36 days" / "Expired" */
+  status: string;
+}
+
+/** "Visa card" · "Mastercard" (the brand already says card) */
+const cardPhraseOf = (type: CardType) => (/card$/i.test(type) ? type : `${type} card`);
+
+/** Dashboard "Action Required": every card that is expired or expires within 60 days, in card order (Added by designer — no desktop equivalent) */
+export const billingActionItemsOf = (b: BillingDetails, today = new Date()): BillingActionItem[] =>
+  b.cards.flatMap((card): BillingActionItem[] => {
+    const state = cardExpiryState(card.expiry, today);
+    const lastDay = cardLastDayOf(card.expiry);
+    if (state === 'ok' || !lastDay) return [];
+    const date = lastDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const phrase = `Your ${cardPhraseOf(card.cardType)} ending in ${card.lastFour}`;
+    if (state === 'expired') {
+      return [
+        {
+          id: `card-expired-${card.id}`,
+          state,
+          title: 'Billing Card Expired',
+          description: `${phrase} expired on ${date}. Please update your payment method.`,
+          status: 'Expired',
+        },
+      ];
+    }
+    const days = Math.max(1, Math.ceil((lastDay.getTime() - today.getTime()) / 86_400_000));
+    return [
+      {
+        id: `card-soon-${card.id}`,
+        state,
+        title: 'Billing Card Expiring Soon',
+        description: `${phrase} expires on ${date}. Update your billing information to avoid payment interruptions.`,
+        status: `Expires in ${days} ${days === 1 ? 'day' : 'days'}`,
+      },
+    ];
+  });
 
 export const methodLabel = (b: BillingDetails, type: PaymentType, methodId: string | null) => {
   if (type === 'direct') return 'Direct Pay';
@@ -208,7 +257,7 @@ export const REVEAL_MS = 2 * 60_000;
 
 export const newBillingId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-/** Northwind CPA: two bank accounts, one card, Direct Pay available; the three newest joiners are not mapped yet */
+/** Northwind CPA: two bank accounts, two cards (Visa expiring soon, unmapped Mastercard expired), Direct Pay available; the three newest joiners are not mapped yet */
 export const billingSeedFor = (staff: ClientStaffMember[]): BillingDetails => {
   const ids = billableStaffOf(staff).map((s) => s.id);
   const byName = (names: string[]) =>
@@ -254,7 +303,10 @@ export const billingSeedFor = (staff: ClientStaffMember[]): BillingDetails => {
         bankRouting: '021345678',
       },
     ],
-    cards: [{ id: 'card-1', cardName: 'Taylor Morgan', cardType: 'Visa', lastFour: '4242', expiry: '08-2028' }],
+    cards: [
+      { id: 'card-1', cardName: 'Taylor Morgan', cardType: 'Visa', lastFour: '4242', expiry: '11-2026' },
+      { id: 'card-2', cardName: 'Jordan Ellis', cardType: 'Mastercard', lastFour: '5678', expiry: '09-2026' },
+    ],
     directPayEligible: true,
     directPayEnabled: true,
     mappings,

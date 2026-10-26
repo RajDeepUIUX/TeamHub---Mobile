@@ -52,7 +52,7 @@ const PageSkeleton: React.FC = () => (
   <div className="px-4 mt-4 space-y-3" aria-busy="true" aria-label="Loading preferences">
     <StaffSkeleton className="w-full h-20 rounded-2xl" />
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-11 h-11 rounded-xl" />
           <div className="flex-1 space-y-1.5">
@@ -66,39 +66,24 @@ const PageSkeleton: React.FC = () => (
   </div>
 );
 
-/** V1 status accents: green = allowed, slate = not allowed, amber = still to answer */
+/** V1 status chips: green = allowed, neutral = not allowed, amber = still to answer */
 const toneV1 = (v: YesNo | null) =>
   v === 'yes'
-    ? {
-        rail: 'bg-[#10B981]',
-        pill: 'bg-[#E8F8F0] text-[#059669]',
-        dot: 'bg-[#10B981]',
-        wash: 'bg-[#F0FDF7] border-[#D1FAE5]',
-        chip: 'bg-white border-[#A7F3D0] text-[#059669]',
-      }
+    ? { dot: 'bg-[#10B981]', chip: 'bg-[#E8F8F0] border-emerald-200/50 text-[#10B981]' }
     : v === 'no'
-    ? {
-        rail: 'bg-[#94A3B8]',
-        pill: 'bg-slate-100 text-slate-500',
-        dot: 'bg-[#94A3B8]',
-        wash: 'bg-[#F8FAFC] border-[#EEF2F7]',
-        chip: 'bg-white border-[#DCE3ED] text-slate-500',
-      }
-    : {
-        rail: 'bg-[#FBBF24]',
-        pill: 'bg-[#FFF7E6] text-[#B45309]',
-        dot: 'bg-[#F59E0B]',
-        wash: 'bg-[#FFFBEB] border-[#FEF3C7]',
-        chip: 'bg-white border-[#FDE68A] text-[#B45309]',
-      };
+    ? { dot: 'bg-slate-400', chip: 'bg-slate-100 border-transparent text-slate-600' }
+    : { dot: 'bg-[#D97706]', chip: 'bg-[#FEF8E7] border-amber-200/50 text-[#D97706]' };
+
+/** One flat icon tile for every mode / arrangement / flexibility */
+const TILE = 'bg-[#EEF2FF] text-[#2F68FE]';
 
 /** V2 status accents: green = allowed, slate = not allowed, amber = still to answer */
 const toneV2 = (v: YesNo | null) =>
   v === 'yes'
-    ? { bar: 'bg-[#10B981]', text: 'text-[#059669]', dot: 'bg-[#10B981]' }
+    ? { bar: 'bg-[#10B981]', text: 'text-[#10B981]', dot: 'bg-[#10B981]' }
     : v === 'no'
-    ? { bar: 'bg-[#94A3B8]', text: 'text-slate-500', dot: 'bg-[#94A3B8]' }
-    : { bar: 'bg-[#F59E0B]', text: 'text-[#B45309]', dot: 'bg-[#F59E0B]' };
+    ? { bar: 'bg-slate-400', text: 'text-slate-500', dot: 'bg-slate-400' }
+    : { bar: 'bg-[#D97706]', text: 'text-[#D97706]', dot: 'bg-[#D97706]' };
 
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
@@ -250,12 +235,12 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
     return (
       <div key={m.key} id={`wf-q-${m.key}`}>
       <Card className="overflow-hidden">
-        <div className={`px-4 py-3 border-b flex items-center gap-2.5 transition-colors ${tone.wash}`}>
-          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ring-2 ring-white shadow-sm ${m.tint}`}>
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2.5">
+          <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
             <Icon className="w-5 h-5" />
           </span>
-          <h2 className="flex-1 min-w-0 text-[15px] font-bold text-[#1E293B] leading-tight truncate">{m.title}</h2>
-          <span className={`shrink-0 inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border text-[10.5px] font-bold whitespace-nowrap ${tone.chip}`}>
+          <h2 className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-tight truncate">{m.title}</h2>
+          <span className={`shrink-0 inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full border text-[11px] font-bold whitespace-nowrap transition-colors ${tone.chip}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />
             {isOpen ? (count === 0 ? 'Active — no staff yet' : `Configured for ${count} staff`) : s.offer === 'no' ? 'Not offering' : 'Needs your answer'}
           </span>
@@ -268,8 +253,8 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
         </div>
 
         {isOpen && (
-          <div className="px-4 pb-4 pt-3.5 border-t border-slate-100 bg-[#F8FAFC] animate-in fade-in slide-in-from-top-1 duration-200">
-            <p className="flex gap-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+          <div className="px-4 pb-4 pt-3.5 border-t border-slate-100 bg-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
+            <p className="flex gap-1.5 text-[11px] text-slate-500 leading-relaxed">
               <Info className="w-3.5 h-3.5 text-[#2F68FE] shrink-0 mt-0.5" />
               Assign your staff to the arrangement that applies. Each staff member can be in one arrangement per mode.
             </p>
@@ -285,18 +270,16 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                   m.key === 'hyb'
                     ? [
                         { label: 'Split by Days', dot: 'bg-[#2F68FE]', list: members.filter((x) => map[x.id] === 'days') },
-                        { label: 'Split by Hours', dot: 'bg-[#A855F7]', list: members.filter((x) => map[x.id] === 'hours') },
+                        { label: 'Split by Hours', dot: 'bg-[#4F46E5]', list: members.filter((x) => map[x.id] === 'hours') },
                       ].filter((g) => g.list.length > 0)
                     : [{ label: '', dot: '', list: members }];
                 return (
                   <li
                     key={a.key}
-                    className={`rounded-2xl border bg-white transition-colors ${
-                      has ? 'border-[#BFDBFE] shadow-[0_2px_8px_-2px_rgba(47,104,254,0.15)]' : 'border-[#EBF0F7]'
-                    }`}
+                    className={`rounded-2xl border bg-white shadow-2xs transition-colors ${has ? 'border-[#BFDBFE]' : 'border-[#EBF0F7]'}`}
                   >
                     <div className="p-3 flex items-center gap-2.5">
-                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${a.tint}`}>
+                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
                         <ArrIcon className="w-4 h-4" />
                       </span>
                       <span className="flex-1 min-w-0">
@@ -311,10 +294,10 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                           setAssignOpen(true);
                         }}
                         aria-label={has ? `Edit ${a.name} staff` : `Assign staff to ${a.name}`}
-                        className={`shrink-0 h-8 px-2.5 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                        className={`shrink-0 h-9 px-3 rounded-xl border text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
                           has
-                            ? 'bg-[#EFF6FF] border border-[#BFDBFE] text-[#2F68FE] active:bg-blue-100'
-                            : 'bg-[#2F68FE] text-white active:bg-[#1D4ED8]'
+                            ? 'bg-white border-[#2F68FE] text-[#2F68FE] active:bg-blue-50'
+                            : 'bg-[#2F68FE] border-[#2F68FE] text-white active:bg-[#1D4ED8]'
                         }`}
                       >
                         {has ? <Pencil className="w-3 h-3" /> : <Plus className="w-3.5 h-3.5" />}
@@ -323,12 +306,12 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                       )}
                     </div>
                     {has && (
-                      <div className="px-3 pb-3 pt-2.5 border-t border-dashed border-slate-200 space-y-2">
-                        <p className="text-[11px] font-semibold text-slate-400">Assigned Staff · {members.length}</p>
+                      <div className="px-3 pb-3 pt-2.5 border-t border-slate-100 space-y-2">
+                        <p className="text-[11px] font-semibold text-slate-400 tabular-nums">Assigned Staff · {members.length}</p>
                         {groups.map((g) => (
                           <div key={g.label || 'all'}>
                             {g.label && (
-                              <p className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
+                              <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 tabular-nums">
                                 <span className={`w-1.5 h-1.5 rounded-full ${g.dot}`} />
                                 {g.label} · {g.list.length}
                               </p>
@@ -363,13 +346,13 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       <li
         key={f.key}
         id={`wf-q-${f.key}`}
-        className="overflow-hidden rounded-2xl border border-[#DCE3ED] bg-white shadow-[0_2px_10px_-4px_rgba(15,23,42,0.10)]"
+        className="overflow-hidden rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs"
       >
-        <div className={`px-3.5 py-2.5 border-b flex items-center gap-2.5 transition-colors ${tone.wash}`}>
-          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ring-2 ring-white shadow-sm ${f.tint}`}>
+        <div className="px-3.5 py-2.5 border-b border-slate-100 flex items-center gap-2.5">
+          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
             <Icon className="w-4 h-4" />
           </span>
-          <h3 className="flex-1 min-w-0 text-[13.5px] font-bold text-[#1E293B] leading-tight">{f.name}</h3>
+          <h3 className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-tight">{f.name}</h3>
           <span
             aria-hidden="true"
             className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors ${tone.chip}`}
@@ -385,7 +368,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
         </div>
 
         <div className="px-3.5 pt-3 pb-3.5">
-          <p className={`text-[12px] text-slate-600 leading-snug ${descOpen ? '' : 'line-clamp-2'}`}>{f.desc}</p>
+          <p className={`text-xs text-slate-600 leading-snug ${descOpen ? '' : 'line-clamp-2'}`}>{f.desc}</p>
           <button
             type="button"
             onClick={() => setOpenDesc(descOpen ? null : f.key)}
@@ -396,27 +379,27 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           </button>
 
           {c.default === 'yes' && (
-            <div className="mt-2 p-2 pl-2.5 rounded-xl bg-[#F0FDF7] border border-[#D1FAE5] flex flex-wrap items-center gap-1.5">
+            <div className="mt-2 p-2 pl-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-wrap items-center gap-1.5">
               {counts.byTiming ? (
                 WORK_FLEX_TIMINGS.map((t) => (
-                  <span key={t.key} className="h-[22px] px-2.5 rounded-full bg-white border border-[#E0E7FF] text-[#4F46E5] text-[10.5px] font-bold inline-flex items-center tabular-nums">
+                  <span key={t.key} className="h-6 px-2.5 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11px] font-bold inline-flex items-center tabular-nums">
                     {t.tag} · {counts.byTiming![t.key]}
                   </span>
                 ))
               ) : (
-                <span className="h-[22px] px-2.5 rounded-full bg-white border border-[#A7F3D0] text-[#059669] text-[10.5px] font-bold inline-flex items-center gap-1 tabular-nums">
+                <span className="h-6 px-2.5 rounded-full bg-[#E8F8F0] border border-emerald-200/50 text-[#10B981] text-[11px] font-bold inline-flex items-center gap-1 tabular-nums">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
                   {counts.allowed} allowed
                 </span>
               )}
-              <span className="h-[22px] px-2.5 rounded-full bg-white border border-slate-200 text-slate-500 text-[10.5px] font-bold inline-flex items-center tabular-nums">
+              <span className="h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold inline-flex items-center tabular-nums">
                 {counts.notAllowed} not allowed
               </span>
               {!readOnly && (
                 <button
                   type="button"
                   onClick={() => openFlex(f.key)}
-                  className="ml-auto h-7 pl-2.5 pr-1.5 rounded-full bg-white border border-[#BFDBFE] text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 cursor-pointer active:bg-[#EFF6FF]"
+                  className="ml-auto h-7 pl-2.5 pr-1.5 rounded-full bg-white border border-[#BFDBFE] text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 cursor-pointer active:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   Edit per staff <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -424,7 +407,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
             </div>
           )}
           {c.default === 'no' && (
-            <p className="mt-2 h-8 px-3 rounded-xl bg-[#F8FAFC] border border-[#EEF2F7] flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+            <p className="mt-2 h-8 px-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
               <X className="w-3.5 h-3.5" />
               Not allowed for any staff
             </p>
@@ -455,27 +438,24 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       <section
         key={m.key}
         id={`wf-q-${m.key}`}
-        className="relative bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden"
+        className="relative bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden"
       >
         <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${tone.bar} transition-colors`} />
         <div className="p-4 pt-5">
           <div className="flex items-center gap-3">
-            <span className={`w-[52px] h-[52px] rounded-2xl flex items-center justify-center shrink-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)] ${m.tint}`}>
-              <Icon className="w-6 h-6" />
+            <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
+              <Icon className="w-5 h-5" />
             </span>
             <div className="flex-1 min-w-0">
-              <h2 className="text-[15px] font-bold text-[#1E293B] leading-tight">{m.title}</h2>
-              <p className={`mt-1 flex items-center gap-1.5 text-[11.5px] font-bold ${tone.text}`}>
-                <span className="relative flex w-2 h-2 shrink-0">
-                  {s.offer === null && <span className={`absolute inset-0 rounded-full ${tone.dot} opacity-60 animate-ping`} />}
-                  <span className={`relative w-2 h-2 rounded-full ${tone.dot}`} />
-                </span>
+              <h2 className="text-sm font-bold text-[#1E293B] leading-tight">{m.title}</h2>
+              <p className={`mt-1 flex items-center gap-1.5 text-[11px] font-bold ${tone.text}`}>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${tone.dot}`} />
                 {isOpen ? (count === 0 ? 'Active — no staff yet' : `Configured for ${count} staff`) : s.offer === 'no' ? 'Not offering' : 'Needs your answer'}
               </p>
             </div>
           </div>
-          <div className="mt-3.5 p-3 rounded-2xl bg-[#F6F8FC] border border-[#EEF2F7]">
-            <p className="px-0.5 text-[12.5px] font-semibold text-[#334155] leading-snug">{m.question}</p>
+          <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <p className="px-0.5 text-xs font-semibold text-slate-700 leading-snug">{m.question}</p>
             <div className="mt-3">
               <AllowChoice value={s.offer} onChange={(v) => setOffer(m.key, v)} label={m.title} disabled={readOnly} />
             </div>
@@ -484,7 +464,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
         {isOpen && (
           <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
-            <p className="flex gap-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+            <p className="flex gap-1.5 text-[11px] text-slate-500 leading-relaxed">
               <Info className="w-3.5 h-3.5 text-[#2F68FE] shrink-0 mt-0.5" />
               Assign your staff to the arrangement that applies. Each staff member can be in one arrangement per mode.
             </p>
@@ -502,16 +482,16 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                   m.key === 'hyb'
                     ? [
                         { label: 'Split by Days', dot: 'bg-[#2F68FE]', list: members.filter((x) => map[x.id] === 'days') },
-                        { label: 'Split by Hours', dot: 'bg-[#A855F7]', list: members.filter((x) => map[x.id] === 'hours') },
+                        { label: 'Split by Hours', dot: 'bg-[#4F46E5]', list: members.filter((x) => map[x.id] === 'hours') },
                       ].filter((g) => g.list.length > 0)
                     : [{ label: '', dot: '', list: members }];
                 return (
                   <li
                     key={a.key}
-                    className={`rounded-2xl border transition-colors ${has ? 'border-[#C7DAFE] bg-gradient-to-b from-[#F5F8FF] to-white' : 'border-dashed border-[#D6DEEA] bg-white'}`}
+                    className={`rounded-2xl border bg-white transition-colors ${has ? 'border-[#BFDBFE] shadow-2xs' : 'border-dashed border-slate-200'}`}
                   >
                     <div className="p-3 flex items-center gap-3">
-                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${a.tint}`}>
+                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
                         <ArrIcon className="w-[18px] h-[18px]" />
                       </span>
                       <span className="flex-1 min-w-0">
@@ -526,8 +506,10 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                             setAssignOpen(true);
                           }}
                           aria-label={has ? `Edit ${a.name} staff` : `Assign staff to ${a.name}`}
-                          className={`shrink-0 h-8 px-3 rounded-full text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-                            has ? 'bg-white border border-[#C7DAFE] text-[#2F68FE]' : 'bg-[#2F68FE] text-white shadow-[0_4px_10px_rgba(47,104,254,0.3)]'
+                          className={`shrink-0 h-9 px-3 rounded-xl border text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                            has
+                              ? 'bg-white border-[#2F68FE] text-[#2F68FE] active:bg-blue-50'
+                              : 'bg-[#2F68FE] border-[#2F68FE] text-white active:bg-[#1D4ED8]'
                           }`}
                         >
                           {has ? <Pencil className="w-3 h-3" /> : <Plus className="w-3.5 h-3.5" />}
@@ -541,10 +523,10 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                           type="button"
                           onClick={() => setOpenArr((o) => ({ ...o, [rowKey]: !expanded }))}
                           aria-expanded={expanded}
-                          className="w-full h-10 px-2 rounded-xl bg-white border border-[#EEF2F7] flex items-center gap-2.5 cursor-pointer active:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                          className="w-full h-10 px-2 rounded-xl bg-white border border-slate-100 flex items-center gap-2.5 cursor-pointer active:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
                         >
                           <AvatarStack list={members} />
-                          <span className="flex-1 text-left text-[11px] font-semibold text-slate-500">Assigned Staff · {members.length}</span>
+                          <span className="flex-1 text-left text-[11px] font-semibold text-slate-500 tabular-nums">Assigned Staff · {members.length}</span>
                           <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
                         </button>
                         {expanded && (
@@ -552,7 +534,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                             {groups.map((g) => (
                               <div key={g.label || 'all'}>
                                 {g.label && (
-                                  <p className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
+                                  <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 tabular-nums">
                                     <span className={`w-1.5 h-1.5 rounded-full ${g.dot}`} />
                                     {g.label} · {g.list.length}
                                   </p>
@@ -588,17 +570,17 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       <li
         key={f.key}
         id={`wf-q-${f.key}`}
-        className="relative bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden"
+        className="relative bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden"
       >
         <span aria-hidden="true" className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full ${tone.bar} transition-colors`} />
         <div className="p-4 pl-5">
           <div className="flex items-start gap-3">
-            <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${f.tint}`}>
+            <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
               <Icon className="w-5 h-5" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-[#1E293B] leading-tight">{f.name}</p>
-              <p className={`mt-1 text-[11.5px] text-slate-500 leading-snug ${descOpen ? '' : 'line-clamp-2'}`}>{f.desc}</p>
+              <p className="text-sm font-bold text-[#1E293B] leading-tight">{f.name}</p>
+              <p className={`mt-1 text-xs text-slate-500 leading-snug ${descOpen ? '' : 'line-clamp-2'}`}>{f.desc}</p>
               <button
                 type="button"
                 onClick={() => setOpenDesc(descOpen ? null : f.key)}
@@ -611,20 +593,20 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           </div>
 
           {c.default === 'yes' && (
-            <div className="mt-3 rounded-2xl border border-[#D1FAE5] bg-[#F3FCF7] overflow-hidden">
+            <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
               <div className="p-2.5 flex flex-wrap items-center gap-1.5">
                 {counts.byTiming ? (
                   WORK_FLEX_TIMINGS.map((t) => (
-                    <span key={t.key} className="h-6 px-2.5 rounded-full bg-white border border-[#E0E7FF] text-[#4F46E5] text-[10.5px] font-bold inline-flex items-center tabular-nums">
+                    <span key={t.key} className="h-6 px-2.5 rounded-full bg-[#EEF2FF] text-[#4F46E5] text-[11px] font-bold inline-flex items-center tabular-nums">
                       {t.tag} · {counts.byTiming![t.key]}
                     </span>
                   ))
                 ) : (
-                  <span className="h-6 px-2.5 rounded-full bg-[#10B981] text-white text-[10.5px] font-bold inline-flex items-center tabular-nums">
+                  <span className="h-6 px-2.5 rounded-full bg-[#E8F8F0] border border-emerald-200/50 text-[#10B981] text-[11px] font-bold inline-flex items-center tabular-nums">
                     {counts.allowed} allowed
                   </span>
                 )}
-                <span className="h-6 px-2.5 rounded-full bg-white border border-[#E2E8F0] text-slate-500 text-[10.5px] font-bold inline-flex items-center tabular-nums">
+                <span className="h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold inline-flex items-center tabular-nums">
                   {counts.notAllowed} not allowed
                 </span>
               </div>
@@ -632,7 +614,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                 <button
                   type="button"
                   onClick={() => openFlex(f.key)}
-                  className="w-full h-9 px-3 border-t border-[#D1FAE5] bg-white/70 text-[11.5px] font-bold text-[#2F68FE] flex items-center justify-between cursor-pointer active:bg-white"
+                  className="w-full h-9 px-3 border-t border-slate-100 bg-white text-xs font-bold text-[#2F68FE] flex items-center justify-between cursor-pointer active:bg-blue-50 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   Edit per staff <ChevronRight className="w-4 h-4" />
                 </button>
@@ -640,7 +622,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
             </div>
           )}
           {c.default === 'no' && (
-            <p className="mt-3 h-9 px-3 rounded-xl bg-[#F6F8FC] flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+            <p className="mt-3 h-9 px-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
               <X className="w-3.5 h-3.5" />
               Not allowed for any staff
             </p>
@@ -667,24 +649,24 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
             type="button"
             onClick={() => setIntroSheet('about')}
             aria-haspopup="dialog"
-            className="min-w-0 p-3 rounded-2xl border border-[#DBEAFE] bg-gradient-to-br from-[#EEF3FF] to-white shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] flex flex-col text-left active:from-[#E2EBFF] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+            className="min-w-0 p-3 rounded-2xl border border-blue-100 bg-blue-50 shadow-2xs flex flex-col text-left active:bg-[#EEF2FF] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
           >
             <span className="flex items-center justify-between gap-1">
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2F68FE] to-[#5B8CFF] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)]">
+              <span className="w-9 h-9 rounded-xl bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
                 <Info className="w-[18px] h-[18px]" />
               </span>
               <span className="flex -space-x-1.5" aria-hidden="true">
                 {WORK_FLEX_MODES.map((m) => {
                   const MIcon = m.icon;
                   return (
-                    <span key={m.key} className={`w-6 h-6 rounded-full ring-2 ring-white flex items-center justify-center ${m.tint}`}>
+                    <span key={m.key} className={`w-6 h-6 rounded-full ring-2 ring-white flex items-center justify-center ${TILE}`}>
                       <MIcon className="w-3 h-3" />
                     </span>
                   );
                 })}
               </span>
             </span>
-            <span className="mt-2.5 flex-1 text-[11.5px] text-slate-600 leading-snug line-clamp-3">
+            <span className="mt-2.5 flex-1 text-[11px] text-slate-600 leading-snug line-clamp-3">
               Define your organizational preferences for <strong className="text-[#1E293B]">Hybrid Working</strong> and{' '}
               <strong className="text-[#1E293B]">Work From Home</strong> arrangements. The preferences you authorize here will allow your staff to submit
               requests within these specific bounds.
@@ -697,15 +679,15 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
             type="button"
             onClick={() => setIntroSheet('note')}
             aria-haspopup="dialog"
-            className="min-w-0 p-3 rounded-2xl border border-[#FDE68A] bg-gradient-to-br from-[#FFF7E0] to-[#FFFDF5] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] flex flex-col text-left active:from-[#FEF3C7] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B45309]"
+            className="min-w-0 p-3 rounded-2xl border border-amber-100 bg-amber-50 shadow-2xs flex flex-col text-left active:bg-[#FEF8E7] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97706]"
           >
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#F59E0B] to-[#FBBF24] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-6px_rgba(245,158,11,0.7)]">
+            <span className="w-9 h-9 rounded-xl bg-white border border-amber-100 text-[#D97706] flex items-center justify-center shrink-0">
               <AlertTriangle className="w-[18px] h-[18px]" />
             </span>
-            <span className="mt-2.5 flex-1 text-[11.5px] text-[#78350F] leading-snug line-clamp-3">
-              <strong className="text-[#92400E]">Please note:</strong> This is not a policy change, simply a reference we keep on file.
+            <span className="mt-2.5 flex-1 text-[11px] text-amber-700 leading-snug line-clamp-3">
+              <strong className="font-bold">Please note:</strong> This is not a policy change, simply a reference we keep on file.
             </span>
-            <span className="mt-2.5 self-end w-7 h-7 rounded-full bg-[#F59E0B] text-white flex items-center justify-center" aria-hidden="true">
+            <span className="mt-2.5 self-end w-7 h-7 rounded-full bg-white border border-amber-100 text-[#D97706] flex items-center justify-center" aria-hidden="true">
               <ChevronRight className="w-4 h-4" />
             </span>
           </button>
@@ -713,20 +695,20 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
         {WORK_FLEX_MODES.map(renderModeV2)}
 
-        <section id="wf-q-flex" className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] p-4">
+        <section id="wf-q-flex" className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4">
           <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#2F68FE] to-[#7C9CFF] text-white flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-[15px] font-bold text-[#1E293B]">Additional Flexibilities</h2>
-              <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F8F0] text-[#059669] text-[10.5px] font-bold">
+              <h2 className="text-sm font-bold text-[#1E293B]">Additional Flexibilities</h2>
+              <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F8F0] text-[#10B981] text-[11px] font-bold">
                 <TrendingUp className="w-3 h-3" />
                 {FLEX_ADOPTION_PCT}% clients offer these to their staff
               </span>
             </div>
           </div>
-          <p className="mt-3 text-[11.5px] text-slate-500 leading-relaxed">
+          <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
             A few common perks you can offer to all your staff.{' '}
             <strong className="text-slate-700">These apply regardless of whether someone is on Work From Office, Hybrid Working, or Work From Home.</strong>
           </p>
@@ -737,22 +719,19 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
   const footerV2 = readOnly ? (
     <div className="px-4 py-3 bg-white border-t border-[#EBF0F7] shrink-0">
-      <p className="h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center gap-1.5 text-[11.5px] font-semibold text-slate-500">
+      <p className="h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500">
         <Lock className="w-3.5 h-3.5 text-slate-400" />
         View only — your role can't change these preferences
       </p>
     </div>
   ) : (
-    <div className="px-4 py-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+    <div className="px-4 py-3 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0 z-20">
       <div className="flex items-center gap-3">
         <p className="flex-1 min-w-0 flex items-center gap-1.5 text-[11px] font-semibold" aria-live="polite">
           {dirty ? (
             <>
-              <span className="relative flex w-2 h-2 shrink-0">
-                <span className="absolute inset-0 rounded-full bg-[#F59E0B] opacity-60 animate-ping" />
-                <span className="relative w-2 h-2 rounded-full bg-[#F59E0B]" />
-              </span>
-              <span className="text-amber-700 truncate">Unsaved changes</span>
+              <span className="w-2 h-2 rounded-full bg-[#D97706] shrink-0" />
+              <span className="text-[#D97706] truncate">Unsaved changes</span>
             </>
           ) : (
             <>
@@ -765,7 +744,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           type="button"
           disabled={loading}
           onClick={() => setReviewOpen(true)}
-          className="shrink-0 h-12 px-4 rounded-xl bg-gradient-to-r from-[#2F68FE] to-[#5B8CFF] shadow-[0_6px_16px_rgba(47,104,254,0.35)] text-white text-[13px] font-bold flex items-center gap-2 active:scale-[0.97] transition-transform cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] disabled:bg-none disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+          className="shrink-0 h-12 px-4 rounded-xl bg-[#2F68FE] shadow-xs text-white text-xs font-bold flex items-center gap-2 active:bg-[#1D4ED8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Submit Preferences <Send className="w-4 h-4" />
         </button>
@@ -797,10 +776,10 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                 aria-haspopup="dialog"
                 className="w-full p-2 rounded-xl flex items-center gap-3 text-left active:bg-slate-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
               >
-                <span className="w-9 h-9 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${TILE}`}>
                   <Info className="w-[18px] h-[18px]" />
                 </span>
-                <span className="flex-1 min-w-0 text-[12px] text-slate-600 leading-snug line-clamp-2">
+                <span className="flex-1 min-w-0 text-xs text-slate-600 leading-snug line-clamp-2">
                   Define your organizational preferences for <strong className="text-[#1E293B]">Hybrid Working</strong> and{' '}
                   <strong className="text-[#1E293B]">Work From Home</strong> arrangements. The preferences you authorize here will allow your staff to submit
                   requests within these specific bounds.
@@ -811,15 +790,15 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
                 type="button"
                 onClick={() => setIntroSheet('note')}
                 aria-haspopup="dialog"
-                className="w-full p-2 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] flex items-center gap-3 text-left active:bg-[#FEF3C7] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B45309]"
+                className="w-full p-2 rounded-xl bg-amber-50 border border-amber-100 flex items-center gap-3 text-left active:bg-[#FEF8E7] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#D97706]"
               >
-                <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-[#B45309]" />
+                <span className="w-9 h-9 rounded-xl bg-[#FEF8E7] text-[#D97706] flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4" />
                 </span>
-                <span className="flex-1 min-w-0 text-[11.5px] text-[#78350F] leading-snug line-clamp-2">
-                  <strong className="text-[#92400E]">Please note:</strong> This is not a policy change, simply a reference we keep on file.
+                <span className="flex-1 min-w-0 text-[11px] text-amber-700 leading-snug line-clamp-2">
+                  <strong className="font-bold">Please note:</strong> This is not a policy change, simply a reference we keep on file.
                 </span>
-                <ChevronRight className="w-4 h-4 text-[#B45309] shrink-0" />
+                <ChevronRight className="w-4 h-4 text-[#D97706] shrink-0" />
               </button>
             </Card>
 
@@ -827,18 +806,18 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
 
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2F68FE] to-[#7C9CFF] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]">
-                  <Sparkles className="w-6 h-6" />
+                <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-[15px] font-bold text-[#1E293B]">Additional Flexibilities</h2>
-                  <span className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E8F8F0] text-[#059669] text-[10.5px] font-bold">
+                  <h2 className="text-sm font-bold text-[#1E293B]">Additional Flexibilities</h2>
+                  <span className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E8F8F0] text-[#10B981] text-[11px] font-bold">
                     <TrendingUp className="w-3 h-3" />
                     {FLEX_ADOPTION_PCT}% clients offer these to their staff
                   </span>
                 </div>
               </div>
-              <p className="mt-3.5 pt-3.5 border-t border-dashed border-slate-200 text-[11.5px] text-slate-500 leading-relaxed">
+              <p className="mt-3.5 pt-3.5 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
                 A few common perks you can offer to all your staff.{' '}
                 <strong className="text-slate-700">
                   These apply regardless of whether someone is on Work From Office, Hybrid Working, or Work From Home.
@@ -855,18 +834,18 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
         footerV2
       ) : readOnly ? (
         <div className="px-4 py-3 bg-white border-t border-[#EBF0F7] shrink-0">
-          <p className="flex items-center justify-center gap-1.5 text-[11.5px] font-semibold text-slate-500">
+          <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500">
             <Lock className="w-3.5 h-3.5 text-slate-400" />
             View only — your role can't change these preferences
           </p>
         </div>
       ) : (
-      <div className="px-4 pt-2.5 pb-3 bg-white border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
+      <div className="px-4 pt-2.5 pb-3 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0 z-20">
         <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold" aria-live="polite">
           {dirty ? (
             <>
-              <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" />
-              <span className="text-amber-700">Unsaved changes</span>
+              <span className="w-2 h-2 rounded-full bg-[#D97706] shrink-0" />
+              <span className="text-[#D97706]">Unsaved changes</span>
             </>
           ) : (
             <>
@@ -879,7 +858,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
           type="button"
           disabled={loading}
           onClick={() => setReviewOpen(true)}
-          className="mt-2 w-full h-12 rounded-xl bg-gradient-to-r from-[#2F68FE] to-[#5B8CFF] shadow-[0_6px_16px_rgba(47,104,254,0.32)] text-white text-sm font-bold flex items-center justify-center gap-2 active:brightness-90 cursor-pointer disabled:bg-none disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+          className="mt-2 w-full h-12 rounded-xl bg-[#2F68FE] shadow-xs text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Submit Preferences <Send className="w-4 h-4" />
         </button>
@@ -889,12 +868,12 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
       {toast && (
         <div
           role="status"
-          className={`absolute left-4 right-4 ${v2 ? 'bottom-[84px]' : 'bottom-[108px]'} z-20 flex items-center gap-3 p-2.5 pl-3 rounded-2xl bg-white border border-[#D1FAE5] shadow-[0_12px_32px_-8px_rgba(15,23,42,0.28)] animate-in fade-in slide-in-from-bottom-2 duration-200`}
+          className={`absolute left-4 right-4 ${v2 ? 'bottom-[84px]' : 'bottom-[108px]'} z-20 flex items-center gap-3 py-2 pl-4 pr-2 rounded-xl bg-[#1E293B] shadow-[0_16px_40px_-12px_rgba(15,23,42,0.28)] animate-in fade-in slide-in-from-bottom-2 duration-200`}
         >
-          <span className="w-8 h-8 rounded-full bg-[#E8F8F0] flex items-center justify-center shrink-0" aria-hidden="true">
+          <span className="flex items-center justify-center shrink-0" aria-hidden="true">
             <CheckCircle2 className="w-[18px] h-[18px] text-[#10B981]" />
           </span>
-          <span className="flex-1 min-w-0 text-[12.5px] font-semibold text-[#1E293B] leading-snug">{toast}</span>
+          <span className="flex-1 min-w-0 text-xs font-semibold text-white leading-snug">{toast}</span>
           <button
             type="button"
             onClick={() => {
@@ -902,7 +881,7 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
               setToast(null);
             }}
             aria-label="Dismiss"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 shrink-0 cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-white/10 shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -944,19 +923,19 @@ export const ClientWorkFlexibilityView: React.FC<Props> = ({ prefs, staff, userN
         <SheetHeader title={introSheet === 'note' ? 'Please note' : 'Work Flexibility Preferences'} onClose={() => setIntroSheet(null)} />
         <div className="px-5 pt-4 pb-8 overflow-y-auto">
           {introSheet === 'note' ? (
-            <div className="flex gap-3 p-4 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A]">
-              <span className="w-10 h-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-[#B45309]" />
+            <div className="flex gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-100">
+              <span className="w-10 h-10 rounded-xl bg-[#FEF8E7] text-[#D97706] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
               </span>
-              <p className="text-[13px] text-[#78350F] leading-relaxed">
-                <strong className="text-[#92400E]">Please note:</strong> This is not a policy change, simply a reference we keep on file. In situations outside
+              <p className="text-[13px] text-amber-700 leading-relaxed">
+                <strong className="font-bold">Please note:</strong> This is not a policy change, simply a reference we keep on file. In situations outside
                 our control — such as health emergencies or operational disruptions — knowing your flexibility preferences helps us respond faster and more
                 effectively on your behalf. Of course, we will always communicate with you before taking any action.
               </p>
             </div>
           ) : (
-            <div className="flex gap-3 p-4 rounded-2xl bg-[#F5F8FF] border border-[#DBEAFE]">
-              <span className="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+            <div className="flex gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100">
+              <span className="w-10 h-10 rounded-xl bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
                 <Info className="w-5 h-5" />
               </span>
               <p className="text-[13px] text-slate-600 leading-relaxed">

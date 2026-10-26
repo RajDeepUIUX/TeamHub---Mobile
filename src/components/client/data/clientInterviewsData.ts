@@ -728,3 +728,29 @@ export const interviewLabels = (c: ShortlistedCandidate) => {
   const w = interviewInClientTz(c.interview);
   return { date: formatShortDate(w.date), time: `${w.time} (${w.tz})` };
 };
+
+/** View Resume needs a resume page (Hub profiles) or a CV file (recruiter candidates) */
+export const hasResumeOf = (c: ShortlistedCandidate) => (c.source === 'hub' ? Boolean(c.resume) : Boolean(c.cvFile));
+
+/* ------------------------- Dashboard › Shortlisted Candidates ------------------------- */
+
+/** Candidates still in the hiring pipeline, most urgent first (Hired, Selected, Not Selected and Left are done) */
+export const PIPELINE_STATUSES: CandidateStatus[] = ['Interview Scheduled', 'Shortlisted', 'In Process', 'Hold', 'Applied'];
+export const PIPELINE_PREVIEW_COUNT = 4;
+
+/** Pipeline candidates by status order; upcoming interviews soonest first (ended ones after), the rest keep the list order (newest first) */
+export const pipelineCandidatesOf = (candidates: ShortlistedCandidate[], now = Date.now()) => {
+  const ended = (iv: ScheduledInterview) => interviewStartMs(iv) + INTERVIEW_MINUTES * MINUTE_MS < now;
+  return candidates
+    .filter((c) => PIPELINE_STATUSES.includes(c.status))
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => {
+      const byStatus = PIPELINE_STATUSES.indexOf(a.c.status) - PIPELINE_STATUSES.indexOf(b.c.status);
+      if (byStatus) return byStatus;
+      const ia = a.c.interview;
+      const ib = b.c.interview;
+      if (ia && ib) return Number(ended(ia)) - Number(ended(ib)) || interviewStartMs(ia) - interviewStartMs(ib);
+      return a.i - b.i;
+    })
+    .map(({ c }) => c);
+};

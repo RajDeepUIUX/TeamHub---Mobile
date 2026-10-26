@@ -24,20 +24,18 @@ export const StepHeader: React.FC<{ step: number; title: string; text: string; d
 }) => (
   <div className="flex items-start gap-3">
     <span
-      className={`flex items-center justify-center text-[12px] font-extrabold tabular-nums shrink-0 ${
+      className={`flex items-center justify-center text-xs font-bold tabular-nums shrink-0 ${
         v2
-          ? `w-8 h-8 rounded-lg border ${done ? 'border-[#A7F3D0] bg-[#E8F8F0] text-[#10B981]' : 'border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE]'}`
-          : `w-9 h-9 rounded-2xl text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] ${
-              done ? 'bg-[#10B981]' : 'bg-gradient-to-br from-[#2F68FE] to-[#5B8CFF]'
-            }`
+          ? `w-9 h-9 rounded-xl border ${done ? 'border-emerald-200/50 bg-[#E8F8F0] text-[#10B981]' : 'border-blue-100 bg-blue-50 text-[#2F68FE]'}`
+          : `w-9 h-9 rounded-xl ${done ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-[#EEF2FF] text-[#2F68FE]'}`
       }`}
       aria-hidden="true"
     >
       {done ? <Check className="w-4 h-4" strokeWidth={3} /> : v2 ? String(step).padStart(2, '0') : step}
     </span>
     <span className="flex-1 min-w-0">
-      <span className={`block font-extrabold text-[#1E293B] leading-tight ${v2 ? 'text-[14.5px]' : 'text-[15px]'}`}>{title}</span>
-      <span className="block mt-0.5 text-[11.5px] text-slate-500 leading-snug">{text}</span>
+      <span className="block text-sm font-bold text-[#1E293B] leading-tight">{title}</span>
+      <span className="block mt-0.5 text-[11px] font-medium text-slate-500 leading-snug">{text}</span>
     </span>
     {aside}
   </div>
@@ -49,15 +47,15 @@ export const BillingSection = React.forwardRef<
   { v2?: boolean; header: React.ReactNode; ariaLabel?: string; className?: string; children: React.ReactNode }
 >(({ v2, header, ariaLabel, className = '', children }, ref) =>
   v2 ? (
-    <section ref={ref} aria-label={ariaLabel} className={`bg-white border border-[#DCE3ED] rounded-xl overflow-hidden ${className}`}>
-      <div className="px-4 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0]">{header}</div>
+    <section ref={ref} aria-label={ariaLabel} className={`bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden ${className}`}>
+      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">{header}</div>
       <div className="px-4 pt-3.5 pb-4">{children}</div>
     </section>
   ) : (
     <section
       ref={ref}
       aria-label={ariaLabel}
-      className={`bg-white border border-[#E2E8F0] rounded-[24px] shadow-[0_6px_20px_-8px_rgba(15,23,42,0.14)] p-4 ${className}`}
+      className={`bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 ${className}`}
     >
       {header}
       <div className="mt-3.5">{children}</div>
@@ -81,7 +79,7 @@ export function BillingTabs<T extends string>({
   v2?: boolean;
 }) {
   return (
-    <div role="tablist" aria-label={ariaLabel} className={v2 ? 'flex border-b border-slate-200' : 'p-1 rounded-full bg-[#F1F5F9] flex gap-1'}>
+    <div role="tablist" aria-label={ariaLabel} className={v2 ? 'flex border-b border-[#EBF0F7]' : 'p-1 rounded-2xl bg-slate-100/90 border border-slate-200/60 flex gap-1'}>
       {options.map((o) => {
         const active = o.id === value;
         return (
@@ -93,14 +91,14 @@ export function BillingTabs<T extends string>({
             onClick={() => onChange(o.id)}
             className={
               v2
-                ? `relative flex-1 h-10 text-[12px] font-bold transition-colors cursor-pointer ${active ? 'text-[#2F68FE]' : 'text-slate-500 active:text-slate-700'}`
-                : `flex-1 h-9 rounded-full text-[12px] font-bold transition-colors cursor-pointer ${
-                    active ? 'bg-[#2F68FE] text-white shadow-[0_4px_10px_-4px_rgba(47,104,254,0.7)]' : 'text-slate-500 active:bg-white'
+                ? `relative flex-1 h-11 text-[13px] transition-colors cursor-pointer ${active ? 'text-[#2F68FE] font-bold' : 'text-slate-500 font-medium active:text-slate-700'}`
+                : `flex-1 h-9 rounded-xl text-xs transition-colors cursor-pointer ${
+                    active ? 'bg-white text-[#1E293B] font-bold shadow-[0_1px_3px_rgba(15,23,42,0.12)]' : 'text-slate-500 font-semibold'
                   }`
             }
           >
             {o.label}
-            {v2 && active && <span className="absolute left-3 right-3 -bottom-px h-[2.5px] rounded-full bg-[#2F68FE]" aria-hidden="true" />}
+            {v2 && active && <span className="absolute left-2 right-2 -bottom-px h-[3px] rounded-t-full bg-[#2F68FE]" aria-hidden="true" />}
           </button>
         );
       })}
@@ -114,7 +112,7 @@ const IconButton: React.FC<{ icon: React.ElementType; label: string; danger?: bo
     onClick={onClick}
     aria-label={label}
     className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
-      danger ? 'bg-[#FEF2F2] text-rose-500 active:bg-[#FEE2E2]' : 'bg-[#EFF6FF] text-[#2F68FE] active:bg-[#DBEAFE]'
+      danger ? 'bg-[#FEF2F2] text-rose-600 active:bg-rose-100' : 'bg-blue-50 text-[#2F68FE] active:bg-blue-100'
     }`}
   >
     <Icon className="w-4 h-4" />
@@ -123,32 +121,30 @@ const IconButton: React.FC<{ icon: React.ElementType; label: string; danger?: bo
 
 /** V2 joined icon buttons (edit | delete) */
 const IconGroup: React.FC<{ items: { icon: React.ElementType; label: string; danger?: boolean; onClick: () => void }[] }> = ({ items }) => (
-  <span className="flex rounded-lg border border-slate-200 divide-x divide-slate-200 overflow-hidden shrink-0">
+  <span className="flex rounded-xl border border-slate-200 divide-x divide-slate-200 bg-white shadow-2xs overflow-hidden shrink-0">
     {items.map(({ icon: Icon, label, danger, onClick }) => (
       <button
         key={label}
         type="button"
         onClick={onClick}
         aria-label={label}
-        className={`w-8 h-8 flex items-center justify-center bg-white cursor-pointer transition-colors ${
-          danger ? 'text-rose-500 active:bg-[#FEF2F2]' : 'text-slate-500 active:bg-slate-50'
+        className={`w-9 h-9 flex items-center justify-center bg-white cursor-pointer transition-colors ${
+          danger ? 'text-rose-600 active:bg-rose-50' : 'text-[#2F68FE] active:bg-blue-50'
         }`}
       >
-        <Icon className="w-3.5 h-3.5" />
+        <Icon className="w-4 h-4" />
       </button>
     ))}
   </span>
 );
 
 /** Label / value row like desktop `hrmsBicRow` */
-export const LabelRow: React.FC<{ label: string; children: React.ReactNode; muted?: boolean; dashed?: boolean }> = ({ label, children, muted, dashed }) => (
-  <div className={`flex items-start justify-between gap-3 py-2 border-b last:border-b-0 ${dashed ? 'border-dashed border-slate-200' : 'border-slate-100'}`}>
-    <dt className="text-[11.5px] font-medium text-slate-500 shrink-0">{label}</dt>
-    <dd className={`text-[12.5px] font-bold text-right tabular-nums break-all ${muted ? 'text-slate-400' : 'text-[#1E293B]'}`}>{children}</dd>
+export const LabelRow: React.FC<{ label: string; children: React.ReactNode; muted?: boolean }> = ({ label, children, muted }) => (
+  <div className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+    <dt className="text-[11px] font-medium text-slate-500 shrink-0">{label}</dt>
+    <dd className={`text-xs font-semibold text-right tabular-nums break-all ${muted ? 'text-slate-400' : 'text-[#1E293B]'}`}>{children}</dd>
   </div>
 );
-
-const LedgerRail: React.FC<{ className: string }> = ({ className }) => <span className={`absolute inset-y-0 left-0 w-1 ${className}`} aria-hidden="true" />;
 
 /** Desktop `hrms-bank-info-card`: bank name, account type, edit / delete, holder, then every number row ("-" when empty) */
 export const BankAccountCard: React.FC<{
@@ -169,9 +165,9 @@ export const BankAccountCard: React.FC<{
   const name = bankNameOf(bank);
   const identity = (
     <span className="flex-1 min-w-0">
-      <span className="block text-[13.5px] font-bold text-[#1E293B] leading-snug break-words">{name}</span>
+      <span className="block text-sm font-bold text-[#1E293B] leading-snug break-words">{name}</span>
       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-[11px] text-slate-500 break-words">{bank.accountName}</span>
+        <span className="text-xs font-medium text-slate-500 break-words">{bank.accountName}</span>
         <Pill tone="slate">{bank.accountType === 'checking' ? 'Checking' : 'Saving'}</Pill>
       </span>
     </span>
@@ -179,10 +175,9 @@ export const BankAccountCard: React.FC<{
 
   if (v2)
     return (
-      <li className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden">
-        <LedgerRail className="bg-[#2F68FE]" />
-        <div className="pl-4 pr-3 py-3 flex items-start gap-3 border-b border-slate-100">
-          <span className="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+      <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="p-3.5 flex items-start gap-3 border-b border-slate-100">
+          <span className="w-10 h-10 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
             <Landmark className="w-4 h-4" />
           </span>
           {identity}
@@ -195,9 +190,9 @@ export const BankAccountCard: React.FC<{
             />
           )}
         </div>
-        <dl className="pl-4 pr-3.5 py-0.5">
+        <dl className="px-3.5 py-0.5">
           {rows.map((r) => (
-            <LabelRow key={r.label} label={r.label} muted={r.value === '-'} dashed>
+            <LabelRow key={r.label} label={r.label} muted={r.value === '-'}>
               {r.value}
             </LabelRow>
           ))}
@@ -206,13 +201,10 @@ export const BankAccountCard: React.FC<{
     );
 
   return (
-    <li className="bg-white border border-[#E2E8F0] rounded-[20px] shadow-[0_4px_16px_-6px_rgba(15,23,42,0.12)] overflow-hidden">
-      <div className="p-3.5 bg-gradient-to-br from-[#EFF6FF] to-white flex items-start gap-3">
-        <span
-          className="w-11 h-11 rounded-full bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.8)]"
-          aria-hidden="true"
-        >
-          <Landmark className="w-[18px] h-[18px]" />
+    <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+      <div className="p-3.5 flex items-start gap-3">
+        <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+          <Landmark className="w-5 h-5" />
         </span>
         {identity}
         {(onEdit || onDelete) && (
@@ -222,11 +214,11 @@ export const BankAccountCard: React.FC<{
           </span>
         )}
       </div>
-      <dl className="p-3 pt-1 grid grid-cols-2 gap-2">
+      <dl className="mx-3.5 mb-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 grid grid-cols-2 gap-x-4 gap-y-3">
         {rows.map((r, i) => (
-          <div key={r.label} className={`min-w-0 px-3 py-2 rounded-xl bg-[#F8FAFC] ${i === 0 ? 'col-span-2' : ''}`}>
-            <dt className="text-[10.5px] font-medium text-slate-500">{r.label}</dt>
-            <dd className={`mt-0.5 text-[12.5px] font-bold tabular-nums break-all ${r.value === '-' ? 'text-slate-400' : 'text-[#1E293B]'}`}>{r.value}</dd>
+          <div key={r.label} className={`min-w-0 ${i === 0 ? 'col-span-2' : ''}`}>
+            <dt className="text-[11px] text-slate-400">{r.label}</dt>
+            <dd className={`mt-0.5 text-xs font-semibold tabular-nums break-all ${r.value === '-' ? 'text-slate-400' : 'text-[#1E293B]'}`}>{r.value}</dd>
           </div>
         ))}
       </dl>
@@ -242,64 +234,61 @@ export const CreditCardTile: React.FC<{ card: BillingCreditCard; onDelete?: () =
 
   if (v2)
     return (
-      <li className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden">
-        <LedgerRail className="bg-[#4F46E5]" />
-        <div className="pl-4 pr-3 py-3 flex items-center gap-3 border-b border-slate-100">
-          <span className={`w-11 h-7 rounded flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
+      <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="p-3.5 flex items-center gap-3 border-b border-slate-100">
+          <span className={`w-11 h-7 rounded-md flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
             {brand.mark}
           </span>
           <span className="flex-1 min-w-0">
-            <span className="block text-[13px] font-bold text-[#1E293B] truncate">{card.cardName}</span>
-            <span className="block text-[11.5px] text-slate-500 tabular-nums">{number}</span>
+            <span className="block text-sm font-bold text-[#1E293B] truncate">{card.cardName}</span>
+            <span className="block text-[11px] font-medium text-slate-500 tabular-nums">{number}</span>
           </span>
           {onDelete && <IconGroup items={[{ icon: Trash2, label: deleteLabel, danger: true, onClick: onDelete }]} />}
         </div>
-        <dl className="pl-4 pr-3.5 py-0.5">
-          <LabelRow label="Card Name" dashed>{card.cardName}</LabelRow>
-          <LabelRow label="Card Number" dashed>{number}</LabelRow>
-          <LabelRow label="Card Type" dashed>{card.cardType}</LabelRow>
-          <LabelRow label="Expiry Date" dashed>{formatExpiry(card.expiry)}</LabelRow>
+        <dl className="px-3.5 py-0.5">
+          <LabelRow label="Card Name">{card.cardName}</LabelRow>
+          <LabelRow label="Card Number">{number}</LabelRow>
+          <LabelRow label="Card Type">{card.cardType}</LabelRow>
+          <LabelRow label="Expiry Date">{formatExpiry(card.expiry)}</LabelRow>
         </dl>
       </li>
     );
 
   return (
-    <li className="relative rounded-[20px] overflow-hidden p-4 bg-gradient-to-br from-[#2F68FE] to-[#1D4ED8] text-white shadow-[0_10px_24px_-10px_rgba(29,78,216,0.7)]">
-      <span className="absolute -right-10 -top-12 w-36 h-36 rounded-full bg-white/10" aria-hidden="true" />
-      <span className="absolute -left-8 -bottom-14 w-32 h-32 rounded-full bg-white/[0.07]" aria-hidden="true" />
-      <div className="relative flex items-center gap-3">
+    <li className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5">
+      <div className="flex items-center gap-3">
         <span className={`w-12 h-8 rounded-md flex items-center justify-center text-[10px] font-black tracking-wide shrink-0 ${brand.className}`} aria-hidden="true">
           {brand.mark}
         </span>
-        <span className="flex-1 min-w-0 text-[13px] font-bold truncate">{card.cardName}</span>
+        <span className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">{card.cardName}</span>
         {onDelete && (
           <button
             type="button"
             onClick={onDelete}
             aria-label={deleteLabel}
-            className="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center shrink-0 active:bg-white/25 cursor-pointer transition-colors"
+            className="w-9 h-9 rounded-full bg-[#FEF2F2] text-rose-600 flex items-center justify-center shrink-0 active:bg-rose-100 cursor-pointer transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>
-      <dl className="relative">
-        <div className="mt-4">
-          <dt className="text-[10.5px] font-medium text-white/70">Card Number</dt>
-          <dd className="mt-0.5 text-[15px] font-bold tracking-wider tabular-nums">{number}</dd>
+      <dl className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
+        <div>
+          <dt className="text-[11px] text-slate-400">Card Number</dt>
+          <dd className="mt-0.5 text-sm font-bold text-[#1E293B] tracking-wider tabular-nums">{number}</dd>
         </div>
-        <div className="mt-3.5 grid grid-cols-3 gap-2">
+        <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2">
           <div className="min-w-0">
-            <dt className="text-[10.5px] font-medium text-white/70">Card Name</dt>
-            <dd className="mt-0.5 text-[12px] font-bold truncate">{card.cardName}</dd>
+            <dt className="text-[11px] text-slate-400">Card Name</dt>
+            <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] truncate">{card.cardName}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="text-[10.5px] font-medium text-white/70">Card Type</dt>
-            <dd className="mt-0.5 text-[12px] font-bold truncate">{card.cardType}</dd>
+            <dt className="text-[11px] text-slate-400">Card Type</dt>
+            <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] truncate">{card.cardType}</dd>
           </div>
           <div className="min-w-0 text-right">
-            <dt className="text-[10.5px] font-medium text-white/70">Expiry Date</dt>
-            <dd className="mt-0.5 text-[12px] font-bold tabular-nums">{formatExpiry(card.expiry)}</dd>
+            <dt className="text-[11px] text-slate-400">Expiry Date</dt>
+            <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{formatExpiry(card.expiry)}</dd>
           </div>
         </div>
       </dl>
@@ -314,36 +303,36 @@ export const AddTile: React.FC<{ label: string; onClick: () => void; v2?: boolea
     onClick={onClick}
     className={`w-full flex items-center justify-center gap-2.5 transition-colors cursor-pointer ${
       v2
-        ? 'h-11 rounded-lg border border-dashed border-[#93C5FD] bg-white active:bg-[#EFF6FF]'
-        : 'h-12 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] active:bg-[#DBEAFE]'
+        ? 'h-12 rounded-xl border border-dashed border-slate-300 bg-white active:border-[#2F68FE] active:bg-blue-50/50'
+        : 'h-12 rounded-xl border border-[#2F68FE] bg-white active:bg-blue-50'
     }`}
   >
     <span
       className={`flex items-center justify-center shrink-0 ${
-        v2 ? 'w-6 h-6 rounded-md bg-[#EFF6FF] text-[#2F68FE]' : 'w-7 h-7 rounded-full bg-[#2F68FE] text-white'
+        v2 ? 'w-6 h-6 rounded-lg bg-[#EEF2FF] text-[#2F68FE]' : 'w-6 h-6 rounded-lg bg-blue-50 text-[#2F68FE]'
       }`}
     >
       <Plus className="w-4 h-4" />
     </span>
-    <span className="text-[13px] font-bold text-[#2F68FE]">{label}</span>
+    <span className="text-xs font-bold text-[#2F68FE]">{label}</span>
   </button>
 );
 
 export const MethodIcon: React.FC<{ type: PaymentType; className?: string }> = ({ type, className = '' }) => {
   if (type === 'direct')
     return (
-      <span className={`rounded-xl bg-[#E8F8F0] text-[#10B981] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
-        <Zap className="w-[18px] h-[18px]" />
+      <span className={`rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
+        <Zap className="w-4 h-4" />
       </span>
     );
   if (type === 'bank')
     return (
-      <span className={`rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
-        <Landmark className="w-[18px] h-[18px]" />
+      <span className={`rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
+        <Landmark className="w-4 h-4" />
       </span>
     );
   return (
-    <span className={`rounded-xl bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
+    <span className={`rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0 ${className}`} aria-hidden="true">
       <span className="text-[10px] font-black">CARD</span>
     </span>
   );
@@ -360,16 +349,16 @@ export const StaffChips: React.FC<{ names: { id: string; name: string; tint: num
     {names.slice(0, max).map((s) => (
       <li
         key={s.id}
-        className={`h-7 border flex items-center gap-1.5 text-[11px] font-semibold ${v2 ? 'pl-1 pr-2 rounded-md' : 'pl-0.5 pr-2.5 rounded-full'} ${
+        className={`h-7 border flex items-center gap-1.5 text-[11px] font-semibold ${v2 ? 'pl-1 pr-2 rounded-lg' : 'pl-0.5 pr-2.5 rounded-full'} ${
           tone === 'amber'
-            ? 'bg-white border-[#FDE68A] text-amber-900'
+            ? 'bg-[#FEF8E7] border-amber-200/50 text-[#D97706]'
             : v2
-              ? 'bg-[#F8FAFC] border-slate-200 text-slate-700'
-              : 'bg-white border-[#E2E8F0] text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.05)]'
+              ? 'bg-slate-50 border-slate-200 text-slate-700'
+              : 'bg-white border-slate-200 text-slate-700 shadow-2xs'
         }`}
       >
         <span
-          className={`flex items-center justify-center font-bold shrink-0 ${v2 ? 'w-5 h-5 rounded text-[10px]' : 'w-6 h-6 rounded-full text-[10px]'} ${avatarTint(s.tint)}`}
+          className={`flex items-center justify-center font-bold shrink-0 ${v2 ? 'w-5 h-5 rounded-md text-[10px]' : 'w-6 h-6 rounded-full text-[10px]'} ${avatarTint(s.tint)}`}
           aria-hidden="true"
         >
           {initialsOf(s.name)}
@@ -378,7 +367,7 @@ export const StaffChips: React.FC<{ names: { id: string; name: string; tint: num
       </li>
     ))}
     {names.length > max && (
-      <li className={`h-7 px-2.5 bg-slate-100 text-[11px] font-semibold text-slate-500 flex items-center ${v2 ? 'rounded-md' : 'rounded-full'}`}>
+      <li className={`h-7 px-2.5 bg-slate-100 text-[11px] font-semibold text-slate-600 flex items-center ${v2 ? 'rounded-lg' : 'rounded-full'}`}>
         +{names.length - max} more
       </li>
     )}
@@ -396,7 +385,7 @@ export const StaffCheckRow: React.FC<{
 }> = ({ name, designation, tint, checked, lockedNote, onToggle }) => {
   const locked = Boolean(lockedNote);
   return (
-    <li className={`rounded-2xl border transition-colors ${locked ? 'border-slate-100 bg-slate-50' : checked ? 'border-[#BFDBFE] bg-[#EFF6FF]' : 'border-[#EBF0F7] bg-white'}`}>
+    <li className={`rounded-xl border transition-colors ${locked ? 'border-slate-100 bg-slate-50' : checked ? 'border-[#2F68FE] bg-blue-50/70' : 'border-slate-200 bg-white shadow-2xs'}`}>
       <button
         type="button"
         role="checkbox"
@@ -412,12 +401,12 @@ export const StaffCheckRow: React.FC<{
         <span className="flex-1 min-w-0">
           <span className={`block text-[13px] font-bold truncate ${locked ? 'text-slate-400' : 'text-[#1E293B]'}`}>{name}</span>
           {locked ? (
-            <span className="mt-0.5 flex items-center gap-1 text-[10.5px] font-semibold text-slate-400 min-w-0">
+            <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-slate-400 min-w-0">
               <Lock className="w-3 h-3 shrink-0" />
               <span className="truncate">{lockedNote}</span>
             </span>
           ) : (
-            <span className="block text-[11px] text-slate-500 truncate">{designation}</span>
+            <span className="block text-[11px] font-medium text-slate-500 truncate">{designation}</span>
           )}
         </span>
         {!locked && (
@@ -436,15 +425,15 @@ export const StaffCheckRow: React.FC<{
 };
 
 export const BillingSkeleton: React.FC<{ v2?: boolean }> = ({ v2 }) => {
-  const box = v2 ? 'bg-white border border-[#DCE3ED] rounded-xl p-4 space-y-3' : 'bg-white border border-[#E2E8F0] rounded-[24px] p-4 space-y-3';
+  const box = 'bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-3';
   return (
     <div className="px-4 pt-4 space-y-3" aria-busy="true" aria-label="Loading billing details">
       <div className={box}>
         <StaffSkeleton className="w-48 h-5" />
-        <StaffSkeleton className={`w-full h-10 ${v2 ? 'rounded-lg' : 'rounded-full'}`} />
+        <StaffSkeleton className={`w-full h-11 ${v2 ? 'rounded-lg' : 'rounded-2xl'}`} />
         {[0, 1].map((i) => (
           <div key={i} className="flex items-center gap-3">
-            <StaffSkeleton className={`w-10 h-10 ${v2 ? 'rounded-lg' : 'rounded-full'}`} />
+            <StaffSkeleton className="w-10 h-10 rounded-xl" />
             <div className="flex-1 space-y-1.5">
               <StaffSkeleton className="w-36 h-3.5" />
               <StaffSkeleton className="w-24 h-3" />
@@ -454,7 +443,7 @@ export const BillingSkeleton: React.FC<{ v2?: boolean }> = ({ v2 }) => {
       </div>
       <div className={box}>
         <StaffSkeleton className="w-40 h-5" />
-        <StaffSkeleton className="w-full h-16" />
+        <StaffSkeleton className="w-full h-16 rounded-xl" />
       </div>
     </div>
   );

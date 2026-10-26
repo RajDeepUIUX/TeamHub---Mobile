@@ -183,7 +183,7 @@ export const HubFilterSheet: React.FC<Props> = ({ isOpen, filters, options, onCl
         >
           Clear
         </button>
-        <button type="button" onClick={() => onApply(draft)} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer">
+        <button type="button" onClick={() => onApply(draft)} className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
           {count ? `Apply (${count})` : 'Apply'}
         </button>
       </div>

@@ -231,7 +231,7 @@ export const PaymentMethodSheet: React.FC<Props> = ({ isOpen, target, billing, c
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
         {formError && (
-          <p role="alert" className="px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[12px] font-semibold text-rose-600">
+          <p role="alert" className="p-3 rounded-xl bg-[#FFF1F2] border border-[#FECDD3] text-xs font-semibold text-rose-600">
             {formError}
           </p>
         )}
@@ -322,7 +322,7 @@ export const PaymentMethodSheet: React.FC<Props> = ({ isOpen, target, billing, c
                 <ErrorText error={errors.cvv} />
               </label>
             </div>
-            <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+            <p className="flex items-start gap-2 p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-[11px] font-medium text-slate-500 leading-relaxed">
               <Lock className="w-3.5 h-3.5 shrink-0 mt-px text-slate-400" />
               After saving, only the card type, name, last 4 digits and expiry are shown. The full number and CVV are never displayed.
             </p>
@@ -380,7 +380,7 @@ export const PaymentMethodSheet: React.FC<Props> = ({ isOpen, target, billing, c
           type="button"
           onClick={onClose}
           disabled={Boolean(busy)}
-          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer disabled:opacity-60"
+          className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer disabled:opacity-60"
         >
           Cancel
         </button>
@@ -388,7 +388,7 @@ export const PaymentMethodSheet: React.FC<Props> = ({ isOpen, target, billing, c
           type="button"
           onClick={submit}
           disabled={Boolean(busy)}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer disabled:opacity-80 disabled:cursor-wait"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy ? busyLabel : editing ? 'Update Payment' : 'Add Payment'}

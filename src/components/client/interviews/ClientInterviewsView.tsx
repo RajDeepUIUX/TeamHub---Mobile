@@ -49,6 +49,7 @@ import {
   canRequestInterview,
   feedbackAvailable,
   formatShortDate,
+  hasResumeOf,
   interviewCountdown,
   interviewLabels,
   interviewWindow,
@@ -56,6 +57,7 @@ import {
   isoOfDate,
   matchesCandidate,
   remainingAssessmentSlots,
+  statusTone,
 } from '../data/clientInterviewsData';
 import { AssessmentAssignSheet, AssessmentProgressSheet } from './AssessmentSheets';
 import { CandidateResumeView } from './CandidateResumeView';
@@ -78,6 +80,8 @@ interface Props {
   onContactManager: () => void;
   /** Staff Requirement "N Shortlisted" opens the list filtered to that profile (desktop `p_id`) */
   initialProfile?: string | null;
+  /** Dashboard › Shortlisted Candidates opens one candidate straight away: Hub resume (its Back returns to the Dashboard) or the CV sheet */
+  initialCandidateId?: string | null;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -97,38 +101,38 @@ const useNow = (intervalMs = 30_000) => {
   return now;
 };
 
-type StatusTone = 'blue' | 'amber' | 'green' | 'red';
+type StatusTone = ReturnType<typeof statusTone>;
 
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]';
 
 /** Desktop status card icons: tick (Applied / Shortlisted), hourglass (waiting), circle tick (done), circle cross (closed) */
-const STATUS_CARD: Record<CandidateStatus, { icon: React.ElementType; tone: StatusTone }> = {
-  Applied: { icon: Check, tone: 'blue' },
-  Shortlisted: { icon: Check, tone: 'blue' },
-  'Interview Scheduled': { icon: Hourglass, tone: 'amber' },
-  'In Process': { icon: Hourglass, tone: 'amber' },
-  Hired: { icon: CircleCheck, tone: 'green' },
-  Hold: { icon: Hourglass, tone: 'amber' },
-  Selected: { icon: CircleCheck, tone: 'green' },
-  'Not Selected': { icon: CircleX, tone: 'red' },
-  Left: { icon: CircleX, tone: 'red' },
+const STATUS_ICON: Record<CandidateStatus, React.ElementType> = {
+  Applied: Check,
+  Shortlisted: Check,
+  'Interview Scheduled': Hourglass,
+  'In Process': Hourglass,
+  Hired: CircleCheck,
+  Hold: Hourglass,
+  Selected: CircleCheck,
+  'Not Selected': CircleX,
+  Left: CircleX,
 };
 
-/** Theme tones per status family: accent bar, icon tile, solid chip, soft band, dot, text and selected tile */
-const TONE: Record<StatusTone, { bar: string; tile: string; solid: string; band: string; dot: string; text: string; ring: string }> = {
-  blue: { bar: 'bg-[#2F68FE]', tile: 'bg-[#EFF6FF] text-[#2F68FE]', solid: 'bg-[#2F68FE] text-white border-[#2F68FE]', band: 'bg-[#F5F8FF]', dot: 'bg-[#2F68FE]', text: 'text-[#2F68FE]', ring: 'border-[#2F68FE] bg-[#F5F8FF]' },
-  amber: { bar: 'bg-[#F59E0B]', tile: 'bg-[#FFFBEB] text-[#D97706]', solid: 'bg-[#D97706] text-white border-[#D97706]', band: 'bg-[#FEF8E7]', dot: 'bg-[#D97706]', text: 'text-[#B45309]', ring: 'border-[#D97706] bg-[#FFFCF5]' },
-  green: { bar: 'bg-[#10B981]', tile: 'bg-[#F0FDF4] text-[#16A34A]', solid: 'bg-[#16A34A] text-white border-[#16A34A]', band: 'bg-[#E8F8F0]', dot: 'bg-[#10B981]', text: 'text-[#047857]', ring: 'border-[#16A34A] bg-[#F7FDF9]' },
-  red: { bar: 'bg-[#EF4444]', tile: 'bg-[#FEF2F2] text-[#DC2626]', solid: 'bg-[#DC2626] text-white border-[#DC2626]', band: 'bg-[#FEF2F2]', dot: 'bg-[#DC2626]', text: 'text-[#DC2626]', ring: 'border-[#DC2626] bg-[#FFF8F8]' },
+/** Status palette (same tone as the status pill): chip, dot and text */
+const TONE: Record<StatusTone, { chip: string; dot: string; text: string }> = {
+  blue: { chip: 'bg-[#EFF6FF] text-[#2F68FE]', dot: 'bg-[#2F68FE]', text: 'text-[#2F68FE]' },
+  amber: { chip: 'bg-[#FEF8E7] text-[#D97706]', dot: 'bg-[#D97706]', text: 'text-[#D97706]' },
+  green: { chip: 'bg-[#E8F8F0] text-[#10B981]', dot: 'bg-[#10B981]', text: 'text-[#10B981]' },
+  rose: { chip: 'bg-[#FEF2F2] text-[#EF4444]', dot: 'bg-[#EF4444]', text: 'text-[#EF4444]' },
 };
 
 /** V2: label / value row */
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex items-center justify-between gap-3 py-2 min-h-9">
-    <dt className="text-[12px] font-medium text-slate-500 shrink-0">{label}</dt>
-    <dd className="min-w-0 text-[12.5px] font-semibold text-[#1E293B] text-right flex items-center justify-end gap-2 flex-wrap">{children}</dd>
+    <dt className="text-[11px] font-medium text-slate-500 shrink-0">{label}</dt>
+    <dd className="min-w-0 text-xs font-semibold text-[#1E293B] text-right flex items-center justify-end gap-2 flex-wrap">{children}</dd>
   </div>
 );
 
@@ -136,7 +140,7 @@ const Dash: React.FC = () => <span className="text-slate-400 font-medium">-</spa
 
 const SelectBox: React.FC<{ checked: boolean; disabled: boolean; round?: boolean }> = ({ checked, disabled, round }) => (
   <span
-    className={`w-5 h-5 ${round ? 'rounded-full' : 'rounded'} border flex items-center justify-center shrink-0 ${
+    className={`w-5 h-5 ${round ? 'rounded-full' : 'rounded-md'} border-2 flex items-center justify-center shrink-0 ${
       disabled ? 'bg-slate-100 border-slate-200' : checked ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-300'
     }`}
     aria-hidden="true"
@@ -162,14 +166,12 @@ const stop = (fn: () => void) => (e: React.MouseEvent) => {
   fn();
 };
 
-const hasResumeOf = (c: ShortlistedCandidate) => (c.source === 'hub' ? Boolean(c.resume) : Boolean(c.cvFile));
-
 /**
  * Hire New Staff › Shortlisted Candidates (desktop `interviews&task=shortlistedcandidates`): status cards, search, candidate
  * list with assessments, View Resume, Interview Feedback, Request / Reschedule / Cancel Interview, Join Interview and
  * bulk "Request Assessment". V1 / V2 = two list designs with the same content and behaviour.
  */
-export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, initialProfile, onBack }) => {
+export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, initialProfile, initialCandidateId, onBack }) => {
   // view = resume / feedback / progress; add = feedback, request interview, assign assessment; edit = reschedule; delete = cancel interview; download = files
   const { view: canView, add: canAdd, edit: canEdit, delete: canDelete, download: canDownload } = useClientPermission('interviews');
 
@@ -183,12 +185,16 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   const [moreLoading, setMoreLoading] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
-  const [sheet, setSheet] = useState<Sheet>(null);
+  const [entry] = useState(() => {
+    const c = canView && initialCandidateId ? candidates.find((x) => x.id === initialCandidateId) : undefined;
+    return c && hasResumeOf(c) ? c : null;
+  });
+  const [sheet, setSheet] = useState<Sheet>(entry?.source === 'recruiter' ? 'cv' : null);
   // Kept after a sheet closes so its content doesn't blank out during the close animation
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(entry?.source === 'recruiter' ? entry.id : null);
   const [scheduleMode, setScheduleMode] = useState<'request' | 'reschedule'>('request');
   const [assignIds, setAssignIds] = useState<string[]>([]);
-  const [resumeId, setResumeId] = useState<string | null>(null);
+  const [resumeId, setResumeId] = useState<string | null>(entry?.source === 'hub' ? entry.id : null);
   const [notice, showNotice] = useTimesheetNotice();
   const listRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
@@ -359,7 +365,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     const hasMenu = menuFor(c).length > 0;
 
     return {
-      tone: STATUS_CARD[c.status].tone,
+      tone: statusTone(c.status),
       iv: interviewLabels(c),
       countdown: c.status === 'Interview Scheduled' && c.interview ? interviewCountdown(c.interview, now) : null,
       used: activeAssignments(c).length,
@@ -396,7 +402,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
         <span className="tabular-nums">
           {d.iv.date} · {d.iv.time.replace(` (${CLIENT_TZ})`, '')}
         </span>
-        {d.countdown && <span className={`px-2 py-0.5 text-[10.5px] font-bold whitespace-nowrap ${badge(d.countdown.soon)}`}>{d.countdown.label}</span>}
+        {d.countdown && <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${badge(d.countdown.soon)}`}>{d.countdown.label}</span>}
       </>
     ) : (
       <Dash />
@@ -417,7 +423,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           {d.used}/{ASSESSMENT_MAX}
         </span>
         {d.assessAction === 'assign' && canAdd && !selectMode && (
-          <button type="button" onClick={stop(() => openAssign([c.id]))} aria-label={`Assign assessments to ${c.name}`} className={`ml-1 text-[12px] font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
+          <button type="button" onClick={stop(() => openAssign([c.id]))} aria-label={`Assign assessments to ${c.name}`} className={`ml-1 text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
             Assign
           </button>
         )}
@@ -426,7 +432,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             type="button"
             onClick={stop(() => openSheet('progress', c.id))}
             aria-label={`View assessment progress for ${c.name}`}
-            className={`ml-1 text-[12px] font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
+            className={`ml-1 text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
           >
             View
           </button>
@@ -437,15 +443,14 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   /* ---------- Card (V1): soft card ---------- */
   const cardV1 = (c: ShortlistedCandidate) => {
     const d = cardData(c);
-    const t = TONE[d.tone];
-    const pill = `h-10 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
+    const pill = `h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
     const actStyle: Record<ActTone, string> = {
-      primary: 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8]',
-      success: 'bg-[#10B981] text-white shadow-[0_6px_14px_-6px_rgba(16,185,129,0.7)] active:bg-[#059669]',
-      soft: 'bg-[#F1F5F9] text-slate-600 active:bg-slate-200',
+      primary: 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]',
+      success: 'bg-emerald-600 text-white active:bg-emerald-700',
+      soft: 'border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
     };
     const roundIcon = (Icon: React.ElementType, label: string, onClick: () => void) => (
-      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-10 shrink-0 border border-slate-200 bg-white text-slate-600 active:bg-slate-50 ${pill}`}>
+      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-9 shrink-0 border border-slate-200 bg-white text-slate-600 active:bg-slate-100 ${pill}`}>
         <Icon className="w-4 h-4" />
       </button>
     );
@@ -453,18 +458,17 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     return (
       <li key={c.id}>
         <article
-          className={`relative bg-white rounded-2xl border shadow-[0_4px_16px_-8px_rgba(15,23,42,0.12)] ${
-            selectMode && d.checked ? 'border-[#2F68FE] ring-2 ring-[#2F68FE]/25' : 'border-slate-100'
+          className={`relative bg-white rounded-2xl border shadow-2xs ${
+            selectMode && d.checked ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-[#EBF0F7]'
           }`}
         >
-          <span aria-hidden="true" className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full ${t.bar}`} />
-          <div {...d.tapProps} className={`pl-5 pr-4 pt-4 ${d.showFooter || d.accountManagerNote ? 'pb-3' : 'pb-4'} rounded-2xl ${d.tapOpens ? 'active:bg-slate-50/70 cursor-pointer' : ''} transition-colors`}>
+          <div {...d.tapProps} className={`px-4 pt-4 ${d.showFooter || d.accountManagerNote ? 'pb-3' : 'pb-4'} rounded-2xl ${d.tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}>
             <div className="flex items-center gap-3">
               {d.selectable && <SelectBox round checked={d.checked} disabled={d.atMax} />}
               <StaffAvatar name={c.name} tint={candidates.findIndex((x) => x.id === c.id)} />
               <span className="flex-1 min-w-0">
-                <span className="block text-[15px] font-bold text-[#1E293B] truncate">{c.name}</span>
-                <span className="block mt-0.5 text-[11.5px] text-slate-500 truncate">
+                <span className="block text-sm font-bold text-[#1E293B] truncate">{c.name}</span>
+                <span className="block mt-0.5 text-[11px] text-slate-500 truncate">
                   Resume ID <span className="font-semibold text-slate-700 tabular-nums">{c.resumeId || '-'}</span>
                 </span>
               </span>
@@ -474,58 +478,62 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             </div>
 
             <div className="mt-3 flex items-start gap-2">
-              <Briefcase className="w-4 h-4 mt-0.5 shrink-0 text-[#2F68FE]" aria-hidden="true" />
+              <Briefcase className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
               <p className="min-w-0 text-[13px] leading-snug">
                 <span className="sr-only">Profile: </span>
                 <span className="font-semibold text-[#1E293B]">{c.profile || '-'}</span>
                 {c.domain && (
-                  <span className="ml-1.5 inline-block align-middle px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[10.5px] font-semibold text-[#4F46E5] whitespace-nowrap">{c.domain}</span>
+                  <span className="ml-1.5 inline-block align-middle px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] whitespace-nowrap">{c.domain}</span>
                 )}
               </p>
             </div>
 
-            <dl className="mt-3 rounded-xl bg-[#F5F8FF] border border-dashed border-[#BFDBFE] px-3 py-2.5 flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-lg bg-white text-[#2F68FE] flex items-center justify-center shrink-0 shadow-2xs" aria-hidden="true">
+            <dl className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5 flex items-center gap-2.5">
+              <span className="w-9 h-9 rounded-lg bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
                 <CalendarClock className="w-4.5 h-4.5" />
               </span>
               <div className="flex-1 min-w-0">
-                <dt className="text-[10.5px] font-medium text-slate-500 leading-tight">Interview ({CLIENT_TZ})</dt>
-                <dd className="mt-0.5 text-[12.5px] font-bold text-[#1E293B] flex items-center gap-2 flex-wrap">
-                  {interviewValue(d, (soon) => `rounded-full ${soon ? 'bg-[#2F68FE] text-white' : 'bg-white text-[#2F68FE] border border-[#BFDBFE]'}`)}
+                <dt className="text-[11px] font-medium text-slate-500 leading-tight">Interview ({CLIENT_TZ})</dt>
+                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] flex items-center gap-2 flex-wrap">
+                  {interviewValue(d, (soon) => (soon ? 'bg-[#2F68FE] text-white' : 'bg-white text-[#2F68FE] border border-blue-100'))}
                 </dd>
               </div>
             </dl>
 
             <dl className="mt-2 grid grid-cols-2 gap-2">
-              <div className="min-w-0 rounded-xl bg-[#F8FAFC] px-3 py-2.5 flex items-start gap-2">
-                <CircleCheck className="w-4 h-4 mt-0.5 shrink-0 text-[#10B981]" aria-hidden="true" />
+              <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-start gap-2">
+                <CircleCheck className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
                 <div className="min-w-0">
-                  <dt className="text-[10.5px] font-medium text-slate-400 leading-tight">Completed On</dt>
-                  <dd className="mt-0.5 text-[12.5px] font-semibold text-[#1E293B] tabular-nums">{c.completedOn ? formatShortDate(c.completedOn) : <Dash />}</dd>
+                  <dt className="text-[11px] font-medium text-slate-400 leading-tight">Completed On</dt>
+                  <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{c.completedOn ? formatShortDate(c.completedOn) : <Dash />}</dd>
                 </div>
               </div>
-              <div className="min-w-0 rounded-xl bg-[#F8FAFC] px-3 py-2.5 flex items-start gap-2">
-                <ClipboardCheck className="w-4 h-4 mt-0.5 shrink-0 text-[#2F68FE]" aria-hidden="true" />
+              <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-start gap-2">
+                <ClipboardCheck className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
                 <div className="min-w-0">
-                  <dt className="text-[10.5px] font-medium text-slate-400 leading-tight">Assessments</dt>
-                  <dd className="mt-0.5 text-[12.5px] font-semibold text-[#1E293B] flex items-center gap-1.5 flex-wrap">{assessmentsValue(c, d, 'w-1.5 h-1.5 rounded-full')}</dd>
+                  <dt className="text-[11px] font-medium text-slate-400 leading-tight">Assessments</dt>
+                  <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] flex items-center gap-1.5 flex-wrap">{assessmentsValue(c, d, 'w-1.5 h-1.5 rounded-full')}</dd>
                 </div>
               </div>
             </dl>
           </div>
 
           {d.accountManagerNote && (
-            <p className="ml-5 mr-4 mb-3 pl-3 pr-1 py-1 rounded-full bg-amber-50 text-[11px] text-amber-800 leading-snug flex items-center gap-2">
-              <Headset className="w-4 h-4 shrink-0 text-amber-600" aria-hidden="true" />
+            <p className="mx-4 mb-3 pl-3 pr-1.5 py-1.5 rounded-xl bg-[#FEF8E7] border border-amber-200/50 text-[11px] text-amber-700 leading-snug flex items-center gap-2">
+              <Headset className="w-4 h-4 shrink-0 text-[#D97706]" aria-hidden="true" />
               <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
-              <button type="button" onClick={onContactManager} className={`shrink-0 h-8 px-3 rounded-full bg-white text-[11px] font-bold text-[#2F68FE] cursor-pointer ${FOCUS}`}>
+              <button
+                type="button"
+                onClick={onContactManager}
+                className={`shrink-0 h-8 px-3 rounded-xl bg-white border border-amber-200/50 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${FOCUS}`}
+              >
                 Contact
               </button>
             </p>
           )}
 
           {d.showFooter && (
-            <div className="pl-5 pr-4 pb-4 flex items-center gap-2">
+            <div className="px-4 pb-4 flex items-center gap-2">
               {d.actions.map((a) => (
                 <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`flex-1 min-w-0 px-3 ${actStyle[a.tone]} ${pill}`}>
                   <a.icon className="w-4 h-4 shrink-0" />
@@ -534,7 +542,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               ))}
               {d.resumeReady &&
                 (d.actions.length === 0 ? (
-                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 min-w-0 px-3 border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] active:bg-blue-100 ${pill}`}>
+                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 min-w-0 px-3 border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50 ${pill}`}>
                     <Eye className="w-4 h-4 shrink-0" />
                     <span className="truncate">View Resume</span>
                   </button>
@@ -554,44 +562,44 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   const cardV2 = (c: ShortlistedCandidate) => {
     const d = cardData(c);
     const t = TONE[d.tone];
-    const seg = `relative min-w-0 h-11 px-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`;
+    const seg = `relative min-w-0 h-11 px-1.5 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`;
     const actStyle: Record<ActTone, string> = {
-      primary: 'font-bold text-[#2F68FE] active:bg-[#EFF6FF]',
-      success: 'font-bold text-[#059669] active:bg-[#E8F8F0]',
-      soft: 'font-semibold text-slate-600 active:bg-slate-100',
+      primary: 'font-bold text-[#2F68FE] active:bg-blue-50',
+      success: 'font-bold text-emerald-600 active:bg-[#E8F8F0]',
+      soft: 'font-semibold text-slate-600 active:bg-slate-50',
     };
     const iconSeg = (Icon: React.ElementType, label: string, onClick: () => void) => (
-      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-12 shrink-0 text-slate-500 active:bg-slate-100 ${seg}`}>
+      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-12 shrink-0 text-slate-400 active:bg-slate-100 ${seg}`}>
         <Icon className="w-4 h-4" />
       </button>
     );
 
     return (
       <li key={c.id}>
-        <article className={`bg-white rounded-xl border shadow-2xs overflow-hidden ${selectMode && d.checked ? 'border-[#2F68FE] ring-1 ring-[#2F68FE]' : 'border-[#E2E8F0]'}`}>
+        <article className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${selectMode && d.checked ? 'border-[#2F68FE] ring-1 ring-[#2F68FE]' : 'border-[#EBF0F7]'}`}>
           <div {...d.tapProps} className={`block ${d.tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}>
-            <div className={`h-9 px-3.5 flex items-center gap-2 border-b border-[#EBF0F7] ${t.band}`}>
+            <div className="h-10 px-3.5 flex items-center gap-2 border-b border-slate-100">
               {d.selectable && <SelectBox checked={d.checked} disabled={d.atMax} />}
-              <span className={`flex items-center gap-1.5 text-[11.5px] font-bold ${t.text}`}>
+              <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${t.chip}`}>
                 <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
                 {c.status}
               </span>
-              <span className="ml-auto text-[10.5px] font-medium text-slate-500 truncate">
+              <span className="ml-auto text-[11px] font-medium text-slate-500 truncate">
                 Resume ID <span className="font-bold text-[#1E293B] tabular-nums">{c.resumeId || '-'}</span>
               </span>
             </div>
 
             <div className="px-3.5 pt-3 pb-2">
               <div className="flex items-center gap-2.5">
-                <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-[11.5px] font-bold shrink-0 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`} aria-hidden="true">
+                <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`} aria-hidden="true">
                   {initialsOf(c.name)}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="flex items-center gap-1 text-[14.5px] font-bold text-[#1E293B]">
+                  <span className="flex items-center gap-1 text-sm font-bold text-[#1E293B]">
                     <span className="truncate">{c.name}</span>
                     {d.tapOpens && !selectMode && <ChevronRight className="w-4 h-4 shrink-0 text-[#2F68FE]" aria-hidden="true" />}
                   </span>
-                  <span className="block mt-0.5 text-[11.5px] text-slate-500 truncate">
+                  <span className="block mt-0.5 text-[11px] text-slate-500 truncate">
                     <span className="sr-only">Profile: </span>
                     <span className="font-semibold text-slate-700">{c.profile || '-'}</span>
                     {c.domain && <span className="text-slate-400"> · {c.domain}</span>}
@@ -599,8 +607,8 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                 </span>
               </div>
 
-              <dl className="mt-2 divide-y divide-dashed divide-slate-200">
-                <Row label={`Interview (${CLIENT_TZ})`}>{interviewValue(d, (soon) => `rounded ${soon ? 'bg-[#2F68FE] text-white' : 'bg-[#EFF6FF] text-[#2F68FE]'}`)}</Row>
+              <dl className="mt-2 divide-y divide-slate-100">
+                <Row label={`Interview (${CLIENT_TZ})`}>{interviewValue(d, (soon) => (soon ? 'bg-[#2F68FE] text-white' : 'bg-blue-50 text-[#2F68FE]'))}</Row>
                 <Row label="Completed On">{c.completedOn ? <span className="tabular-nums">{formatShortDate(c.completedOn)}</span> : <Dash />}</Row>
                 <Row label="Assessments">{assessmentsValue(c, d, 'w-2.5 h-1.5 rounded-sm')}</Row>
               </dl>
@@ -608,17 +616,17 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           </div>
 
           {d.accountManagerNote && (
-            <div className="px-3.5 py-2 border-t border-dashed border-amber-200 bg-amber-50/60 flex items-center gap-2 text-[11px] text-amber-800 leading-snug">
-              <Headset className="w-3.5 h-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+            <div className="px-3.5 py-2 border-t border-amber-200/50 bg-[#FEF8E7] flex items-center gap-2 text-[11px] text-amber-700 leading-snug">
+              <Headset className="w-3.5 h-3.5 shrink-0 text-[#D97706]" aria-hidden="true" />
               <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
-              <button type="button" onClick={onContactManager} className={`shrink-0 text-[11px] font-bold text-[#2F68FE] underline underline-offset-2 cursor-pointer rounded ${FOCUS}`}>
+              <button type="button" onClick={onContactManager} className={`shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
                 Contact
               </button>
             </div>
           )}
 
           {d.showFooter && (
-            <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-[#FBFCFE]">
+            <div className="flex border-t border-slate-100 divide-x divide-slate-100">
               {d.actions.map((a) => (
                 <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`flex-1 ${actStyle[a.tone]} ${seg}`}>
                   <a.icon className="w-4 h-4 shrink-0" />
@@ -627,7 +635,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               ))}
               {d.resumeReady &&
                 (d.actions.length === 0 ? (
-                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 font-bold text-[#2F68FE] active:bg-[#EFF6FF] ${seg}`}>
+                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 font-bold text-[#2F68FE] active:bg-blue-50 ${seg}`}>
                     <Eye className="w-4 h-4 shrink-0" />
                     <span className="truncate">View Resume</span>
                   </button>
@@ -665,7 +673,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             <span className="block w-24 h-4 rounded-md bg-slate-200/70 animate-pulse" aria-hidden="true" />
           ) : (
             <p className="flex items-baseline gap-1 truncate tabular-nums">
-              <span className="text-[15px] font-extrabold text-[#1E293B] leading-none">{results.length}</span>
+              <span className="text-base font-extrabold text-[#1E293B] leading-none">{results.length}</span>
               <span className="text-xs font-semibold text-slate-500">{countLabel}</span>
             </p>
           )}
@@ -676,8 +684,8 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             onClick={toggleSelect}
             disabled={loading}
             aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-            className={`h-11 pl-3 pr-3.5 rounded-full text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
-              selectMode ? 'bg-slate-200 text-slate-600 active:bg-slate-300' : 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8]'
+            className={`h-11 pl-3 pr-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
+              selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-[#2F68FE] bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
             }`}
           >
             {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
@@ -713,8 +721,8 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
 
       <div className="mt-3 px-4 pb-1 flex gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Candidate status">
         {CANDIDATE_STATUSES.map((s) => {
-          const { icon: Icon, tone } = STATUS_CARD[s];
-          const on = TONE[tone];
+          const Icon = STATUS_ICON[s];
+          const on = TONE[statusTone(s)];
           const active = chip === s;
           return (
             <button
@@ -722,18 +730,16 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               type="button"
               aria-pressed={active}
               onClick={() => pickStatus(s)}
-              className={`shrink-0 h-10 pl-1.5 pr-1.5 rounded-full border text-[11.5px] font-semibold flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
-                active ? `${on.solid} shadow-2xs` : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
+              className={`shrink-0 h-9 pl-2.5 pr-1.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
+                active ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
               }`}
             >
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${active ? 'bg-white/20' : on.tile}`} aria-hidden="true">
-                <Icon className="w-3.5 h-3.5" />
-              </span>
+              <Icon aria-hidden="true" className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : on.text}`} />
               {s}
-              <span className={`min-w-6 h-6 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center tabular-nums ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-[#1E293B]'}`}>
+              <span className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {counts[s]}
               </span>
-              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? 'text-white/80' : 'text-slate-400'}`} />
+              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-0.5 shrink-0 ${active ? 'text-white/80' : 'text-slate-400'}`} />
             </button>
           );
         })}
@@ -745,7 +751,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   const toolbarV2 = (
     <>
       <div className="sticky top-0 z-10 bg-[#F8FAFC] px-4 pt-3 pb-1">
-      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-[0_4px_12px_-8px_rgba(15,23,42,0.15)] px-3.5 py-2.5">
+      <div className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">{loading ? '' : `${results.length} ${countLabel}`}</span>
           {anySelectable && (
@@ -754,8 +760,8 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               onClick={toggleSelect}
               disabled={loading}
               aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-              className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
-                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-slate-200 bg-white text-[#2F68FE] active:bg-slate-50'
+              className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
+                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-slate-200 bg-white text-[#2F68FE] active:bg-blue-50'
               }`}
             >
               {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
@@ -766,14 +772,14 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             type="button"
             onClick={() => openSheet('filter')}
             aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-            className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer ${FOCUS} ${
-              filterCount ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+            className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${FOCUS} ${
+              filterCount ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-4 h-4 text-[#2F68FE]" />
             Filter
             {filterCount > 0 && (
-              <span className="min-w-4.5 h-4.5 px-1 rounded bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{filterCount}</span>
+              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{filterCount}</span>
             )}
           </button>
         </div>
@@ -788,14 +794,14 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                     type="button"
                     onClick={() => applyFilters({ ...filters, [key]: '' })}
                     aria-label={`Remove ${label} filter`}
-                    className="w-6 h-6 rounded flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
+                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
             </div>
-            <button type="button" onClick={clearAll} className="shrink-0 h-7 px-1 text-[11px] font-bold text-[#2F68FE] underline underline-offset-2 cursor-pointer">
+            <button type="button" onClick={clearAll} className="shrink-0 h-7 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
               Clear All
             </button>
           </div>
@@ -805,7 +811,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
 
       <div className="pt-2 px-4 flex gap-1.5 overflow-x-auto no-scrollbar snap-x scroll-px-4" role="group" aria-label="Candidate status">
         {CANDIDATE_STATUSES.map((s) => {
-          const on = TONE[STATUS_CARD[s].tone];
+          const on = TONE[statusTone(s)];
           const active = chip === s;
           return (
             <button
@@ -813,20 +819,20 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               type="button"
               aria-pressed={active}
               onClick={() => pickStatus(s)}
-              className={`relative shrink-0 snap-start h-9 pl-3 pr-1.5 rounded-lg border flex items-center gap-2 whitespace-nowrap overflow-hidden transition-colors cursor-pointer ${FOCUS} ${
-                active ? on.ring : 'border-[#E2E8F0] bg-white active:bg-slate-50'
+              className={`relative shrink-0 snap-start h-9 pl-3 pr-1.5 rounded-xl border flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
+                active ? 'border-[#2F68FE] bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'
               }`}
             >
-              <span aria-hidden="true" className={`absolute left-0 top-0 bottom-0 w-[3px] ${on.bar}`} />
-              <span className={`text-[11.5px] ${active ? `${on.text} font-bold` : 'text-slate-600 font-semibold'}`}>{s}</span>
+              <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${on.dot}`} />
+              <span className={`text-[11px] ${active ? 'text-[#2F68FE] font-bold' : 'text-slate-600 font-semibold'}`}>{s}</span>
               <span
-                className={`min-w-6 h-6 px-1.5 rounded-md text-[11px] font-extrabold flex items-center justify-center tabular-nums ${
-                  active ? `${on.dot} text-white` : 'bg-slate-100 text-[#1E293B]'
+                className={`min-w-6 h-6 px-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center tabular-nums ${
+                  active ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {counts[s]}
               </span>
-              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? on.text : 'text-slate-400'}`} />
+              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
             </button>
           );
         })}
@@ -837,7 +843,15 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   /* ---------- View Resume ---------- */
   const resumeCandidate = resumeId ? byId(resumeId) : null;
   if (resumeCandidate) {
-    return <CandidateResumeView candidate={resumeCandidate} canDownload={canDownload} onBack={() => setResumeId(null)} />;
+    const toDashboard = resumeCandidate.id === entry?.id && onBack;
+    return (
+      <CandidateResumeView
+        candidate={resumeCandidate}
+        canDownload={canDownload}
+        backLabel={toDashboard ? 'Dashboard' : undefined}
+        onBack={() => (toDashboard ? onBack() : setResumeId(null))}
+      />
+    );
   }
 
   const assignList = assignIds.map(byId).filter((c): c is ShortlistedCandidate => Boolean(c));
@@ -870,7 +884,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="mt-4 h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+                    className="mt-4 h-10 px-4 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -880,7 +894,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           ) : (
             <>
               <div className="mb-2.5 flex items-center justify-between gap-2">
-                <p className={v2 ? 'text-[11px] font-bold text-slate-500 uppercase tracking-wide' : 'text-[13px] font-bold text-[#1E293B]'}>
+                <p className={v2 ? 'text-[11px] font-bold text-slate-500 uppercase tracking-wide' : 'text-sm font-bold text-[#1E293B]'}>
                   {chip === 'All' ? 'All Candidates' : chip} <span className="text-slate-400 font-semibold tabular-nums">({results.length})</span>
                 </p>
                 {chip !== 'All' && (
@@ -890,7 +904,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                       setChip('All');
                       reload();
                     }}
-                    className={`text-[11px] font-bold text-[#2F68FE] cursor-pointer ${v2 ? 'underline underline-offset-2' : ''}`}
+                    className="text-[11px] font-bold text-[#2F68FE] cursor-pointer"
                   >
                     Show all
                   </button>
@@ -910,7 +924,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                     }, LOAD_MS);
                   }}
                   className={`mt-3 w-full h-11 border text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'rounded-lg border-[#BFDBFE] bg-[#EFF6FF] active:bg-[#DBEAFE]' : 'rounded-full border-slate-200 bg-white shadow-2xs active:bg-slate-50'
+                    v2 ? 'rounded-xl border-blue-100 bg-blue-50 active:bg-blue-100' : 'rounded-xl border-slate-200 bg-white shadow-2xs active:bg-slate-50'
                   }`}
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -929,14 +943,14 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
 
       {selectMode &&
         (v2 ? (
-          <div className="shrink-0 bg-white border-t border-[#EBF0F7] px-4 py-2.5 flex items-center gap-3">
+          <div className="shrink-0 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-4 py-3 flex items-center gap-3">
             <span className="flex-1 min-w-0 flex items-center gap-2.5">
-              <span className="text-[12px] font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
+              <span className="text-xs font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
               <button
                 type="button"
                 onClick={() => setSelected(allPicked ? [] : pickable.map((c) => c.id))}
                 disabled={pickable.length === 0}
-                className="text-[11px] font-bold text-[#2F68FE] underline underline-offset-2 disabled:text-slate-300 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
+                className="text-[11px] font-bold text-[#2F68FE] disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
               >
                 {allPicked ? 'Clear selection' : 'Select all'}
               </button>
@@ -945,21 +959,21 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               type="button"
               disabled={selectedReady.length === 0}
               onClick={() => openAssign(selectedReady.map((c) => c.id))}
-              className={`h-10 px-4 rounded-lg bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
+              className={`h-11 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
             >
               Request Assessment{selectedReady.length > 0 ? ` (${selectedReady.length})` : ''}
             </button>
           </div>
         ) : (
           <div className="shrink-0 px-3 pb-3 pt-1">
-            <div className="rounded-full bg-[#1E293B] text-white shadow-[0_12px_28px_-10px_rgba(15,23,42,0.6)] pl-5 pr-1.5 py-1.5 flex items-center gap-3">
+            <div className="rounded-2xl bg-white border border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pl-4 pr-1.5 py-1.5 flex items-center gap-3">
               <span className="flex-1 min-w-0">
-                <span className="block text-[12px] font-bold tabular-nums">{selectedReady.length} selected</span>
+                <span className="block text-xs font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
                 <button
                   type="button"
                   onClick={() => setSelected(allPicked ? [] : pickable.map((c) => c.id))}
                   disabled={pickable.length === 0}
-                  className="text-[11px] font-semibold text-[#93B4FF] disabled:text-slate-500 cursor-pointer disabled:cursor-not-allowed"
+                  className="text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
                 >
                   {allPicked ? 'Clear selection' : 'Select all'}
                 </button>
@@ -968,7 +982,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                 type="button"
                 disabled={selectedReady.length === 0}
                 onClick={() => openAssign(selectedReady.map((c) => c.id))}
-                className={`h-11 px-4 rounded-full bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
+                className={`h-11 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
               >
                 Request Assessment{selectedReady.length > 0 ? ` (${selectedReady.length})` : ''}
               </button>

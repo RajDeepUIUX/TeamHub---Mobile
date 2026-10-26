@@ -112,7 +112,7 @@ export const WorkFlexAssignSheet: React.FC<Props> = ({ isOpen, target, modeState
           <SelectAllButton label={allTicked ? 'Clear all' : 'Select all'} onClick={toggleAll} disabled={selectable.length === 0} />
         </div>
         {isHybrid && (
-          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-[#EEF2FF] border border-[#E0E7FF] text-[11px] leading-relaxed text-[#3730A3]">
+          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-blue-50 border border-blue-100 text-[11px] leading-relaxed text-[#2F68FE]">
             <Info className="w-4 h-4 shrink-0 mt-px" />
             <span>
               <strong>Office / Home split</strong> — <strong>Days:</strong> some days in office, some from home · <strong>Hours:</strong> part of
@@ -148,7 +148,7 @@ export const WorkFlexAssignSheet: React.FC<Props> = ({ isOpen, target, modeState
                 >
                   {isHybrid && on && (
                     <div className="px-3 pb-3 -mt-0.5 flex items-center gap-2">
-                      <span className="text-[10.5px] font-semibold text-slate-500">Office / Home split</span>
+                      <span className="text-[11px] font-semibold text-slate-500">Office / Home split</span>
                       <div role="group" aria-label={`Split for ${s.name}`} className="ml-auto grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-white border border-[#BFDBFE]">
                         {SPLITS.map((o) => (
                           <button

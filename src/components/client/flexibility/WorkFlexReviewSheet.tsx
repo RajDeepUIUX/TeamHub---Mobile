@@ -50,8 +50,8 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
       <SheetHeader title="Review your preferences" subtitle="Check everything before you submit." onClose={saving ? () => undefined : onClose} />
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-3 space-y-3">
         <section>
-          <h3 className="px-1 text-[12px] font-semibold text-slate-400">Work Modes</h3>
-          <ul className="mt-1.5 rounded-2xl border border-[#DCE3ED] divide-y divide-slate-100">
+          <h3 className="px-1 text-xs font-semibold text-slate-400">Work Modes</h3>
+          <ul className="mt-1.5 rounded-2xl border border-slate-100 divide-y divide-slate-100">
             {WORK_FLEX_MODES.map((m) => {
               const s = prefs.modes[m.key];
               const parts = WORK_FLEX_ARRANGEMENTS.map((a) => ({ name: a.name, n: Object.keys(s.arrangements[a.key]).length })).filter((p) => p.n > 0);
@@ -62,7 +62,7 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
                     <Status value={s.offer} />
                   </div>
                   {s.offer === 'yes' && (
-                    <p className="mt-1 text-[11.5px] text-slate-500">
+                    <p className="mt-1 text-[11px] text-slate-500">
                       {parts.length === 0
                         ? 'No staff assigned yet'
                         : `${modeStaffCount(s)} staff · ${parts.map((p) => `${p.name} ${p.n}`).join(' · ')}`}
@@ -75,8 +75,8 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
         </section>
 
         <section>
-          <h3 className="px-1 text-[12px] font-semibold text-slate-400">Additional Flexibilities</h3>
-          <ul className="mt-1.5 rounded-2xl border border-[#DCE3ED] divide-y divide-slate-100">
+          <h3 className="px-1 text-xs font-semibold text-slate-400">Additional Flexibilities</h3>
+          <ul className="mt-1.5 rounded-2xl border border-slate-100 divide-y divide-slate-100">
             {WORK_FLEX_ITEMS.map((f) => {
               const c = prefs.flex[f.key];
               const counts = flexCounts(f, c, staff);
@@ -87,7 +87,7 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
                     <Status value={c.default} />
                   </div>
                   {c.default === 'yes' && (
-                    <p className="mt-1 text-[11.5px] text-slate-500 tabular-nums">
+                    <p className="mt-1 text-[11px] text-slate-500 tabular-nums">
                       {counts.byTiming
                         ? WORK_FLEX_TIMINGS.map((t) => `${t.tag} ${counts.byTiming![t.key]}`).join(' · ') + ` · ${counts.notAllowed} not allowed`
                         : `${counts.allowed} allowed · ${counts.notAllowed} not allowed`}
@@ -100,7 +100,7 @@ export const WorkFlexReviewSheet: React.FC<Props> = ({ isOpen, prefs, staff, onC
         </section>
 
         {unanswered > 0 && (
-          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] text-amber-800">
+          <p className="flex gap-2 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-amber-100 text-[11px] text-amber-700">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
             {unanswered} {unanswered === 1 ? 'item is' : 'items are'} not answered and will stay unchanged.
           </p>

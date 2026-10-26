@@ -17,11 +17,9 @@ export const useTimesheetNotice = () => {
     <div className="absolute top-3 inset-x-4 z-30 pointer-events-none">
       <div
         role="status"
-        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[12px] font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 duration-200 ${
-          notice.error ? 'bg-[#FEF2F2] border-[#FECACA] text-rose-600' : 'bg-[#E8F8F0] border-[#A7F3D0] text-emerald-700'
-        }`}
+        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[#1E293B] text-white text-xs font-semibold shadow-[0_16px_40px_-12px_rgba(15,23,42,0.28)] animate-in fade-in slide-in-from-top-1 duration-200"
       >
-        {notice.error ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+        {notice.error ? <AlertCircle className="w-4 h-4 shrink-0 text-[#EF4444]" /> : <CheckCircle2 className="w-4 h-4 shrink-0 text-[#10B981]" />}
         <span className="flex-1 min-w-0 break-words">{notice.text}</span>
       </div>
     </div>
@@ -70,7 +68,7 @@ export const TimesheetExportSheet: React.FC<{
       <SheetHeader title="Export Timesheets" subtitle={`${rangeLabel} · ${staffCount} staff`} onClose={onClose} />
       <div className="px-5 py-4 pb-7 space-y-2.5">
         {empty && (
-          <p className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] font-medium text-amber-800">
+          <p className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-700">
             <AlertCircle className="w-4 h-4 shrink-0" />
             No timesheets found to export for this period.
           </p>
@@ -86,20 +84,20 @@ export const TimesheetExportSheet: React.FC<{
                 setBusy(type);
                 setTimeout(() => onExport(type), 650);
               }}
-              className="w-full p-3.5 rounded-2xl border border-slate-200 bg-white flex items-center gap-3 text-left active:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="w-full p-3.5 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs flex items-center gap-3 text-left active:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              <span className="w-11 h-11 rounded-xl bg-[#E8F8F0] text-[#10B981] flex items-center justify-center shrink-0">
+              <span className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
                 <Icon className="w-5 h-5" />
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[13px] font-bold text-[#1E293B]">{title}</span>
                 <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">{hint}</span>
-                <span className="block mt-1 text-[10.5px] font-semibold text-slate-400 tabular-nums">CSV · {count}</span>
+                <span className="block mt-1 text-[10px] font-semibold text-slate-400 tabular-nums">CSV · {count}</span>
               </span>
               {loading ? (
                 <Loader2 className="w-4.5 h-4.5 text-[#2F68FE] animate-spin shrink-0" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0" />
               )}
             </button>
           );

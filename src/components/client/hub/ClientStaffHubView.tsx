@@ -48,11 +48,14 @@ interface Props {
   /** Staff Requirements: an open one for the profile skips "Add Staff Requirement"; the sheet adds rows there */
   requirements: StaffRequirement[];
   onCreateRequirements: (created: StaffRequirement[]) => void;
-  /** Opens Hire New Staff › Shortlisted Candidates (needs access to that module) */
+  /** Opens Hire New Staff â€º Shortlisted Candidates (needs access to that module) */
   onOpenShortlisted?: () => void;
   onContactManager: () => void;
   /** Staff Requirement "Available Resumes" opens the list filtered to that profile (desktop `selected_profile_id`) */
   initialProfile?: string | null;
+  /** Dashboard › Previously Saved Profiles opens the Saved Resumes tab, optionally straight on one resume (its Back returns to the Dashboard) */
+  initialTab?: Tab;
+  initialResumeId?: string | null;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -78,9 +81,9 @@ const sortedUnique = (values: string[]) => [...new Set(values)].sort();
 const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
 /**
- * Hire New Staff › Available Staff Hub (desktop `staffingMarketplace`): Available Resumes and Saved Resumes tabs, search +
+ * Hire New Staff â€º Available Staff Hub (desktop `staffingMarketplace`): Available Resumes and Saved Resumes tabs, search +
  * filters, resume cards (profile, level, experience, joining, location, skills, rate), View Resume, Save / Remove from Saved
- * Resumes and Shortlist Candidate (add requirement when none exists → schedule the Zoom interview or shortlist for later).
+ * Resumes and Shortlist Candidate (add requirement when none exists â†’ schedule the Zoom interview or shortlist for later).
  */
 export const ClientStaffHubView: React.FC<Props> = ({
   profiles,
@@ -94,6 +97,8 @@ export const ClientStaffHubView: React.FC<Props> = ({
   onOpenShortlisted,
   onContactManager,
   initialProfile,
+  initialTab = 'available',
+  initialResumeId,
   onBack,
 }) => {
   // view = View Resume; add = Shortlist Candidate and Save / Remove from Saved Resumes; download = psychometric test, certificates, reports
@@ -101,14 +106,15 @@ export const ClientStaffHubView: React.FC<Props> = ({
 
   const [version, setVersion] = useState<DesignVersion>('V1');
   const v2 = version === 'V2';
-  const [tab, setTab] = useState<Tab>('available');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [tabState, setTabState] = useState<Record<Tab, TabState>>(() => ({
     available: initialProfile ? { ...INITIAL_TAB, filters: { ...EMPTY_HUB_FILTERS, profiles: [initialProfile] } } : INITIAL_TAB,
     saved: INITIAL_TAB,
   }));
   const [loading, setLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
-  const [resumeId, setResumeId] = useState<string | null>(null);
+  const [entryResumeId] = useState(canView ? (initialResumeId ?? null) : null);
+  const [resumeId, setResumeId] = useState<string | null>(entryResumeId);
   // Card whose skills sheet ("Show More") is open, and the card whose price info is open
   const [skillsId, setSkillsId] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
@@ -193,7 +199,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
     if (!canAdd) return;
     setShortlistId(p.id);
     setRequirement(null);
-    // Desktop: an open requirement for the profile → straight to the scheduler, otherwise "Add Staff Requirement"
+    // Desktop: an open requirement for the profile â†’ straight to the scheduler, otherwise "Add Staff Requirement"
     setSheet(hasOpenRequirementFor(requirements, p.profile) || hasRequirementFor(candidates, p.profile) ? 'schedule' : 'requirement');
   };
 
@@ -253,16 +259,15 @@ export const ClientStaffHubView: React.FC<Props> = ({
       if (canView) setResumeId(p.id);
     };
     const facts = [
-      ...(experience ? [{ icon: Briefcase, tint: 'text-[#4F46E5]', label: 'Total Experience', value: experience, tone: 'text-[#0F172A]' }] : []),
-      { icon: CalendarClock, tint: 'text-[#10B981]', label: 'Joining', value: joiningLabel(p.noticeDays), tone: p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#0F172A]' },
-      { icon: MapPin, tint: 'text-[#D97706]', label: 'Location', value: p.location, tone: 'text-[#0F172A]' },
+      ...(experience ? [{ icon: Briefcase, label: 'Total Experience', value: experience, tone: 'text-[#1E293B]' }] : []),
+      { icon: CalendarClock, label: 'Joining', value: joiningLabel(p.noticeDays), tone: p.noticeDays === 0 ? 'text-[#10B981]' : 'text-[#1E293B]' },
+      { icon: MapPin, label: 'Location', value: p.location, tone: 'text-[#1E293B]' },
     ];
 
     return (
       <li key={p.id}>
         <Card className="overflow-hidden">
           <div className="relative">
-            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-16 bg-linear-to-b from-[#F1F5FF] to-transparent pointer-events-none" />
             <div
               role={canView ? 'button' : undefined}
               tabIndex={canView ? 0 : undefined}
@@ -274,38 +279,36 @@ export const ClientStaffHubView: React.FC<Props> = ({
                 }
               }}
               aria-label={canView ? `${p.profile} (${p.resumeId}). View resume` : undefined}
-              className={`relative p-4 pb-3.5 ${canView ? 'active:bg-slate-50/70 cursor-pointer' : ''} transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`}
+              className={`relative p-4 pb-3.5 ${canView ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`}
             >
               <div className={`flex items-center gap-3 ${canAdd ? 'pr-11' : ''}`}>
-                <span className="w-12 h-12 rounded-2xl bg-white ring-1 ring-[#E2E8F0] shadow-[0_4px_10px_-6px_rgba(15,23,42,0.25)] flex items-center justify-center shrink-0">
-                  <DomainTile domain={p.domain} />
-                </span>
+                <DomainTile domain={p.domain} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate">{p.domain}</p>
-                  <h3 className="mt-0.5 text-[15px] font-extrabold text-[#0F172A] leading-snug">{p.profile}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 truncate">{p.domain}</p>
+                  <h3 className="mt-0.5 text-sm font-bold text-[#1E293B] leading-snug">{p.profile}</h3>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10.5px] font-bold text-slate-500 tabular-nums">({p.resumeId})</span>
-                    <Pill tone="indigo">{r.level}</Pill>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 tabular-nums">({p.resumeId})</span>
+                    <Pill tone="blue">{r.level}</Pill>
                   </div>
                 </div>
               </div>
 
-              <dl className={`mt-4 grid ${facts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+              <dl className={`mt-3.5 grid ${facts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                 {facts.map((f) => {
                   const FIcon = f.icon;
                   return (
-                    <div key={f.label} className="min-w-0 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7] px-2.5 py-2">
-                      <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 leading-tight">
-                        <FIcon className={`w-3 h-3 shrink-0 ${f.tint}`} aria-hidden="true" />
+                    <div key={f.label} className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-2.5 py-2">
+                      <dt className="flex items-center gap-1 text-[10px] font-medium text-slate-400 leading-tight">
+                        <FIcon className="w-3 h-3 shrink-0 text-slate-400" aria-hidden="true" />
                         <span className="truncate">{f.label}</span>
                       </dt>
-                      <dd className={`mt-1 text-[12px] font-bold leading-snug truncate ${f.tone}`}>{f.value}</dd>
+                      <dd className={`mt-1 text-xs font-semibold leading-snug truncate tabular-nums ${f.tone}`}>{f.value}</dd>
                     </div>
                   );
                 })}
               </dl>
 
-              {r.summary && <p className="mt-3.5 text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
+              {r.summary && <p className="mt-3 text-xs text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
             </div>
 
             {canAdd && (
@@ -314,36 +317,34 @@ export const ClientStaffHubView: React.FC<Props> = ({
                 onClick={() => toggleSave(p)}
                 aria-pressed={saved}
                 aria-label={saved ? `Remove ${p.resumeId} from Saved Resumes` : `Save resume ${p.resumeId}`}
-                className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-                  saved
-                    ? 'text-white bg-[#2F68FE] shadow-[0_6px_14px_-6px_rgba(47,104,254,0.8)]'
-                    : 'text-slate-400 bg-white ring-1 ring-[#E2E8F0] active:bg-slate-50 active:scale-95'
+                className={`absolute top-3 right-3 w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                  saved ? 'text-white bg-[#2F68FE] border-[#2F68FE] active:bg-[#1D4ED8]' : 'text-slate-400 bg-white border-slate-200 active:bg-slate-100'
                 }`}
               >
-                {saved ? <BookmarkCheck className="w-[18px] h-[18px]" /> : <Bookmark className="w-[18px] h-[18px]" />}
+                {saved ? <BookmarkCheck className="w-4.5 h-4.5" /> : <Bookmark className="w-4.5 h-4.5" />}
               </button>
             )}
           </div>
 
           {skills.length > 0 && (
             <div className="px-4 pb-4">
-              <h4 className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Skills</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Skills</h4>
               <div className="mt-2">
                 <SkillLine skills={skills} onMore={() => setSkillsId(p.id)} />
               </div>
             </div>
           )}
 
-          <div className="px-4 py-3 border-t border-[#EEF2F7] bg-linear-to-r from-[#FAFBFF] to-[#F5F8FF]">
+          <div className="px-4 py-3 border-t border-slate-100">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0 flex items-center gap-0.5">
-                <p className="text-[17px] font-extrabold text-[#0F172A] tabular-nums tracking-tight">{rateLabel(p)}</p>
+                <p className="text-base font-extrabold text-[#1E293B] tabular-nums">{rateLabel(p)}</p>
                 <button
                   type="button"
                   onClick={() => setInfoId(p.id)}
                   aria-haspopup="dialog"
                   aria-label={CLIENT_IS_MOS ? 'About talent cost' : 'About hourly charges'}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${infoOpen ? 'text-[#2F68FE] bg-[#E0EAFF]' : 'text-slate-400 active:bg-slate-100'}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${infoOpen ? 'text-[#2F68FE] bg-blue-50' : 'text-slate-400 active:bg-slate-100'}`}
                 >
                   <Info className="w-4 h-4" />
                 </button>
@@ -353,7 +354,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   type="button"
                   onClick={open}
                   aria-label={`View resume ${p.resumeId}`}
-                  className="h-10 pl-4 pr-3 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1 shadow-[0_8px_16px_-8px_rgba(47,104,254,0.8)] active:bg-[#1D4ED8] active:scale-[0.98] transition-transform cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                  className="h-9 pl-3.5 pr-2.5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   View Resume <ChevronRight className="w-4 h-4" />
                 </button>
@@ -377,15 +378,9 @@ export const ClientStaffHubView: React.FC<Props> = ({
       if (canView) setResumeId(p.id);
     };
     const facts = [
-      ...(experience ? [{ icon: Briefcase, tint: 'bg-[#EEF2FF] text-[#4F46E5]', label: 'Total Experience', value: experience, tone: 'text-[#1E293B]' }] : []),
-      {
-        icon: CalendarClock,
-        tint: 'bg-[#E8F8F0] text-[#10B981]',
-        label: 'Joining',
-        value: joiningLabel(p.noticeDays),
-        tone: p.noticeDays === 0 ? 'text-[#16A34A]' : 'text-[#1E293B]',
-      },
-      { icon: MapPin, tint: 'bg-[#FEF8E7] text-[#D97706]', label: 'Location', value: p.location, tone: 'text-[#1E293B]' },
+      ...(experience ? [{ icon: Briefcase, label: 'Total Experience', value: experience, tone: 'text-[#1E293B]' }] : []),
+      { icon: CalendarClock, label: 'Joining', value: joiningLabel(p.noticeDays), tone: p.noticeDays === 0 ? 'text-[#10B981]' : 'text-[#1E293B]' },
+      { icon: MapPin, label: 'Location', value: p.location, tone: 'text-[#1E293B]' },
     ];
 
     return (
@@ -406,40 +401,36 @@ export const ClientStaffHubView: React.FC<Props> = ({
               className={`p-4 pb-3.5 ${canView ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}
             >
               <div className={`flex items-start gap-3 ${canAdd ? 'pr-10' : ''}`}>
-                <span className="w-11 h-11 rounded-xl bg-[#F8FAFC] border border-[#EBF0F7] flex items-center justify-center shrink-0">
-                  <DomainTile domain={p.domain} />
-                </span>
+                <DomainTile domain={p.domain} />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-[15px] font-bold text-[#1E293B] leading-snug">{p.profile}</h3>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-slate-500 min-w-0">
+                  <h3 className="text-sm font-bold text-[#1E293B] leading-snug">{p.profile}</h3>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
                     <span className="shrink-0 tabular-nums font-semibold text-slate-400">({p.resumeId})</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
                     <span className="truncate">{p.domain}</span>
                   </p>
                   <span className="mt-2 inline-flex">
-                    <Pill tone="indigo">{r.level}</Pill>
+                    <Pill tone="blue">{r.level}</Pill>
                   </span>
                 </div>
               </div>
 
-              <dl className="mt-3.5 rounded-xl border border-[#EBF0F7] divide-y divide-[#EBF0F7]">
+              <dl className="mt-3.5 rounded-xl border border-slate-100 divide-y divide-slate-100">
                 {facts.map((f) => {
                   const FIcon = f.icon;
                   return (
                     <div key={f.label} className="flex items-center gap-2.5 px-3 py-2">
-                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${f.tint}`} aria-hidden="true">
+                      <span className="w-7 h-7 rounded-lg bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
                         <FIcon className="w-3.5 h-3.5" />
                       </span>
-                      <dt className="flex-1 min-w-0 text-[11.5px] font-medium text-slate-500">{f.label}</dt>
-                      <dd className={`max-w-[55%] text-right text-[12px] font-bold leading-snug truncate ${f.tone}`}>{f.value}</dd>
+                      <dt className="flex-1 min-w-0 text-[11px] font-medium text-slate-500">{f.label}</dt>
+                      <dd className={`max-w-[55%] text-right text-xs font-semibold leading-snug truncate tabular-nums ${f.tone}`}>{f.value}</dd>
                     </div>
                   );
                 })}
               </dl>
 
-              {r.summary && (
-                <p className="mt-3 pl-3 border-l-2 border-[#BFDBFE] text-[12px] text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>
-              )}
+              {r.summary && <p className="mt-3 pl-3 border-l-2 border-blue-100 text-xs text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>}
             </div>
 
             {canAdd && (
@@ -449,10 +440,10 @@ export const ClientStaffHubView: React.FC<Props> = ({
                 aria-pressed={saved}
                 aria-label={saved ? `Remove ${p.resumeId} from Saved Resumes` : `Save resume ${p.resumeId}`}
                 className={`absolute top-3 right-3 w-9 h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
-                  saved ? 'text-white bg-[#2F68FE] border-[#2F68FE]' : 'text-slate-400 bg-white border-[#DCE3ED] active:bg-slate-50'
+                  saved ? 'text-white bg-[#2F68FE] border-[#2F68FE] active:bg-[#1D4ED8]' : 'text-slate-400 bg-white border-slate-200 active:bg-slate-100'
                 }`}
               >
-                {saved ? <BookmarkCheck className="w-[18px] h-[18px]" /> : <Bookmark className="w-[18px] h-[18px]" />}
+                {saved ? <BookmarkCheck className="w-4.5 h-4.5" /> : <Bookmark className="w-4.5 h-4.5" />}
               </button>
             )}
           </div>
@@ -466,16 +457,16 @@ export const ClientStaffHubView: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="px-4 py-3 border-t border-dashed border-slate-200">
+          <div className="px-4 py-3 border-t border-slate-100">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0 flex items-center gap-1">
-                <p className="text-[17px] font-extrabold text-[#2F68FE] tabular-nums">{rateLabel(p)}</p>
+                <p className="text-base font-extrabold text-[#2F68FE] tabular-nums">{rateLabel(p)}</p>
                 <button
                   type="button"
                   onClick={() => setInfoId(p.id)}
                   aria-haspopup="dialog"
                   aria-label={CLIENT_IS_MOS ? 'About talent cost' : 'About hourly charges'}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${infoOpen ? 'text-[#2F68FE] bg-[#EFF6FF]' : 'text-slate-400 active:bg-slate-100'}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${infoOpen ? 'text-[#2F68FE] bg-blue-50' : 'text-slate-400 active:bg-slate-100'}`}
                 >
                   <Info className="w-4 h-4" />
                 </button>
@@ -485,7 +476,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   type="button"
                   onClick={open}
                   aria-label={`View resume ${p.resumeId}`}
-                  className="h-10 pl-4 pr-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center gap-1 active:bg-blue-100 cursor-pointer"
+                  className="h-9 pl-3.5 pr-2.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1 active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   View Resume <ChevronRight className="w-4 h-4" />
                 </button>
@@ -528,12 +519,12 @@ export const ClientStaffHubView: React.FC<Props> = ({
         <div
           className={
             v2
-              ? 'sticky top-0 z-10 bg-white border-b border-[#EBF0F7] shadow-[0_4px_12px_-8px_rgba(15,23,42,0.15)] px-4 pb-3'
-              : 'sticky top-0 z-10 bg-[#F8FAFC]/95 backdrop-blur-sm px-4 pt-3 pb-3 border-b border-[#EEF2F7]'
+              ? 'sticky top-0 z-10 bg-white border-b border-[#EBF0F7] px-4 pb-3'
+              : 'sticky top-0 z-10 bg-[#F8FAFC]/95 backdrop-blur-sm px-4 pt-3.5 pb-3 border-b border-[#EBF0F7]'
           }
         >
           {v2 ? (
-            <div className="-mx-4 mt-2 px-2 flex gap-1 overflow-x-auto no-scrollbar border-b border-slate-200/80" role="tablist" aria-label="Resume lists">
+            <div className="-mx-4 px-2 flex gap-1 overflow-x-auto no-scrollbar border-b border-[#EBF0F7]" role="tablist" aria-label="Resume lists">
               {(['available', 'saved'] as const).map((t) => {
                 const on = tab === t;
                 const TabIcon = t === 'available' ? Store : Bookmark;
@@ -596,7 +587,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
             <div className="mt-2.5 flex items-center gap-2">
               <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
                 {filterChips.map((c) => (
-                  <span key={c.key} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1">
+                  <span key={c.key} className="shrink-0 h-7 pl-2.5 pr-1 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1">
                     {c.label}
                     <button
                       type="button"
@@ -616,7 +607,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-3.5">
           {loading ? (
             <HubListSkeleton />
           ) : source.length === 0 ? (
@@ -629,7 +620,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={onContactManager}
-                    className="mt-4 h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 active:bg-[#E0E7FF] cursor-pointer"
+                    className="mt-4 h-10 px-4 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
                   >
                     <Headset className="w-4 h-4" />
                     Contact Account Manager
@@ -645,7 +636,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => switchTab('available')}
-                    className="mt-4 h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+                    className="mt-4 h-10 px-4 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
                   >
                     Browse Available Resumes
                   </button>
@@ -662,7 +653,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="mt-4 h-10 px-4 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+                    className="mt-4 h-10 px-4 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -673,9 +664,9 @@ export const ClientStaffHubView: React.FC<Props> = ({
             <>
               {v2 && (
                 <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold text-slate-500 tabular-nums" aria-live="polite">
-                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                  <span className="h-px flex-1 bg-slate-200" />
                   Showing {visible.length} Of {results.length} Records
-                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                  <span className="h-px flex-1 bg-slate-200" />
                 </p>
               )}
               <ul className="space-y-3">{visible.map(v2 ? cardV2 : card)}</ul>
@@ -692,11 +683,11 @@ export const ClientStaffHubView: React.FC<Props> = ({
                     }, LOAD_MS);
                   }}
                   className={`mt-3 w-full h-11 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'rounded-xl border border-slate-200 bg-white active:bg-slate-50' : 'rounded-2xl border border-dashed border-[#BFDBFE] bg-[#F5F8FF] active:bg-[#EFF6FF]'
+                    'rounded-xl border border-slate-200 bg-white shadow-2xs active:bg-slate-50'
                   }`}
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
+                  {moreLoading ? 'Loadingâ€¦' : `Load More (${results.length - visible.length})`}
                 </button>
               )}
               {visible.length >= results.length && (
@@ -712,12 +703,12 @@ export const ClientStaffHubView: React.FC<Props> = ({
       {resumeProfile && (
         <ResumeView
           profile={resumeProfile}
-          fromLabel={TAB_LABEL[tab]}
+          fromLabel={resumeId === entryResumeId && onBack ? 'Dashboard' : TAB_LABEL[tab]}
           shortlisted={shortlistedResumeIds.has(resumeProfile.resumeId)}
           saved={savedIds.includes(resumeProfile.id)}
           canAdd={canAdd}
           canDownload={canDownload}
-          onBack={() => setResumeId(null)}
+          onBack={() => (resumeId === entryResumeId && onBack ? onBack() : setResumeId(null))}
           onToggleSave={() => toggleSave(resumeProfile)}
           onShortlist={() => startShortlist(resumeProfile)}
           onOpenShortlisted={onOpenShortlisted}
@@ -745,7 +736,7 @@ export const ClientStaffHubView: React.FC<Props> = ({
         <div className="flex-1 min-h-0 px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
           <ul className="flex flex-wrap gap-2" aria-label="Skills">
             {sheetSkills.map((s) => (
-              <li key={s} className="px-3 py-1.5 rounded-full bg-white ring-1 ring-inset ring-[#E2E8F0] text-[12px] font-semibold text-slate-600 leading-snug">
+              <li key={s} className="px-3 py-1.5 rounded-full bg-white ring-1 ring-inset ring-slate-200 text-xs font-semibold text-slate-600 leading-snug">
                 {s}
               </li>
             ))}
@@ -756,30 +747,30 @@ export const ClientStaffHubView: React.FC<Props> = ({
       <BottomSheet isOpen={infoProfile !== null} onClose={() => setInfoId(null)} maxHeight="max-h-[60%]">
         <SheetHeader title={CLIENT_IS_MOS ? 'Talent Cost' : 'Hourly Charges'} onClose={() => setInfoId(null)} />
         <div className="px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
-          <div className="flex gap-3 p-3.5 rounded-2xl bg-[#F5F8FF] ring-1 ring-inset ring-[#DBEAFE]">
-            <span className="w-9 h-9 rounded-xl bg-white ring-1 ring-[#DBEAFE] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-              <Info className="w-[18px] h-[18px]" />
+          <div className="flex gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+            <span className="w-9 h-9 rounded-xl bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
+              <Info className="w-4.5 h-4.5" />
             </span>
-            <p className="text-[12.5px] text-slate-600 leading-relaxed">
+            <p className="text-xs text-[#2F68FE] leading-relaxed">
               Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.
             </p>
           </div>
           {infoCost && (
             <dl className="mt-3 grid grid-cols-2 gap-2">
-              <div className="px-3 py-2.5 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7]">
-                <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Fixed</dt>
-                <dd className="mt-0.5 text-[13px] font-bold text-[#0F172A] tabular-nums">USD {infoCost.fixed}</dd>
+              <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Fixed</dt>
+                <dd className="mt-0.5 text-[13px] font-bold text-[#1E293B] tabular-nums">USD {infoCost.fixed}</dd>
               </div>
-              <div className="px-3 py-2.5 rounded-xl bg-[#F8FAFC] ring-1 ring-inset ring-[#EEF2F7]">
-                <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Variable</dt>
-                <dd className="mt-0.5 text-[13px] font-bold text-[#0F172A] tabular-nums">USD {infoCost.variable}</dd>
+              <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Variable</dt>
+                <dd className="mt-0.5 text-[13px] font-bold text-[#1E293B] tabular-nums">USD {infoCost.variable}</dd>
               </div>
             </dl>
           )}
           <button
             type="button"
             onClick={() => setInfoId(null)}
-            className="mt-4 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-[13px] font-bold active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+            className="mt-4 w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
           >
             Got it
           </button>

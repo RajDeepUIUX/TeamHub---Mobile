@@ -1,5 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, BadgeCheck, Building2, Camera, Check, ChevronRight, Clock, KeyRound, Pencil, ShieldCheck, UserPen, UserRound } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  BookOpen,
+  Building2,
+  Camera,
+  Check,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  Info,
+  KeyRound,
+  MapPin,
+  MapPinned,
+  Pencil,
+  ShieldCheck,
+  UserPen,
+  UserRound,
+} from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { ProfileAvatar } from '../../profile/ProfileAvatar';
@@ -56,6 +74,12 @@ const TABS: { id: ProfileTab; label: string; text: string }[] = [
   { id: 'qualifications', label: 'Qualification Details', text: 'Enter your qualification details to ensure accurate Compliance tracking.' },
   { id: 'learning', label: 'Learning Preference', text: 'Select your preferred topic areas to personalize your learning for compliance goals.' },
 ];
+
+const TAB_ICONS: Record<ProfileTab, React.ElementType> = {
+  basic: UserRound,
+  qualifications: GraduationCap,
+  learning: BookOpen,
+};
 
 type FieldKey =
   | 'mobile'
@@ -260,28 +284,57 @@ export const ClientUserProfileView: React.FC<{
       {notice && <div className="absolute top-3 inset-x-4 z-30 pointer-events-none">{notice}</div>}
       {photoError && (
         <div className="absolute top-3 inset-x-4 z-30" role="alert">
-          <p className="px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-rose-200 text-[12px] font-semibold text-rose-600 animate-in fade-in slide-in-from-top-1 duration-200">
+          <p className="px-3 py-2.5 rounded-xl bg-[#FEF2F2] border border-rose-200 text-xs font-semibold text-rose-600 animate-in fade-in slide-in-from-top-1 duration-200">
             {photoError}
           </p>
         </div>
       )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {editing ? (
-          <div className="px-4 pt-4">
-            <h1 className="text-xl font-extrabold leading-tight">Edit Basic Details</h1>
-            <p className="mt-1 text-[11.5px] text-slate-500">Fields marked * are required. Locked fields are managed by MyCPE ONE.</p>
-          </div>
-        ) : (
+        {!editing && (
           <>
-            <div className="px-4 pt-4">
-              <h2 className="text-xl font-extrabold leading-tight">{activeTab.label}</h2>
-              <p className="mt-1 text-[11.5px] text-slate-500 leading-relaxed">{activeTab.text}</p>
-              <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+            {/* Identity card (as on Manager My Profile) on the Sign In button gradient: avatar, name, email, role, over the account actions */}
+            <section className="relative isolate m-4 mb-3 bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] rounded-3xl overflow-hidden text-white shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)]">
+              <span aria-hidden="true" className="absolute -z-10 -top-14 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
+              <span aria-hidden="true" className="absolute -z-10 -bottom-16 -left-10 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+              <div className="p-4 flex items-center gap-3.5">
+                <div className="relative shrink-0">
+                  <span className="block w-16 h-16 rounded-2xl bg-linear-to-br from-amber-200 via-rose-200 to-violet-300 p-0.5">
+                    <ProfileAvatar name={fullName} photoUrl={photoUrl} className="w-full h-full rounded-[14px]" textClassName="text-lg" />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoSheet(true)}
+                    className="absolute -right-3 -bottom-3 w-11 h-11 flex items-center justify-center cursor-pointer group"
+                    aria-label={photoUrl ? 'Change profile photo' : 'Add profile photo'}
+                  >
+                    <span className="w-7 h-7 rounded-full bg-white border-2 border-white text-[#5B7BFA] flex items-center justify-center shadow-xs group-active:bg-blue-50">
+                      <Camera className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-[17px] font-extrabold text-white leading-tight truncate">{fullName}</h2>
+                  <p className="mt-1 text-[12px] font-medium text-white/80 leading-snug truncate">{profile.email}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/15 border border-white/20 text-[11px] font-bold text-white whitespace-nowrap">
+                      <ShieldCheck className="w-3 h-3" />
+                      {role.name}
+                    </span>
+                    {profile.designation && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/15 border border-white/20 text-[11px] font-bold text-white whitespace-nowrap">
+                        {profile.designation}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 p-3 border-t border-white/15">
                 <button
                   type="button"
                   onClick={() => setPasswordSheet(true)}
-                  className="h-11 rounded-xl bg-white border border-[#4F46E5] text-[#4F46E5] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#EEF2FF] cursor-pointer"
+                  className="h-11 rounded-xl bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.5)] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   <KeyRound className="w-4 h-4" />
                   Change Password
@@ -289,18 +342,19 @@ export const ClientUserProfileView: React.FC<{
                 <button
                   type="button"
                   onClick={() => showNotice('Opening your Learning Profile on MyCPE ONE…')}
-                  className="h-11 rounded-xl bg-[#4F46E5] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#4338CA] cursor-pointer"
+                  className="h-11 rounded-xl bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.5)] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   Learning Profile
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </section>
 
-            {/* Desktop underline tabs */}
-            <nav className="sticky top-0 z-20 mt-3 bg-[#F8FAFC]/95 backdrop-blur-md border-b border-slate-200" aria-label="Profile sections">
-              <div className="flex overflow-x-auto no-scrollbar px-2" role="tablist">
+            {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
+            <nav className="sticky top-0 z-20 bg-[#F8FAFC]/95 backdrop-blur-md border-b border-slate-200/80" aria-label="Profile sections">
+              <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
                 {TABS.map((t) => {
+                  const Icon = TAB_ICONS[t.id];
                   const on = t.id === tab;
                   return (
                     <button
@@ -309,11 +363,17 @@ export const ClientUserProfileView: React.FC<{
                       role="tab"
                       aria-selected={on}
                       onClick={() => pickTab(t.id)}
-                      className={`h-11 px-3 -mb-px border-b-2 text-[12.5px] font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                        on ? 'border-[#4F46E5] text-[#4F46E5]' : 'border-transparent text-slate-500 active:text-slate-700'
+                      className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                        on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                       }`}
                     >
+                      <Icon className="w-4 h-4" />
                       {t.label}
+                      <span
+                        className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${
+                          on ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
                     </button>
                   );
                 })}
@@ -325,7 +385,16 @@ export const ClientUserProfileView: React.FC<{
         {loading ? (
           <ProfileSkeleton />
         ) : (
-          <div key={editing ? 'edit' : tab} className="px-4 mt-4 space-y-3 animate-in fade-in duration-200" role={editing ? undefined : 'tabpanel'} aria-label={editing ? undefined : activeTab.label}>
+          <div key={editing ? 'edit' : tab} className="px-4 mt-3 space-y-3 animate-in fade-in duration-200" role={editing ? undefined : 'tabpanel'} aria-label={editing ? undefined : activeTab.label}>
+            {editing && (
+              <div className="pt-1">
+                <h1 className="text-base font-bold leading-tight">Edit Basic Details</h1>
+                <p className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 text-[11px] text-slate-500">
+                  <Info className="w-3.5 h-3.5 shrink-0" />
+                  Fields marked * are required. Locked fields are managed by MyCPE ONE.
+                </p>
+              </div>
+            )}
             {editing ? (
               <>
                 <BandSectionCard title="Personal Information">
@@ -334,7 +403,7 @@ export const ClientUserProfileView: React.FC<{
                       <LockedField label="First Name" value={profile.firstName} />
                       <LockedField label="Last Name" value={profile.lastName} />
                     </div>
-                    <p className="-mt-2 px-0.5 text-[10.5px] text-slate-400 leading-relaxed">
+                    <p className="-mt-2 px-0.5 text-[11px] text-slate-400 leading-relaxed">
                       {pendingName ? 'Your name change request is being reviewed.' : 'To change your name, use Request Name Change on your profile.'}
                     </p>
                     <LockedField label="Email" value={profile.email} note="Your sign-in email for the Client Hub and MyCPE ONE." />
@@ -505,7 +574,7 @@ export const ClientUserProfileView: React.FC<{
                         onChange={(t) => set('timeZone', t)}
                       />
                       <ErrorText error={errors.timeZone} />
-                      <p className="px-0.5 text-[10.5px] text-slate-400">Used for meeting times, reminders and staff shift times.</p>
+                      <p className="px-0.5 text-[11px] text-slate-400">Used for meeting times, reminders and staff shift times.</p>
                     </div>
                   </div>
                 </BandSectionCard>
@@ -585,120 +654,85 @@ export const ClientUserProfileView: React.FC<{
               </>
             ) : tab === 'basic' ? (
               <>
-                <BandSectionCard
-                  title="Personal Information"
+                {/* Personal Information: section title on the canvas, its groups as separate cards below */}
+                <div className="min-h-8 px-0.5 flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-bold text-[#1E293B] leading-snug">Personal Information</h2>
+                  {pendingName ? (
+                    <Pill tone="amber">Pending Approval</Pill>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setNameSheet(true)}
+                      className="h-8 px-2.5 rounded-lg bg-white border border-[#2F68FE]/30 text-[#2F68FE] text-[11px] font-bold flex items-center gap-1 active:bg-blue-50 cursor-pointer shrink-0"
+                    >
+                      <UserPen className="w-3.5 h-3.5" />
+                      Request Name Change
+                    </button>
+                  )}
+                </div>
+
+                {pendingName && (
+                  <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200/70">
+                    <Clock className="w-4 h-4 mt-0.5 text-[#D97706] shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-amber-700">Name change requested</p>
+                      <p className="mt-0.5 text-[11px] text-amber-700 leading-relaxed">
+                        New name <span className="font-semibold">{pendingName.firstName} {pendingName.lastName}</span> · submitted{' '}
+                        {formatDate(pendingName.submittedAt.slice(0, 10))}. We'll update your profile once it's verified.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <FieldGroup icon={UserRound} title="Personal & Contact">
+                  <ValueGrid
+                    rows={[
+                      { label: 'First Name', value: profile.firstName, locked: true },
+                      { label: 'Last Name', value: profile.lastName, locked: true },
+                      { label: 'Email', value: profile.email, wide: true, locked: true },
+                      { label: 'Date of Birth', value: formatDate(profile.birthDate), onInfo: () => setInfo('birthDate') },
+                      { label: 'Mobile Number', value: profile.mobile, href: profile.mobile ? `tel:${profile.mobile.replace(/\D/g, '')}` : undefined },
+                      { label: 'Phone Number', value: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : undefined },
+                    ]}
+                  />
+                </FieldGroup>
+
+                <FieldGroup icon={Building2} title="Organization">
+                  <ValueGrid
+                    rows={[
+                      { label: 'Organization Name', value: companyName, wide: true, locked: true },
+                      { label: 'Organization Category', value: profile.organizationCategory, wide: true },
+                      { label: 'Designation', value: profile.designation },
+                      { label: 'Industry', value: profile.industries.join(', ') },
+                    ]}
+                  />
+                </FieldGroup>
+
+                <FieldGroup
+                  icon={BadgeCheck}
+                  title="Professional IDs"
+                  hint="Synced from your qualifications"
                   action={
-                    pendingName ? (
-                      <Pill tone="amber">Pending Approval</Pill>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setNameSheet(true)}
-                        className="h-8 -mr-1 px-2.5 rounded-lg bg-white border border-[#E0E7FF] text-[11px] font-bold text-[#4F46E5] flex items-center gap-1 active:bg-[#EEF2FF] cursor-pointer"
-                      >
-                        <UserPen className="w-3.5 h-3.5" />
-                        Request Name Change
-                      </button>
-                    )
+                    <button
+                      type="button"
+                      onClick={() => pickTab('qualifications')}
+                      className="h-8 -mr-1 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-blue-50 cursor-pointer shrink-0"
+                    >
+                      Manage
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   }
                 >
-                  <div className="-mx-4 -mt-4 px-4 pt-5 pb-4 bg-gradient-to-b from-[#F5F7FF] to-white flex flex-col items-center text-center">
-                    <div className="relative">
-                      <ProfileAvatar
-                        name={fullName}
-                        photoUrl={photoUrl}
-                        className="w-20 h-20 rounded-full ring-4 ring-white shadow-[0_4px_14px_-4px_rgba(79,70,229,0.35)]"
-                        textClassName="text-2xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setPhotoSheet(true)}
-                        className="absolute -right-3 -bottom-3 w-11 h-11 flex items-center justify-center cursor-pointer group"
-                        aria-label={photoUrl ? 'Change profile photo' : 'Add profile photo'}
-                      >
-                        <span className="w-8 h-8 rounded-full bg-[#4F46E5] border-2 border-white text-white flex items-center justify-center shadow-sm group-active:bg-[#4338CA]">
-                          <Camera className="w-3.5 h-3.5" />
-                        </span>
-                      </button>
-                    </div>
-                    <h2 className="mt-3 max-w-full text-[17px] font-extrabold text-[#1E293B] leading-tight truncate">{fullName}</h2>
-                    <p className="mt-1 max-w-full text-[12px] text-slate-500 truncate">{profile.email}</p>
-                    <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                      <Pill tone="indigo">
-                        <ShieldCheck className="w-3 h-3" />
-                        {role.name}
-                      </Pill>
-                      {profile.designation && <Pill tone="slate">{profile.designation}</Pill>}
-                    </div>
-                  </div>
+                  <ValueGrid
+                    rows={[
+                      { label: 'PTIN No.', value: ids.ptin ? `P${ids.ptin}` : '', locked: true, onInfo: () => setInfo('ptin') },
+                      { label: 'CTEC No.', value: ids.ctec ? `A${ids.ctec}` : '', locked: true, onInfo: () => setInfo('ctec') },
+                      { label: 'CFP Board No.', value: ids.cfp, locked: true, onInfo: () => setInfo('cfp') },
+                    ]}
+                  />
+                </FieldGroup>
 
-                  {pendingName && (
-                    <div className="mb-1 flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A]">
-                      <Clock className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[11.5px] font-bold text-amber-800">Name change requested</p>
-                        <p className="mt-0.5 text-[11.5px] text-amber-800/90 leading-relaxed">
-                          New name <span className="font-semibold">{pendingName.firstName} {pendingName.lastName}</span> · submitted{' '}
-                          {formatDate(pendingName.submittedAt.slice(0, 10))}. We'll update your profile once it's verified.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-3">
-                    <FieldGroup icon={UserRound} title="Personal & Contact">
-                      <ValueGrid
-                        rows={[
-                          { label: 'First Name', value: profile.firstName, locked: true },
-                          { label: 'Last Name', value: profile.lastName, locked: true },
-                          { label: 'Email', value: profile.email, wide: true, locked: true },
-                          { label: 'Date of Birth', value: formatDate(profile.birthDate), onInfo: () => setInfo('birthDate') },
-                          { label: 'Mobile Number', value: profile.mobile, href: profile.mobile ? `tel:${profile.mobile.replace(/\D/g, '')}` : undefined },
-                          { label: 'Phone Number', value: profile.phone, href: profile.phone ? `tel:${profile.phone.replace(/\D/g, '')}` : undefined },
-                        ]}
-                      />
-                    </FieldGroup>
-
-                    <FieldGroup icon={Building2} title="Organization">
-                      <ValueGrid
-                        rows={[
-                          { label: 'Organization Name', value: companyName, wide: true, locked: true },
-                          { label: 'Organization Category', value: profile.organizationCategory, wide: true },
-                          { label: 'Designation', value: profile.designation },
-                          { label: 'Industry', value: profile.industries.join(', ') },
-                        ]}
-                      />
-                    </FieldGroup>
-
-                    <FieldGroup
-                      icon={BadgeCheck}
-                      title="Professional IDs"
-                      hint="Synced from your qualifications"
-                      action={
-                        <button
-                          type="button"
-                          onClick={() => pickTab('qualifications')}
-                          className="h-8 -mr-1 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] flex items-center gap-0.5 active:bg-[#EFF6FF] cursor-pointer shrink-0"
-                        >
-                          Manage
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      }
-                    >
-                      <div className="px-3 py-3 rounded-xl bg-slate-50 border border-slate-100">
-                        <ValueGrid
-                          rows={[
-                            { label: 'PTIN No.', value: ids.ptin ? `P${ids.ptin}` : '', locked: true, onInfo: () => setInfo('ptin') },
-                            { label: 'CTEC No.', value: ids.ctec ? `A${ids.ctec}` : '', locked: true, onInfo: () => setInfo('ctec') },
-                            { label: 'CFP Board No.', value: ids.cfp, locked: true, onInfo: () => setInfo('cfp') },
-                          ]}
-                        />
-                      </div>
-                    </FieldGroup>
-                  </div>
-                </BandSectionCard>
-
-                <BandSectionCard title="Address Information">
+                <FieldGroup icon={MapPin} title="Address Information">
                   <ValueGrid
                     rows={[
                       { label: 'Address', value: profile.address, wide: true },
@@ -709,9 +743,9 @@ export const ClientUserProfileView: React.FC<{
                       { label: 'Timezone', value: profile.timeZone ? timeZoneLabel(profile.timeZone) : '', wide: true },
                     ]}
                   />
-                </BandSectionCard>
+                </FieldGroup>
 
-                <BandSectionCard title="Address 2">
+                <FieldGroup icon={MapPinned} title="Address 2">
                   <ValueGrid
                     rows={[
                       { label: 'Address', value: profile.address2.address, wide: true },
@@ -721,7 +755,7 @@ export const ClientUserProfileView: React.FC<{
                       { label: 'Zip Code', value: profile.address2.zipCode },
                     ]}
                   />
-                </BandSectionCard>
+                </FieldGroup>
 
                 <p className="px-1 text-[11px] text-slate-400 leading-relaxed">
                   Need to change your email?{' '}

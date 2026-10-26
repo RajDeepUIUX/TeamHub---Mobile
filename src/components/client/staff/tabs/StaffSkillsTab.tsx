@@ -1,102 +1,158 @@
 import React from 'react';
-import { Award, Laptop, Sparkles } from 'lucide-react';
-import type { StaffSkills } from '../../data/clientStaffProfileData';
-import { Card, CardHeading, Pill } from './StaffTabParts';
+import { Award, BadgeCheck, CheckCircle2, Clock3, Laptop, Sparkles } from 'lucide-react';
+import type { StaffCertificate, StaffSkills } from '../../data/clientStaffProfileData';
+import { Card, Pill } from './StaffTabParts';
 
-const ChipList: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
-  <div>
-    <h4 className="text-sm font-bold text-[#1D4ED8]">{title}</h4>
-    {items.length === 0 ? (
-      <p className="mt-2 text-xs text-slate-400">No Skills Found</p>
-    ) : (
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        {items.map((s) => (
-          <span key={s} className="h-7 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[11.5px] font-semibold text-slate-600 inline-flex items-center">
-            {s}
-          </span>
-        ))}
-      </div>
-    )}
-  </div>
+const certTone = (c: StaffCertificate) => (c.status === 'Completed' ? 'green' : 'amber');
+
+/* ------------------------------------ V1 ----------------------------------- */
+
+/** V1 card title over a hairline (same as Job Details / Employee Document) */
+const TitleV1: React.FC<{ title: string }> = ({ title }) => (
+  <h4 className="mx-4 pt-4 pb-2.5 border-b border-slate-100 text-sm font-bold text-[#1E293B] leading-snug">{title}</h4>
 );
 
-/** V2: one card per skill group, tinted chips */
-const SkillCardV2: React.FC<{ title: string; icon: React.ElementType; items: string[]; chip: string }> = ({ title, icon, items, chip }) => (
-  <Card className="p-4">
-    <CardHeading icon={icon} title={title} trailing={<Pill tone="slate">{items.length}</Pill>} />
+/** V1 section: title, dotted chips below */
+const SkillSectionV1: React.FC<{ title: string; items: string[]; dot: string }> = ({ title, items, dot }) => (
+  <Card className="overflow-hidden">
+    <TitleV1 title={title} />
     {items.length === 0 ? (
-      <p className="mt-3 text-xs text-slate-400">No Skills Found</p>
+      <p className="px-4 py-3.5 text-xs text-slate-400">No Skills Found</p>
     ) : (
-      <div className="mt-3.5 flex flex-wrap gap-1.5">
+      <ul className="p-4 flex flex-wrap gap-2">
         {items.map((s) => (
-          <span key={s} className={`h-7 px-3 rounded-full text-[11.5px] font-semibold inline-flex items-center ${chip}`}>
+          <li key={s} className="h-8 pl-2.5 pr-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 inline-flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} aria-hidden="true" />
             {s}
-          </span>
+          </li>
         ))}
-      </div>
+      </ul>
     )}
   </Card>
 );
+
+/** V1 certificates: one card, hairline rows, type as a tag under the name */
+const CertificatesV1: React.FC<{ certificates: StaffCertificate[] }> = ({ certificates }) => (
+  <Card className="overflow-hidden">
+    <TitleV1 title="Academic Certifications" />
+    <ul className="divide-y divide-slate-100">
+      {certificates.map((c, i) => (
+        <li key={`${c.name}-${i}`} className="px-4 py-3 flex items-start gap-3">
+          <span className="mt-0.5 w-6 h-6 rounded-md bg-slate-100 text-[11px] font-bold text-slate-500 flex items-center justify-center shrink-0 tabular-nums">{i + 1}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-[#1E293B] leading-snug">{c.name}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="h-5 px-2 rounded-md bg-[#F8FAFC] border border-slate-200 text-[10px] font-semibold text-slate-500 inline-flex items-center">
+                Certification Type: {c.type}
+              </span>
+              <Pill tone={certTone(c)}>{c.status}</Pill>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </Card>
+);
+
+/* ------------------------------------ V2 ----------------------------------- */
+
+/** V2 count cell in the summary strip */
+const StatCell: React.FC<{ icon: React.ElementType; value: number; label: string; tint: string }> = ({ icon: Icon, value, label, tint }) => (
+  <div className="px-1.5 py-3 flex flex-col items-center text-center min-w-0">
+    <span className="flex items-center gap-1.5">
+      <span className={`w-6 h-6 rounded-md flex items-center justify-center ${tint}`} aria-hidden="true">
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      <span className="text-lg font-extrabold text-[#1E293B] leading-none tabular-nums">{value}</span>
+    </span>
+    <span className="mt-1.5 min-h-[26px] flex items-center text-[10px] font-semibold text-slate-500 leading-tight">{label}</span>
+  </div>
+);
+
+/** V2 card heading row: icon, title, hairline under */
+const SectionHeadV2: React.FC<{ icon: React.ElementType; title: string; iconCls: string }> = ({ icon: Icon, title, iconCls }) => (
+  <h4 className="pb-3 mb-3 border-b border-slate-100 flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
+    <Icon className={`w-4 h-4 shrink-0 ${iconCls}`} />
+    {title}
+  </h4>
+);
+
+/** V2 section: card with two-column skill tiles of equal height */
+const SkillGridV2: React.FC<{ title: string; icon: React.ElementType; items: string[]; iconCls: string }> = ({ title, icon, items, iconCls }) => (
+  <Card className="p-4">
+    <SectionHeadV2 icon={icon} title={title} iconCls={iconCls} />
+    {items.length === 0 ? (
+      <p className="text-xs text-slate-400">No Skills Found</p>
+    ) : (
+      <ul className="grid grid-cols-2 auto-rows-fr gap-2">
+        {items.map((s) => (
+          <li key={s} className="px-2.5 py-2 rounded-xl bg-[#F8FAFC] border border-slate-100 flex items-center gap-2 text-xs font-semibold text-[#1E293B] leading-snug">
+            <BadgeCheck className={`w-3.5 h-3.5 shrink-0 ${iconCls}`} />
+            <span className="min-w-0 break-words">{s}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </Card>
+);
+
+/** V2 certificate row: status icon, name, type + status */
+const CertificateRowV2: React.FC<{ cert: StaffCertificate }> = ({ cert: c }) => {
+  const done = c.status === 'Completed';
+  const StatusIcon = done ? CheckCircle2 : Clock3;
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${done ? 'bg-[#ECFDF5] text-[#10B981]' : 'bg-[#FFFBEB] text-[#F59E0B]'}`}
+        aria-hidden="true"
+      >
+        <StatusIcon className="w-4 h-4" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-[#1E293B] leading-snug">{c.name}</p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-slate-400 min-w-0 truncate">
+            Certification Type: <span className="font-semibold text-slate-600">{c.type}</span>
+          </p>
+          <Pill tone={certTone(c)}>{c.status}</Pill>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------------------- Tab ----------------------------------- */
 
 /** Desktop "Skills & Qualification" tab (skills_qualification.tpl) */
 export const StaffSkillsTab: React.FC<{ skills: StaffSkills; v2?: boolean }> = ({ skills, v2 }) =>
   v2 ? (
     <div className="mt-2.5 space-y-3">
-      <SkillCardV2 title="Technical Skills" icon={Sparkles} items={skills.technical} chip="bg-[#EFF6FF] text-[#1D4ED8]" />
-      <SkillCardV2 title="Software Skills" icon={Laptop} items={skills.software} chip="bg-[#EEF2FF] text-[#4F46E5]" />
+      <Card className="grid grid-cols-3 divide-x divide-slate-100">
+        <StatCell icon={Sparkles} value={skills.technical.length} label="Technical Skills" tint="bg-[#EFF6FF] text-[#2F68FE]" />
+        <StatCell icon={Laptop} value={skills.software.length} label="Software Skills" tint="bg-[#EEF2FF] text-[#4F46E5]" />
+        <StatCell icon={Award} value={skills.certificates.length} label="Academic Certifications" tint="bg-[#ECFDF5] text-[#10B981]" />
+      </Card>
+
+      <SkillGridV2 title="Technical Skills" icon={Sparkles} items={skills.technical} iconCls="text-[#2F68FE]" />
+      <SkillGridV2 title="Software Skills" icon={Laptop} items={skills.software} iconCls="text-[#4F46E5]" />
+
       {skills.certificates.length > 0 && (
         <Card className="p-4">
-          <CardHeading icon={Award} title="Academic Certifications" trailing={<Pill tone="slate">{skills.certificates.length}</Pill>} />
-          <ol className="mt-3.5 relative">
+          <SectionHeadV2 icon={Award} title="Academic Certifications" iconCls="text-[#10B981]" />
+          <ul className="divide-y divide-slate-100">
             {skills.certificates.map((c, i) => (
-              <li key={`${c.name}-${i}`} className="relative pl-6 pb-3.5 last:pb-0">
-                {i < skills.certificates.length - 1 && <span aria-hidden="true" className="absolute left-[5px] top-3 bottom-0 w-px bg-slate-200" />}
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-0 top-1 w-[11px] h-[11px] rounded-full ring-2 ring-white ${c.status === 'Completed' ? 'bg-[#10B981]' : 'bg-[#F59E0B]'}`}
-                />
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[12.5px] font-bold text-[#1E293B] leading-snug">{c.name}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">Certification Type: {c.type}</p>
-                  </div>
-                  <Pill tone={c.status === 'Completed' ? 'green' : 'amber'}>{c.status}</Pill>
-                </div>
+              <li key={`${c.name}-${i}`} className="py-3 first:pt-0 last:pb-0">
+                <CertificateRowV2 cert={c} />
               </li>
             ))}
-          </ol>
+          </ul>
         </Card>
       )}
     </div>
   ) : (
-  <>
-    <Card className="p-4 space-y-4">
-      <ChipList title="Technical Skills" items={skills.technical} />
-      <div className="pt-4 border-t border-slate-100">
-        <ChipList title="Software Skills" items={skills.software} />
-      </div>
-    </Card>
-
-    {skills.certificates.length > 0 && (
-      <>
-        <h4 className="mt-4 px-1 text-sm font-bold text-[#1E293B]">Academic Certifications</h4>
-        <ul className="mt-2.5 space-y-2.5">
-          {skills.certificates.map((c, i) => (
-            <li key={`${c.name}-${i}`}>
-              <Card className="p-3.5 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-                  <Award className="w-4 h-4" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-[#1E293B] leading-snug">{c.name}</p>
-                  <p className="text-[11px] text-slate-400">Certification Type: {c.type}</p>
-                </div>
-                <Pill tone={c.status === 'Completed' ? 'green' : 'amber'}>{c.status}</Pill>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      </>
-    )}
-  </>
+    <div className="mt-2.5 space-y-3">
+      <SkillSectionV1 title="Technical Skills" items={skills.technical} dot="bg-[#2F68FE]" />
+      <SkillSectionV1 title="Software Skills" items={skills.software} dot="bg-[#4F46E5]" />
+      {skills.certificates.length > 0 && <CertificatesV1 certificates={skills.certificates} />}
+    </div>
   );

@@ -20,7 +20,7 @@ const AddButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className="h-10 px-3.5 rounded-xl bg-[#4F46E5] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs active:bg-[#4338CA] transition-colors cursor-pointer shrink-0"
+    className="h-10 px-3.5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer shrink-0"
   >
     <CirclePlus className="w-4 h-4" />
     Add Qualification
@@ -36,7 +36,7 @@ export const QualificationsPanel: React.FC<{
 }> = ({ qualifications, onAdd, onEdit }) => (
   <div className="space-y-3">
     <div className="flex items-center justify-between gap-3 min-h-10">
-      <h2 className="text-base font-extrabold text-[#1E293B]">Qualification Details</h2>
+      <h2 className="text-sm font-bold text-[#1E293B]">Qualification Details</h2>
       {qualifications.length > 0 && <AddButton onClick={onAdd} />}
     </div>
 
@@ -63,20 +63,25 @@ export const QualificationsPanel: React.FC<{
           { label: 'Reciprocal Exemption', value: q.reciprocalExemption === null ? 'Not available' : q.reciprocalExemption ? 'Yes' : 'No' },
         ];
         return (
-          <article key={q.id} className="bg-white rounded-2xl border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
-            <h3 className="px-4 py-5 bg-[#EEF2FF] text-center text-[15px] font-semibold text-[#1E293B] leading-snug">{qualificationTitle(q)}</h3>
-            <dl className="divide-y divide-slate-100">
+          <article key={q.id} className="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border-b border-slate-200">
+              <span className="w-7 h-7 rounded-full bg-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                <Award className="w-3.5 h-3.5" />
+              </span>
+              <h3 className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] leading-snug">{qualificationTitle(q)}</h3>
+            </div>
+            <dl className="px-3.5 divide-y divide-slate-100">
               {rows.map((r) => (
-                <div key={r.label} className="px-4 py-2.5 flex items-center justify-between gap-3">
-                  <dt className="text-[12.5px] font-semibold text-[#1E293B]">{r.label}</dt>
-                  <dd className="text-[12.5px] font-medium text-[#1E293B] tabular-nums text-right break-all">{r.value}</dd>
+                <div key={r.label} className="py-2.5 flex items-center justify-between gap-3">
+                  <dt className="text-xs font-medium text-slate-500">{r.label}</dt>
+                  <dd className="text-xs font-semibold text-[#1E293B] tabular-nums text-right break-all">{r.value}</dd>
                 </div>
               ))}
             </dl>
-            <div className="px-4 py-3 bg-slate-50 border-t-4 border-slate-100 flex items-center justify-between gap-3">
+            <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-between gap-3">
               <span
-                className={`px-3 py-1.5 rounded-lg border text-xs font-bold ${
-                  active ? 'bg-[#E8F8F0] border-[#A7F3D0] text-[#059669]' : 'bg-[#FEF2F2] border-rose-200 text-rose-600'
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                  active ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-[#FEF2F2] text-[#EF4444]'
                 }`}
               >
                 {active ? 'Active' : 'Inactive'}
@@ -85,7 +90,7 @@ export const QualificationsPanel: React.FC<{
                 type="button"
                 onClick={() => onEdit(q)}
                 aria-label={`Edit ${qualificationTitle(q)}`}
-                className="h-10 px-3.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-[#1E293B] flex items-center gap-1.5 active:bg-slate-100 cursor-pointer"
+                className="h-9 px-3 rounded-xl border border-[#2F68FE]/30 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit
@@ -157,7 +162,7 @@ export const LearningPreferencePanel: React.FC<{
       {tab === 'topics' ? (
         <Card className="p-4">
           <h2 className="text-sm font-bold text-[#1E293B]">Choose Topics That Match Your Interests</h2>
-          <p className="mt-0.5 text-[11.5px] text-slate-500">Select the subject areas to get personalized course recommendations.</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">Select the subject areas to get personalized course recommendations.</p>
 
           <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
             <div className="flex items-center justify-between gap-2">
@@ -170,7 +175,7 @@ export const LearningPreferencePanel: React.FC<{
                 </button>
               )}
             </div>
-            <p className={`mt-1 text-[11.5px] leading-relaxed ${draft.length ? 'text-[#1E293B]' : 'italic text-slate-400'}`}>
+            <p className={`mt-1 text-[11px] leading-relaxed ${draft.length ? 'text-[#1E293B]' : 'italic text-slate-400'}`}>
               {draft.length ? draft.join(', ') : 'No topics selected yet'}
             </p>
           </div>
@@ -189,7 +194,7 @@ export const LearningPreferencePanel: React.FC<{
                   aria-checked={on}
                   onClick={() => toggle(t)}
                   className={`h-9 px-3 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    on ? 'bg-[#EFF6FF] border-[#2F68FE] text-[#1D4ED8]' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
+                    on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
                   }`}
                 >
                   {on && <Check className="w-3.5 h-3.5" />}
@@ -222,7 +227,7 @@ export const LearningPreferencePanel: React.FC<{
       ) : (
         <Card className="p-4">
           <h2 className="text-sm font-bold text-[#1E293B]">Learn from Industry Experts</h2>
-          <p className="mt-0.5 text-[11.5px] text-slate-500">Follow your preferred speakers to stay updated on their latest courses.</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">Follow your preferred speakers to stay updated on their latest courses.</p>
           <ul className="mt-2 -mx-1 divide-y divide-slate-100">
             {speakers.map((s, i) => (
               <li key={s.id} className="min-h-16 px-1 py-2.5 flex items-center gap-3">
@@ -240,7 +245,7 @@ export const LearningPreferencePanel: React.FC<{
                   type="button"
                   onClick={() => onUnfollow(s)}
                   aria-label={`Unfollow ${s.name}`}
-                  className="h-9 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[11px] font-bold text-[#1D4ED8] flex items-center gap-1 active:bg-blue-100 cursor-pointer shrink-0"
+                  className="h-9 px-3 rounded-xl border border-blue-100 bg-blue-50 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1 active:bg-blue-100 cursor-pointer shrink-0"
                 >
                   <Check className="w-3.5 h-3.5" />
                   Following

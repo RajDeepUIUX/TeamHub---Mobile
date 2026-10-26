@@ -19,8 +19,8 @@ interface Props {
 
 const Field: React.FC<{ label: string; className?: string; children: React.ReactNode }> = ({ label, className = '', children }) => (
   <div className={`min-w-0 ${className}`}>
-    <dt className="text-[10.5px] font-semibold text-slate-400">{label}</dt>
-    <dd className="mt-0.5 text-[12.5px] text-[#1E293B] leading-snug break-words">{children}</dd>
+    <dt className="text-[11px] font-medium text-slate-400">{label}</dt>
+    <dd className="mt-0.5 text-xs text-[#1E293B] leading-snug break-words">{children}</dd>
   </div>
 );
 
@@ -32,62 +32,66 @@ export const TimesheetDaySheet: React.FC<Props> = ({ isOpen, row, staffName, can
         <SheetHeader title="View" subtitle={`${staffName} · ${formatTimesheetDate(row.date)}`} onClose={onClose} />
 
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="flex-1 min-w-0 h-11 px-3 rounded-xl bg-[#F8FAFF] border border-[#E0EAFF] flex items-center gap-2 text-[11.5px] font-semibold text-slate-500 tabular-nums">
-              <Clock3 className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
-              <span className="truncate">
-                {row.entries.length} {row.entries.length === 1 ? 'entry' : 'entries'} · Working Hours{' '}
-                <span className="font-extrabold text-[#2F68FE]">{formatHm(row.workingSeconds)}</span>
-              </span>
+          <div className="p-4 rounded-2xl bg-[#2F68FE] text-white flex items-center gap-3 shadow-xs">
+            <span className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Clock3 className="w-5 h-5" aria-hidden="true" />
             </span>
-            {[
-              { label: 'Previous logged day', icon: ChevronLeft, onClick: onPrev },
-              { label: 'Next logged day', icon: ChevronRight, onClick: onNext },
-            ].map(({ label, icon: Icon, onClick }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={onClick}
-                disabled={!onClick}
-                aria-label={label}
-                className="w-11 h-11 rounded-xl border border-slate-200 bg-white shadow-2xs text-slate-600 flex items-center justify-center active:bg-slate-50 disabled:text-slate-200 disabled:border-slate-100 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            ))}
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-medium text-blue-100">Working Hours</p>
+              <p className="mt-0.5 text-xl font-extrabold leading-none tabular-nums">{formatHm(row.workingSeconds)}</p>
+              <p className="mt-1.5 text-[11px] font-medium text-blue-100 tabular-nums truncate">
+                {row.entries.length} {row.entries.length === 1 ? 'entry' : 'entries'} · {formatTimesheetDate(row.date)}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {[
+                { label: 'Previous logged day', icon: ChevronLeft, onClick: onPrev },
+                { label: 'Next logged day', icon: ChevronRight, onClick: onNext },
+              ].map(({ label, icon: Icon, onClick }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={onClick}
+                  disabled={!onClick}
+                  aria-label={label}
+                  className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center active:bg-white/25 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
           </div>
 
           {row.entries.length === 0 ? (
-            <div className="mt-3 py-8 flex flex-col items-center text-center rounded-2xl border border-[#DCE3ED]">
-              <ClipboardX className="w-6 h-6 text-slate-300" />
+            <div className="mt-3 p-8 flex flex-col items-center text-center bg-white rounded-2xl border border-slate-200/80">
+              <ClipboardX className="w-6 h-6 text-slate-400" />
               <p className="mt-2 text-xs font-semibold text-slate-500">No Records Found</p>
             </div>
           ) : (
-            <ul className="mt-3 space-y-3">
-              {row.entries.map((e) => (
-                <li key={e.id} className="bg-white border border-[#DCE3ED] rounded-2xl shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] overflow-hidden">
-                  <dl className="flex items-center gap-3 px-3.5 py-2.5 bg-[#FAFBFD] border-b border-slate-100">
-                    <Field label="Date" className="flex-1">
-                      <span className="tabular-nums font-semibold">{formatTimesheetDate(row.date)}</span>
-                    </Field>
-                    <div className="shrink-0 text-right">
-                      <dt className="text-[10.5px] font-semibold text-slate-400">Total Time</dt>
-                      <dd className="mt-0.5 inline-flex items-center h-6 px-2 rounded-md bg-[#EFF6FF] text-[12px] font-extrabold text-[#2F68FE] tabular-nums">
-                        {formatHm(entrySeconds(e))} Hrs
+            <ul className="mt-4 space-y-2.5">
+              {row.entries.map((e, i) => (
+                <li key={e.id} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5">
+                  <div className="flex items-start gap-3">
+                    <span className="w-7 h-7 rounded-lg bg-[#EFF6FF] text-[#2F68FE] text-[11px] font-extrabold flex items-center justify-center shrink-0 tabular-nums">
+                      {i + 1}
+                    </span>
+                    <dl className="flex-1 min-w-0">
+                      <dt className="sr-only">Client</dt>
+                      <dd className="text-sm font-bold text-[#1E293B] leading-snug break-words">{e.client ?? '-'}</dd>
+                      <dt className="sr-only">Type of Work</dt>
+                      <dd className="mt-1 inline-flex items-center h-5 px-2 rounded-md bg-slate-100 text-[10px] font-semibold text-slate-600">
+                        {e.workType ?? '-'}
                       </dd>
-                    </div>
-                  </dl>
-                  <dl className="p-3.5 grid grid-cols-2 gap-x-4 gap-y-3">
-                    <Field label="Client">
-                      <span className="font-semibold">{e.client ?? '-'}</span>
+                    </dl>
+                    <dl className="shrink-0 text-right">
+                      <dt className="text-[10px] font-medium text-slate-400">Total Time</dt>
+                      <dd className="mt-0.5 text-sm font-extrabold text-[#2F68FE] tabular-nums">{formatHm(entrySeconds(e))} Hrs</dd>
+                    </dl>
+                  </div>
+                  <dl className="mt-3 pt-3 border-t border-dashed border-slate-200">
+                    <Field label="Description">
+                      <span className="block text-slate-600 leading-relaxed whitespace-pre-line select-text">{e.description || '-'}</span>
                     </Field>
-                    <Field label="Type of Work">
-                      <span className="font-semibold">{e.workType ?? '-'}</span>
-                    </Field>
-                    <div className="col-span-2 min-w-0 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <dt className="text-[10.5px] font-semibold text-slate-400">Description</dt>
-                      <dd className="mt-0.5 text-[12px] text-slate-600 leading-relaxed break-words whitespace-pre-line select-text">{e.description || '-'}</dd>
-                    </div>
                   </dl>
                 </li>
               ))}
@@ -101,7 +105,7 @@ export const TimesheetDaySheet: React.FC<Props> = ({ isOpen, row, staffName, can
               type="button"
               onClick={() => onDownload(row)}
               disabled={row.entries.length === 0}
-              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-[0_6px_16px_-6px_rgba(47,104,254,0.6)] flex items-center justify-center gap-2 active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               <Download className="w-4 h-4" />
               Download CSV

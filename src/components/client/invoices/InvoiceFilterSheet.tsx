@@ -87,8 +87,8 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
             }`}
           >
             <span className="flex items-center gap-2 min-w-0">
-              <Calendar className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-              <span className={`truncate ${value ? 'text-slate-700 font-semibold' : 'text-slate-400'}`}>
+              <Calendar className="w-4 h-4 shrink-0 text-[#2F68FE]" />
+              <span className={`truncate ${value ? 'text-[#1E293B]' : 'text-slate-400'}`}>
                 {value ? formatShortDate(parseIso(value)) : 'Select date'}
               </span>
             </span>
@@ -150,7 +150,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
           disabledHint="No staff hired yet"
         />
         {draft.staffIds.length > 0 && (
-          <p className="-mt-2 px-0.5 text-[10.5px] text-slate-400">Amounts show the selected staff's share of each invoice.</p>
+          <p className="-mt-2 px-0.5 text-[11px] text-slate-400">Amounts show the selected staff's share of each invoice.</p>
         )}
 
         <div>
@@ -165,8 +165,8 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
                   role="radio"
                   aria-checked={on}
                   onClick={() => setDraft((d) => ({ ...d, status: c }))}
-                  className={`h-10 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
-                    on ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+                  className={`h-11 rounded-xl border text-xs shadow-2xs transition-colors cursor-pointer ${
+                    on ? 'border-[#2F68FE] bg-blue-50/70 text-[#2F68FE] font-semibold' : 'border-slate-200 bg-white text-slate-600 font-medium active:bg-slate-50'
                   }`}
                 >
                   {c}
@@ -177,7 +177,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
+      <div className="grid grid-cols-2 gap-3 p-4 pb-6 border-t border-slate-100 shrink-0">
         <button
           type="button"
           onClick={() => onApply(EMPTY_INVOICE_FILTERS)}
@@ -188,7 +188,7 @@ export const InvoiceFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, on
         <button
           type="button"
           onClick={() => onApply(draft)}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
         >
           {draftCount ? `Search (${draftCount})` : 'Search'}
         </button>

@@ -225,54 +225,53 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   ];
   const countPill = (n: number, one: string, many: string) => (
     <span
-      className={`h-6 px-2.5 text-[10.5px] font-bold text-[#2F68FE] flex items-center whitespace-nowrap ${
-        v2 ? 'rounded-md border border-[#BFDBFE] bg-white' : 'rounded-full bg-[#EFF6FF]'
+      className={`px-2 py-0.5 text-[11px] font-bold text-[#2F68FE] flex items-center whitespace-nowrap tabular-nums ${
+        v2 ? 'rounded-md border border-blue-100 bg-white' : 'rounded-full bg-[#EFF6FF]'
       }`}
     >
       {n} {n === 1 ? one : many}
     </span>
   );
-  const noData = <p className="py-6 text-center text-[12px] text-slate-400">No Data Found</p>;
+  const noData = <p className="py-6 text-center text-xs font-medium text-slate-500">No Data Found</p>;
   const mappedPct = billableIds.length ? Math.round((mappedCount / billableIds.length) * 100) : 0;
 
   /* ---------- Mapping row: V1 soft card (staff + type / method tiles, pill actions) ---------- */
   const rowV1 = (r: PaymentMappingRow) => {
     const complete = isMappingComplete(billing, r);
     return (
-      <li key={r.id} className={`rounded-[20px] border p-3.5 ${complete ? 'border-[#E2E8F0] bg-[#F8FAFC]' : 'border-[#FECACA] bg-[#FFF5F5]'}`}>
-        <span className="block text-[11.5px] font-semibold text-slate-500">Select Staff(s)</span>
+      <li key={r.id} className={`rounded-2xl border p-3.5 ${complete ? 'border-slate-100 bg-slate-50/80' : 'border-rose-300 bg-white'}`}>
+        <span className="block text-[11px] font-semibold text-slate-500">Select Staff(s)</span>
         <div className="mt-2">
           <StaffChips names={chipsFor(r.staffIds)} />
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2">
-          <div className="min-w-0 p-2.5 rounded-2xl bg-white flex items-center gap-2.5">
+          <div className="min-w-0 p-2.5 rounded-xl bg-white border border-slate-100 flex items-center gap-2.5">
             <MethodIcon type={r.type} className="w-8 h-8" />
             <span className="min-w-0">
-              <dt className="text-[10.5px] font-medium text-slate-500">Payment Type</dt>
-              <dd className="mt-0.5 text-[12.5px] font-bold text-[#1E293B]">{PAYMENT_TYPE_LABEL[r.type]}</dd>
+              <dt className="text-[11px] text-slate-400">Payment Type</dt>
+              <dd className="mt-0.5 text-xs font-semibold text-[#1E293B]">{PAYMENT_TYPE_LABEL[r.type]}</dd>
             </span>
           </div>
-          <div className="min-w-0 p-2.5 rounded-2xl bg-white">
-            <dt className="text-[10.5px] font-medium text-slate-500">Payment Method</dt>
-            <dd className={`mt-0.5 text-[12.5px] font-bold break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
+          <div className="min-w-0 p-2.5 rounded-xl bg-white border border-slate-100">
+            <dt className="text-[11px] text-slate-400">Payment Method</dt>
+            <dd className={`mt-0.5 text-xs font-semibold break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
               {complete ? methodLabel(billing, r.type, r.methodId) : r.type === 'direct' ? '-' : 'Please Select'}
             </dd>
           </div>
         </dl>
         {!complete && (
-          <p className="mt-2.5 px-3 py-2 rounded-xl bg-white flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
+          <p className="mt-2.5 px-3 py-2 rounded-xl bg-[#FFF1F2] border border-[#FECDD3] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             {r.type === 'direct' ? 'Direct Pay is disabled — pick another method.' : 'Its payment method was removed — pick another.'}
           </p>
         )}
         {canEdit && (
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="text-[11.5px] font-semibold text-slate-500">Action</span>
+          <div className="mt-3 flex items-center justify-end gap-2">
             <span className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setMappingEdit({ row: r, isNew: false })}
-                className="h-8 px-3 rounded-full bg-[#EFF6FF] text-[11.5px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-[#DBEAFE] cursor-pointer"
+                className="h-8 px-3 rounded-full bg-blue-50 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-100 cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit
@@ -280,7 +279,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               <button
                 type="button"
                 onClick={() => setRemoveRowId(r.id)}
-                className="h-8 px-3 rounded-full bg-[#FEF2F2] text-[11.5px] font-bold text-rose-500 flex items-center gap-1.5 active:bg-[#FEE2E2] cursor-pointer"
+                className="h-8 px-3 rounded-full bg-[#FEF2F2] text-[11px] font-bold text-rose-600 flex items-center gap-1.5 active:bg-rose-100 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Remove
@@ -296,40 +295,38 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   const rowV2 = (r: PaymentMappingRow) => {
     const complete = isMappingComplete(billing, r);
     return (
-      <li key={r.id} className={`relative rounded-xl border bg-white overflow-hidden ${complete ? 'border-[#DCE3ED]' : 'border-[#FECACA]'}`}>
-        <span className={`absolute inset-y-0 left-0 w-1 ${complete ? 'bg-[#2F68FE]' : 'bg-rose-500'}`} aria-hidden="true" />
-        <div className="pl-4 pr-3.5 pt-3 pb-3">
-          <span className="block text-[10.5px] font-bold tracking-wide uppercase text-slate-400">Select Staff(s)</span>
+      <li key={r.id} className={`rounded-2xl border bg-white shadow-2xs overflow-hidden ${complete ? 'border-[#EBF0F7]' : 'border-rose-300'}`}>
+        <div className="p-3.5">
+          <span className="block text-[11px] font-bold tracking-wide uppercase text-slate-400">Select Staff(s)</span>
           <div className="mt-2">
             <StaffChips names={chipsFor(r.staffIds)} v2 />
           </div>
         </div>
-        <dl className="pl-4 pr-3.5 border-t border-dashed border-slate-200">
-          <div className="flex items-center justify-between gap-3 py-2 border-b border-dashed border-slate-200">
-            <dt className="text-[11.5px] font-medium text-slate-500 shrink-0">Payment Type</dt>
-            <dd className="text-[12.5px] font-bold text-[#1E293B] text-right">{PAYMENT_TYPE_LABEL[r.type]}</dd>
+        <dl className="px-3.5 border-t border-slate-100">
+          <div className="flex items-center justify-between gap-3 py-2.5 border-b border-slate-100">
+            <dt className="text-[11px] font-medium text-slate-500 shrink-0">Payment Type</dt>
+            <dd className="text-xs font-semibold text-[#1E293B] text-right">{PAYMENT_TYPE_LABEL[r.type]}</dd>
           </div>
-          <div className="flex items-start justify-between gap-3 py-2">
-            <dt className="text-[11.5px] font-medium text-slate-500 shrink-0">Payment Method</dt>
-            <dd className={`text-[12.5px] font-bold text-right break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
+          <div className="flex items-start justify-between gap-3 py-2.5">
+            <dt className="text-[11px] font-medium text-slate-500 shrink-0">Payment Method</dt>
+            <dd className={`text-xs font-semibold text-right break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
               {complete ? methodLabel(billing, r.type, r.methodId) : r.type === 'direct' ? '-' : 'Please Select'}
             </dd>
           </div>
         </dl>
         {!complete && (
-          <p className="pl-4 pr-3.5 py-2 bg-[#FEF2F2] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
+          <p className="px-3.5 py-2 bg-[#FFF1F2] border-t border-[#FECDD3] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             {r.type === 'direct' ? 'Direct Pay is disabled — pick another method.' : 'Its payment method was removed — pick another.'}
           </p>
         )}
         {canEdit && (
-          <div className="pl-4 pr-3 py-2 bg-[#F8FAFC] border-t border-slate-100 flex items-center justify-between gap-2">
-            <span className="text-[11.5px] font-medium text-slate-500">Action</span>
-            <span className="flex rounded-lg border border-slate-200 divide-x divide-slate-200 overflow-hidden">
+          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-end gap-2">
+            <span className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setMappingEdit({ row: r, isNew: false })}
-                className="h-8 px-3 bg-white text-[11.5px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
+                className="h-9 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 Edit
@@ -337,7 +334,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               <button
                 type="button"
                 onClick={() => setRemoveRowId(r.id)}
-                className="h-8 px-3 bg-white text-[11.5px] font-bold text-rose-500 flex items-center gap-1.5 active:bg-[#FEF2F2] cursor-pointer"
+                className="h-9 px-3.5 rounded-xl border border-rose-200 bg-white text-[11px] font-bold text-rose-600 flex items-center gap-1.5 active:bg-rose-50 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Remove
@@ -384,8 +381,8 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                     <button
                       type="button"
                       onClick={() => (revealed ? hide() : setVerify({ purpose: 'view bank details', then: reveal }))}
-                      className={`h-8 px-3 text-[11.5px] font-bold text-[#2F68FE] flex items-center gap-1.5 cursor-pointer ${
-                        v2 ? 'rounded-lg border border-[#BFDBFE] bg-white active:bg-blue-50' : 'rounded-full bg-[#EFF6FF] active:bg-[#DBEAFE]'
+                      className={`h-8 px-3 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 cursor-pointer ${
+                        v2 ? 'rounded-xl border border-slate-200 bg-white shadow-2xs active:bg-blue-50' : 'rounded-full bg-blue-50 active:bg-blue-100'
                       }`}
                     >
                       {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -438,28 +435,27 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
 
             {tab === 'direct' &&
               (v2 ? (
-                <div className="mt-3.5 relative rounded-xl border border-[#DCE3ED] bg-white overflow-hidden">
-                  <span className={`absolute inset-y-0 left-0 w-1 ${directOn ? 'bg-[#10B981]' : 'bg-[#2F68FE]'}`} aria-hidden="true" />
-                  <div className="pl-4 pr-3.5 py-3.5 flex items-center gap-3">
+                <div className="mt-3.5 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs overflow-hidden">
+                  <div className="p-3.5 flex items-center gap-3">
                     <span
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        directOn ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-[#EFF6FF] text-[#2F68FE]'
+                      className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                        directOn ? 'bg-[#E8F8F0] border-emerald-200/50 text-[#10B981]' : 'bg-blue-50 border-blue-100 text-[#2F68FE]'
                       }`}
                     >
                       <Zap className="w-5 h-5" />
                     </span>
-                    <p className="flex-1 min-w-0 text-[13px] font-bold text-[#1E293B] leading-snug">
+                    <p className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-snug">
                       {directOn ? 'Direct pay is currently enabled for your account' : 'Enable Direct Payment Method'}
                     </p>
                   </div>
                   {canEdit && (
-                    <div className="pl-4 pr-3.5 py-3 bg-[#F8FAFC] border-t border-slate-100">
+                    <div className="p-3.5 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={toggleDirect}
                         disabled={directBusy}
-                        className={`w-full h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2 cursor-pointer disabled:cursor-wait ${
-                          directOn ? 'border border-[#FECACA] bg-white text-rose-600 active:bg-[#FEF2F2]' : 'bg-[#2F68FE] text-white active:bg-[#1D4ED8]'
+                        className={`w-full h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
+                          directOn ? 'border border-rose-200 bg-white text-rose-600 active:bg-rose-50' : 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
                         }`}
                       >
                         {directBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : !directOn && <Zap className="w-4 h-4" />}
@@ -470,18 +466,16 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                 </div>
               ) : (
                 <div
-                  className={`mt-3.5 p-5 rounded-[20px] flex flex-col items-center text-center bg-gradient-to-b ${
-                    directOn ? 'from-[#E8F8F0] to-white' : 'from-[#EFF6FF] to-white'
-                  }`}
+                  className="mt-3.5 p-5 rounded-2xl border border-slate-100 bg-slate-50/80 flex flex-col items-center text-center"
                 >
                   <span
                     className={`w-14 h-14 rounded-full text-white flex items-center justify-center ${
-                      directOn ? 'bg-[#10B981] shadow-[0_8px_18px_-8px_rgba(16,185,129,0.8)]' : 'bg-[#2F68FE] shadow-[0_8px_18px_-8px_rgba(47,104,254,0.8)]'
+                      directOn ? 'bg-[#10B981] ring-8 ring-emerald-50' : 'bg-[#2F68FE] ring-8 ring-blue-50'
                     }`}
                   >
                     <Zap className="w-6 h-6" />
                   </span>
-                  <p className="mt-3 text-[13.5px] font-bold text-[#1E293B]">
+                  <p className="mt-4 text-sm font-bold text-[#1E293B]">
                     {directOn ? 'Direct pay is currently enabled for your account' : 'Enable Direct Payment Method'}
                   </p>
                   {canEdit && (
@@ -489,8 +483,8 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                       type="button"
                       onClick={toggleDirect}
                       disabled={directBusy}
-                      className={`mt-4 h-11 px-6 rounded-full text-xs font-bold flex items-center gap-2 cursor-pointer disabled:cursor-wait ${
-                        directOn ? 'border border-[#FECACA] bg-white text-rose-600 active:bg-[#FEF2F2]' : 'bg-[#2F68FE] text-white active:bg-[#1D4ED8]'
+                      className={`mt-4 h-12 px-6 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
+                        directOn ? 'border border-rose-200 bg-white text-rose-600 active:bg-rose-50' : 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
                       }`}
                     >
                       {directBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : !directOn && <Zap className="w-4 h-4" />}
@@ -506,7 +500,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
             ref={mappingRef}
             v2={v2}
             ariaLabel="Payment Mapping"
-            className="mt-3 scroll-mt-3"
+            className="mt-4 scroll-mt-3"
             header={
               <StepHeader
                 v2={v2}
@@ -521,8 +515,8 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                     aria-label="How payment mapping works"
                     className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
                       v2
-                        ? `rounded-lg border ${showHelp ? 'border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-400'} active:bg-slate-50`
-                        : `-mr-1 rounded-full ${showHelp ? 'bg-[#EFF6FF] text-[#2F68FE]' : 'text-slate-400'} active:bg-slate-100`
+                        ? `rounded-xl border shadow-2xs ${showHelp ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-400'} active:bg-slate-50`
+                        : `-mr-1 rounded-full ${showHelp ? 'bg-blue-50 text-[#2F68FE]' : 'text-slate-400'} active:bg-slate-100`
                     }`}
                   >
                     <Info className="w-4 h-4" />
@@ -539,13 +533,13 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
             {!hasPayment ? (
               <div
                 className={`py-6 px-4 flex flex-col items-center text-center ${
-                  v2 ? 'rounded-lg border border-dashed border-slate-300 bg-[#F8FAFC]' : 'rounded-[20px] bg-gradient-to-b from-[#F1F5F9] to-white'
+                  v2 ? 'rounded-2xl border border-dashed border-slate-300 bg-white' : 'rounded-2xl border border-slate-100 bg-slate-50/80'
                 }`}
               >
-                <span className={`flex items-center justify-center text-slate-400 ${v2 ? 'w-10 h-10 rounded-lg bg-white border border-slate-200' : 'w-12 h-12 rounded-full bg-white shadow-sm'}`}>
+                <span className={`flex items-center justify-center text-slate-400 ${v2 ? 'w-10 h-10 rounded-xl bg-slate-100' : 'w-14 h-14 rounded-2xl bg-white border border-slate-100'}`}>
                   <Lock className="w-5 h-5" />
                 </span>
-                <p className="mt-2.5 text-[12.5px] font-bold text-[#1E293B]">Add at least one payment method to unlock mapping</p>
+                <p className="mt-3 text-sm font-bold text-[#1E293B]">Add at least one payment method to unlock mapping</p>
               </div>
             ) : (
               <>
@@ -556,10 +550,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                     type="button"
                     onClick={() => openNewMapping()}
                     disabled={!unmapped.length}
-                    className={`mt-3 w-full h-11 text-[12px] font-bold text-[#2F68FE] flex items-center justify-center gap-1.5 cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed ${
+                    className={`mt-3 w-full h-11 rounded-xl text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed ${
                       v2
-                        ? 'rounded-lg border border-dashed border-[#93C5FD] bg-white active:bg-[#EFF6FF] disabled:border-slate-200 disabled:bg-[#F8FAFC]'
-                        : 'rounded-full border border-[#BFDBFE] bg-[#EFF6FF] active:bg-[#DBEAFE] disabled:border-slate-200 disabled:bg-slate-50'
+                        ? 'border border-dashed border-slate-300 bg-white active:border-[#2F68FE] active:bg-blue-50/50 disabled:border-slate-200 disabled:bg-slate-50'
+                        : 'border border-[#2F68FE] bg-white active:bg-blue-50 disabled:border-slate-200 disabled:bg-slate-50'
                     }`}
                   >
                     {unmapped.length ? <Plus className="w-4 h-4" /> : null}
@@ -568,10 +562,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                 )}
 
                 {v2 ? (
-                  <div className="mt-3 rounded-lg border border-[#E2E8F0] overflow-hidden">
-                    <div className="px-3 py-2.5 flex items-center justify-between gap-2 bg-[#F8FAFC]">
-                      <span className="text-[10.5px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
-                      <span className="text-[12px] font-extrabold tabular-nums">
+                  <div className="mt-3 rounded-xl border border-slate-100 overflow-hidden">
+                    <div className="px-3 py-2.5 flex items-center justify-between gap-2 bg-slate-50">
+                      <span className="text-[11px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
+                      <span className="text-xs font-bold tabular-nums">
                         {mappedCount} / {billableIds.length} Staff Mapped
                       </span>
                     </div>
@@ -580,15 +574,15 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-3 p-3 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-[#F8FAFC]">
+                  <div className="mt-3 p-3 rounded-xl bg-white border border-slate-100">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10.5px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
-                      <span className="text-[12px] font-extrabold tabular-nums">
+                      <span className="text-[11px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
+                      <span className="text-xs font-bold tabular-nums">
                         {mappedCount} / {billableIds.length} Staff Mapped
                       </span>
                     </div>
-                    <span className="mt-2 block h-1.5 rounded-full bg-white" aria-hidden="true">
-                      <span className="block h-full rounded-full bg-gradient-to-r from-[#2F68FE] to-[#5B8CFF] transition-[width]" style={{ width: `${mappedPct}%` }} />
+                    <span className="mt-2 block h-1.5 rounded-full bg-slate-100" aria-hidden="true">
+                      <span className="block h-full rounded-full bg-linear-to-r from-[#2F68FE] to-[#6366F1] transition-[width]" style={{ width: `${mappedPct}%` }} />
                     </span>
                   </div>
                 )}
@@ -599,9 +593,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                       type="button"
                       onClick={() => submitMapping(true)}
                       disabled={!dirty || Boolean(submitting) || Boolean(billing.draftSavedAt)}
-                      className={`border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white flex items-center justify-center gap-2 active:bg-blue-50 cursor-pointer disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed ${
-                        v2 ? 'h-10 rounded-lg' : 'h-11 rounded-full'
-                      }`}
+                      className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white flex items-center justify-center gap-2 transition-colors active:bg-blue-50 cursor-pointer disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                     >
                       {submitting === 'draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Save As Draft
@@ -610,9 +602,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                       type="button"
                       onClick={() => submitMapping(false)}
                       disabled={Boolean(submitting)}
-                      className={`bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer disabled:opacity-80 disabled:cursor-wait ${
-                        v2 ? 'h-10 rounded-lg' : 'h-11 rounded-full shadow-[0_8px_18px_-8px_rgba(47,104,254,0.8)]'
-                      }`}
+                      className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-colors active:bg-[#1D4ED8] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                     >
                       {submitting === 'submit' && <Loader2 className="w-4 h-4 animate-spin" />}
                       {submitting === 'submit' ? 'Submitting…' : 'Submit Mapping'}
@@ -625,8 +615,8 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
 
           {!canEdit && (
             <p
-              className={`mt-3 flex items-center gap-2 px-3 py-2.5 text-[11.5px] font-medium text-slate-500 ${
-                v2 ? 'rounded-lg border border-slate-200 bg-white' : 'rounded-full bg-slate-100'
+              className={`mt-4 flex items-center gap-2 p-3.5 text-xs font-medium text-slate-500 ${
+                v2 ? 'rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs' : 'rounded-2xl border border-slate-200/80 bg-slate-50/70'
               }`}
             >
               <Lock className="w-3.5 h-3.5 shrink-0" />

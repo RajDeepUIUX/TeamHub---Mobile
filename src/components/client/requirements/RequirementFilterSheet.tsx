@@ -53,9 +53,11 @@ export const RequirementFilterSheet: React.FC<Props> = ({ isOpen, filters, profi
             type="button"
             onClick={() => setDateOpen(true)}
             aria-label="Tentative Date"
-            className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white flex items-center gap-2 text-left text-xs cursor-pointer"
+            className={`w-full h-11 px-3 rounded-xl border bg-white flex items-center gap-2 text-left text-xs shadow-2xs transition-colors cursor-pointer ${
+              dateOpen ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-slate-200'
+            }`}
           >
-            <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+            <CalendarDays className="w-4 h-4 text-[#2F68FE] shrink-0" />
             <span className={`flex-1 truncate ${draft.date ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-400'}`}>
               {draft.date ? formatShortDate(draft.date) : 'Tentative Date'}
             </span>

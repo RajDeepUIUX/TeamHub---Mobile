@@ -43,7 +43,7 @@ export const StaffDocumentsTab: React.FC<{ documents: StaffDocument[]; staffName
                         type="button"
                         onClick={() => setOpen(d)}
                         aria-label={`${d.name}${d.verified ? ', verified' : ''}`}
-                        className="relative w-full h-full p-3 rounded-2xl bg-white border border-[#DCE3ED] shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] text-left flex flex-col active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                        className="relative w-full h-full p-3 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs text-left flex flex-col active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
                       >
                         <span className="flex items-start justify-between gap-2">
                           <span className="w-10 h-12 rounded-lg bg-[#FEF2F2] border border-rose-100 text-rose-500 flex flex-col items-center justify-center shrink-0">
@@ -56,8 +56,8 @@ export const StaffDocumentsTab: React.FC<{ documents: StaffDocument[]; staffName
                             </span>
                           )}
                         </span>
-                        <span className="mt-2.5 text-[12.5px] font-bold text-[#1E293B] leading-snug line-clamp-2">{d.name}</span>
-                        <span className="mt-0.5 text-[10.5px] text-slate-400 truncate">{d.fileName}</span>
+                        <span className="mt-2.5 text-xs font-bold text-[#1E293B] leading-snug line-clamp-2">{d.name}</span>
+                        <span className="mt-0.5 text-[11px] text-slate-400 truncate">{d.fileName}</span>
                         <span className="mt-auto pt-2.5 flex items-center gap-1 text-[11px] font-bold text-[#2F68FE]">
                           <Eye className="w-3.5 h-3.5" /> View
                         </span>
@@ -70,15 +70,16 @@ export const StaffDocumentsTab: React.FC<{ documents: StaffDocument[]; staffName
           }
           return (
             <div key={group} className="mt-3">
-              <h4 className="px-1 text-sm font-bold text-[#1D4ED8]">{group}</h4>
-              <Card className="mt-2 overflow-hidden">
+              <Card className="overflow-hidden">
+                {/* Title over a hairline, same as the Job Details card */}
+                <h4 className="mx-4 pt-4 pb-2.5 border-b border-slate-100 text-sm font-bold text-[#1E293B] leading-snug">{group}</h4>
                 <ul>
                   {docs.map((d, idx) => (
                     <li key={d.id} className={idx < docs.length - 1 ? 'border-b border-slate-100' : ''}>
                       <button
                         type="button"
                         onClick={() => setOpen(d)}
-                        className="w-full px-3.5 py-3 flex items-center gap-3 text-left active:bg-slate-50 transition-colors cursor-pointer"
+                        className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-slate-50 transition-colors cursor-pointer"
                       >
                         <span className="w-9 h-9 rounded-xl bg-[#FEF2F2] text-rose-500 flex items-center justify-center shrink-0">
                           <FileText className="w-4 h-4" />

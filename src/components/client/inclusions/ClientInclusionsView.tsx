@@ -24,7 +24,7 @@ import {
 import { ScreenHeader, Card, DesignVersion, EmptyCard, SearchField, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import { BottomSheet } from '../../common/BottomSheet';
-import { filterInclusions, INCLUSION_SECTIONS, InclusionSection, InclusionTone } from '../data/clientInclusionsData';
+import { filterInclusions, INCLUSION_SECTIONS, InclusionSection } from '../data/clientInclusionsData';
 
 interface Props {
   /** Header back arrow (Dashboard) */
@@ -52,39 +52,29 @@ const SECTION_ICON: Record<string, React.ElementType> = {
   support: Headset,
 };
 
-/** Area accent: icon tile background / icon colour / check colour */
-const TONE: Record<InclusionTone, { tile: string; icon: string; check: string }> = {
-  blue: { tile: 'bg-[#EAF0FF]', icon: 'text-[#2F68FE]', check: 'text-[#2F68FE]' },
-  indigo: { tile: 'bg-[#EEF0FF]', icon: 'text-[#4F46E5]', check: 'text-[#4F46E5]' },
-  violet: { tile: 'bg-[#F3EEFF]', icon: 'text-[#7C3AED]', check: 'text-[#7C3AED]' },
-  green: { tile: 'bg-[#E8F8EF]', icon: 'text-[#16A34A]', check: 'text-[#16A34A]' },
-  amber: { tile: 'bg-[#FFF5E5]', icon: 'text-[#D97706]', check: 'text-[#D97706]' },
-  rose: { tile: 'bg-[#FFEEF1]', icon: 'text-[#E11D48]', check: 'text-[#E11D48]' },
-  sky: { tile: 'bg-[#E6F6FD]', icon: 'text-[#0284C7]', check: 'text-[#0284C7]' },
-  teal: { tile: 'bg-[#E6F7F5]', icon: 'text-[#0D9488]', check: 'text-[#0D9488]' },
-};
-
 const iconOf = (s: InclusionSection) => SECTION_ICON[s.id] ?? BadgeCheck;
 const countLabel = (n: number) => `${n} ${n === 1 ? 'inclusion' : 'inclusions'}`;
 
+/** One flat tile style for every area (redesign.md §4: no per-category colour) */
 const AreaIcon: React.FC<{ section: InclusionSection; size?: 'sm' | 'md' }> = ({ section, size = 'md' }) => {
   const Icon = iconOf(section);
-  const t = TONE[section.tone];
   return (
-    <span className={`${size === 'sm' ? 'w-9 h-9 rounded-xl' : 'w-11 h-11 rounded-2xl'} ${t.tile} ${t.icon} flex items-center justify-center shrink-0`}>
-      <Icon className={size === 'sm' ? 'w-[18px] h-[18px]' : 'w-5 h-5'} />
+    <span
+      className={`${size === 'sm' ? 'w-9 h-9' : 'w-11 h-11'} rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0`}
+    >
+      <Icon className={size === 'sm' ? 'w-4.5 h-4.5' : 'w-5 h-5'} />
     </span>
   );
 };
 
-const ItemList: React.FC<{ section: InclusionSection; items: InclusionSection['items'] }> = ({ section, items }) => (
+const ItemList: React.FC<{ items: InclusionSection['items'] }> = ({ items }) => (
   <ul className="divide-y divide-slate-100">
     {items.map((item) => (
       <li key={item.title} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-        <CheckCircle2 className={`w-[18px] h-[18px] mt-px shrink-0 ${TONE[section.tone].check}`} aria-hidden="true" />
+        <CheckCircle2 className="w-4.5 h-4.5 mt-px shrink-0 text-[#2F68FE]" aria-hidden="true" />
         <div className="min-w-0">
           <h4 className="text-[13px] font-semibold text-[#1E293B] leading-snug">{item.title}</h4>
-          <p className="mt-0.5 text-[12px] text-slate-500 leading-snug">{item.desc}</p>
+          <p className="mt-0.5 text-xs text-slate-500 leading-snug">{item.desc}</p>
         </div>
       </li>
     ))}
@@ -92,12 +82,14 @@ const ItemList: React.FC<{ section: InclusionSection; items: InclusionSection['i
 );
 
 const GridSkeleton: React.FC = () => (
-  <div className="grid grid-cols-2 gap-3" aria-busy="true" aria-label="Loading inclusions">
+  <div className="space-y-3" aria-busy="true" aria-label="Loading inclusions">
     {[0, 1, 2, 3, 4, 5].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 space-y-3">
-        <StaffSkeleton className="w-11 h-11 rounded-2xl" />
-        <StaffSkeleton className="w-24 h-3.5" />
-        <StaffSkeleton className="w-16 h-3" />
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3">
+        <StaffSkeleton className="w-11 h-11 rounded-xl shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <StaffSkeleton className="w-40 h-3.5" />
+          <StaffSkeleton className="w-20 h-3" />
+        </div>
       </div>
     ))}
   </div>
@@ -106,7 +98,7 @@ const GridSkeleton: React.FC = () => (
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading inclusions">
     {[0, 1, 2, 3, 4].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 flex items-center gap-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3">
         <StaffSkeleton className="w-9 h-9 rounded-xl shrink-0" />
         <div className="flex-1 space-y-1.5">
           <StaffSkeleton className="w-32 h-3.5" />
@@ -120,17 +112,17 @@ const ListSkeleton: React.FC = () => (
 /** Search results (both versions): matching items grouped under a compact area header */
 const SearchResults: React.FC<{ results: ReturnType<typeof filterInclusions> }> = ({ results }) => (
   <div className="space-y-3 animate-in fade-in duration-200">
-    <p className="px-1 text-[12px] font-semibold text-slate-500">
+    <p className="px-1 text-xs font-semibold text-slate-500">
       {countLabel(results.reduce((n, r) => n + r.items.length, 0))} in {results.length} {results.length === 1 ? 'area' : 'areas'}
     </p>
     {results.map(({ section, items }) => (
-      <Card key={section.id} className="p-3.5">
+      <Card key={section.id} className="p-4">
         <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-100">
           <AreaIcon section={section} size="sm" />
-          <h3 className="flex-1 min-w-0 text-[14px] font-bold text-[#1E293B] truncate">{section.title}</h3>
-          <span className="text-[11px] font-semibold text-slate-400 tabular-nums">{items.length}</span>
+          <h3 className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">{section.title}</h3>
+          <span className="px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#2F68FE] text-[11px] font-bold tabular-nums">{items.length}</span>
         </div>
-        <ItemList section={section} items={items} />
+        <ItemList items={items} />
       </Card>
     ))}
   </div>
@@ -138,7 +130,7 @@ const SearchResults: React.FC<{ results: ReturnType<typeof filterInclusions> }> 
 
 /**
  * Human Resources › Inclusions (desktop `inclusions/inclusionlist.tpl`), app layout.
- * V1: 2-column area tiles, tap opens the area's checklist in a bottom sheet.
+ * V1: one full-width area card per row, tap opens the area's checklist in a bottom sheet.
  * V2: underline area tabs (My Profile style: icon + label, blue bar) + the selected area's card.
  * Both keep the desktop live search (`performSearch`).
  */
@@ -167,56 +159,51 @@ export const ClientInclusionsView: React.FC<Props> = ({ onBack }) => {
   const tabSection = INCLUSION_SECTIONS.find((s) => s.id === tab) ?? INCLUSION_SECTIONS[0];
 
   const renderV1 = () => (
-    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+    <div className="space-y-3 animate-in fade-in duration-200">
       {INCLUSION_SECTIONS.map((section) => (
         <button
           key={section.id}
           type="button"
           onClick={() => setSheetId(section.id)}
-          className="text-left bg-white border border-[#DCE3ED] rounded-2xl p-3.5 shadow-[0_2px_10px_-2px_rgba(15,23,42,0.10)] active:scale-[0.98] transition-transform cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+          className="w-full flex items-center gap-3 text-left bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
         >
           <AreaIcon section={section} />
-          <p className="mt-3 text-[13.5px] font-bold text-[#1E293B] leading-tight line-clamp-2 min-h-[34px]">{section.title}</p>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-[11.5px] font-medium text-slate-500 tabular-nums">{countLabel(section.items.length)}</span>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-[#1E293B] leading-tight truncate">{section.title}</p>
+            <span className="mt-1 block text-[11px] font-medium text-slate-400 tabular-nums">{countLabel(section.items.length)}</span>
           </div>
+          <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0" />
         </button>
       ))}
     </div>
   );
 
   const renderV2 = () => {
-    const t = TONE[tabSection.tone];
-    const Icon = iconOf(tabSection);
     return (
-      <Card key={tabSection.id} className="overflow-hidden animate-in fade-in duration-200">
-        <div className={`relative ${t.tile} px-4 pt-4 pb-4 overflow-hidden`}>
-          <Icon className={`absolute -right-4 -bottom-5 w-24 h-24 ${t.icon} opacity-[0.08]`} aria-hidden="true" />
-          <div className="relative flex items-center gap-3">
-            <span className={`w-12 h-12 rounded-2xl bg-white ${t.icon} flex items-center justify-center shrink-0 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.18)]`}>
-              <Icon className="w-6 h-6" />
-            </span>
+      <Card key={tabSection.id} className="animate-in fade-in duration-200">
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <AreaIcon section={tabSection} />
             <div className="flex-1 min-w-0">
-              <h2 className="text-[16px] font-bold text-[#1E293B] leading-tight">{tabSection.title}</h2>
-              <span className={`mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/80 text-[11px] font-bold ${t.icon} tabular-nums`}>
+              <h2 className="text-base font-bold text-[#1E293B] leading-tight">{tabSection.title}</h2>
+              <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[11px] font-bold text-[#2F68FE] tabular-nums">
                 <CheckCircle2 className="w-3 h-3" /> {countLabel(tabSection.items.length)}
               </span>
             </div>
           </div>
-          <p className="relative mt-3 text-[12.5px] text-slate-600 leading-relaxed">{tabSection.desc}</p>
+          <p className="mt-3 text-xs text-slate-500 leading-relaxed">{tabSection.desc}</p>
         </div>
-        <div className="px-4 pt-3.5 pb-4">
+        <div className="px-4 pt-3.5 pb-4 border-t border-slate-100">
           <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">What’s included</p>
           <ul className="mt-3 space-y-2">
             {tabSection.items.map((item) => (
-              <li key={item.title} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
-                <span className={`w-7 h-7 rounded-lg ${t.tile} ${t.icon} flex items-center justify-center shrink-0`}>
+              <li key={item.title} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                <span className="w-7 h-7 rounded-lg bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
                   <Check className="w-4 h-4" strokeWidth={2.5} />
                 </span>
                 <div className="min-w-0 pt-px">
                   <h3 className="text-[13px] font-semibold text-[#1E293B] leading-snug">{item.title}</h3>
-                  <p className="mt-0.5 text-[12px] text-slate-500 leading-snug">{item.desc}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 leading-snug">{item.desc}</p>
                 </div>
               </li>
             ))}
@@ -235,7 +222,7 @@ export const ClientInclusionsView: React.FC<Props> = ({ onBack }) => {
             <SearchField value={query} onChange={setQuery} placeholder="Search inclusions" />
           </div>
           {v2 && !searching && (
-            <nav className="mt-2 border-b border-slate-200/80" aria-label="Service areas">
+            <nav className="mt-3 bg-white border-y border-[#EBF0F7]" aria-label="Service areas">
               <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
                 {INCLUSION_SECTIONS.map((section) => {
                   const Icon = iconOf(section);
@@ -293,13 +280,13 @@ export const ClientInclusionsView: React.FC<Props> = ({ onBack }) => {
             <div className="flex-1 overflow-y-auto no-scrollbar px-5 pt-4 pb-8">
               <div className="flex items-start gap-3">
                 <AreaIcon section={sheetSection} />
-                <p className="flex-1 text-[12.5px] text-slate-500 leading-snug">{sheetSection.desc}</p>
+                <p className="flex-1 text-xs text-slate-500 leading-snug">{sheetSection.desc}</p>
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                 <LayoutGrid className="w-3.5 h-3.5" /> What’s included
               </div>
               <div className="mt-3">
-                <ItemList section={sheetSection} items={sheetSection.items} />
+                <ItemList items={sheetSection.items} />
               </div>
             </div>
           </>

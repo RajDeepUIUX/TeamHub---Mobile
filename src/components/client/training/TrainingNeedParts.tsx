@@ -9,5 +9,5 @@ const STATUS_STYLE: Record<TniStatus, string> = {
 };
 
 export const TniStatusPill: React.FC<{ status: TniStatus }> = ({ status }) => (
-  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${STATUS_STYLE[status]}`}>{TNI_STATUS_LABEL[status]}</span>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${STATUS_STYLE[status]}`}>{TNI_STATUS_LABEL[status]}</span>
 );

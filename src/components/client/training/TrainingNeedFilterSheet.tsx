@@ -38,9 +38,9 @@ export const TrainingNeedFilterSheet: React.FC<Props> = ({ isOpen, filters, staf
           </button>
         )}
       </div>
-      <button type="button" onClick={() => setDateField(key)} aria-label={label} className={`${fieldInputClass()} flex items-center justify-between gap-2 text-left cursor-pointer`}>
+      <button type="button" onClick={() => setDateField(key)} aria-label={label} className={`${fieldInputClass()} flex items-center justify-between gap-2 text-left shadow-2xs transition-colors cursor-pointer ${dateField === key ? 'border-[#2F68FE]! ring-4 ring-blue-50' : ''}`}>
         <span className={`truncate ${draft[key] ? 'font-semibold' : 'text-slate-400'}`}>{draft[key] ? formatTniDate(draft[key]) : label}</span>
-        <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+        <CalendarDays className="w-4 h-4 text-[#2F68FE] shrink-0" />
       </button>
     </div>
   );
@@ -72,7 +72,7 @@ export const TrainingNeedFilterSheet: React.FC<Props> = ({ isOpen, filters, staf
                   aria-pressed={on}
                   // Desktop select is single choice; tapping the selected one clears it
                   onClick={() => setDraft((d) => ({ ...d, status: on ? '' : st }))}
-                  className={`h-9 px-3.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`h-8 px-3 rounded-full border text-[11px] font-semibold transition-colors cursor-pointer ${
                     on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
                   }`}
                 >

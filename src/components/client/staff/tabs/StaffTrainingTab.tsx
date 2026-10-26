@@ -7,7 +7,7 @@ import { TniRequest, formatTniDate } from '../../data/clientTrainingNeedData';
 import { BottomSheet } from '../../../common/BottomSheet';
 import { ChoiceTiles } from '../../../common/ChoiceTiles';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
-import { ACCENT, AccentCard, Card, CardHeading, EmptyCard, FieldGrid, Pill, RowList, SearchField, SheetHeader, Tone } from './StaffTabParts';
+import { ACCENT, AccentCard, Card, CardHeading, EmptyCard, Pill, SearchField, SheetHeader, Tone } from './StaffTabParts';
 
 type TypeFilter = 'All' | TrainingType;
 
@@ -100,7 +100,7 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
               {tniRequests.map((r) => (
                 <li key={r.id} className="py-2.5 flex items-center justify-between gap-2">
                   <span className="min-w-0">
-                    <span className="block text-[12.5px] font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
+                    <span className="block text-xs font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
                     <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
                   </span>
                   <TniStatusPill status={r.status} />
@@ -127,7 +127,7 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
               {tniRequests.map((r) => (
                 <li key={r.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
                   <span className="min-w-0">
-                    <span className="block text-[12.5px] font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
+                    <span className="block text-xs font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
                     <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
                   </span>
                   <TniStatusPill status={r.status} />
@@ -142,14 +142,6 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
           </div>
           <FilterIconButton count={type === 'All' ? 0 : 1} onClick={() => setFilterOpen(true)} label="Filter trainings" />
         </div>
-        {visible.length > 0 && (
-          <p className="px-1 text-[11.5px] font-medium text-slate-500">
-            Showing <span className="font-bold text-[#1E293B] tabular-nums">{visible.length}</span> Of{' '}
-            <span className="font-bold text-[#1E293B] tabular-nums">{trainings.length}</span> Records
-            {type !== 'All' && <span className="text-[#2F68FE] font-semibold"> · {type}</span>}
-          </p>
-        )}
-
         {visible.length === 0 ? (
           <EmptyCard
             icon={BookOpen}
@@ -174,52 +166,37 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
           <ul className="space-y-2.5">
             {visible.map((t) => {
               const tone: Tone = t.status === 'Completed' ? 'green' : t.status === 'In Progress' ? 'indigo' : 'amber';
+              // Status | Type, then Duration | Start Date (50 / 50)
+              const fields: [string, React.ReactNode][] = [
+                ['Status', <Pill tone={tone}>{t.status}</Pill>],
+                ['Type', t.type],
+                ['Duration', t.duration],
+                ['Start Date', formatStaffDate(t.startDate)],
+              ];
+              const grid = (
+                <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  {fields.map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-[11px] text-slate-400">{label}</dt>
+                      <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums">{value || '--'}</dd>
+                    </div>
+                  ))}
+                </dl>
+              );
               return v2 ? (
                 <li key={t.id}>
-                  <AccentCard accent={ACCENT[tone]} className="pl-4 pr-3.5 pt-3.5 pb-1">
-                    <div className="flex items-start gap-3">
-                      <span className="w-10 h-10 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-                        <BookOpen className="w-4.5 h-4.5" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10.5px] text-slate-400">Training Name</p>
-                        <p className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{t.name}</p>
-                      </div>
-                      <Pill tone={tone}>{t.status}</Pill>
-                    </div>
-                    <RowList
-                      className="mt-2.5 border-t border-slate-100"
-                      rows={[
-                        { label: 'Type', value: t.type },
-                        { label: 'Duration', value: t.duration },
-                        { label: 'Start Date', value: formatStaffDate(t.startDate) },
-                      ]}
-                    />
+                  <AccentCard accent={ACCENT[tone]} className="pl-4 pr-3.5 py-3.5">
+                    <p className="text-[11px] text-slate-400">Training Name</p>
+                    <p className="text-sm font-bold text-[#1E293B] leading-snug">{t.name}</p>
+                    <div className="mt-3 pt-0.5 border-t border-slate-100">{grid}</div>
                   </AccentCard>
                 </li>
               ) : (
               <li key={t.id}>
                 <Card className="p-3.5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10.5px] text-slate-400">Training Name</p>
-                      <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{t.name}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[10.5px] text-slate-400">Status</p>
-                      <div className="mt-0.5">
-                        <Pill tone={tone}>{t.status}</Pill>
-                      </div>
-                    </div>
-                  </div>
-                  <FieldGrid
-                    compact
-                    fields={[
-                      { label: 'Type', value: t.type },
-                      { label: 'Duration', value: t.duration },
-                      { label: 'Start Date', value: formatStaffDate(t.startDate) },
-                    ]}
-                  />
+                  <p className="text-[11px] text-slate-400">Training Name</p>
+                  <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{t.name}</p>
+                  {grid}
                 </Card>
               </li>
               );

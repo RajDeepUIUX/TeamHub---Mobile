@@ -7,11 +7,11 @@ import { BOOKING_HORIZON_DAYS, CandidateStatus, ShortlistedCandidate, isBookable
 
 export const CandidateStatusPill: React.FC<{ status: CandidateStatus }> = ({ status }) => <Pill tone={statusTone(status)}>{status}</Pill>;
 
-/** V1: soft card — accent bar, avatar row, profile line, interview band, 2-up tiles, pill footer */
+/** V1: soft card — avatar row, profile line, interview band, 2-up tiles, button footer */
 export const CandidateListSkeletonV1: React.FC = () => (
   <div className="space-y-3.5" aria-busy="true" aria-label="Loading candidates">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-slate-100 rounded-2xl pl-5 pr-4 py-4 space-y-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-3">
         <div className="flex items-center gap-3">
           <StaffSkeleton className="w-10 h-10 rounded-full" />
           <div className="flex-1 space-y-1.5">
@@ -27,8 +27,8 @@ export const CandidateListSkeletonV1: React.FC = () => (
           <StaffSkeleton className="h-14 rounded-xl" />
         </div>
         <div className="flex gap-2">
-          <StaffSkeleton className="flex-1 h-10 rounded-full" />
-          <StaffSkeleton className="w-10 h-10 rounded-full" />
+          <StaffSkeleton className="flex-1 h-9 rounded-xl" />
+          <StaffSkeleton className="w-9 h-9 rounded-xl" />
         </div>
       </div>
     ))}
@@ -39,14 +39,14 @@ export const CandidateListSkeletonV1: React.FC = () => (
 export const CandidateListSkeletonV2: React.FC = () => (
   <div className="space-y-2.5" aria-busy="true" aria-label="Loading candidates">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
-        <div className="h-9 px-3.5 flex items-center justify-between bg-[#F8FAFC] border-b border-[#EBF0F7]">
-          <StaffSkeleton className="w-24 h-3" />
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="h-10 px-3.5 flex items-center justify-between border-b border-slate-100">
+          <StaffSkeleton className="w-24 h-5 rounded-full" />
           <StaffSkeleton className="w-20 h-3" />
         </div>
         <div className="px-3.5 py-3 space-y-3">
           <div className="flex items-center gap-2.5">
-            <StaffSkeleton className="w-9 h-9 rounded-lg" />
+            <StaffSkeleton className="w-10 h-10 rounded-full" />
             <div className="flex-1 space-y-1.5">
               <StaffSkeleton className="w-32 h-3.5" />
               <StaffSkeleton className="w-44 h-3" />

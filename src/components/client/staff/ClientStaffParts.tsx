@@ -21,7 +21,7 @@ export const STATUS_SHORT: Record<ClientStaffStatus, string> = {
 
 export const StaffStatusPill: React.FC<{ status: ClientStaffStatus; full?: boolean }> = ({ status, full }) => (
   <span
-    className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${STATUS_STYLE[status]}`}
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${STATUS_STYLE[status]}`}
     title={status}
   >
     {full ? status : STATUS_SHORT[status]}

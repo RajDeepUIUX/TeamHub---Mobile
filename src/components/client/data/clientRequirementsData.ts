@@ -373,6 +373,25 @@ export const availableResumesFor = (r: StaffRequirement, hub: HubProfile[], cand
 export const shortlistedFor = (r: StaffRequirement, candidates: ShortlistedCandidate[]) =>
   candidates.filter((c) => c.profile === r.profile).length;
 
+/* ------------------------- Dashboard › Staff Requirement ------------------------- */
+
+export const REQUIREMENT_PREVIEW_COUNT = 3;
+
+/** Open (In Progress) requirements, soonest expected start first; no start date last */
+export const openRequirementsOf = (requirements: StaffRequirement[]) =>
+  requirements
+    .filter((r) => r.status === 'In Progress')
+    .sort((a, b) => (a.startDate || '9999').localeCompare(b.startDate || '9999'));
+
+/** Totals across the open requirements' profiles (each resume / candidate counted once) */
+export const openRequirementTotals = (open: StaffRequirement[], hub: HubProfile[], candidates: ShortlistedCandidate[]) => {
+  const profiles = new Set(open.map((r) => r.profile));
+  return {
+    resumes: hub.filter((p) => profiles.has(p.profile) && !candidates.some((c) => c.resumeId === p.resumeId)).length,
+    shortlisted: candidates.filter((c) => profiles.has(c.profile)).length,
+  };
+};
+
 /* ---------------------------------- Seeds ---------------------------------- */
 
 const base = (patch: Partial<StaffRequirement> & Pick<StaffRequirement, 'id' | 'domain' | 'profile' | 'level'>): StaffRequirement => ({

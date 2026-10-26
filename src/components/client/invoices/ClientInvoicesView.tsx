@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, CalendarRange, Download, FileDown, FolderSearch, Loader2, ReceiptText, Search, SearchX, SlidersHorizontal, Users, X, ChevronRight } from 'lucide-react';
+import { Briefcase, ChevronRight, Download, FileDown, FolderSearch, GraduationCap, Loader2, ReceiptText, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, DesignVersion, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import { TimesheetRange, downloadCsv } from '../data/clientTimesheetsData';
 import {
@@ -18,7 +18,7 @@ import {
   invoiceListCsv,
 } from '../data/clientInvoicesData';
 import { EMPTY_INVOICE_FILTERS, InvoiceFilterSheet, InvoiceFilters, invoiceFilterCount } from './InvoiceFilterSheet';
-import { INVOICE_STATUS_ACCENT, InvoiceExportSheet, InvoiceListSkeleton, InvoiceStatusPill } from './InvoiceParts';
+import { InvoiceExportSheet, InvoiceListSkeleton, InvoiceStatusPill } from './InvoiceParts';
 import { InvoiceDetailView } from './InvoiceDetailView';
 import { SubscriptionInvoices } from './SubscriptionInvoices';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
@@ -39,18 +39,13 @@ const LOAD_MS = 600;
 
 /** Desktop invoice service tabs (`invoiceServices`); the Client panel redirect lands on `service=hrms` */
 type InvoiceService = 'continuing-education' | 'hrms';
-const INVOICE_SERVICES: { id: InvoiceService; label: string }[] = [
-  { id: 'continuing-education', label: 'Continuing Education' },
-  { id: 'hrms', label: 'HRMS 24 × 7 (Offshoring)' },
+const INVOICE_SERVICES: { id: InvoiceService; label: string; icon: React.ElementType }[] = [
+  { id: 'continuing-education', label: 'Continuing Education', icon: GraduationCap },
+  { id: 'hrms', label: 'HRMS 24 × 7 (Offshoring)', icon: Briefcase },
 ];
 
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
-
-const CHIP_CLS = {
-  V1: 'shrink-0 h-7 pl-3 pr-1 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1',
-  V2: 'shrink-0 h-7 pl-2.5 pr-1 rounded-lg bg-[#EFF6FF] text-[11px] font-semibold text-[#1D4ED8] flex items-center gap-1',
-};
-const chipX = 'w-5 h-5 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer';
+const chipCls = 'shrink-0 h-8 pl-3 pr-1 rounded-full bg-white border border-slate-200 text-[11px] font-semibold text-slate-600 flex items-center gap-1.5';
+const chipX = 'w-6 h-6 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer';
 
 /**
  * Invoices › Invoices — MyCPE ONE HRMS invoice tab (desktop `projects&task=invoice` redirects there):
@@ -81,8 +76,6 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
   const [moreLoading, setMoreLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, showNotice] = useTimesheetNotice();
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   const listRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
 
@@ -189,117 +182,16 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
   const pdfBusy = (inv: ClientInvoice) => busy === `pdf-${inv.id}`;
   const downloadPdf = (inv: ClientInvoice) => download(`pdf-${inv.id}`, invoiceFileNames.pdf(inv));
 
-  /* ---------- V1: soft cards (amount panel, icon tiles, pill actions) ---------- */
-  const cardV1 = (inv: ClientInvoice) => {
+  /* ---------- Ledger cards (divided rows, amount footer, segmented actions) ---------- */
+  const invoiceCard = (inv: ClientInvoice) => {
     const { isManual, lineCount, showPdf, showEmployees } = cardData(inv);
     return (
-      <li key={inv.id} className="bg-white border border-[#DCE3ED] rounded-[20px] shadow-[0_4px_16px_-6px_rgba(15,23,42,0.12)] p-4">
+      <li key={inv.id} className="bg-white border border-[#EBF0F7] rounded-2xl overflow-hidden shadow-2xs">
         <dl>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <dt className="text-[10.5px] font-semibold text-slate-400">Invoice No.</dt>
-              <dd className="mt-0.5 text-[14px] font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</dd>
-            </div>
-            <div className="shrink-0">
-              <dt className="sr-only">Payment Status</dt>
-              <dd>
-                <InvoiceStatusPill status={inv.status} />
-              </dd>
-            </div>
-          </div>
-
-          <div className="mt-3 px-3.5 py-3 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] border border-[#DBEAFE] flex items-center gap-3">
-            <span className="w-10 h-10 rounded-full bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)]" aria-hidden>
-              <ReceiptText className="w-5 h-5" />
-            </span>
+          <div className="px-4 pt-3.5 pb-3 flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <dt className="text-[10.5px] font-semibold text-slate-500">Amount</dt>
-              <dd className="text-[20px] leading-tight font-extrabold text-[#1E293B] tabular-nums truncate">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
-            </div>
-            <div className="shrink-0 pl-3 border-l border-[#DBEAFE] text-right">
-              <dt className="flex items-center justify-end gap-1 text-[10.5px] font-semibold text-slate-500">
-                <Users className="w-3 h-3 text-[#2F68FE]" />
-                Employee
-              </dt>
-              <dd className="mt-1 flex items-center justify-end gap-1 tabular-nums">
-                {isManual ? (
-                  <span className="text-[14px] font-bold text-[#1E293B]">-</span>
-                ) : (
-                  <>
-                    <span className="min-w-[28px] h-6 px-2 rounded-full bg-white border border-[#BFDBFE] text-[12px] font-extrabold text-[#2F68FE] inline-flex items-center justify-center">
-                      {lineCount}
-                    </span>
-                    {staffIds.length > 0 && <span className="text-[10.5px] font-semibold text-slate-400">of {inv.lines.length}</span>}
-                  </>
-                )}
-              </dd>
-            </div>
-          </div>
-
-          <div className="mt-2.5 grid grid-cols-2 rounded-2xl bg-[#F8FAFC] border border-slate-100 divide-x divide-slate-200/70">
-            <div className="min-w-0 px-3 py-2.5">
-              <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
-                <CalendarDays className="w-3 h-3 text-[#2F68FE] shrink-0" />
-                <span className="truncate">Invoice Created On</span>
-              </dt>
-              <dd className="mt-1 text-[12px] font-bold text-[#1E293B] tabular-nums truncate">{formatInvoiceDate(inv.createdOn)}</dd>
-            </div>
-            <div className="min-w-0 px-3 py-2.5">
-              <dt className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
-                <CalendarRange className="w-3 h-3 text-[#2F68FE] shrink-0" />
-                <span className="truncate">Period</span>
-              </dt>
-              <dd className="mt-1 text-[12px] font-bold text-[#1E293B] tabular-nums leading-snug break-words">{formatInvoicePeriod(inv)}</dd>
-            </div>
-          </div>
-        </dl>
-
-        {(showPdf || showEmployees) && (
-          <div className="mt-3 flex items-center gap-2">
-            {showPdf && (
-              <button
-                type="button"
-                onClick={() => downloadPdf(inv)}
-                disabled={busy !== null}
-                aria-label={`Download invoice ${inv.invoiceNo}`}
-                className="flex-1 h-10 rounded-full border border-[#BFDBFE] bg-white text-[11.5px] font-bold text-[#2F68FE] flex items-center justify-center gap-1.5 active:bg-[#EFF6FF] disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
-              >
-                {pdfBusy(inv) ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                Invoice
-              </button>
-            )}
-            {showEmployees && (
-              <button
-                type="button"
-                onClick={() => openInvoice(inv)}
-                aria-label={`View employees on invoice ${inv.invoiceNo}`}
-                className="flex-1 h-10 rounded-full bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] transition-colors cursor-pointer"
-              >
-                <FolderSearch className="w-4 h-4" />
-                Employees
-              </button>
-            )}
-          </div>
-        )}
-      </li>
-    );
-  };
-
-  /* ---------- V2: ledger cards (status rail, dashed rows, amount footer, segmented actions) ---------- */
-  const cardV2 = (inv: ClientInvoice) => {
-    const { isManual, lineCount, showPdf, showEmployees } = cardData(inv);
-    const accent = INVOICE_STATUS_ACCENT[inv.status];
-    return (
-      <li key={inv.id} className="relative bg-white border border-[#DCE3ED] rounded-2xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(15,23,42,0.10)]">
-        <span className={`absolute left-0 inset-y-0 w-1 ${accent.rail}`} aria-hidden />
-        <dl>
-          <div className="pl-4 pr-3.5 pt-3.5 pb-3 flex items-center gap-3">
-            <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accent.soft} ${accent.text}`} aria-hidden>
-              <ReceiptText className="w-5 h-5" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Invoice No.</dt>
-              <dd className="mt-0.5 text-[14px] font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</dd>
+              <dt className="text-[11px] font-semibold text-slate-400">Invoice No.</dt>
+              <dd className="mt-0.5 text-sm font-bold text-[#1E293B] tabular-nums truncate">{inv.invoiceNo}</dd>
             </div>
             <div className="shrink-0 self-start">
               <dt className="sr-only">Payment Status</dt>
@@ -309,38 +201,23 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
             </div>
           </div>
 
-          <div className="ml-4 mr-3.5 border-t border-dashed border-slate-200 divide-y divide-dashed divide-slate-100 text-[11.5px]">
-            <div className="flex items-center justify-between gap-3 py-2">
-              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
-                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
-                  <CalendarDays className="w-3.5 h-3.5" />
-                </span>
-                Invoice Created On
-              </dt>
-              <dd className="font-bold text-[#1E293B] tabular-nums">{formatInvoiceDate(inv.createdOn)}</dd>
+          <div className="mx-4 border-t border-slate-100 divide-y divide-slate-100 text-[11px]">
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="text-slate-500 font-medium shrink-0">Invoice Created On</dt>
+              <dd className="text-xs font-semibold text-[#1E293B] tabular-nums">{formatInvoiceDate(inv.createdOn)}</dd>
             </div>
-            <div className="flex items-center justify-between gap-3 py-2">
-              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
-                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
-                  <CalendarRange className="w-3.5 h-3.5" />
-                </span>
-                Period
-              </dt>
-              <dd className="font-bold text-[#1E293B] tabular-nums text-right leading-snug">{formatInvoicePeriod(inv)}</dd>
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="text-slate-500 font-medium shrink-0">Period</dt>
+              <dd className="text-xs font-semibold text-[#1E293B] tabular-nums text-right leading-snug">{formatInvoicePeriod(inv)}</dd>
             </div>
-            <div className="flex items-center justify-between gap-3 py-2">
-              <dt className="flex items-center gap-2 text-slate-500 shrink-0">
-                <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center" aria-hidden>
-                  <Users className="w-3.5 h-3.5" />
-                </span>
-                Employee
-              </dt>
-              <dd className="font-bold text-[#1E293B] tabular-nums">
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="text-slate-500 font-medium shrink-0">Employee</dt>
+              <dd className="text-xs font-semibold text-[#1E293B] tabular-nums">
                 {isManual ? (
                   '-'
                 ) : (
                   <span className="flex items-center gap-1">
-                    <span className="min-w-[26px] h-[22px] px-1.5 rounded-full bg-[#2F68FE] text-white text-[11px] font-bold inline-flex items-center justify-center">
+                    <span className="min-w-6 h-5 px-1.5 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold inline-flex items-center justify-center">
                       {lineCount}
                     </span>
                     {staffIds.length > 0 && <span className="text-[11px] font-semibold text-slate-400">of {inv.lines.length}</span>}
@@ -350,21 +227,21 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
             </div>
           </div>
 
-          <div className={`mx-3 mt-1 mb-3 px-3.5 py-3 rounded-xl flex items-center justify-between gap-3 ${accent.soft}`}>
-            <dt className={`text-[10.5px] font-bold uppercase tracking-wide ${accent.text}`}>Amount</dt>
-            <dd className="text-[19px] leading-none font-extrabold text-[#1E293B] tabular-nums truncate">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
+          <div className="mx-4 mt-1 mb-3.5 px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3">
+            <dt className="text-[11px] font-semibold text-slate-500">Amount</dt>
+            <dd className="text-lg leading-none font-extrabold text-[#1E293B] tabular-nums truncate">{formatMoney(invoiceAmountFor(inv, staffIds))}</dd>
           </div>
         </dl>
 
         {(showPdf || showEmployees) && (
-          <div className="flex divide-x divide-slate-100 border-t border-slate-100 bg-[#FAFBFD]">
+          <div className="flex divide-x divide-slate-100 border-t border-slate-100">
             {showPdf && (
               <button
                 type="button"
                 onClick={() => downloadPdf(inv)}
                 disabled={busy !== null}
                 aria-label={`Download invoice ${inv.invoiceNo}`}
-                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-[11.5px] font-bold text-slate-600 active:bg-[#EFF6FF] disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
+                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 active:bg-slate-50 disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
               >
                 {pdfBusy(inv) ? <Loader2 className="w-4 h-4 animate-spin text-[#2F68FE]" /> : <FileDown className="w-4 h-4 text-[#2F68FE]" />}
                 Invoice
@@ -375,7 +252,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
                 type="button"
                 onClick={() => openInvoice(inv)}
                 aria-label={`View employees on invoice ${inv.invoiceNo}`}
-                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-[11.5px] font-bold text-[#2F68FE] active:bg-[#EFF6FF] transition-colors cursor-pointer"
+                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer"
               >
                 <FolderSearch className="w-4 h-4" />
                 Employees
@@ -388,8 +265,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
     );
   };
 
-  /* ---------- Applied filter chips (both versions) ---------- */
-  const chipCls = CHIP_CLS[v2 ? 'V2' : 'V1'];
+  /* ---------- Applied filter chips ---------- */
   const appliedChips = (
     <>
       {rangeChip && (
@@ -425,7 +301,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
         <button
           type="button"
           onClick={() => setFilterOpen(true)}
-          className={`shrink-0 h-7 px-2.5 bg-slate-100 text-[11px] font-semibold text-slate-600 cursor-pointer ${v2 ? 'rounded-lg' : 'rounded-full'}`}
+          className="shrink-0 h-8 px-3 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 active:bg-slate-200 cursor-pointer"
         >
           +{staffIds.length - 2} more
         </button>
@@ -437,14 +313,14 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
     setQuery(v);
     setPages(1);
   };
-  const recordCount = `${results.length} ${results.length === 1 ? 'record' : 'records'}`;
 
-  /* ---------- V1 toolbar: pill tabs, search + filter, chips, count + Export pill ---------- */
-  const toolbarV1 = (
-    <div className="px-4 pt-4">
-      <nav aria-label="Invoice services">
-        <div className="flex p-1 rounded-full bg-white border border-[#DCE3ED] shadow-2xs" role="tablist">
+  /* ---------- Toolbar: underline tabs, search + filter button, wrapped chips, outline Export ---------- */
+  const toolbar = (
+    <>
+      <nav aria-label="Invoice services" className="bg-transparent border-b border-slate-200/80">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
           {INVOICE_SERVICES.map((s) => {
+            const Icon = s.icon;
             const on = s.id === service;
             return (
               <button
@@ -453,83 +329,16 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
                 role="tab"
                 aria-selected={on}
                 onClick={() => setService(s.id)}
-                className={`flex-1 min-w-0 h-9 px-2 rounded-full text-[11.5px] font-semibold truncate transition-colors cursor-pointer ${
-                  on ? 'bg-[#2F68FE] text-white shadow-[0_6px_14px_-6px_rgba(47,104,254,0.6)]' : 'text-slate-500'
+                className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                  on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
                 }`}
               >
+                <Icon className="w-4 h-4" />
                 {s.label}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {isHrms && (
-        <>
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="flex-1 min-w-0 [&_input]:rounded-full">
-              <SearchField value={query} onChange={onSearch} placeholder="Search By Invoice No" />
-            </div>
-            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
-          </div>
-
-          {filterCount > 0 && (
-            <div className="mt-2.5 flex items-center gap-2">
-              <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
-                {appliedChips}
-              </div>
-              <button
-                type="button"
-                onClick={clearAll}
-                className="shrink-0 h-7 px-3 rounded-full bg-[#FFF1F2] text-[11px] font-bold text-[#E11D48] active:bg-[#FFE4E6] cursor-pointer"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
-
-          <div className="mt-3.5 flex items-center gap-2.5">
-            <span className="flex-1 min-w-0 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden>
-                <ReceiptText className="w-4 h-4" />
-              </span>
-              <span className="truncate text-[13px] font-bold text-[#1E293B] tabular-nums">{loading ? '' : recordCount}</span>
-            </span>
-            {canDownload && (
-              <button
-                type="button"
-                onClick={() => setExportOpen(true)}
-                disabled={loading}
-                className="h-9 px-4 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] disabled:opacity-60 shrink-0 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-
-  /* ---------- V2 toolbar: underline tabs, combined search + Filter field, wrapped chips, count + outline Export ---------- */
-  const toolbarV2 = (
-    <>
-      <nav aria-label="Invoice services" className="bg-white border-b border-slate-200">
-        <div className="flex px-4" role="tablist">
-          {INVOICE_SERVICES.map((s) => {
-            const on = s.id === service;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setService(s.id)}
-                className={`relative flex-1 min-w-0 h-11 px-1 text-[11.5px] font-bold truncate transition-colors cursor-pointer ${on ? 'text-[#2F68FE]' : 'text-slate-400'}`}
-              >
-                {s.label}
-                {on && <span className="absolute left-3 right-3 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE]" aria-hidden />}
+                <span
+                  className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${on ? 'opacity-100' : 'opacity-0'}`}
+                  aria-hidden
+                />
               </button>
             );
           })}
@@ -538,64 +347,35 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
 
       {isHrms && (
         <div className="px-4 pt-3.5">
-          <div className="h-11 flex items-center bg-white border border-slate-200 rounded-xl shadow-2xs focus-within:border-[#2F68FE] focus-within:ring-4 focus-within:ring-blue-50">
-            <Search className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" aria-hidden />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search By Invoice No"
-              aria-label="Search By Invoice No"
-              className="flex-1 min-w-0 h-full px-2.5 bg-transparent text-xs font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden select-text [&::-webkit-search-cancel-button]:hidden"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => onSearch('')}
-                aria-label="Clear search"
-                className="w-5 h-5 mr-2 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-            <span className="w-px h-6 bg-slate-200 shrink-0" aria-hidden />
-            <button
-              type="button"
-              onClick={() => setFilterOpen(true)}
-              aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-              className="h-full px-3 flex items-center gap-1.5 text-xs font-bold text-[#2F68FE] rounded-r-xl active:bg-[#EFF6FF] shrink-0 cursor-pointer"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filter
-              {filterCount > 0 && (
-                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center">{filterCount}</span>
-              )}
-            </button>
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 min-w-0">
+              <SearchField value={query} onChange={onSearch} placeholder="Search By Invoice No" />
+            </div>
+            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
           </div>
 
           {filterCount > 0 && (
-            <div className="mt-2.5 flex flex-wrap items-center gap-1.5" aria-label="Applied filters">
+            <div className="mt-3 flex flex-wrap items-center gap-1.5" aria-label="Applied filters">
               {appliedChips}
-              <button type="button" onClick={clearAll} className="h-7 px-2 text-[11px] font-bold text-[#2F68FE] underline underline-offset-2 cursor-pointer">
+              <button type="button" onClick={clearAll} className="h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
               </button>
             </div>
           )}
 
-          <div className="mt-3 flex items-center gap-2.5">
-            <span className="flex-1 min-w-0 truncate text-[10.5px] font-bold uppercase tracking-wide text-slate-400 tabular-nums">{loading ? '' : recordCount}</span>
-            {canDownload && (
+          {canDownload && (
+            <div className="mt-3.5 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setExportOpen(true)}
                 disabled={loading}
-                className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[#2F68FE] text-[11.5px] font-bold flex items-center gap-1.5 active:bg-slate-50 disabled:opacity-60 shrink-0 cursor-pointer"
+                className="h-9 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 disabled:opacity-60 transition-colors shrink-0 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </>
@@ -603,16 +383,16 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Invoice" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      <ScreenHeader title="Invoice" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {v2 ? toolbarV2 : toolbarV1}
+        {toolbar}
 
-        <div className={`px-4 ${!isHrms && v2 ? 'mt-3.5' : 'mt-3'}`}>
+        <div className={`px-4 ${!isHrms ? 'mt-3.5' : 'mt-3'}`}>
           {!isHrms ? (
-            <SubscriptionInvoices canDownload={canDownload} onNotice={showNotice} v2={v2} />
+            <SubscriptionInvoices canDownload={canDownload} onNotice={showNotice} />
           ) : loading ? (
-            <InvoiceListSkeleton v2={v2} />
+            <InvoiceListSkeleton />
           ) : invoices.length === 0 ? (
             <EmptyCard icon={ReceiptText} title="No Data Found" text="Invoices for your offshore staff will show up here once they're generated." />
           ) : results.length === 0 ? (
@@ -625,7 +405,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
                   <button
                     type="button"
                     onClick={clearAll}
-                    className={`mt-4 h-10 px-4 bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer ${v2 ? 'rounded-xl' : 'rounded-full'}`}
+                    className="mt-4 h-10 px-5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -634,7 +414,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
             />
           ) : (
             <>
-              <ul className="space-y-3">{visible.map(v2 ? cardV2 : cardV1)}</ul>
+              <ul className="space-y-3">{visible.map(invoiceCard)}</ul>
 
               {visible.length < results.length && (
                 <button
@@ -647,9 +427,7 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className={`mt-3 w-full h-11 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'rounded-xl border border-dashed border-[#93C5FD] bg-white active:bg-[#EFF6FF]' : 'rounded-full border border-[#BFDBFE] bg-white active:bg-slate-50'
-                  }`}
+                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white shadow-2xs text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}

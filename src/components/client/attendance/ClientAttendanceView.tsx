@@ -66,7 +66,7 @@ const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 const AMEND_STATUS_STYLE: Record<AmendStatus, string> = {
   Pending: 'bg-[#FEF8E7] text-[#D97706]',
   Approved: 'bg-[#E8F8F0] text-[#10B981]',
-  Rejected: 'bg-[#FEF2F2] text-rose-600',
+  Rejected: 'bg-[#FEF2F2] text-[#EF4444]',
 };
 
 /** V2 amend card status band */
@@ -74,14 +74,14 @@ const AMEND_TONE: Record<AmendStatus, { band: string; dot: string; text: string 
   Pending: {
     band: 'bg-[#FEF8E7]',
     dot: 'bg-[#D97706]',
-    text: 'text-[#B45309]',
+    text: 'text-[#D97706]',
   },
   Approved: {
     band: 'bg-[#E8F8F0]',
     dot: 'bg-[#10B981]',
-    text: 'text-[#047857]',
+    text: 'text-[#10B981]',
   },
-  Rejected: { band: 'bg-[#FEF2F2]', dot: 'bg-rose-500', text: 'text-rose-600' },
+  Rejected: { band: 'bg-[#FEF2F2]', dot: 'bg-[#EF4444]', text: 'text-[#EF4444]' },
 };
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]';
@@ -254,7 +254,7 @@ const AttendanceFilterSheet: React.FC<{
           type="button"
           disabled={rangeIncomplete}
           onClick={() => onApply(draft)}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           {count ? `Search (${count})` : 'Search'}
         </button>
@@ -279,11 +279,11 @@ const shortDate = (iso: string) =>
 const DateBlock: React.FC<{ iso: string }> = ({ iso }) => {
   const d = parse(iso)!;
   return (
-    <span className="w-12 shrink-0 rounded-lg border border-[#DBEAFE] bg-white overflow-hidden text-center" aria-label={shortDate(iso)}>
+    <span className="w-12 shrink-0 rounded-xl border border-blue-100 bg-white overflow-hidden text-center" aria-label={shortDate(iso)}>
       <span className="block py-0.5 bg-[#2F68FE] text-white text-[10px] font-bold uppercase tracking-wide">
         {d.toLocaleDateString('en-US', { weekday: 'short' })}
       </span>
-      <span className="block pt-1 text-[17px] font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
+      <span className="block pt-1 text-lg font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
       <span className="block pt-0.5 pb-1 text-[10px] font-semibold text-slate-500">
         {d.toLocaleDateString('en-US', { month: 'short' })} {d.getFullYear()}
       </span>
@@ -294,24 +294,22 @@ const DateBlock: React.FC<{ iso: string }> = ({ iso }) => {
 /** V2: label / value row */
 const RowV2: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex items-start justify-between gap-3 py-2">
-    <dt className="min-w-0 text-[12px] font-medium text-slate-500">{label}</dt>
-    <dd className="max-w-[62%] text-right text-[12.5px] font-semibold text-[#1E293B] break-words">{children || '--'}</dd>
+    <dt className="min-w-0 text-[11px] font-medium text-slate-500">{label}</dt>
+    <dd className="max-w-[62%] text-right text-xs font-semibold text-[#1E293B] break-words">{children || '--'}</dd>
   </div>
 );
 
-/** V2: Check In → Check Out rail with Total Office Time / Overtime underneath */
+/** V2: Check In → Check Out rail with Total Office Time underneath */
 const PunchStrip: React.FC<{
   checkIn: string | null;
   checkOut: string | null;
   office: string | null;
-  overtime: string | null;
-}> = ({ checkIn, checkOut, office, overtime }) => {
-  const hasOt = Boolean(overtime && overtime !== '00:00');
+}> = ({ checkIn, checkOut, office }) => {
   return (
-    <div className="rounded-lg border border-[#DBEAFE] bg-[#EFF6FF]">
+    <div className="rounded-xl border border-slate-100 bg-slate-50">
       <div className="px-3 pt-2.5 pb-2 flex items-center gap-2">
         <span className="min-w-0">
-          <span className="block text-[10.5px] font-medium text-slate-500 leading-tight">Check In</span>
+          <span className="block text-[11px] font-medium text-slate-500 leading-tight">Check In</span>
           <span className="block mt-0.5 text-[13px] font-bold tabular-nums text-[#1E293B]">{checkIn || '--'}</span>
         </span>
         <span aria-hidden="true" className="flex-1 flex items-center gap-1 text-[#2F68FE]">
@@ -320,24 +318,17 @@ const PunchStrip: React.FC<{
           <ArrowRight className="w-3.5 h-3.5" />
         </span>
         <span className="min-w-0 text-right">
-          <span className="block text-[10.5px] font-medium text-slate-500 leading-tight">Check Out</span>
+          <span className="block text-[11px] font-medium text-slate-500 leading-tight">Check Out</span>
           <span className="block mt-0.5 text-[13px] font-bold tabular-nums text-[#1E293B]">{checkOut || '--'}</span>
         </span>
       </div>
-      <dl className="grid grid-cols-2 border-t border-[#DBEAFE] divide-x divide-[#DBEAFE]">
+      <dl className="border-t border-slate-100">
         <div className="min-w-0 px-3 py-2">
           <dt className="flex items-center gap-1 text-[10px] font-medium text-slate-500 leading-tight">
             <Clock className="w-3 h-3 shrink-0 text-slate-400" />
             Total Office Time
           </dt>
-          <dd className="mt-0.5 text-[12.5px] font-bold tabular-nums text-[#1E293B]">{office || '--'}</dd>
-        </div>
-        <div className="min-w-0 px-3 py-2">
-          <dt className="flex items-center gap-1 text-[10px] font-medium text-slate-500 leading-tight">
-            <Clock className={`w-3 h-3 shrink-0 ${hasOt ? 'text-[#4F46E5]' : 'text-slate-400'}`} />
-            Overtime
-          </dt>
-          <dd className={`mt-0.5 text-[12.5px] font-bold tabular-nums ${hasOt ? 'text-[#4F46E5]' : 'text-[#1E293B]'}`}>{overtime || '--'}</dd>
+          <dd className="mt-0.5 text-xs font-bold tabular-nums text-[#2F68FE]">{office || '--'}</dd>
         </div>
       </dl>
     </div>
@@ -348,7 +339,7 @@ const WorkModeTag: React.FC<{ mode: keyof typeof WORK_MODE_LABEL | null }> = ({ 
   if (!mode) return <span className="text-[11px] font-semibold text-slate-400">--</span>;
   const Icon = mode === 'WFH' ? Home : Building2;
   return (
-    <span className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-slate-100 text-[10.5px] font-semibold text-slate-600">
+    <span className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-600">
       <Icon className="w-3 h-3" />
       {WORK_MODE_LABEL[mode]}
     </span>
@@ -499,16 +490,15 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 {member.designation || '--'} <span className="text-slate-300">·</span> {member.level || '--'}
               </p>
             </div>
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
           </div>
           <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
             {[
               { label: 'Check In', value: day.checkIn, tone: 'text-[#1E293B]' },
               { label: 'Check Out', value: day.checkOut, tone: 'text-[#1E293B]' },
-              { label: 'Total Office Time', value: day.officeTime, tone: 'text-[#2F68FE]' },
-              { label: 'Overtime', value: day.overtime, tone: day.overtime && day.overtime !== '00:00' ? 'text-[#4F46E5]' : 'text-[#1E293B]' },
+              { label: 'Total Office Time', value: day.officeTime, tone: 'text-[#2F68FE]', wide: true },
             ].map((t) => (
-              <div key={t.label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+              <div key={t.label} className={`min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 ${t.wide ? 'col-span-2' : ''}`}>
                 <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{t.label}</dt>
                 <dd className={`font-bold tabular-nums ${t.tone}`}>{t.value || '--'}</dd>
               </div>
@@ -535,7 +525,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
       <li key={r.id}>
         <article
           className={`bg-white border rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden ${
-            r.status === 'Pending' ? 'border-[#FDE68A]' : 'border-[#EBF0F7]'
+            r.status === 'Pending' ? 'border-amber-200/50' : 'border-[#EBF0F7]'
           }`}
         >
           <div className="p-3.5 pb-3 flex items-start gap-3">
@@ -550,17 +540,16 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               </p>
               <p className="mt-0.5 text-[11px] text-slate-500 truncate">{m?.designation || '--'}</p>
             </div>
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>
           </div>
 
           <dl className="mx-3.5 grid grid-cols-2 gap-2 text-xs">
             {[
               { label: 'Check In', value: r.requestedIn, tone: 'text-[#1E293B]' },
               { label: 'Check Out', value: r.requestedOut, tone: 'text-[#1E293B]' },
-              { label: 'Total Office Time', value: times.office, tone: 'text-[#2F68FE]' },
-              { label: 'Overtime', value: times.overtime, tone: times.overtime && times.overtime !== '00:00' ? 'text-[#4F46E5]' : 'text-[#1E293B]' },
+              { label: 'Total Office Time', value: times.office, tone: 'text-[#2F68FE]', wide: true },
             ].map((t) => (
-              <div key={t.label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+              <div key={t.label} className={`min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 ${t.wide ? 'col-span-2' : ''}`}>
                 <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{t.label}</dt>
                 <dd className={`font-bold tabular-nums ${t.tone}`}>{t.value || '--'}</dd>
               </div>
@@ -601,7 +590,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 <button
                   type="button"
                   onClick={() => open([r.id], 'Approved')}
-                  className={`h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1 active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+                  className={`h-9 px-3.5 rounded-xl bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 active:bg-emerald-700 cursor-pointer ${FOCUS}`}
                 >
                   <Check className="w-3.5 h-3.5" />
                   Approve
@@ -619,25 +608,25 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     const note = day.status === 'Holiday' ? holidayName(day.date) : null;
     return (
       <li key={`${member.id}-${day.date}`}>
-        <article className="bg-white rounded-xl border border-[#E2E8F0] shadow-2xs overflow-hidden">
-          <div className="p-3 flex items-start gap-3">
+        <article className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
+          <div className="p-3.5 flex items-start gap-3">
             <DateBlock iso={day.date} />
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[10.5px] font-medium text-slate-400 leading-tight">Staff Name</span>
-                  <span className="block mt-0.5 text-[14px] font-bold text-[#1E293B] truncate">{member.name}</span>
+                  <span className="block text-[11px] font-medium text-slate-400 leading-tight">Staff Name</span>
+                  <span className="block mt-0.5 text-sm font-bold text-[#1E293B] truncate">{member.name}</span>
                 </span>
-                <span className={`shrink-0 px-2 py-1 rounded-md text-[10.5px] font-bold ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
+                <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
               </div>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <WorkModeTag mode={day.workMode} />
-                <span className="h-6 px-2 rounded-md bg-[#EFF6FF] text-[10.5px] font-bold text-[#2F68FE] inline-flex items-center">{member.level || '--'}</span>
+                <span className="h-6 px-2 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] inline-flex items-center">{member.level || '--'}</span>
               </div>
             </div>
           </div>
-          <div className="px-3 pb-3 space-y-1">
-            <PunchStrip checkIn={day.checkIn} checkOut={day.checkOut} office={day.officeTime} overtime={day.overtime} />
+          <div className="px-3.5 pb-3.5 space-y-1">
+            <PunchStrip checkIn={day.checkIn} checkOut={day.checkOut} office={day.officeTime} />
             <dl className="divide-y divide-dashed divide-slate-200">
               <RowV2 label="Designation">{member.designation}</RowV2>
               {note && <RowV2 label="Holiday">{note}</RowV2>}
@@ -654,31 +643,31 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     const times = amendTimes(r);
     const t = AMEND_TONE[r.status];
     const seg =
-      'flex-1 min-w-0 h-11 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]';
+      'flex-1 min-w-0 h-11 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]';
     return (
       <li key={r.id}>
-        <article className="bg-white rounded-xl border border-[#E2E8F0] shadow-2xs overflow-hidden">
-          <div className={`h-9 px-3 flex items-center gap-2 border-b border-[#EBF0F7] ${t.band}`}>
-            <span className="text-[10.5px] font-medium text-slate-500">Status</span>
-            <span className={`ml-auto flex items-center gap-1.5 text-[11.5px] font-bold ${t.text}`}>
+        <article className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
+          <div className="h-10 px-3.5 flex items-center gap-2 border-b border-slate-100">
+            <span className="text-[11px] font-medium text-slate-500">Status</span>
+            <span className={`ml-auto px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold ${t.band} ${t.text}`}>
               <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
               {r.status}
             </span>
           </div>
 
-          <div className="p-3 flex items-start gap-3">
+          <div className="p-3.5 flex items-start gap-3">
             <DateBlock iso={r.date} />
             <div className="flex-1 min-w-0">
-              <span className="block text-[10.5px] font-medium text-slate-400 leading-tight">Staff Name</span>
-              <span className="block mt-0.5 text-[14px] font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</span>
+              <span className="block text-[11px] font-medium text-slate-400 leading-tight">Staff Name</span>
+              <span className="block mt-0.5 text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</span>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <WorkModeTag mode={r.workMode} />
               </div>
             </div>
           </div>
 
-          <div className="px-3 pb-3 space-y-1">
-            <PunchStrip checkIn={r.requestedIn} checkOut={r.requestedOut} office={times.office} overtime={times.overtime} />
+          <div className="px-3.5 pb-3.5 space-y-1">
+            <PunchStrip checkIn={r.requestedIn} checkOut={r.requestedOut} office={times.office} />
             <dl className="divide-y divide-dashed divide-slate-200">
               <RowV2 label="Designation">{m?.designation}</RowV2>
               <RowV2 label="Request Type">{r.reason}</RowV2>
@@ -687,31 +676,31 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
 
             {r.staffNote && (
               <div className="mt-1 pl-3 py-1 border-l-[3px] border-[#BFDBFE]">
-                <p className="text-[10.5px] font-medium text-slate-400">Reason</p>
-                <p className="mt-0.5 text-[12px] text-slate-700 leading-relaxed">{r.staffNote}</p>
+                <p className="text-[11px] font-medium text-slate-400">Reason</p>
+                <p className="mt-0.5 text-xs text-slate-700 leading-relaxed">{r.staffNote}</p>
               </div>
             )}
 
             {r.status !== 'Pending' && (
-              <div className="mt-2 p-2.5 rounded-lg bg-[#F8FAFC] border border-dashed border-slate-200 space-y-1">
-                <p className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
-                  <MessageSquareText className="w-3.5 h-3.5" />
+              <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                  <MessageSquareText className="w-3.5 h-3.5 text-slate-400" />
                   Your comment
                   {r.decidedOn ? ` · ${formatAmendDate(r.decidedOn)}` : ''}
                 </p>
-                <p className="text-[12px] text-slate-700">{r.clientComment || '-'}</p>
+                <p className="text-xs text-slate-700">{r.clientComment || '-'}</p>
                 {r.setOffDate && <p className="text-[11px] text-slate-500">Hours to be made up on {formatAmendDate(r.setOffDate)}</p>}
               </div>
             )}
           </div>
 
           {r.status === 'Pending' && canDecide && (
-            <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-[#FBFCFE]">
-              <button type="button" onClick={() => open([r.id], 'Rejected')} className={`text-rose-500 active:bg-rose-50 ${seg}`}>
+            <div className="flex border-t border-slate-100 divide-x divide-slate-100 bg-white">
+              <button type="button" onClick={() => open([r.id], 'Rejected')} className={`text-rose-600 active:bg-rose-50 ${seg}`}>
                 <X className="w-4 h-4" />
                 Reject
               </button>
-              <button type="button" onClick={() => open([r.id], 'Approved')} className={`text-[#2F68FE] active:bg-[#EFF6FF] ${seg}`}>
+              <button type="button" onClick={() => open([r.id], 'Approved')} className={`text-emerald-600 active:bg-emerald-50 ${seg}`}>
                 <Check className="w-4 h-4" />
                 Approve
               </button>
@@ -724,7 +713,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
 
   /* ---------- Tabs ---------- */
   const tabsV1 = (
-    <div className="mt-3 border-b border-slate-200/80 px-2 flex gap-1 overflow-x-auto no-scrollbar shrink-0" role="tablist" aria-label="Attendance Management">
+    <div className="bg-white border-b border-[#EBF0F7] px-2 flex gap-1 overflow-x-auto no-scrollbar shrink-0" role="tablist" aria-label="Attendance Management">
       {TABS.map((t) => {
         const on = t.id === tab;
         const Icon = TAB_ICONS[t.id];
@@ -742,7 +731,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             <Icon className="w-4 h-4" />
             {t.label}
             {t.id === 'amend' && pending > 0 && (
-              <span className="min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{pending}</span>
+              <span className="min-w-5 h-5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{pending}</span>
             )}
             <span
               className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${on ? 'opacity-100' : 'opacity-0'}`}
@@ -755,8 +744,8 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
 
   /** V2: segmented control on a white bar */
   const tabsV2 = (
-    <div className="mt-3 bg-white px-4 pt-2.5 pb-2.5 border-y border-[#EBF0F7] shrink-0">
-      <div className="p-1 rounded-xl bg-slate-100 grid grid-cols-2 gap-1" role="tablist" aria-label="Attendance Management">
+    <div className="bg-white px-4 py-2.5 border-b border-[#EBF0F7] shrink-0">
+      <div className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/60 grid grid-cols-2 gap-1" role="tablist" aria-label="Attendance Management">
         {TABS.map((t) => {
           const on = t.id === tab;
           return (
@@ -766,13 +755,17 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               role="tab"
               aria-selected={on}
               onClick={() => switchTab(t.id)}
-              className={`h-9 rounded-lg text-[12.5px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${FOCUS} ${
-                on ? 'bg-white text-[#2F68FE] shadow-2xs' : 'text-slate-500'
+              className={`h-9 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${FOCUS} ${
+                on ? 'bg-white text-[#1E293B] font-bold shadow-[0_1px_3px_rgba(15,23,42,0.12)]' : 'text-slate-500 font-semibold'
               }`}
             >
               {t.label}
               {t.id === 'amend' && pending > 0 && (
-                <span className="min-w-4.5 h-4.5 px-1 rounded-md bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                <span
+                  className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
+                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-300/70 text-slate-600'
+                  }`}
+                >
                   {pending}
                 </span>
               )}
@@ -785,15 +778,15 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
 
   /* ---------- Toolbar (V2): sticky date range + Filter, count row, Approve All bar ---------- */
   const toolbarV2 = (
-    <div className="sticky top-0 z-10 bg-[#F8FAFC] px-4 pt-3 pb-2">
+    <div className="sticky top-0 z-10 bg-[#F8FAFC] px-4 pt-3.5 pb-2">
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setFilterOpen(true)}
           aria-label={`Date range ${dmy(f.from)} to ${dmy(f.to)}`}
-          className={`flex-1 min-w-0 h-10 pl-2 pr-3 rounded-lg border border-slate-200 bg-white flex items-center gap-2 active:bg-slate-50 cursor-pointer ${FOCUS}`}
+          className={`flex-1 min-w-0 h-11 pl-2 pr-3 rounded-xl border border-slate-200 bg-white flex items-center gap-2 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer ${FOCUS}`}
         >
-          <span className="w-7 h-7 rounded-md bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+          <span className="w-7 h-7 rounded-lg bg-blue-50 text-[#2F68FE] flex items-center justify-center shrink-0">
             <Calendar className="w-3.5 h-3.5" />
           </span>
           <span className="min-w-0 truncate text-xs font-semibold text-slate-700 tabular-nums">
@@ -804,36 +797,35 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
           type="button"
           onClick={() => setFilterOpen(true)}
           aria-label={activeFilters ? `Filter attendance (${activeFilters} applied)` : 'Filter attendance'}
-          className={`h-10 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer ${FOCUS} ${
-            activeFilters ? 'border-[#2F68FE] bg-[#EFF6FF] text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
+          className={`h-11 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 shadow-2xs transition-colors cursor-pointer ${FOCUS} ${
+            activeFilters ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
           }`}
         >
-          <SlidersHorizontal className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4 text-[#2F68FE]" />
           Filter
           {activeFilters > 0 && (
-            <span className="min-w-4.5 h-4.5 px-1 rounded bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+            <span className="min-w-5 h-5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
               {activeFilters}
             </span>
           )}
         </button>
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <p className="text-[11.5px] font-semibold text-slate-500 tabular-nums">{loading ? 'Loading…' : `${total} record${total === 1 ? '' : 's'}`}</p>
-        {!isDefault && (
+      {!isDefault && (
+        <div className="mt-2 flex items-center justify-end">
           <button
             type="button"
             onClick={() => apply(defaults[tab])}
-            className="text-[11.5px] font-bold text-[#2F68FE] underline underline-offset-2 cursor-pointer"
+            className="h-8 px-2 rounded-xl text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
           >
             Clear All
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {tab === 'amend' && canDecide && !loading && pendingShown.length > 1 && (
-        <div className="mt-2 h-11 pl-3 pr-1.5 rounded-lg border border-[#DBEAFE] bg-[#EFF6FF] flex items-center gap-2">
-          <span className="flex-1 min-w-0 text-[11.5px] font-semibold text-[#1E293B] truncate tabular-nums">{pendingShown.length} requests pending</span>
+        <div className="mt-2 h-12 pl-3 pr-1.5 rounded-xl border border-blue-100 bg-blue-50 flex items-center gap-2">
+          <span className="flex-1 min-w-0 text-xs font-semibold text-[#1E293B] truncate tabular-nums">{pendingShown.length} requests pending</span>
           <button
             type="button"
             onClick={() =>
@@ -842,7 +834,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 'Approved',
               )
             }
-            className={`h-8 px-3 rounded-md bg-[#2F68FE] text-white text-[11.5px] font-bold flex items-center gap-1 shrink-0 active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+            className={`h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1 shrink-0 active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
           >
             <CheckCheck className="w-3.5 h-3.5" />
             Approve All ({pendingShown.length})
@@ -853,18 +845,18 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
   );
 
   const skeletonV2 = (
-    <div className="space-y-2.5" aria-busy="true" aria-label="Loading records">
+    <div className="space-y-3" aria-busy="true" aria-label="Loading records">
       {[0, 1].map((i) => (
-        <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-3 space-y-3">
+        <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 space-y-3 shadow-2xs">
           <div className="flex items-start gap-3">
-            <StaffSkeleton className="w-12 h-[58px] rounded-lg" />
+            <StaffSkeleton className="w-12 h-[58px] rounded-xl" />
             <div className="flex-1 space-y-2 pt-1">
               <StaffSkeleton className="w-20 h-2.5" />
               <StaffSkeleton className="w-36 h-3.5" />
               <StaffSkeleton className="w-28 h-5 rounded-md" />
             </div>
           </div>
-          <StaffSkeleton className="w-full h-[92px] rounded-lg" />
+          <StaffSkeleton className="w-full h-[92px] rounded-xl" />
           <StaffSkeleton className="w-full h-3" />
         </div>
       ))}
@@ -896,9 +888,9 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 type="button"
                 onClick={() => setFilterOpen(true)}
                 aria-label={`Date range ${dmy(f.from)} to ${dmy(f.to)}`}
-                className={`flex-1 min-w-0 h-11 pl-1.5 pr-4 rounded-full border border-slate-200 bg-white flex items-center gap-2.5 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer ${FOCUS}`}
+                className={`flex-1 min-w-0 h-11 pl-1.5 pr-3 rounded-xl border border-slate-200 bg-white flex items-center gap-2.5 shadow-2xs active:bg-slate-50 transition-colors cursor-pointer ${FOCUS}`}
               >
-                <span className="w-8 h-8 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
                   <Calendar className="w-4 h-4" />
                 </span>
                 <span className="min-w-0 truncate text-xs font-semibold text-slate-700 tabular-nums">
@@ -909,25 +901,17 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               <FilterIconButton count={activeFilters} onClick={() => setFilterOpen(true)} label="Filter attendance" />
             </div>
 
-            <div className="mt-3.5 flex items-center justify-between gap-2">
-              {loading ? (
-                <span className="block w-24 h-4 rounded-md bg-slate-200/70 animate-pulse" aria-hidden="true" />
-              ) : (
-                <p className="flex items-baseline gap-1 tabular-nums">
-                  <span className="text-[15px] font-extrabold text-[#1E293B] leading-none">{total}</span>
-                  <span className="text-xs font-semibold text-slate-500">record{total === 1 ? '' : 's'}</span>
-                </p>
-              )}
-              {!isDefault && (
+            {!isDefault && (
+              <div className="mt-2 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => apply(defaults[tab])}
-                  className="h-8 px-3 rounded-full bg-[#EFF6FF] text-[11px] font-bold text-[#2F68FE] cursor-pointer"
+                  className="h-8 px-3 rounded-xl text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer"
                 >
                   Clear All
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
             {tab === 'amend' && canDecide && !loading && pendingShown.length > 1 && (
               <button
@@ -938,7 +922,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                     'Approved',
                   )
                 }
-                className={`mt-3 w-full h-11 rounded-full bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_6px_14px_-6px_rgba(47,104,254,0.7)] active:bg-[#1D4ED8] cursor-pointer ${FOCUS}`}
+                className={`mt-3 w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
               >
                 <CheckCheck className="w-4 h-4" />
                 Approve All ({pendingShown.length})
@@ -954,7 +938,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             ) : (
               <div className="space-y-3" aria-busy="true" aria-label="Loading records">
                 {[0, 1].map((i) => (
-                  <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
+                  <div key={i} className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 space-y-3 shadow-2xs">
                     <div className="flex items-center gap-3">
                       <StaffSkeleton className="w-10 h-10 rounded-full" />
                       <StaffSkeleton className="flex-1 h-3.5" />
@@ -983,7 +967,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                   <button
                     type="button"
                     onClick={() => apply(defaults[tab])}
-                    className="mt-4 h-10 px-5 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold active:bg-[#E0E7FF] cursor-pointer"
+                    className="mt-4 h-10 px-5 rounded-xl text-[#2F68FE] text-xs font-semibold active:bg-blue-50 cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -992,7 +976,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             />
           ) : (
             <>
-              <ul className={v2 ? 'space-y-2.5' : 'space-y-3'}>
+              <ul className="space-y-3">
                 {tab === 'attendance'
                   ? rows.slice(0, shown).map(v2 ? attendanceCardV2 : attendanceCard)
                   : amends.slice(0, shown).map(v2 ? amendCardV2 : amendCard)}
@@ -1003,8 +987,8 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                   onClick={() => setShown((n) => n + PAGE)}
                   className={`mt-3 w-full text-[#2F68FE] text-xs font-bold cursor-pointer ${
                     v2
-                      ? 'h-11 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] active:bg-[#DBEAFE]'
-                      : 'h-11 rounded-full bg-white border border-slate-200 shadow-2xs active:bg-slate-50'
+                      ? 'h-11 rounded-xl border border-blue-100 bg-blue-50 active:bg-blue-100'
+                      : 'h-11 rounded-xl bg-white border border-slate-200 shadow-2xs active:bg-slate-50'
                   }`}
                 >
                   Show More ({total - shown})
@@ -1054,7 +1038,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 </div>
               )}
               <div className="space-y-1">
-                <label htmlFor="amend-comment" className="block text-[11px] font-semibold text-slate-600">
+                <label htmlFor="amend-comment" className="block text-xs font-bold text-[#1E293B]">
                   Comment
                   {decision.status === 'Rejected' && <span className="text-rose-500"> *</span>}
                 </label>
@@ -1077,14 +1061,14 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               <button
                 type="button"
                 onClick={() => setDecision(null)}
-                className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+                className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white active:bg-blue-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirm}
-                className={`h-12 rounded-xl text-white text-xs font-bold cursor-pointer ${decision.status === 'Approved' ? 'bg-[#2F68FE] active:bg-[#1D4ED8]' : 'bg-rose-500 active:bg-rose-600'}`}
+                className={`h-12 rounded-xl text-white text-xs font-bold cursor-pointer ${decision.status === 'Approved' ? 'bg-[#2F68FE] active:bg-[#1D4ED8]' : 'bg-rose-600 active:bg-rose-700'}`}
               >
                 {decision.status === 'Approved' ? 'Approve' : 'Reject'}
               </button>
@@ -1102,20 +1086,20 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               onClose={() => setNotesFor(null)}
             />
             <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3">
-              <div className="p-3 rounded-2xl rounded-tl-md bg-[#EFF6FF] border border-[#DBEAFE]">
-                <p className="text-[10.5px] font-semibold text-[#2F68FE]">Reason</p>
-                <p className="mt-0.5 text-[12px] text-slate-700 leading-relaxed">{notesFor.staffNote || '-'}</p>
+              <div className="p-3 rounded-2xl rounded-tl-md bg-blue-50 border border-blue-100">
+                <p className="text-[11px] font-semibold text-[#2F68FE]">Reason</p>
+                <p className="mt-0.5 text-xs text-slate-700 leading-relaxed">{notesFor.staffNote || '-'}</p>
               </div>
               {notesFor.status !== 'Pending' && (
-                <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] space-y-1">
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                   <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                    <span className="w-5 h-5 rounded-full bg-white border border-[#E0E9FF] text-[#2F68FE] flex items-center justify-center">
+                    <span className="w-5 h-5 rounded-full bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center">
                       <MessageSquareText className="w-3 h-3" />
                     </span>
                     Your comment
                     {notesFor.decidedOn ? ` · ${formatAmendDate(notesFor.decidedOn)}` : ''}
                   </p>
-                  <p className="text-[12px] text-slate-700">{notesFor.clientComment || '-'}</p>
+                  <p className="text-xs text-slate-700">{notesFor.clientComment || '-'}</p>
                   {notesFor.setOffDate && <p className="text-[11px] text-slate-500">Hours to be made up on {formatAmendDate(notesFor.setOffDate)}</p>}
                 </div>
               )}

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardCheck, FileDown } from 'lucide-react';
+import { CalendarDays, ClipboardCheck, FileDown } from 'lucide-react';
 import { BottomSheet } from '../../../common/BottomSheet';
-import { ChoiceTiles } from '../../../common/ChoiceTiles';
+import { Dropdown } from '../../../../design-system/components/Dropdown';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { AssessmentRecord, assessmentScore } from '../../data/clientStaffProfileData';
-import { Card, DateField, EmptyCard, FieldGrid, RowList, SheetHeader } from './StaffTabParts';
+import { Card, DateField, EmptyCard, RowList, SearchField, SheetHeader } from './StaffTabParts';
 
 const ALL = 'All';
 
@@ -35,13 +35,30 @@ const AssessmentFilterSheet: React.FC<{
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[88%]">
       <SheetHeader title="Filter Assessments" subtitle="Pick filters, then tap Search" onClose={onClose} />
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-5">
-        <div className="space-y-2">
-          <span className="text-xs font-bold text-[#1E293B]">Assessment Name</span>
-          <ChoiceTiles multiple={false} stacked options={[ALL, ...names]} selected={[draft.name]} onChange={(v) => setDraft((d) => ({ ...d, name: v[0] ?? ALL }))} />
-        </div>
-        <DateField label="Assigned On" value={draft.assignedOn} onChange={(iso) => setDraft((d) => ({ ...d, assignedOn: iso }))} />
-        <DateField label="Completed On" value={draft.completedOn} onChange={(iso) => setDraft((d) => ({ ...d, completedOn: iso }))} />
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
+        <section className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#1E293B]">
+            <ClipboardCheck className="w-4 h-4 text-[#2F68FE]" />
+            Assessment Name
+          </div>
+          <Dropdown
+            ariaLabel="Assessment Name"
+            sheetTitle="Assessment Name"
+            value={draft.name}
+            options={[{ value: ALL, label: 'All Assessments' }, ...names.map((n) => ({ value: n, label: n }))]}
+            onChange={(v) => setDraft((d) => ({ ...d, name: v }))}
+          />
+        </section>
+        <section className="bg-[#F8FAFC] border border-[#EBF0F7] rounded-2xl p-3.5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#1E293B]">
+            <CalendarDays className="w-4 h-4 text-[#F59E0B]" />
+            Dates
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <DateField label="Assigned On" value={draft.assignedOn} onChange={(iso) => setDraft((d) => ({ ...d, assignedOn: iso }))} />
+            <DateField label="Completed On" value={draft.completedOn} onChange={(iso) => setDraft((d) => ({ ...d, completedOn: iso }))} />
+          </div>
+        </section>
       </div>
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
         <button
@@ -68,9 +85,12 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
   const names = Array.from(new Set(assessments.map((a) => a.name)));
   const [filters, setFilters] = useState<AssessmentFilters>(EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
+  const term = query.trim().toLowerCase();
   const visible = assessments.filter(
     (a) =>
+      (!term || a.name.toLowerCase().includes(term)) &&
       (filters.name === ALL || a.name === filters.name) &&
       (!filters.assignedOn || a.assignedOn === filters.assignedOn) &&
       (!filters.completedOn || a.completedOn === filters.completedOn),
@@ -78,17 +98,17 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
   const filterCount = (filters.name === ALL ? 0 : 1) + (filters.assignedOn ? 1 : 0) + (filters.completedOn ? 1 : 0);
   const clearAll = () => {
     setFilters(EMPTY_FILTERS);
+    setQuery('');
     setFilterOpen(false);
   };
 
   return (
     <>
       <div className="mt-2.5 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="px-1 text-[11.5px] font-medium text-slate-500">
-            Showing <span className="font-bold text-[#1E293B] tabular-nums">{visible.length}</span> Of{' '}
-            <span className="font-bold text-[#1E293B] tabular-nums">{visible.length}</span> Records
-          </p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <SearchField value={query} onChange={setQuery} placeholder="Search By Assessment Name" />
+          </div>
           <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} label="Filter assessments" />
         </div>
 
@@ -97,7 +117,7 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
             icon={ClipboardCheck}
             title="No Data Found"
             action={
-              filterCount > 0 ? (
+              filterCount > 0 || term ? (
                 <button type="button" onClick={clearAll} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
                   Clear All
                 </button>
@@ -110,14 +130,14 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
               v2 ? (
                 <li key={a.id}>
                   <Card className="overflow-hidden">
-                    <div className="px-4 pt-4 pb-3 flex items-center gap-3.5 bg-linear-to-r from-[#F3F6FF] to-white">
+                    <div className="px-4 pt-4 pb-3 flex items-center gap-3.5 bg-slate-50/80">
                       <span className="w-14 h-14 rounded-full bg-white ring-4 ring-[#E0E7FF] flex flex-col items-center justify-center shrink-0">
                         <span className="text-[10px] font-semibold text-slate-400 leading-none">Score</span>
                         <span className="mt-0.5 text-[13px] font-extrabold text-[#2F68FE] leading-none tabular-nums">{assessmentScore(a)}</span>
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10.5px] text-slate-400">Assessment Name</p>
-                        <p className="text-[13.5px] font-bold text-[#1E293B] leading-snug">{a.name}</p>
+                        <p className="text-[11px] text-slate-400">Assessment Name</p>
+                        <p className="text-sm font-bold text-[#1E293B] leading-snug">{a.name}</p>
                       </div>
                     </div>
                     <RowList
@@ -126,7 +146,6 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
                         { label: 'Assigned By', value: a.assignedBy ?? '-' },
                         { label: 'Assigned On', value: formatStaffDate(a.assignedOn) },
                         { label: 'Completed On', value: a.completedOn ? formatStaffDate(a.completedOn) : '-' },
-                        { label: 'Action', value: a.reportUrl ? null : '-' },
                       ]}
                     />
                     {a.reportUrl && (
@@ -135,7 +154,7 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Download ${a.name} report`}
-                        className="h-11 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#F5F8FF]"
+                        className="h-11 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#F8FAFC]"
                       >
                         <FileDown className="w-4 h-4" /> Download Report
                       </a>
@@ -145,37 +164,39 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
               ) : (
               <li key={a.id}>
                 <Card className="p-3.5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10.5px] text-slate-400">Assessment Name</p>
-                      <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{a.name}</p>
+                  <p className="text-[11px] text-slate-400">Assessment Name</p>
+                  <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{a.name}</p>
+                  {/* Score | Assigned By, then Assigned On | Completed On (50 / 50) */}
+                  <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                    {(
+                      [
+                        [
+                          'Score',
+                          <span className="inline-flex px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#2F68FE] text-[11px] font-bold">{assessmentScore(a)}</span>,
+                        ],
+                        ['Assigned By', a.assignedBy ?? '-'],
+                        ['Assigned On', formatStaffDate(a.assignedOn)],
+                        ['Completed On', a.completedOn ? formatStaffDate(a.completedOn) : '-'],
+                      ] as [string, React.ReactNode][]
+                    ).map(([label, value]) => (
+                      <div key={label} className="min-w-0">
+                        <dt className="text-[11px] text-slate-400">{label}</dt>
+                        <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {a.reportUrl && (
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <a
+                        href={a.reportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Download ${a.name} report`}
+                        className="w-full h-9 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100"
+                      >
+                        <FileDown className="w-4 h-4" /> Download Report
+                      </a>
                     </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[10.5px] text-slate-400">Score</p>
-                      <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] tabular-nums">{assessmentScore(a)}</p>
-                    </div>
-                  </div>
-                  <FieldGrid
-                    compact
-                    fields={[
-                      { label: 'Assigned By', value: a.assignedBy ?? '-', wide: true },
-                      { label: 'Assigned On', value: formatStaffDate(a.assignedOn) },
-                      { label: 'Completed On', value: a.completedOn ? formatStaffDate(a.completedOn) : '-' },
-                    ]}
-                  />
-                  <p className="mt-2.5 text-[10.5px] text-slate-400">Action</p>
-                  {a.reportUrl ? (
-                    <a
-                      href={a.reportUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Download ${a.name} report`}
-                      className="mt-1 w-9 h-9 rounded-xl border border-slate-200 text-slate-500 flex items-center justify-center active:bg-slate-50"
-                    >
-                      <FileDown className="w-4 h-4" />
-                    </a>
-                  ) : (
-                    <p className="mt-0.5 text-[12px] font-semibold text-[#1E293B]">-</p>
                   )}
                 </Card>
               </li>

@@ -131,7 +131,7 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
           )}
           {!draft.to && !activeField && <p className="px-0.5 text-[11px] font-medium text-rose-500">Select a To Date to complete the period.</p>}
           {activeField !== 'start' && (
-            <p className="px-0.5 text-[10.5px] text-slate-400">Timesheets are reported week by week; the latest From Date is the last completed week.</p>
+            <p className="px-0.5 text-[11px] text-slate-400">Timesheets are reported week by week; the latest From Date is the last completed week.</p>
           )}
         </div>
 
@@ -159,7 +159,7 @@ export const TimesheetFilterSheet: React.FC<Props> = ({ isOpen, filters, staff, 
           type="button"
           disabled={!draftFilters}
           onClick={() => draftFilters && onApply(draftFilters)}
-          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           {draftCount ? `Search (${draftCount})` : 'Search'}
         </button>

@@ -7,19 +7,12 @@ import type { InvoicePaymentStatus } from '../data/clientInvoicesData';
 
 const STATUS_STYLE: Record<InvoicePaymentStatus, { pill: string; dot: string }> = {
   Paid: { pill: 'bg-[#E8F8F0] text-[#10B981]', dot: 'bg-[#10B981]' },
-  Unpaid: { pill: 'bg-[#FEF8E7] text-[#D97706]', dot: 'bg-[#F59E0B]' },
+  Unpaid: { pill: 'bg-[#FEF8E7] text-[#D97706]', dot: 'bg-[#D97706]' },
   'Partially Paid': { pill: 'bg-[#EEF2FF] text-[#4F46E5]', dot: 'bg-[#4F46E5]' },
 };
 
-/** Status colour for card accents (V2 left rail / V1 status dot ring) */
-export const INVOICE_STATUS_ACCENT: Record<InvoicePaymentStatus, { rail: string; soft: string; text: string }> = {
-  Paid: { rail: 'bg-[#10B981]', soft: 'bg-[#E8F8F0]', text: 'text-[#10B981]' },
-  Unpaid: { rail: 'bg-[#F59E0B]', soft: 'bg-[#FEF8E7]', text: 'text-[#D97706]' },
-  'Partially Paid': { rail: 'bg-[#4F46E5]', soft: 'bg-[#EEF2FF]', text: 'text-[#4F46E5]' },
-};
-
 export const InvoiceStatusPill: React.FC<{ status: InvoicePaymentStatus }> = ({ status }) => (
-  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold whitespace-nowrap ${STATUS_STYLE[status].pill}`}>
+  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${STATUS_STYLE[status].pill}`}>
     <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLE[status].dot}`} aria-hidden="true" />
     {status}
   </span>
@@ -49,58 +42,32 @@ export const FileAction: React.FC<{
   </button>
 );
 
-export const InvoiceListSkeleton: React.FC<{ v2?: boolean }> = ({ v2 }) =>
-  v2 ? (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="relative bg-white border border-[#DCE3ED] rounded-xl overflow-hidden">
-          <span className="absolute left-0 inset-y-0 w-1 bg-slate-200" />
-          <div className="pl-4 pr-3.5 py-3 flex items-center justify-between">
-            <div className="space-y-1.5">
-              <StaffSkeleton className="w-16 h-2.5" />
-              <StaffSkeleton className="w-32 h-4" />
-            </div>
-            <StaffSkeleton className="w-16 h-5" />
+export const InvoiceListSkeleton: React.FC = () => (
+  <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
+    {[0, 1, 2, 3].map((i) => (
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl overflow-hidden shadow-2xs">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="space-y-1.5">
+            <StaffSkeleton className="w-16 h-2.5" />
+            <StaffSkeleton className="w-32 h-4" />
           </div>
-          <div className="pl-4 pr-3.5 pb-3 space-y-2.5 border-t border-dashed border-slate-200 pt-3">
-            <StaffSkeleton className="w-full h-3" />
-            <StaffSkeleton className="w-full h-3" />
-            <StaffSkeleton className="w-2/3 h-3" />
-          </div>
-          <div className="h-11 bg-[#F8FAFC] border-t border-slate-100" />
+          <StaffSkeleton className="w-16 h-5 rounded-full" />
         </div>
-      ))}
-    </div>
-  ) : (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading invoices">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="bg-white border border-[#DCE3ED] rounded-[20px] p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1.5">
-              <StaffSkeleton className="w-16 h-2.5" />
-              <StaffSkeleton className="w-32 h-4" />
-            </div>
-            <StaffSkeleton className="w-16 h-6 rounded-full" />
-          </div>
-          <StaffSkeleton className="w-full h-16 rounded-2xl" />
-          <div className="grid grid-cols-3 gap-2">
-            {[0, 1, 2].map((j) => (
-              <StaffSkeleton key={j} className="w-full h-12 rounded-2xl" />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <StaffSkeleton className="flex-1 h-10 rounded-full" />
-            <StaffSkeleton className="flex-1 h-10 rounded-full" />
-          </div>
+        <div className="px-4 pb-3 space-y-2.5 border-t border-slate-100 pt-3">
+          <StaffSkeleton className="w-full h-3" />
+          <StaffSkeleton className="w-full h-3" />
+          <StaffSkeleton className="w-2/3 h-3" />
         </div>
-      ))}
-    </div>
-  );
+        <div className="h-11 border-t border-slate-100" />
+      </div>
+    ))}
+  </div>
+);
 
 export const InvoiceDetailSkeleton: React.FC = () => (
-  <div className="px-4 pt-3 space-y-3" aria-busy="true" aria-label="Loading invoice details">
+  <div className="px-4 pt-3.5 space-y-3" aria-busy="true" aria-label="Loading invoice details">
     <StaffSkeleton className="w-40 h-3" />
-    <div className="bg-white border border-[#DCE3ED] rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3">
       <StaffSkeleton className="w-24 h-4" />
       <StaffSkeleton className="w-40 h-8" />
       <div className="grid grid-cols-2 gap-3">
@@ -110,7 +77,7 @@ export const InvoiceDetailSkeleton: React.FC = () => (
       </div>
     </div>
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#DCE3ED] rounded-2xl p-3.5 flex items-center gap-3">
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3">
         <StaffSkeleton className="w-10 h-10 rounded-full" />
         <div className="flex-1 space-y-1.5">
           <StaffSkeleton className="w-32 h-3.5" />
@@ -179,7 +146,7 @@ export const InvoiceExportSheet: React.FC<{
       <SheetHeader title="Export Invoices" subtitle={scopeLabel} onClose={onClose} />
       <div className="px-5 py-4 pb-7 space-y-2.5">
         {empty && (
-          <p className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#FEF8E7] border border-[#FDE68A] text-[11.5px] font-medium text-amber-800">
+          <p className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
             <AlertCircle className="w-4 h-4 shrink-0" />
             No invoices found to export.
           </p>
@@ -192,39 +159,39 @@ export const InvoiceExportSheet: React.FC<{
             setCsvBusy(true);
             setTimeout(onCsv, 600);
           }}
-          className="w-full p-3.5 rounded-2xl border border-slate-200 bg-white flex items-center gap-3 text-left active:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-full p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex items-center gap-3 text-left active:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
-          <span className="w-11 h-11 rounded-xl bg-[#E8F8F0] text-[#10B981] flex items-center justify-center shrink-0">
+          <span className="w-11 h-11 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
             <FileSpreadsheet className="w-5 h-5" />
           </span>
           <span className="flex-1 min-w-0">
             <span className="block text-[13px] font-bold text-[#1E293B]">Export as CSV</span>
             <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Invoice no., dates, period, staff count, amount and status</span>
-            <span className="block mt-1 text-[10.5px] font-semibold text-slate-400 tabular-nums">
+            <span className="block mt-1 text-[11px] font-semibold text-slate-400 tabular-nums">
               CSV · {invoiceCount} {invoiceCount === 1 ? 'invoice' : 'invoices'}
             </span>
           </span>
-          {csvBusy ? <Loader2 className="w-4.5 h-4.5 text-[#2F68FE] animate-spin shrink-0" /> : <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+          {csvBusy ? <Loader2 className="w-4.5 h-4.5 text-[#2F68FE] animate-spin shrink-0" /> : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />}
         </button>
 
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
           <button
             type="button"
             disabled={empty || csvBusy || zip !== 'idle'}
             onClick={startZip}
             className="w-full p-3.5 flex items-center gap-3 text-left active:bg-slate-50 disabled:cursor-default transition-colors cursor-pointer disabled:active:bg-transparent"
           >
-            <span className="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+            <span className="w-11 h-11 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
               <FileArchive className="w-5 h-5" />
             </span>
             <span className={`flex-1 min-w-0 ${empty ? 'opacity-60' : ''}`}>
               <span className="block text-[13px] font-bold text-[#1E293B]">Export as ZIP</span>
               <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Invoice PDFs with every staff timesheet PDF</span>
-              <span className="block mt-1 text-[10.5px] font-semibold text-slate-400 tabular-nums">
+              <span className="block mt-1 text-[11px] font-semibold text-slate-400 tabular-nums">
                 ZIP · {invoiceCount} {invoiceCount === 1 ? 'invoice' : 'invoices'} · {timesheetCount} {timesheetCount === 1 ? 'timesheet' : 'timesheets'}
               </span>
             </span>
-            {zip === 'idle' && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+            {zip === 'idle' && <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />}
           </button>
 
           {zip === 'working' && (
@@ -239,20 +206,20 @@ export const InvoiceExportSheet: React.FC<{
               <span className="mt-2 block h-1.5 rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
                 <span className="block h-full bg-[#2F68FE] rounded-full transition-all duration-200" style={{ width: `${progress}%` }} />
               </span>
-              <p className="mt-2 text-[10.5px] text-slate-400">Large exports can take a minute. Keep this sheet open.</p>
+              <p className="mt-2 text-[11px] text-slate-400">Large exports can take a minute. Keep this sheet open.</p>
             </div>
           )}
 
           {zip === 'ready' && (
             <div className="px-3.5 pb-3.5">
-              <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-[#10B981]">
                 <CheckCircle2 className="w-4 h-4" />
                 Your ZIP is ready
               </p>
               <button
                 type="button"
                 onClick={onZip}
-                className="mt-2.5 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 active:bg-[#1D4ED8] cursor-pointer"
+                className="mt-2.5 w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 Download ZIP
