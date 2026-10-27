@@ -486,9 +486,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 <span className="text-slate-300">·</span>
                 {day.workMode ? WORK_MODE_LABEL[day.workMode] : '--'}
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-500 truncate">
-                {member.designation || '--'} <span className="text-slate-300">·</span> {member.level || '--'}
-              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 truncate">{member.level || '--'}</p>
             </div>
             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
           </div>
@@ -538,7 +536,6 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                 <span className="text-slate-300">·</span>
                 {WORK_MODE_LABEL[r.workMode]}
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-500 truncate">{m?.designation || '--'}</p>
             </div>
             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${AMEND_STATUS_STYLE[r.status]}`}>{r.status}</span>
           </div>
@@ -613,10 +610,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
             <DateBlock iso={day.date} />
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2">
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[11px] font-medium text-slate-400 leading-tight">Staff Name</span>
-                  <span className="block mt-0.5 text-sm font-bold text-[#1E293B] truncate">{member.name}</span>
-                </span>
+                <span className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">{member.name}</span>
                 <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
               </div>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
@@ -627,10 +621,11 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
           </div>
           <div className="px-3.5 pb-3.5 space-y-1">
             <PunchStrip checkIn={day.checkIn} checkOut={day.checkOut} office={day.officeTime} />
-            <dl className="divide-y divide-dashed divide-slate-200">
-              <RowV2 label="Designation">{member.designation}</RowV2>
-              {note && <RowV2 label="Holiday">{note}</RowV2>}
-            </dl>
+            {note && (
+              <dl>
+                <RowV2 label="Holiday">{note}</RowV2>
+              </dl>
+            )}
           </div>
         </article>
       </li>
@@ -647,19 +642,16 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     return (
       <li key={r.id}>
         <article className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
-          <div className="h-10 px-3.5 flex items-center gap-2 border-b border-slate-100">
-            <span className="text-[11px] font-medium text-slate-500">Status</span>
-            <span className={`ml-auto px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold ${t.band} ${t.text}`}>
-              <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
-              {r.status}
-            </span>
-          </div>
-
           <div className="p-3.5 flex items-start gap-3">
             <DateBlock iso={r.date} />
             <div className="flex-1 min-w-0">
-              <span className="block text-[11px] font-medium text-slate-400 leading-tight">Staff Name</span>
-              <span className="block mt-0.5 text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</span>
+              <div className="flex items-start gap-2">
+                <span className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</span>
+                <span className={`shrink-0 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-[11px] font-bold ${t.band} ${t.text}`}>
+                  <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
+                  {r.status}
+                </span>
+              </div>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <WorkModeTag mode={r.workMode} />
               </div>
@@ -669,7 +661,6 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
           <div className="px-3.5 pb-3.5 space-y-1">
             <PunchStrip checkIn={r.requestedIn} checkOut={r.requestedOut} office={times.office} />
             <dl className="divide-y divide-dashed divide-slate-200">
-              <RowV2 label="Designation">{m?.designation}</RowV2>
               <RowV2 label="Request Type">{r.reason}</RowV2>
               <RowV2 label="Recorded As">{r.recordedStatus}</RowV2>
             </dl>
@@ -678,18 +669,6 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
               <div className="mt-1 pl-3 py-1 border-l-[3px] border-[#BFDBFE]">
                 <p className="text-[11px] font-medium text-slate-400">Reason</p>
                 <p className="mt-0.5 text-xs text-slate-700 leading-relaxed">{r.staffNote}</p>
-              </div>
-            )}
-
-            {r.status !== 'Pending' && (
-              <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                  <MessageSquareText className="w-3.5 h-3.5 text-slate-400" />
-                  Your comment
-                  {r.decidedOn ? ` · ${formatAmendDate(r.decidedOn)}` : ''}
-                </p>
-                <p className="text-xs text-slate-700">{r.clientComment || '-'}</p>
-                {r.setOffDate && <p className="text-[11px] text-slate-500">Hours to be made up on {formatAmendDate(r.setOffDate)}</p>}
               </div>
             )}
           </div>

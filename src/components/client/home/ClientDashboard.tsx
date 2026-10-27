@@ -25,7 +25,7 @@ import { Dropdown } from '../../../design-system/components/Dropdown';
 import { BottomSheet } from '../../common/BottomSheet';
 import { DateRangeFields } from '../../common/DateRangeFields';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
-import { Pill, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { ACCENT, Pill, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { DomainTile } from '../hub/HubParts';
 import { CandidateStatusPill } from '../interviews/InterviewParts';
 import {
@@ -47,7 +47,15 @@ import {
   utilizationRangeFor,
 } from '../data/clientDashboardData';
 import type { BillingActionItem } from '../data/clientBillingData';
-import { PIPELINE_PREVIEW_COUNT, ShortlistedCandidate, formatShortDate, hasResumeOf, interviewLabels, pipelineCandidatesOf } from '../data/clientInterviewsData';
+import {
+  PIPELINE_PREVIEW_COUNT,
+  ShortlistedCandidate,
+  formatShortDate,
+  hasResumeOf,
+  interviewLabels,
+  pipelineCandidatesOf,
+  statusTone,
+} from '../data/clientInterviewsData';
 import {
   REQUIREMENT_PREVIEW_COUNT,
   StaffRequirement,
@@ -411,7 +419,7 @@ const StaffUtilizationCard: React.FC<{ members: ClientStaffMember[] }> = ({ memb
         <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
           <Gauge className="w-4 h-4" />
         </span>
-        <h2 className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-snug">Permanence and Productivity insights</h2>
+        <h2 className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-snug">Performance &amp; Productivity Insights</h2>
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -510,20 +518,23 @@ const StaffUtilizationCard: React.FC<{ members: ClientStaffMember[] }> = ({ memb
 
 /* ----------------------- Previously Saved Profiles ----------------------- */
 
-/** Available Staff Hub Saved Resumes (desktop `linkedprofile`) as swipeable cards; a card opens View Resume */
+/** Available Staff Hub Saved Resumes (desktop `linkedprofile`); a row opens View Resume */
 const SavedProfilesCard: React.FC<{
   profiles: HubProfile[];
   onOpenProfile?: (profileId: string) => void;
   onOpenAll?: () => void;
 }> = ({ profiles, onOpenProfile, onOpenAll }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-[20px] py-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]" aria-labelledby="client-saved-profiles-title">
-    <div className="px-4 flex items-center gap-2.5">
+  <section className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]" aria-labelledby="client-saved-profiles-title">
+    <div className="flex items-center gap-2.5">
       <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
         <BookmarkCheck className="w-4 h-4" />
       </span>
-      <h2 id="client-saved-profiles-title" className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">
-        Previously Saved Profiles
-      </h2>
+      <span className="flex-1 min-w-0">
+        <h2 id="client-saved-profiles-title" className="text-sm font-bold text-[#1E293B] truncate">
+          Previously Saved Profiles
+        </h2>
+        {profiles.length > 0 && <span className="block text-[11px] font-medium text-slate-400 tabular-nums">{profiles.length} saved</span>}
+      </span>
       {profiles.length > 0 && onOpenAll && (
         <button
           type="button"
@@ -537,45 +548,45 @@ const SavedProfilesCard: React.FC<{
     </div>
 
     {profiles.length === 0 ? (
-      <div className="px-4 mt-3">
-        <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-          <span className="flex-1 min-w-0">
-            <span className="block text-xs font-bold text-[#1E293B]">No saved profiles yet</span>
-            <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Save resumes in the Available Staff Hub to find them here.</span>
-          </span>
-          {onOpenAll && (
-            <button
-              type="button"
-              onClick={onOpenAll}
-              className="shrink-0 h-8 px-3 rounded-full bg-white border border-blue-100 shadow-2xs flex items-center gap-1 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-            >
-              Browse
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+      <div className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+        <span className="flex-1 min-w-0">
+          <span className="block text-xs font-bold text-[#1E293B]">No saved profiles yet</span>
+          <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Save resumes in the Available Staff Hub to find them here.</span>
+        </span>
+        {onOpenAll && (
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="shrink-0 h-8 px-3 rounded-full bg-white border border-blue-100 shadow-2xs flex items-center gap-1 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+          >
+            Browse
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     ) : (
-      <ul className="mt-3 px-4 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-4">
-        {profiles.map((p) => (
-          <li key={p.id} className="snap-start shrink-0 w-[168px]">
+      <ul className="mt-2 -mb-1 divide-y divide-slate-100">
+        {profiles.slice(0, PIPELINE_PREVIEW_COUNT).map((p) => (
+          <li key={p.id}>
             <button
               type="button"
               onClick={() => onOpenProfile?.(p.id)}
               aria-label={`${p.profile} (${p.resumeId}). View resume`}
-              className="w-full h-full p-3 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs text-left flex flex-col active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+              className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
             >
-              <span className="flex items-start justify-between gap-2">
-                <DomainTile domain={p.domain} />
-                <ArrowUpRight className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
+              <DomainTile domain={p.domain} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-bold text-[#1E293B] truncate">{p.profile}</span>
+                <span className="block text-[11px] text-slate-500 truncate">
+                  {p.domain}
+                  <span className="tabular-nums"> · {p.resumeId}</span>
+                </span>
+                <span className="mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1">
+                  <Pill tone="blue">{p.resume.level}</Pill>
+                  <span className="text-[11px] font-semibold text-slate-600 tabular-nums">{rateLabel(p)}</span>
+                </span>
               </span>
-              <span className="mt-2.5 block text-[10px] font-bold uppercase tracking-wide text-slate-400 truncate">{p.domain}</span>
-              <span className="mt-0.5 block text-[13px] font-bold text-[#1E293B] leading-tight line-clamp-2">{p.profile}</span>
-              <span className="mt-1 block text-[11px] font-semibold text-slate-500 tabular-nums">({p.resumeId})</span>
-              <span className="mt-auto pt-2.5 flex items-center justify-between gap-2">
-                <Pill tone="blue">{p.resume.level}</Pill>
-                <span className="text-xs font-bold text-[#1E293B] tabular-nums truncate">{rateLabel(p)}</span>
-              </span>
+              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
             </button>
           </li>
         ))}
@@ -586,7 +597,9 @@ const SavedProfilesCard: React.FC<{
 
 /* ------------------------ Shortlisted Candidates ------------------------ */
 
-/** Candidates still in the hiring pipeline (desktop Shortlisted Candidates); a row opens View Resume / the CV */
+const CANDIDATE_CARD = 'relative overflow-hidden pl-4 pr-3 py-3 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs flex items-center gap-3';
+
+/** Candidates still in the hiring pipeline (desktop Shortlisted Candidates) as status-strip cards; a card opens View Resume / the CV */
 const ShortlistedCandidatesCard: React.FC<{
   candidates: ShortlistedCandidate[];
   onOpenCandidate?: (candidateId: string) => void;
@@ -638,12 +651,13 @@ const ShortlistedCandidatesCard: React.FC<{
           )}
         </div>
       ) : (
-        <ul className="mt-2 -mb-1 divide-y divide-slate-100">
+        <ul className="mt-3 space-y-2.5">
           {preview.map((c, idx) => {
             const interview = interviewLabels(c);
             const opens = onOpenCandidate && hasResumeOf(c);
             const body = (
               <>
+                <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${ACCENT[statusTone(c.status)]}`} />
                 <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${avatarTint(idx)}`}>
                   {initialsOf(c.name)}
                 </span>
@@ -673,12 +687,12 @@ const ShortlistedCandidatesCard: React.FC<{
                     type="button"
                     onClick={() => onOpenCandidate(c.id)}
                     aria-label={`${c.name}, ${c.status}. View resume`}
-                    className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                    className={`w-full ${CANDIDATE_CARD} text-left active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]`}
                   >
                     {body}
                   </button>
                 ) : (
-                  <div className="py-2.5 flex items-center gap-3">{body}</div>
+                  <div className={CANDIDATE_CARD}>{body}</div>
                 )}
               </li>
             );

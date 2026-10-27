@@ -76,17 +76,16 @@ const InfoBanner: React.FC<{ day: AttendanceDay }> = ({ day }) => {
   );
 };
 
-/** One desktop table row: Date, Check In, Check Out, Total Office Time, Break Time, Overtime, Work Mode, Level, Designation, Status */
-const DayCard: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = ({ day, member }) => {
+/** One desktop table row: Date, Check In, Check Out, Total Office Time, Break Time, Work Mode, Status */
+const DayCard: React.FC<{ day: AttendanceDay }> = ({ day }) => {
   const d = parse(day.date);
   const worked = Boolean(day.checkIn);
   const ModeIcon = day.workMode === 'WFH' ? House : Building2;
   const modeLabel = day.workMode === 'WFH' ? 'Work From Home' : day.workMode === 'Office' ? 'Work From Office' : '--';
-  const hasOt = Boolean(day.overtime && day.overtime !== '00:00');
-  const tile = (label: string, value: string | null | undefined, color = 'text-[#1E293B]') => (
+  const tile = (label: string, value: string | null | undefined) => (
     <div key={label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
       <dt className="text-[10px] font-semibold text-slate-400 leading-tight">{label}</dt>
-      <dd className={`mt-0.5 text-xs font-bold tabular-nums ${color}`}>{value ?? '--'}</dd>
+      <dd className="mt-0.5 text-xs font-bold tabular-nums text-[#1E293B]">{value ?? '--'}</dd>
     </div>
   );
   return (
@@ -112,30 +111,22 @@ const DayCard: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = ({ 
         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
       </div>
 
-      <div className="px-3.5">
+      <div className="px-3.5 pb-3.5">
         {worked ? (
           <dl className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               {tile('Check In', day.checkIn)}
               {tile('Check Out', day.checkOut)}
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {tile('Total Office Time', day.officeTime)}
               {tile('Break Time', day.breakTime)}
-              {tile('Overtime', day.overtime, hasOt ? 'text-[#4F46E5]' : 'text-[#1E293B]')}
             </div>
           </dl>
         ) : (
           <InfoBanner day={day} />
         )}
       </div>
-
-      <dl className="mt-3 px-3.5 py-2.5 border-t border-slate-100 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px]">
-        <dt className="text-slate-400">Level</dt>
-        <dd className="font-semibold text-[#1E293B] text-right">{member.level}</dd>
-        <dt className="text-slate-400">Designation</dt>
-        <dd className="font-semibold text-[#1E293B] text-right break-words">{member.designation}</dd>
-      </dl>
     </article>
   );
 };
@@ -150,13 +141,12 @@ const STATUS_DOT: Record<AttendanceStatus, string> = {
   Holiday: 'bg-[#4F46E5]',
 };
 
-/** V2 day row: date block on the left, check-in → check-out line, time chips, Level / Designation rows */
-const DayCardV2: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = ({ day, member }) => {
+/** V2 day row: date block on the left, check-in → check-out line, time chips */
+const DayCardV2: React.FC<{ day: AttendanceDay }> = ({ day }) => {
   const d = parse(day.date);
   const worked = Boolean(day.checkIn);
   const ModeIcon = day.workMode === 'WFH' ? House : Building2;
   const modeLabel = day.workMode === 'WFH' ? 'Work From Home' : day.workMode === 'Office' ? 'Work From Office' : '--';
-  const hasOt = Boolean(day.overtime && day.overtime !== '00:00');
   return (
     <div className="relative bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
       <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${STATUS_DOT[day.status]}`} />
@@ -193,15 +183,14 @@ const DayCardV2: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = (
                   <span className="truncate">{modeLabel}</span>
                 </span>
               </div>
-              <dl className="mt-2.5 grid grid-cols-3 gap-1.5">
+              <dl className="mt-2.5 grid grid-cols-2 gap-1.5">
                 {[
-                  ['Total Office Time', day.officeTime, 'text-[#1E293B]'],
-                  ['Break Time', day.breakTime, 'text-[#1E293B]'],
-                  ['Overtime', day.overtime, hasOt ? 'text-[#4F46E5]' : 'text-[#1E293B]'],
-                ].map(([label, value, color]) => (
+                  ['Total Office Time', day.officeTime],
+                  ['Break Time', day.breakTime],
+                ].map(([label, value]) => (
                   <div key={label} className="min-w-0 rounded-lg bg-[#F8FAFC] px-2 py-1.5">
                     <dt className="text-[10px] text-slate-400 truncate">{label}</dt>
-                    <dd className={`text-[12px] font-bold tabular-nums ${color}`}>{value ?? '--'}</dd>
+                    <dd className="text-[12px] font-bold tabular-nums text-[#1E293B]">{value ?? '--'}</dd>
                   </div>
                 ))}
               </dl>
@@ -213,13 +202,6 @@ const DayCardV2: React.FC<{ day: AttendanceDay; member: ClientStaffMember }> = (
           )}
         </div>
       </div>
-      <dl className="px-4 py-2 border-t border-slate-100 bg-[#F8FAFC] flex items-center gap-3 text-[11px]">
-        <dt className="text-slate-400">Level</dt>
-        <dd className="font-semibold text-[#1E293B]">{member.level}</dd>
-        <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" aria-hidden="true" />
-        <dt className="text-slate-400 shrink-0">Designation</dt>
-        <dd className="font-semibold text-[#1E293B] truncate">{member.designation}</dd>
-      </dl>
     </div>
   );
 };
@@ -496,7 +478,7 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
           }
         />
       ) : (
-        visibleDays.map((d) => (v2 ? <DayCardV2 key={d.date} day={d} member={member} /> : <DayCard key={d.date} day={d} member={member} />))
+        visibleDays.map((d) => (v2 ? <DayCardV2 key={d.date} day={d} /> : <DayCard key={d.date} day={d} />))
       )}
     </>
   );

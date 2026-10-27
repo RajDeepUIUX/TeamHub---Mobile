@@ -662,13 +662,6 @@ export const ClientStaffHubView: React.FC<Props> = ({
             />
           ) : (
             <>
-              {v2 && (
-                <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold text-slate-500 tabular-nums" aria-live="polite">
-                  <span className="h-px flex-1 bg-slate-200" />
-                  Showing {visible.length} Of {results.length} Records
-                  <span className="h-px flex-1 bg-slate-200" />
-                </p>
-              )}
               <ul className="space-y-3">{visible.map(v2 ? cardV2 : card)}</ul>
 
               {visible.length < results.length && (

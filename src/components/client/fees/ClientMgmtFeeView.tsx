@@ -59,7 +59,7 @@ const LevelWise: React.FC<{ data: MosFeeStructure }> = ({ data }) => {
           Staff Member As Per Team Size
         </p>
         <div
-          className="mt-3 p-1 rounded-2xl bg-slate-100/90 border border-slate-200/60 grid gap-1"
+          className="mt-3 grid gap-1.5"
           style={{ gridTemplateColumns: `repeat(${data.brackets.length}, minmax(0, 1fr))` }}
           role="radiogroup"
           aria-label="Team size"
@@ -73,8 +73,10 @@ const LevelWise: React.FC<{ data: MosFeeStructure }> = ({ data }) => {
                 role="radio"
                 aria-checked={on}
                 onClick={() => setSel(i)}
-                className={`h-9 rounded-xl text-xs tabular-nums transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
-                  on ? 'bg-white text-[#1E293B] font-bold shadow-[0_1px_3px_rgba(15,23,42,0.12)]' : 'text-slate-500 font-semibold active:bg-white/60'
+                className={`h-10 rounded-xl border text-xs font-bold tabular-nums transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+                  on
+                    ? 'bg-[#2F68FE] border-[#2F68FE] text-white shadow-[0_4px_10px_rgba(47,104,254,0.25)]'
+                    : 'bg-[#F8FAFC] border-[#EBF0F7] text-slate-500 active:bg-slate-100'
                 }`}
               >
                 {b.label}
@@ -85,17 +87,19 @@ const LevelWise: React.FC<{ data: MosFeeStructure }> = ({ data }) => {
       </div>
 
       <SectionLabel>Fee per staff member · {bracket.label} team</SectionLabel>
-      <div className={`${CARD} divide-y divide-slate-100 overflow-hidden`}>
+      <div className="grid grid-cols-2 gap-2.5">
         {data.levels.map((row) => (
-          <div key={`${bracket.id}-${row.level}`} className="px-3.5 py-3 flex items-center gap-3 animate-in fade-in duration-200">
-            <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] text-sm font-extrabold flex items-center justify-center shrink-0">
-              L{row.level}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#1E293B]">Level {row.level}</p>
-              <p className="text-[11px] text-slate-500 truncate">{row.usExperience}</p>
+          <div key={`${bracket.id}-${row.level}`} className={`${CARD} p-3.5 animate-in fade-in duration-200`}>
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-[#EEF2FF] text-[#2F68FE] text-xs font-extrabold flex items-center justify-center shrink-0">
+                L{row.level}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-[#1E293B]">Level {row.level}</span>
+                <span className="block text-[10px] font-medium text-slate-400 truncate">{row.usExperience}</span>
+              </span>
             </div>
-            <p className="text-sm font-bold text-[#1E293B] tabular-nums shrink-0">
+            <p className="mt-3 pt-2.5 border-t border-slate-100 text-lg font-extrabold text-[#1E293B] leading-none tabular-nums">
               {formatFee(row.fees[sel])}
               <span className="text-[11px] font-medium text-slate-400">/mo</span>
             </p>
@@ -114,7 +118,7 @@ const WorkMode: React.FC<{ rows: WorkModeFeeRow[] }> = ({ rows }) => (
       {rows.map((r) => {
         const Icon = r.mode === 'Work From Home' ? House : Building2;
         return (
-          <div key={r.mode} className={`${CARD} p-4`}>
+          <div key={r.mode} className={`${CARD} p-4 flex flex-col items-center text-center`}>
             <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center">
               <Icon className="w-5 h-5" />
             </span>
@@ -138,10 +142,7 @@ const PerHour: React.FC<{ rows: HourlyFeeRow[] }> = ({ rows }) => (
           <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-[#1E293B] tabular-nums">{r.bracket.label} Staff</p>
-            <p className="text-[11px] text-slate-500">No. of staff</p>
-          </div>
+          <p className="flex-1 min-w-0 text-[13px] font-semibold text-[#1E293B] tabular-nums">{r.bracket.label} Staff</p>
           <p className="text-sm font-bold text-[#1E293B] tabular-nums shrink-0">
             {formatFee(r.hourlyFee, 2)}
             <span className="text-[11px] font-medium text-slate-400">/hr</span>

@@ -54,14 +54,20 @@ export const AllowToggle: React.FC<{
   </div>
 );
 
-/** V1 mode cards: Allowed / Not Allowed as two separate pills; tapping the active pill clears it */
+/** V1: three-position knob switch — knob rests in the middle until answered, slides to Allowed (left) or Not Allowed (right); tapping the active side clears it */
 export const AllowPills: React.FC<{
   value: YesNo | null;
   onChange: (v: YesNo) => void;
   label: string;
   disabled?: boolean;
 }> = ({ value, onChange, label, disabled }) => (
-  <div role="radiogroup" aria-label={label} className={`flex gap-2 ${disabled ? 'opacity-60' : ''}`}>
+  <div
+    role="radiogroup"
+    aria-label={label}
+    className={`relative grid grid-cols-2 h-12 rounded-2xl bg-white border shadow-2xs overflow-hidden transition-colors duration-300 ${
+      value === 'yes' ? 'border-emerald-200' : value === 'no' ? 'border-rose-200' : 'border-slate-200'
+    } ${disabled ? 'opacity-60' : ''}`}
+  >
     {(['yes', 'no'] as const).map((v) => {
       const on = value === v;
       const yes = v === 'yes';
@@ -73,25 +79,45 @@ export const AllowPills: React.FC<{
           aria-checked={on}
           disabled={disabled}
           onClick={() => onChange(v)}
-          className={`flex-1 h-11 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+          className={`h-full flex items-center gap-1.5 text-xs whitespace-nowrap transition-colors duration-300 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE] ${
+            yes ? 'justify-start pl-3 pr-8 rounded-l-2xl' : 'justify-end pr-3 pl-8 rounded-r-2xl'
+          } ${
             on
               ? yes
-                ? 'bg-[#10B981] border-[#10B981] text-white'
-                : 'bg-[#FEF2F2] border-[#EF4444] text-[#EF4444]'
-              : yes
-              ? 'bg-white border-slate-200 text-[#10B981] active:bg-[#E8F8F0]'
-              : 'bg-white border-slate-200 text-slate-500 active:bg-slate-50'
+                ? 'bg-[#E8F8F0] text-[#10B981] font-bold'
+                : 'bg-[#FEF2F2] text-[#EF4444] font-bold'
+              : 'text-slate-500 font-semibold active:bg-slate-50'
           }`}
         >
-          {yes ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <X className="w-3.5 h-3.5 stroke-[3]" />}
+          {yes ? <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" /> : <X className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
           {yes ? 'Allowed' : 'Not Allowed'}
         </button>
       );
     })}
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-7 p-1 rounded-full ring-4 ring-white transition-colors duration-300 ${
+        value === 'yes' ? 'bg-[#10B981]' : value === 'no' ? 'bg-[#EF4444]' : 'bg-slate-200'
+      }`}
+    >
+      <span
+        className={`w-5 h-5 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] flex items-center justify-center transition-transform duration-300 ease-out ${
+          value === 'yes' ? 'translate-x-0' : value === 'no' ? 'translate-x-7' : 'translate-x-3.5'
+        }`}
+      >
+        {value === 'yes' ? (
+          <Check className="w-3 h-3 stroke-[3.5] text-[#10B981]" />
+        ) : value === 'no' ? (
+          <X className="w-3 h-3 stroke-[3.5] text-[#EF4444]" />
+        ) : (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" />
+        )}
+      </span>
+    </span>
   </div>
 );
 
-/** V2: Allowed / Not Allowed as two selectable tiles with a radio dot; tapping the active tile clears it */
+/** V2: Allowed / Not Allowed as two on/off toggle cells — only one can be on; switching the active one off clears it */
 export const AllowChoice: React.FC<{
   value: YesNo | null;
   onChange: (v: YesNo) => void;
@@ -111,23 +137,40 @@ export const AllowChoice: React.FC<{
           aria-checked={on}
           disabled={disabled}
           onClick={() => onChange(v)}
-          className={`${compact ? 'h-10' : 'h-11'} rounded-xl px-3 border flex items-center gap-2 text-xs font-bold shadow-2xs transition-colors duration-200 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+          className={`${compact ? 'h-11' : 'h-12'} min-w-0 pl-3 pr-2 rounded-xl border flex items-center justify-between gap-2 shadow-2xs transition-colors duration-300 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
             on
               ? yes
-                ? 'border-[#10B981] bg-[#E8F8F0] text-[#10B981]'
-                : 'border-[#EF4444] bg-[#FEF2F2] text-[#EF4444]'
-              : 'border-slate-200 bg-white text-slate-500 active:bg-slate-50'
+                ? 'bg-[#E8F8F0] border-emerald-200'
+                : 'bg-[#FEF2F2] border-rose-200'
+              : 'bg-white border-slate-200 active:bg-slate-50'
           }`}
         >
           <span
-            className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              on ? (yes ? 'bg-[#10B981] text-white' : 'border-2 border-[#EF4444] text-[#EF4444]') : 'border-2 border-slate-300'
+            className={`min-w-0 truncate text-xs transition-colors duration-300 ${
+              on ? `font-bold ${yes ? 'text-[#10B981]' : 'text-[#EF4444]'}` : 'font-semibold text-slate-500'
             }`}
-            aria-hidden="true"
           >
-            {on && (yes ? <Check className="w-3 h-3 stroke-[3.5]" /> : <X className="w-3 h-3 stroke-[3.5]" />)}
+            {yes ? 'Allowed' : 'Not Allowed'}
           </span>
-          {yes ? 'Allowed' : 'Not Allowed'}
+          <span
+            aria-hidden="true"
+            className={`w-10 h-6 p-0.5 rounded-full shrink-0 transition-colors duration-300 ${
+              on ? (yes ? 'bg-[#10B981]' : 'bg-[#EF4444]') : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`w-5 h-5 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] flex items-center justify-center transition-transform duration-300 ease-out ${
+                on ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            >
+              {on &&
+                (yes ? (
+                  <Check className="w-3 h-3 stroke-[3.5] text-[#10B981]" />
+                ) : (
+                  <X className="w-3 h-3 stroke-[3.5] text-[#EF4444]" />
+                ))}
+            </span>
+          </span>
         </button>
       );
     })}

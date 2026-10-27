@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, CalendarCheck, ChevronRight, CirclePlus, Clock, Info, Luggage } from 'lucide-react';
-import { BottomSheet } from '../../../common/BottomSheet';
+import { Calendar, CalendarCheck, CirclePlus, Clock, Info, Luggage } from 'lucide-react';
 import { FilterIconButton } from '../../../common/TeamFilterSheet';
 import type { ClientStaffMember } from '../../data/clientStaffData';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { LeaveBalance, LeaveRecord, StaffWorkMode, leaveBalancesFor, leavesFor, staffRecordsEnd } from '../../data/clientStaffProfileData';
-import { Card, EmptyCard, InfoSheet, RowList, SheetHeader, SwitchTiles } from './StaffTabParts';
+import { Card, EmptyCard, InfoSheet, RowList, SearchField, SwitchTiles } from './StaffTabParts';
 import { Month, MonthFilterSheet, StaffAttendancePanel } from './StaffAttendancePanel';
 import type { AmendRequest } from '../../data/clientAttendanceData';
 
@@ -50,18 +49,66 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
   const [month, setMonth] = useState<Month | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [deductionFor, setDeductionFor] = useState<LeaveRecord | null>(null);
+  const [query, setQuery] = useState('');
 
   const balances = useMemo(() => leaveBalancesFor(member), [member]);
   const leaves = useMemo(() => leavesFor(member), [member]);
   const totalLeft = balances.reduce((n, b) => n + Math.max(0, b.balance - b.used), 0);
-  // Desktop "Select Month": leaves overlapping the picked month
-  const visibleLeaves = month ? leaves.filter((l) => l.startDate <= monthEnd(month) && l.endDate >= monthStart(month)) : leaves;
+  // Desktop "Select Month": leaves overlapping the picked month; search matches leave type, deducted from or reason
+  const q = query.trim().toLowerCase();
+  const visibleLeaves = leaves.filter(
+    (l) =>
+      (!month || (l.startDate <= monthEnd(month) && l.endDate >= monthStart(month))) &&
+      (!q || [l.leaveType, l.deductedFrom, l.reason].some((v) => v.toLowerCase().includes(q))),
+  );
 
   const joined = parse(member.joiningDate);
   const end = parse(staffRecordsEnd(member));
   const min: Month = { y: joined.getFullYear(), m: joined.getMonth() };
   const max: Month = { y: end.getFullYear(), m: end.getMonth() };
+
+  /* Search + month filter, then the Leaves title */
+  const leavesHeader = (
+    <>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <SearchField value={query} onChange={setQuery} placeholder="Search By Leave Type" />
+        </div>
+        <FilterIconButton count={month ? 1 : 0} onClick={() => setFilterOpen(true)} label="Filter leaves" />
+      </div>
+      <div className="flex items-center gap-2 px-1 min-w-0">
+        {v2 && <span className="w-1 h-3.5 rounded-full bg-[#2F68FE]" aria-hidden="true" />}
+        <h4 className="text-sm font-bold text-[#1E293B]">Leaves</h4>
+        {month && (
+          <span className="text-[11px] font-semibold text-slate-500 truncate">
+            {MONTHS[month.m].slice(0, 3)} {month.y}
+          </span>
+        )}
+      </div>
+    </>
+  );
+
+  const leavesEmpty = (
+    <EmptyCard
+      icon={Luggage}
+      title="No Data Found"
+      text={q ? `No leaves match "${query.trim()}".` : month ? `No leaves in ${MONTHS[month.m]} ${month.y}.` : 'Leaves taken by this staff will show up here.'}
+      action={
+        month || q ? (
+          <button
+            type="button"
+            onClick={() => {
+              setMonth(null);
+              setQuery('');
+            }}
+            className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer"
+          >
+            Clear All
+          </button>
+        ) : undefined
+      }
+    />
+  );
 
   return (
     <>
@@ -156,33 +203,10 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
             </ul>
           </Card>
 
-          <div className="flex items-center justify-between px-1 gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-1 h-3.5 rounded-full bg-[#2F68FE]" aria-hidden="true" />
-              <h4 className="text-sm font-bold text-[#1E293B]">Leaves</h4>
-              <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{visibleLeaves.length}</span>
-              {month && (
-                <span className="text-[11px] font-semibold text-slate-500 truncate">
-                  {MONTHS[month.m].slice(0, 3)} {month.y}
-                </span>
-              )}
-            </div>
-            <FilterIconButton count={month ? 1 : 0} onClick={() => setFilterOpen(true)} label="Filter leaves" />
-          </div>
+          {leavesHeader}
 
           {visibleLeaves.length === 0 ? (
-            <EmptyCard
-              icon={Luggage}
-              title="No Data Found"
-              text={month ? `No leaves in ${MONTHS[month.m]} ${month.y}.` : 'Leaves taken by this staff will show up here.'}
-              action={
-                month ? (
-                  <button type="button" onClick={() => setMonth(null)} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
-                    Clear All
-                  </button>
-                ) : undefined
-              }
-            />
+            leavesEmpty
           ) : (
             <div className="space-y-2.5">
               {visibleLeaves.map((l) => {
@@ -192,7 +216,7 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                 return (
                   <Card key={l.id} className="relative overflow-hidden">
                     <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${style.accent}`} />
-                    <div className="pl-4 pr-3.5 pt-3.5">
+                    <div className="pl-4 pr-3.5 pt-3.5 pb-1">
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold ${style.tile}`}>{l.leaveType}</span>
@@ -215,14 +239,6 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                         ]}
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setDeductionFor(l)}
-                      className="w-full h-11 px-4 border-t border-slate-100 bg-[#F8FAFC] flex items-center justify-between text-[12px] font-bold text-[#2F68FE] active:bg-[#F8FAFC] cursor-pointer"
-                    >
-                      View Deduction Details
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
                   </Card>
                 );
               })}
@@ -278,33 +294,10 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
             </div>
           </div>
 
-          {/* Leaves header + desktop month filter */}
-          <div className="flex items-center justify-between px-1 pt-1 gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <h4 className="text-sm font-bold text-[#1E293B]">Leaves</h4>
-              <span className="px-2 py-0.5 text-[11px] font-bold bg-[#EFF6FF] text-[#2F68FE] rounded-full tabular-nums">{visibleLeaves.length}</span>
-              {month && (
-                <span className="text-[11px] font-semibold text-slate-500 truncate">
-                  {MONTHS[month.m].slice(0, 3)} {month.y}
-                </span>
-              )}
-            </div>
-            <FilterIconButton count={month ? 1 : 0} onClick={() => setFilterOpen(true)} label="Filter leaves" />
-          </div>
+          {leavesHeader}
 
           {visibleLeaves.length === 0 ? (
-            <EmptyCard
-              icon={Luggage}
-              title="No Data Found"
-              text={month ? `No leaves in ${MONTHS[month.m]} ${month.y}.` : 'Leaves taken by this staff will show up here.'}
-              action={
-                month ? (
-                  <button type="button" onClick={() => setMonth(null)} className="mt-3 text-xs font-bold text-[#2F68FE] cursor-pointer">
-                    Clear All
-                  </button>
-                ) : undefined
-              }
-            />
+            leavesEmpty
           ) : (
             <div className="space-y-3">
               {visibleLeaves.map((l) => {
@@ -342,22 +335,10 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                       </div>
                     </dl>
 
-                    <p className="mx-3.5 mt-2.5 text-xs text-slate-600 leading-snug">
+                    <p className="mx-3.5 mt-2.5 mb-3.5 text-xs text-slate-600 leading-snug">
                       <span className="text-slate-400">Reason: </span>
                       {l.reason}
                     </p>
-
-                    {/* Same soft button as the Manager "View Punch Logs" */}
-                    <div className="p-3.5 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => setDeductionFor(l)}
-                        className="w-full h-11 px-3 rounded-xl border border-[#DBE6FE] bg-[#F5F8FF] flex items-center gap-2.5 active:scale-[0.99] transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-                      >
-                        <span className="flex-1 text-left text-xs font-semibold text-[#2F68FE]">View Deduction Details</span>
-                        <ChevronRight className="w-4 h-4 text-[#2F68FE]" />
-                      </button>
-                    </div>
                   </article>
                 );
               })}
@@ -382,36 +363,6 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
           setFilterOpen(false);
         }}
       />
-
-      <BottomSheet isOpen={deductionFor !== null} onClose={() => setDeductionFor(null)} maxHeight="max-h-[75%]">
-        <SheetHeader title="Leave Deduction Details" subtitle={deductionFor ? `${deductionFor.leaveType} · ${member.name}` : ''} onClose={() => setDeductionFor(null)} />
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-3">
-          <div className="grid grid-cols-3 pb-2 border-b border-slate-100 text-[11px] font-semibold text-slate-400">
-            <span>Date</span>
-            <span className="text-center">Days</span>
-            <span className="text-right">Deducted From</span>
-          </div>
-          {deductionFor?.deductions.map((d) => (
-            <div key={d.date} className="grid grid-cols-3 py-2.5 border-b border-slate-100 text-xs text-[#1E293B] tabular-nums">
-              <span className="font-semibold">{formatStaffDate(d.date)}</span>
-              <span className="text-center">{d.days.toFixed(1)}</span>
-              <span className="text-right">{d.deductedFrom}</span>
-            </div>
-          ))}
-          {deductionFor && (
-            <div className="grid grid-cols-3 py-2.5 text-xs font-bold text-[#1E293B] tabular-nums">
-              <span>Total</span>
-              <span className="text-center">{deductionFor.deductions.reduce((n, d) => n + d.days, 0).toFixed(1)}</span>
-              <span />
-            </div>
-          )}
-        </div>
-        <div className="p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
-          <button type="button" onClick={() => setDeductionFor(null)} className="w-full h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer">
-            Cancel
-          </button>
-        </div>
-      </BottomSheet>
     </>
   );
 };
