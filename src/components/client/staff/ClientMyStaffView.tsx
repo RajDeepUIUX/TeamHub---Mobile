@@ -155,8 +155,6 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         amends={amends}
         edits={staffEdits?.[selected.id]}
         onEdit={onStaffEdit ? (patch) => onStaffEdit(selected.id, patch) : undefined}
-        version={version}
-        onVersionChange={setVersion}
         onBack={() => setSelectedId(null)}
       />
     );

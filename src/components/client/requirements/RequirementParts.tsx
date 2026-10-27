@@ -36,33 +36,6 @@ export const RequirementListSkeletonV1: React.FC = () => (
   </div>
 );
 
-/** V2: compact ticket — status band, title, 2-up figures, rows, link tiles, segmented footer */
-export const RequirementListSkeletonV2: React.FC = () => (
-  <div className="space-y-3" aria-busy="true" aria-label="Loading requirements">
-    {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-        <div className="h-10 px-4 flex items-center border-b border-slate-100">
-          <StaffSkeleton className="w-20 h-3" />
-        </div>
-        <div className="px-4 py-3 space-y-3">
-          <StaffSkeleton className="w-44 h-4" />
-          <StaffSkeleton className="w-full h-14 rounded-xl" />
-          <div className="space-y-2.5">
-            <StaffSkeleton className="w-full h-3" />
-            <StaffSkeleton className="w-full h-3" />
-            <StaffSkeleton className="w-full h-3" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <StaffSkeleton className="h-12 rounded-xl" />
-            <StaffSkeleton className="h-12 rounded-xl" />
-          </div>
-        </div>
-        <div className="h-11 border-t border-slate-100" />
-      </div>
-    ))}
-  </div>
-);
-
 const STEPS = ['Core Details', 'Additional Details', 'Job Description'];
 
 /** Desktop "1 Core Details ---- 2 Additional Details ---- 3 Job Description" box (current / completed states) */

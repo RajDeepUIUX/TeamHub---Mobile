@@ -81,7 +81,7 @@ const AssessmentFilterSheet: React.FC<{
 };
 
 /** Desktop "Assessments" tab (assessments_tab.tpl + projects::assessments_list): name / assigned on / completed on filters, results table */
-export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2?: boolean }> = ({ assessments, v2 }) => {
+export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[] }> = ({ assessments }) => {
   const names = Array.from(new Set(assessments.map((a) => a.name)));
   const [filters, setFilters] = useState<AssessmentFilters>(EMPTY_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -126,82 +126,51 @@ export const StaffAssessmentsTab: React.FC<{ assessments: AssessmentRecord[]; v2
           />
         ) : (
           <ul className="space-y-2.5">
-            {visible.map((a) =>
-              v2 ? (
-                <li key={a.id}>
-                  <Card className="overflow-hidden">
-                    <div className="px-4 pt-4 pb-3 flex items-center gap-3.5 bg-slate-50/80">
-                      <span className="w-14 h-14 rounded-full bg-white ring-4 ring-[#E0E7FF] flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[10px] font-semibold text-slate-400 leading-none">Score</span>
-                        <span className="mt-0.5 text-[13px] font-extrabold text-[#2F68FE] leading-none tabular-nums">{assessmentScore(a)}</span>
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] text-slate-400">Assessment Name</p>
-                        <p className="text-sm font-bold text-[#1E293B] leading-snug">{a.name}</p>
-                      </div>
-                    </div>
-                    <RowList
-                      className="px-4 border-t border-slate-100"
-                      rows={[
-                        { label: 'Assigned By', value: a.assignedBy ?? '-' },
-                        { label: 'Assigned On', value: formatStaffDate(a.assignedOn) },
-                        { label: 'Completed On', value: a.completedOn ? formatStaffDate(a.completedOn) : '-' },
-                      ]}
-                    />
-                    {a.reportUrl && (
-                      <a
-                        href={a.reportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Download ${a.name} report`}
-                        className="h-11 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#F8FAFC]"
-                      >
-                        <FileDown className="w-4 h-4" /> Download Report
-                      </a>
-                    )}
-                  </Card>
-                </li>
-              ) : (
+            {visible.map((a) => (
               <li key={a.id}>
-                <Card className="p-3.5">
-                  <p className="text-[11px] text-slate-400">Assessment Name</p>
-                  <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{a.name}</p>
-                  {/* Score | Assigned By, then Assigned On | Completed On (50 / 50) */}
-                  <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                <Card className="overflow-hidden">
+                  <div className="px-4 pt-4 pb-3 flex items-center gap-3.5 bg-slate-50/80">
+                    <span className="w-14 h-14 rounded-full bg-white ring-4 ring-[#E0E7FF] flex flex-col items-center justify-center shrink-0">
+                      <span className="text-[10px] font-semibold text-slate-400 leading-none">Score</span>
+                      <span className="mt-0.5 text-[13px] font-extrabold text-[#2F68FE] leading-none tabular-nums">{assessmentScore(a)}</span>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-slate-400">Assessment Name</p>
+                      <p className="text-sm font-bold text-[#1E293B] leading-snug">{a.name}</p>
+                    </div>
+                  </div>
+                  <RowList
+                    className="px-4 border-t border-slate-100"
+                    rows={[{ label: 'Assigned By', value: a.assignedBy ?? '-' }]}
+                  />
+                  {/* Assigned On | Completed On (50 / 50) */}
+                  <dl className="mx-4 py-2.5 grid grid-cols-2 gap-4 border-t border-slate-100">
                     {(
                       [
-                        [
-                          'Score',
-                          <span className="inline-flex px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#2F68FE] text-[11px] font-bold">{assessmentScore(a)}</span>,
-                        ],
-                        ['Assigned By', a.assignedBy ?? '-'],
                         ['Assigned On', formatStaffDate(a.assignedOn)],
                         ['Completed On', a.completedOn ? formatStaffDate(a.completedOn) : '-'],
-                      ] as [string, React.ReactNode][]
+                      ] as [string, string][]
                     ).map(([label, value]) => (
                       <div key={label} className="min-w-0">
-                        <dt className="text-[11px] text-slate-400">{label}</dt>
+                        <dt className="text-[11px] text-slate-400 leading-snug">{label}</dt>
                         <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums">{value}</dd>
                       </div>
                     ))}
                   </dl>
                   {a.reportUrl && (
-                    <div className="mt-3 pt-3 border-t border-slate-100">
-                      <a
-                        href={a.reportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Download ${a.name} report`}
-                        className="w-full h-9 px-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100"
-                      >
-                        <FileDown className="w-4 h-4" /> Download Report
-                      </a>
-                    </div>
+                    <a
+                      href={a.reportUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Download ${a.name} report`}
+                      className="h-11 border-t border-slate-100 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#F8FAFC]"
+                    >
+                      <FileDown className="w-4 h-4" /> Download Report
+                    </a>
                   )}
                 </Card>
               </li>
-              ),
-            )}
+            ))}
           </ul>
         )}
       </div>

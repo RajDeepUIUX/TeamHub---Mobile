@@ -59,11 +59,10 @@ const TrainingFilterSheet: React.FC<{
 };
 
 /** Desktop "Training & Development" tab (training_development.tpl): type filter + search, training list */
-export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniRequests?: TniRequest[]; onOpenTrainingNeed?: () => void; v2?: boolean }> = ({
+export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniRequests?: TniRequest[]; onOpenTrainingNeed?: () => void }> = ({
   trainings,
   tniRequests = [],
   onOpenTrainingNeed,
-  v2,
 }) => {
   const [type, setType] = useState<TypeFilter>('All');
   const [query, setQuery] = useState('');
@@ -78,7 +77,7 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
   return (
     <>
       <div className="mt-2.5 space-y-3">
-        {tniRequests.length > 0 && v2 && (
+        {tniRequests.length > 0 && (
           <Card className="p-4">
             <CardHeading
               icon={ScanSearch}
@@ -99,33 +98,6 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
             <ul className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
               {tniRequests.map((r) => (
                 <li key={r.id} className="py-2.5 flex items-center justify-between gap-2">
-                  <span className="min-w-0">
-                    <span className="block text-xs font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
-                    <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
-                  </span>
-                  <TniStatusPill status={r.status} />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-        {tniRequests.length > 0 && !v2 && (
-          <Card className="p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="flex items-center gap-1.5 text-[13px] font-bold text-[#1D4ED8]">
-                <ScanSearch className="w-4 h-4" />
-                Training Need Identification
-              </p>
-              {onOpenTrainingNeed && (
-                <button type="button" onClick={onOpenTrainingNeed} className="flex items-center text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-                  View all
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            <ul className="mt-2.5 space-y-2">
-              {tniRequests.map((r) => (
-                <li key={r.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
                   <span className="min-w-0">
                     <span className="block text-xs font-semibold text-[#1E293B] truncate">{r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request'}</span>
                     <span className="block text-[11px] text-slate-400 tabular-nums">Requested {formatTniDate(r.requestedOn)}</span>
@@ -183,7 +155,7 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
                   ))}
                 </dl>
               );
-              return v2 ? (
+              return (
                 <li key={t.id}>
                   <AccentCard accent={ACCENT[tone]} className="pl-4 pr-3.5 py-3.5">
                     <p className="text-[11px] text-slate-400">Training Name</p>
@@ -191,14 +163,6 @@ export const StaffTrainingTab: React.FC<{ trainings: TrainingRecord[]; tniReques
                     <div className="mt-3 pt-0.5 border-t border-slate-100">{grid}</div>
                   </AccentCard>
                 </li>
-              ) : (
-              <li key={t.id}>
-                <Card className="p-3.5">
-                  <p className="text-[11px] text-slate-400">Training Name</p>
-                  <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{t.name}</p>
-                  {grid}
-                </Card>
-              </li>
               );
             })}
           </ul>

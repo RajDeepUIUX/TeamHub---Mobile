@@ -23,7 +23,6 @@ interface StaffAttendancePanelProps {
   workMode: StaffWorkMode;
   /** Attendance Amend requests; approved ones replace the recorded day */
   amends?: AmendRequest[];
-  v2?: boolean;
 }
 
 /** Readable labels for desktop status codes */
@@ -76,61 +75,6 @@ const InfoBanner: React.FC<{ day: AttendanceDay }> = ({ day }) => {
   );
 };
 
-/** One desktop table row: Date, Check In, Check Out, Total Office Time, Break Time, Work Mode, Status */
-const DayCard: React.FC<{ day: AttendanceDay }> = ({ day }) => {
-  const d = parse(day.date);
-  const worked = Boolean(day.checkIn);
-  const ModeIcon = day.workMode === 'WFH' ? House : Building2;
-  const modeLabel = day.workMode === 'WFH' ? 'Work From Home' : day.workMode === 'Office' ? 'Work From Office' : '--';
-  const tile = (label: string, value: string | null | undefined) => (
-    <div key={label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-      <dt className="text-[10px] font-semibold text-slate-400 leading-tight">{label}</dt>
-      <dd className="mt-0.5 text-xs font-bold tabular-nums text-[#1E293B]">{value ?? '--'}</dd>
-    </div>
-  );
-  return (
-    <article className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-      <div className="p-3.5 pb-3 flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-[#1E293B] tabular-nums">
-            {d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-          </h3>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 min-w-0">
-            <span className="shrink-0">{d.toLocaleDateString('en-US', { weekday: 'long' })}</span>
-            {worked && (
-              <>
-                <span className="text-slate-300">·</span>
-                <span className="flex items-center gap-1 min-w-0">
-                  <ModeIcon className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span className="truncate">{modeLabel}</span>
-                </span>
-              </>
-            )}
-          </p>
-        </div>
-        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${STATUS_PILL[day.status]}`}>{STATUS_LABEL[day.status]}</span>
-      </div>
-
-      <div className="px-3.5 pb-3.5">
-        {worked ? (
-          <dl className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              {tile('Check In', day.checkIn)}
-              {tile('Check Out', day.checkOut)}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {tile('Total Office Time', day.officeTime)}
-              {tile('Break Time', day.breakTime)}
-            </div>
-          </dl>
-        ) : (
-          <InfoBanner day={day} />
-        )}
-      </div>
-    </article>
-  );
-};
-
 const STATUS_DOT: Record<AttendanceStatus, string> = {
   'Full day': 'bg-[#10B981]',
   'Half Day': 'bg-[#F59E0B]',
@@ -141,8 +85,8 @@ const STATUS_DOT: Record<AttendanceStatus, string> = {
   Holiday: 'bg-[#4F46E5]',
 };
 
-/** V2 day row: date block on the left, check-in → check-out line, time chips */
-const DayCardV2: React.FC<{ day: AttendanceDay }> = ({ day }) => {
+/** Day row: date block on the left, check-in → check-out line, time chips */
+const DayCard: React.FC<{ day: AttendanceDay }> = ({ day }) => {
   const d = parse(day.date);
   const worked = Boolean(day.checkIn);
   const ModeIcon = day.workMode === 'WFH' ? House : Building2;
@@ -386,7 +330,7 @@ const AttendanceSummarySheet: React.FC<{
 /* ---------------------------------- Panel --------------------------------- */
 
 /** Attendance view of the staff "Attendance & Leave" tab (desktop attendance-leave.tpl): KPIs, month + status filter, daily records */
-export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode, amends = [], v2 }) => {
+export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ member, workMode, amends = [] }) => {
   const joined = parse(member.joiningDate);
   // Staff who already left open on their last month (no records after the last working day)
   const end = parse(staffRecordsEnd(member));
@@ -478,7 +422,7 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
           }
         />
       ) : (
-        visibleDays.map((d) => (v2 ? <DayCardV2 key={d.date} day={d} /> : <DayCard key={d.date} day={d} />))
+        visibleDays.map((d) => <DayCard key={d.date} day={d} />)
       )}
     </>
   );
@@ -498,110 +442,52 @@ export const StaffAttendancePanel: React.FC<StaffAttendancePanelProps> = ({ memb
     />
   );
 
-  if (v2) {
-    return (
-      <div className="mt-3 space-y-3.5">
-        {/* Month summary: gradient card with the month picker, KPIs and totals */}
-        <section className="relative overflow-hidden rounded-2xl p-4 bg-white border border-[#EBF0F7] text-[#1E293B] shadow-2xs">
-                    <div className="relative flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFilterOpen(true)}
-              className="flex-1 min-w-0 h-11 px-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center gap-2.5 text-left active:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Calendar className="w-4 h-4 shrink-0 text-[#2F68FE]" />
-              <span className="flex-1 min-w-0 text-xs font-medium truncate">
-                {MONTHS[month.m]} {month.y}
-              </span>
-              <ChevronRight className="w-4 h-4 shrink-0 text-slate-400" />
-            </button>
-            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} label="Filter attendance" />
-          </div>
-          {loading ? (
-            <div className="relative mt-4 space-y-2" aria-busy="true" aria-label="Loading attendance">
-              <span className="block h-14 rounded-xl bg-slate-200/70 animate-pulse" />
-              <span className="block h-10 rounded-xl bg-slate-200/70 animate-pulse" />
-            </div>
-          ) : (
-            <>
-              <div className="relative mt-4 grid grid-cols-4 gap-2">
-                {kpis.map((k) => (
-                  <div key={k.label} className="rounded-xl bg-slate-50/80 border border-slate-100 px-1 py-2.5 text-center min-w-0">
-                    <p className={`text-[20px] font-extrabold leading-none tabular-nums ${k.text}`}>{k.value}</p>
-                    <p className="mt-1.5 text-[11px] font-semibold text-slate-500 leading-tight">{k.label}</p>
-                  </div>
-                ))}
-              </div>
-              {viewSummary}
-            </>
-          )}
-        </section>
-        {summarySheet}
-
-        {status !== ALL && (
-          <div className="flex items-center justify-end px-1">
-            <span className="text-[11px] font-semibold text-slate-500 truncate">Status: {status}</span>
-          </div>
-        )}
-
-        <div className="space-y-2.5">{records}</div>
-        {filterSheet}
-      </div>
-    );
-  }
-
   return (
     <div className="mt-3 space-y-3.5">
-      {/* Month + filter row (Staff attendance layout) */}
-      <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setFilterOpen(true)}
-          className="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between shadow-2xs active:bg-slate-50 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            {MONTHS[month.m].slice(0, 3)} {month.y}
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-        <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} label="Filter attendance" />
-      </div>
-
-      {/* Desktop KPIs */}
-      <div className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+      {/* Month summary: gradient card with the month picker, KPIs and totals */}
+      <section className="relative overflow-hidden rounded-2xl p-4 bg-white border border-[#EBF0F7] text-[#1E293B] shadow-2xs">
+        <div className="relative flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFilterOpen(true)}
+            className="flex-1 min-w-0 h-11 px-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center gap-2.5 text-left active:bg-slate-50 transition-colors cursor-pointer"
+          >
+            <Calendar className="w-4 h-4 shrink-0 text-[#2F68FE]" />
+            <span className="flex-1 min-w-0 text-xs font-medium truncate">
+              {MONTHS[month.m]} {month.y}
+            </span>
+            <ChevronRight className="w-4 h-4 shrink-0 text-slate-400" />
+          </button>
+          <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} label="Filter attendance" />
+        </div>
         {loading ? (
-          <div className="space-y-3" aria-busy="true" aria-label="Loading attendance">
-            <StaffSkeleton className="w-full h-14 rounded-xl" />
-            <StaffSkeleton className="w-full h-12 rounded-xl" />
+          <div className="relative mt-4 space-y-2" aria-busy="true" aria-label="Loading attendance">
+            <span className="block h-14 rounded-xl bg-slate-200/70 animate-pulse" />
+            <span className="block h-10 rounded-xl bg-slate-200/70 animate-pulse" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-1.5 text-center">
+            <div className="relative mt-3 grid grid-cols-4 gap-1.5">
               {kpis.map((k) => (
-                <div key={k.label} className="flex flex-col items-center min-w-0">
-                  <div className={`w-12 h-9 rounded-lg font-bold text-lg flex items-center justify-center mb-1.5 tabular-nums ${k.tile}`}>{k.value}</div>
-                  <span className="text-[11px] text-gray-500 font-medium leading-tight">{k.label}</span>
+                <div key={k.label} className="rounded-lg bg-slate-50/80 border border-slate-100 px-0.5 py-1.5 text-center min-w-0">
+                  <p className={`text-[16px] font-extrabold leading-none tabular-nums ${k.text}`}>{k.value}</p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-500 leading-tight whitespace-nowrap truncate">{k.label}</p>
                 </div>
               ))}
             </div>
             {viewSummary}
           </>
         )}
-      </div>
+      </section>
       {summarySheet}
 
-      {/* Records */}
-      <div className="space-y-3 pt-1">
-        {status !== ALL && (
-          <div className="flex items-center justify-end px-1">
-            <span className="text-[11px] font-semibold text-slate-500 truncate">Status: {status}</span>
-          </div>
-        )}
+      {status !== ALL && (
+        <div className="flex items-center justify-end px-1">
+          <span className="text-[11px] font-semibold text-slate-500 truncate">Status: {status}</span>
+        </div>
+      )}
 
-        {records}
-      </div>
-
+      <div className="space-y-2.5">{records}</div>
       {filterSheet}
     </div>
   );

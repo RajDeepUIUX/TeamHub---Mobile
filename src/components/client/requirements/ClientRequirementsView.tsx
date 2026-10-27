@@ -3,23 +3,17 @@ import {
   Briefcase,
   Building2,
   CalendarClock,
-  ChevronRight,
   Clock3,
   DollarSign,
-  Eye,
   Loader2,
-  MessageSquareText,
-  Pencil,
-  Plus,
   SearchX,
-  SlidersHorizontal,
   UserRoundPlus,
   X,
 } from 'lucide-react';
 import { CommentThreadSheet } from '../../common/CommentThreadSheet';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, DesignVersion, EmptyCard } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { ShortlistedCandidate, formatShortDate, isoOfDate } from '../data/clientInterviewsData';
 import type { HubProfile } from '../data/clientStaffHubData';
@@ -41,7 +35,7 @@ import {
 import { RequirementDetailSheet } from './RequirementDetailSheet';
 import { RequirementFilterSheet } from './RequirementFilterSheet';
 import { RequirementFormView } from './RequirementFormView';
-import { RequirementListSkeletonV1, RequirementListSkeletonV2, RequirementSavedSheet, RequirementStatusPill } from './RequirementParts';
+import { RequirementListSkeletonV1, RequirementSavedSheet, RequirementStatusPill } from './RequirementParts';
 
 interface Props {
   requirements: StaffRequirement[];
@@ -67,9 +61,7 @@ type Sheet = 'filter' | 'detail' | 'comments' | 'saved' | null;
 /** Desktop loads the table by ajax */
 const LOAD_MS = 600;
 
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
-
-/** Status accent bar (V1): amber = In Progress, green = Completed, slate = Not Required */
+/** Status accent bar: amber = In Progress, green = Completed, slate = Not Required */
 const BAR: Record<RequirementStatus, string> = {
   'In Progress': 'bg-[#F59E0B]',
   Completed: 'bg-[#10B981]',
@@ -78,44 +70,14 @@ const BAR: Record<RequirementStatus, string> = {
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]';
 
-/** V2: label / value row */
-const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="flex items-center justify-between gap-3 py-2">
-    <dt className="min-w-0 text-[11px] font-medium text-slate-500">{label}</dt>
-    <dd className="shrink-0 max-w-[60%] text-right text-xs font-semibold text-[#1E293B] break-words">{children}</dd>
-  </div>
-);
-
-/** V2: Available Resumes / Shortlisted Candidates tile; whole tile opens the linked list */
-const LinkTile: React.FC<{ label: string; value: string | null; onClick?: () => void; ariaLabel: string }> = ({ label, value, onClick, ariaLabel }) => {
-  const on = value !== null;
-  const box = on ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100';
-  const body = (
-    <>
-      <span className="block text-[10px] font-medium text-slate-500 leading-tight truncate">{label}</span>
-      <span className={`mt-0.5 flex items-center gap-1 text-xs font-bold tabular-nums ${on ? 'text-[#2F68FE]' : 'text-[#1E293B]'}`}>
-        <span className="truncate">{value ?? '-'}</span>
-        {on && onClick && <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
-      </span>
-    </>
-  );
-  return on && onClick ? (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`min-w-0 text-left rounded-xl border px-2.5 py-1.5 active:bg-blue-100 transition-colors cursor-pointer ${box} ${FOCUS}`}>
-      {body}
-    </button>
-  ) : (
-    <div className={`min-w-0 rounded-xl border px-2.5 py-1.5 ${box}`}>{body}</div>
-  );
-};
-
-/** Blue table link (Profile, N Locations, N Shortlisted); plain text when it can't be opened */
+/** Table link (Profile, N Locations, N Shortlisted); plain text when it can't be opened */
 const TableLink: React.FC<{ label: string; onClick?: () => void; ariaLabel: string; weight?: string }> = ({ label, onClick, ariaLabel, weight = 'font-semibold' }) =>
   onClick ? (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`text-left text-[#2F68FE] ${weight} underline-offset-2 active:underline cursor-pointer`}>
+    <button type="button" onClick={onClick} aria-label={ariaLabel} className={`text-left text-[#1E293B] ${weight} underline-offset-2 active:underline cursor-pointer`}>
       {label}
     </button>
   ) : (
-    <span className={`text-[#2F68FE] ${weight}`}>{label}</span>
+    <span className={`text-[#1E293B] ${weight}`}>{label}</span>
   );
 
 /**
@@ -139,8 +101,6 @@ export const ClientRequirementsView: React.FC<Props> = ({
   // view = details + comments; add = Add Requirement; edit = Edit Requirement
   const { view: canView, add: canAdd, edit: canEdit } = useClientPermission('requirements');
 
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<RequirementFilters>(EMPTY_REQUIREMENT_FILTERS);
   const [pages, setPages] = useState(1);
@@ -246,7 +206,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
     );
   }
 
-  /** Values + actions shared by both designs (same content and behaviour) */
+  /** Values + actions for a card */
   const cardData = (r: StaffRequirement) => {
     const resumes = availableResumesFor(r, hubProfiles, candidates);
     const shortlisted = shortlistedFor(r, candidates);
@@ -262,8 +222,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
     };
   };
 
-  /* ---------- Card (V1): soft card ---------- */
-  const cardV1 = (r: StaffRequirement) => {
+  /* ---------- Card ---------- */
+  const card = (r: StaffRequirement) => {
     const d = cardData(r);
     const facts = [
       { label: 'Pricing', value: r.pricing, icon: DollarSign, num: true },
@@ -282,9 +242,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
               <span className="w-10 h-10 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
                 <Briefcase className="w-5 h-5" />
               </span>
-              <div className="flex-1 min-w-0">
-                <span className="block text-[11px] font-medium text-slate-400 leading-tight">Profile</span>
-                <span className="block mt-0.5 text-sm leading-snug">
+              <div className="flex-1 min-w-0 self-center">
+                <span className="block text-sm leading-snug">
                   <TableLink label={r.profile} weight="font-bold" onClick={canView ? () => openSheet('detail', r.id) : undefined} ariaLabel={`View requirement ${r.profile}`} />
                 </span>
               </div>
@@ -344,7 +303,6 @@ export const ClientRequirementsView: React.FC<Props> = ({
             <div className="px-4 pt-3.5 pb-4 flex items-center gap-2">
               {canView && (
                 <button type="button" onClick={() => openSheet('comments', r.id)} aria-label={d.commentsAria} className={`relative border border-slate-200 bg-white text-slate-700 active:bg-slate-50 ${pill}`}>
-                  <MessageSquareText className="w-4 h-4 shrink-0 text-slate-400" />
                   <span className="truncate">Comments</span>
                   {r.comments.length > 0 && (
                     <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
@@ -355,7 +313,6 @@ export const ClientRequirementsView: React.FC<Props> = ({
               )}
               {d.showEdit && (
                 <button type="button" onClick={() => openForm(r.id)} aria-label={`Edit requirement ${r.profile}`} className={`border border-slate-200 bg-white text-slate-700 active:bg-slate-50 ${pill}`}>
-                  <Pencil className="w-4 h-4 shrink-0 text-slate-400" />
                   <span className="truncate">Edit</span>
                 </button>
               )}
@@ -364,9 +321,8 @@ export const ClientRequirementsView: React.FC<Props> = ({
                   type="button"
                   onClick={() => openSheet('detail', r.id)}
                   aria-label={`View requirement ${r.profile}`}
-                  className={`border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50 ${pill}`}
+                  className={`border border-slate-200 bg-white text-slate-700 active:bg-slate-50 ${pill}`}
                 >
-                  <Eye className="w-4 h-4 shrink-0" />
                   <span className="truncate">View</span>
                 </button>
               )}
@@ -379,126 +335,22 @@ export const ClientRequirementsView: React.FC<Props> = ({
     );
   };
 
-  /* ---------- Card (V2): compact ticket ---------- */
-  const cardV2 = (r: StaffRequirement) => {
-    const d = cardData(r);
-    const seg = `relative flex-1 min-w-0 h-10 px-1.5 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`;
-
-    return (
-      <li key={r.id}>
-        <article className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
-          <div className="px-3.5 pt-3 pb-3">
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="block text-[10px] font-medium text-slate-400 leading-tight">Profile</span>
-                {canView ? (
-                  <button
-                    type="button"
-                    onClick={() => openSheet('detail', r.id)}
-                    aria-label={`View requirement ${r.profile}`}
-                    className={`mt-0.5 max-w-full flex items-center gap-1 text-left text-sm font-bold text-[#1E293B] leading-snug active:text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
-                  >
-                    <span className="min-w-0 break-words">{r.profile}</span>
-                    <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[#2F68FE]" />
-                  </button>
-                ) : (
-                  <span className="mt-0.5 block text-sm font-bold text-[#1E293B] leading-snug break-words">{r.profile}</span>
-                )}
-              </div>
-              <span className="shrink-0" aria-label={`Status: ${r.status}`}>
-                <RequirementStatusPill status={r.status} />
-              </span>
-            </div>
-
-            <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2.5">
-              <div className="min-w-0">
-                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Pricing</dt>
-                <dd className="mt-0.5 text-[13px] font-extrabold text-[#2F68FE] leading-tight tabular-nums break-words">{r.pricing || '-'}</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Hours/Week</dt>
-                <dd className="mt-0.5 text-[13px] font-extrabold text-[#1E293B] leading-tight tabular-nums">{r.hoursPerWeek || '-'}</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Onboarding Timeline</dt>
-                <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-tight break-words">{r.timeline || '-'}</dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-[10px] font-medium text-slate-500 leading-tight">Work Mode</dt>
-                <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-tight break-words">{r.workMode || '-'}</dd>
-              </div>
-            </dl>
-
-            <dl>
-              <Row label="Offshore Location">
-                <LocationValue locations={r.locations} />
-              </Row>
-            </dl>
-
-            <div className="grid grid-cols-2 gap-2">
-              <LinkTile
-                label="Available Resumes"
-                value={d.resumesLabel}
-                onClick={d.openResumes}
-                ariaLabel={`${d.resumes} available resumes for ${r.profile}`}
-              />
-              <LinkTile
-                label="Shortlisted Candidates"
-                value={d.shortlistedLabel}
-                onClick={d.openShortlisted}
-                ariaLabel={`${d.shortlisted} shortlisted candidates for ${r.profile}`}
-              />
-            </div>
-          </div>
-
-          {(canView || d.showEdit) && (
-            <div className="flex border-t border-slate-100 divide-x divide-slate-100">
-              {canView && (
-                <button type="button" onClick={() => openSheet('comments', r.id)} aria-label={d.commentsAria} className={`font-semibold text-slate-700 active:bg-slate-50 ${seg}`}>
-                  <MessageSquareText className="w-4 h-4 shrink-0 text-slate-400" />
-                  <span className="truncate">Comments</span>
-                  {r.comments.length > 0 && (
-                    <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#EFF6FF] text-[#2F68FE] text-[10px] font-bold flex items-center justify-center tabular-nums">
-                      {r.comments.length}
-                    </span>
-                  )}
-                </button>
-              )}
-              {d.showEdit && (
-                <button type="button" onClick={() => openForm(r.id)} aria-label={`Edit requirement ${r.profile}`} className={`font-semibold text-slate-700 active:bg-slate-50 ${seg}`}>
-                  <Pencil className="w-4 h-4 shrink-0 text-slate-400" />
-                  <span className="truncate">Edit</span>
-                </button>
-              )}
-              {canView && (
-                <button type="button" onClick={() => openSheet('detail', r.id)} aria-label={`View requirement ${r.profile}`} className={`font-bold text-[#2F68FE] active:bg-blue-50 ${seg}`}>
-                  <Eye className="w-4 h-4 shrink-0" />
-                  <span className="truncate">View</span>
-                </button>
-              )}
-            </div>
-          )}
-        </article>
-      </li>
-    );
-  };
-
-  /* ---------- Toolbar (V1): Add left, round filter right, pill chips ---------- */
-  const toolbarV1 = (
+  /* ---------- Toolbar: Add left, round filter right, pill chips ---------- */
+  const toolbar = (
     <div className="px-4 pt-3.5">
       <div className="flex items-center gap-2">
         {canAdd && (
           <button
             type="button"
             onClick={() => openForm(null)}
-            className={`h-11 pl-3 pr-3.5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
+            className={`h-10 pl-3 pr-3.5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
           >
             <UserRoundPlus className="w-4 h-4" />
             Add Requirement
           </button>
         )}
         <div className="flex-1 min-w-0" />
-        <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
+        <FilterIconButton compact count={filterCount} onClick={() => openSheet('filter')} />
       </div>
 
       {applied.length > 0 && (
@@ -528,78 +380,16 @@ export const ClientRequirementsView: React.FC<Props> = ({
     </div>
   );
 
-  /* ---------- Toolbar (V2): sticky white bar, Add left, text Filter right, square chips ---------- */
-  const toolbarV2 = (
-    <div className="sticky top-0 z-10 bg-white border-b border-[#EBF0F7] px-4 py-2.5">
-      <div className="flex items-center gap-2">
-        {canAdd && (
-          <button
-            type="button"
-            onClick={() => openForm(null)}
-            className={`h-10 px-3 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center gap-1 shrink-0 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Add Requirement
-          </button>
-        )}
-        <div className="flex-1 min-w-0" />
-        <button
-          type="button"
-          onClick={() => openSheet('filter')}
-          aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-          className={`h-10 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-2xs transition-colors cursor-pointer ${FOCUS} ${
-            filterCount ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-700 active:bg-slate-50'
-          }`}
-        >
-          <SlidersHorizontal className="w-4 h-4 text-[#2F68FE]" />
-          Filter
-          {filterCount > 0 && (
-            <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{filterCount}</span>
-          )}
-        </button>
-      </div>
-
-      {applied.length > 0 && (
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
-            {applied.map((a) => (
-              <span key={a.key} className="shrink-0 h-8 pl-3 pr-1 rounded-full bg-blue-50 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-0.5">
-                {a.label}
-                <button
-                  type="button"
-                  onClick={() => applyFilters(a.next)}
-                  aria-label={`Remove ${a.label}`}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[#2F68FE] active:bg-blue-100 cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-          {isFiltered && (
-            <button type="button" onClick={clearAll} className="shrink-0 h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-              Clear All
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Staff Requirement" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      <ScreenHeader title="Staff Requirement" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {v2 ? toolbarV2 : toolbarV1}
+        {toolbar}
 
-        <div className={`px-4 ${v2 ? 'mt-3' : 'mt-4'}`}>
+        <div className="px-4 mt-4">
           {loading ? (
-            v2 ? (
-              <RequirementListSkeletonV2 />
-            ) : (
-              <RequirementListSkeletonV1 />
-            )
+            <RequirementListSkeletonV1 />
           ) : requirements.length === 0 ? (
             <EmptyCard
               icon={Briefcase}
@@ -628,7 +418,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
             />
           ) : (
             <>
-              <ul className={v2 ? 'space-y-3' : 'space-y-3.5'}>{visible.map(v2 ? cardV2 : cardV1)}</ul>
+              <ul className="space-y-3.5">{visible.map(card)}</ul>
 
               {visible.length < results.length && (
                 <button
@@ -641,9 +431,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className={`mt-3 w-full h-11 rounded-xl border text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'border-blue-100 bg-blue-50 active:bg-blue-100' : 'border-slate-200 bg-white shadow-2xs active:bg-slate-50'
-                  }`}
+                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white shadow-2xs active:bg-slate-50 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer"
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
@@ -670,7 +458,7 @@ export const ClientRequirementsView: React.FC<Props> = ({
         }}
       />
 
-      <RequirementDetailSheet isOpen={sheet === 'detail'} requirement={target} onClose={closeSheet} version={version} />
+      <RequirementDetailSheet isOpen={sheet === 'detail'} requirement={target} onClose={closeSheet} />
 
       <CommentThreadSheet
         isOpen={sheet === 'comments'}
@@ -733,7 +521,7 @@ const LocationValue: React.FC<{ locations: string[]; align?: 'left' | 'right' }>
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={`${locations.length} locations: ${locations.join(', ')}`}
-        className="text-[#2F68FE] font-semibold tabular-nums cursor-pointer"
+        className="text-[#1E293B] font-semibold tabular-nums cursor-pointer"
       >
         {locations.length} Locations
       </button>

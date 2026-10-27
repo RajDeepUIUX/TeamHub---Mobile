@@ -12,15 +12,9 @@ interface StaffAttendanceLeaveTabProps {
   member: ClientStaffMember;
   workMode: StaffWorkMode;
   amends?: AmendRequest[];
-  v2?: boolean;
 }
 
 type View = 'attendance' | 'leave';
-
-const VIEW_OPTIONS: { id: View; label: string; icon: React.ElementType }[] = [
-  { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-  { id: 'leave', label: 'Leave', icon: Luggage },
-];
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -44,7 +38,7 @@ const monthStart = (m: Month) => `${m.y}-${pad(m.m + 1)}-01`;
 const monthEnd = (m: Month) => `${m.y}-${pad(m.m + 1)}-${pad(new Date(m.y, m.m + 1, 0).getDate())}`;
 
 /** Desktop "Attendance & Leave" tab (attendance-leave.tpl): monthly attendance + KPIs, leave balances + leave list */
-export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode, amends, v2 }) => {
+export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = ({ member, workMode, amends }) => {
   const [view, setView] = useState<View>('attendance');
   const [month, setMonth] = useState<Month | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -77,7 +71,7 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
         <FilterIconButton count={month ? 1 : 0} onClick={() => setFilterOpen(true)} label="Filter leaves" />
       </div>
       <div className="flex items-center gap-2 px-1 min-w-0">
-        {v2 && <span className="w-1 h-3.5 rounded-full bg-[#2F68FE]" aria-hidden="true" />}
+        <span className="w-1 h-3.5 rounded-full bg-[#2F68FE]" aria-hidden="true" />
         <h4 className="text-sm font-bold text-[#1E293B]">Leaves</h4>
         {month && (
           <span className="text-[11px] font-semibold text-slate-500 truncate">
@@ -113,43 +107,20 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
   return (
     <>
       <div className="mt-2.5">
-        {v2 ? (
-          <SwitchTiles<View>
-            label="Attendance or leave"
-            options={[
-              { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-              { id: 'leave', label: 'Leave', icon: Luggage },
-            ]}
-            value={view}
-            onChange={setView}
-          />
-        ) : (
-        <div role="tablist" aria-label="Attendance or leave" className="grid grid-cols-2 gap-1 p-1 rounded-full bg-white border border-[#EBF0F7] shadow-2xs">
-          {VIEW_OPTIONS.map(({ id, label, icon: Icon }) => {
-            const on = view === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setView(id)}
-                className={`h-10 rounded-full flex items-center justify-center gap-1.5 text-[13px] font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-                  on ? 'bg-[#2F68FE] text-white' : 'text-slate-500 active:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-        )}
+        <SwitchTiles<View>
+          label="Attendance or leave"
+          options={[
+            { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
+            { id: 'leave', label: 'Leave', icon: Luggage },
+          ]}
+          value={view}
+          onChange={setView}
+        />
       </div>
 
       {view === 'attendance' ? (
-        <StaffAttendancePanel member={member} workMode={workMode} amends={amends} v2={v2} />
-      ) : v2 ? (
+        <StaffAttendancePanel member={member} workMode={workMode} amends={amends} />
+      ) : (
         <div className="mt-3 space-y-3.5">
           {/* Leave balance: total on a gradient band, one progress row per balance */}
           <Card className="overflow-hidden">
@@ -240,106 +211,6 @@ export const StaffAttendanceLeaveTab: React.FC<StaffAttendanceLeaveTabProps> = (
                       />
                     </div>
                   </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="mt-3 space-y-4">
-          {/* Leave balance: Staff Leaves card with desktop "used / balance" values */}
-          <div className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-[#1E293B]">Leave Balance</span>
-                <button
-                  type="button"
-                  onClick={() => setShowInfo(true)}
-                  aria-label="About leave balance"
-                  aria-haspopup="dialog"
-                  className="w-5 h-5 rounded-full text-slate-400 flex items-center justify-center active:bg-slate-100 cursor-pointer"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[11px] font-bold text-[#2F68FE] tabular-nums">
-                {totalLeft.toFixed(2)} days left
-              </span>
-            </div>
-            <InfoSheet isOpen={showInfo} title="Leave Balance" onClose={() => setShowInfo(false)}>
-              Each balance shows leave used / total balance for {member.name}.
-            </InfoSheet>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {balances.map((b) => {
-                const style = BALANCE_STYLE[b.label];
-                const Icon = style.icon;
-                const pct = b.balance > 0 ? Math.min(100, (b.used / b.balance) * 100) : 0;
-                return (
-                  <div key={b.label} className={`rounded-xl border p-2.5 min-w-0 flex flex-col ${style.tile}`}>
-                    <span className={`w-7 h-7 rounded-lg bg-white flex items-center justify-center shadow-2xs ${style.text}`}>
-                      <Icon className="w-4 h-4" />
-                    </span>
-                    <span className="mt-2 text-[11px] font-semibold text-slate-500 leading-tight min-h-7">{b.label}</span>
-                    <span className="mt-1 text-[17px] font-extrabold text-[#1E293B] leading-none tabular-nums">
-                      {b.used.toFixed(2)}
-                      <span className="text-[11px] font-bold text-slate-400"> / {b.balance.toFixed(2)}</span>
-                    </span>
-                    <span className="mt-2 block h-1.5 rounded-full bg-white overflow-hidden" role="img" aria-label={`${Math.round(pct)}% of ${b.label} used`}>
-                      <span className={`block h-full rounded-full ${style.bar}`} style={{ width: `${pct}%` }} />
-                    </span>
-                    <span className="mt-1 text-[10px] text-slate-400">Used / Balance</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {leavesHeader}
-
-          {visibleLeaves.length === 0 ? (
-            leavesEmpty
-          ) : (
-            <div className="space-y-3">
-              {visibleLeaves.map((l) => {
-                const total = l.deductions.reduce((n, d) => n + d.days, 0);
-                const multi = l.endDate !== l.startDate;
-                const style = LEAVE_STYLE[l.leaveType];
-                const start = parse(l.startDate);
-                return (
-                  <article key={l.id} className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-                    <div className="p-3.5 pb-3 flex items-start gap-3">
-                      <span className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${style.tile}`}>
-                        <span className="text-sm font-extrabold leading-none tabular-nums">{pad(start.getDate())}</span>
-                        <span className="mt-0.5 text-[9px] font-bold uppercase leading-none">{MONTHS[start.getMonth()].slice(0, 3)}</span>
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-[#1E293B] truncate">{l.leaveType}</h3>
-                        <p className="mt-0.5 text-[11px] text-slate-500 tabular-nums truncate">
-                          {formatStaffDate(l.startDate)}
-                          {multi && ` – ${formatStaffDate(l.endDate)}`}
-                        </p>
-                      </div>
-                      <span className="shrink-0 px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600 tabular-nums">
-                        {total} {total === 1 ? 'day' : 'days'}
-                      </span>
-                    </div>
-
-                    <dl className="mx-3.5 grid grid-cols-2 gap-2">
-                      <div className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <dt className="text-[10px] font-semibold text-slate-400">Deducted From</dt>
-                        <dd className="mt-0.5 text-xs font-bold text-[#1E293B] truncate">{l.deductedFrom}</dd>
-                      </div>
-                      <div className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <dt className="text-[10px] font-semibold text-slate-400">Applied On</dt>
-                        <dd className="mt-0.5 text-xs font-bold text-[#1E293B] truncate tabular-nums">{formatStaffDate(l.appliedOn)}</dd>
-                      </div>
-                    </dl>
-
-                    <p className="mx-3.5 mt-2.5 mb-3.5 text-xs text-slate-600 leading-snug">
-                      <span className="text-slate-400">Reason: </span>
-                      {l.reason}
-                    </p>
-                  </article>
                 );
               })}
             </div>

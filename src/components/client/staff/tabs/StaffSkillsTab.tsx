@@ -5,58 +5,7 @@ import { Card, Pill } from './StaffTabParts';
 
 const certTone = (c: StaffCertificate) => (c.status === 'Completed' ? 'green' : 'amber');
 
-/* ------------------------------------ V1 ----------------------------------- */
-
-/** V1 card title over a hairline (same as Job Details / Employee Document) */
-const TitleV1: React.FC<{ title: string }> = ({ title }) => (
-  <h4 className="mx-4 pt-4 pb-2.5 border-b border-slate-100 text-sm font-bold text-[#1E293B] leading-snug">{title}</h4>
-);
-
-/** V1 section: title, dotted chips below */
-const SkillSectionV1: React.FC<{ title: string; items: string[]; dot: string }> = ({ title, items, dot }) => (
-  <Card className="overflow-hidden">
-    <TitleV1 title={title} />
-    {items.length === 0 ? (
-      <p className="px-4 py-3.5 text-xs text-slate-400">No Skills Found</p>
-    ) : (
-      <ul className="p-4 flex flex-wrap gap-2">
-        {items.map((s) => (
-          <li key={s} className="h-8 pl-2.5 pr-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 inline-flex items-center gap-2">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} aria-hidden="true" />
-            {s}
-          </li>
-        ))}
-      </ul>
-    )}
-  </Card>
-);
-
-/** V1 certificates: one card, hairline rows, type as a tag under the name */
-const CertificatesV1: React.FC<{ certificates: StaffCertificate[] }> = ({ certificates }) => (
-  <Card className="overflow-hidden">
-    <TitleV1 title="Academic Certifications" />
-    <ul className="divide-y divide-slate-100">
-      {certificates.map((c, i) => (
-        <li key={`${c.name}-${i}`} className="px-4 py-3 flex items-start gap-3">
-          <span className="mt-0.5 w-6 h-6 rounded-md bg-slate-100 text-[11px] font-bold text-slate-500 flex items-center justify-center shrink-0 tabular-nums">{i + 1}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-[#1E293B] leading-snug">{c.name}</p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="h-5 px-2 rounded-md bg-[#F8FAFC] border border-slate-200 text-[10px] font-semibold text-slate-500 inline-flex items-center">
-                Certification Type: {c.type}
-              </span>
-              <Pill tone={certTone(c)}>{c.status}</Pill>
-            </div>
-          </div>
-        </li>
-      ))}
-    </ul>
-  </Card>
-);
-
-/* ------------------------------------ V2 ----------------------------------- */
-
-/** V2 count cell in the summary strip */
+/** Count cell in the summary strip */
 const StatCell: React.FC<{ icon: React.ElementType; value: number; label: string; tint: string }> = ({ icon: Icon, value, label, tint }) => (
   <div className="px-1.5 py-3 flex flex-col items-center text-center min-w-0">
     <span className="flex items-center gap-1.5">
@@ -69,18 +18,18 @@ const StatCell: React.FC<{ icon: React.ElementType; value: number; label: string
   </div>
 );
 
-/** V2 card heading row: icon, title, hairline under */
-const SectionHeadV2: React.FC<{ icon: React.ElementType; title: string; iconCls: string }> = ({ icon: Icon, title, iconCls }) => (
+/** Card heading row: icon, title, hairline under */
+const SectionHead: React.FC<{ icon: React.ElementType; title: string; iconCls: string }> = ({ icon: Icon, title, iconCls }) => (
   <h4 className="pb-3 mb-3 border-b border-slate-100 flex items-center gap-2 text-[13px] font-bold text-[#1E293B]">
     <Icon className={`w-4 h-4 shrink-0 ${iconCls}`} />
     {title}
   </h4>
 );
 
-/** V2 section: card with two-column skill tiles of equal height */
-const SkillGridV2: React.FC<{ title: string; icon: React.ElementType; items: string[]; iconCls: string }> = ({ title, icon, items, iconCls }) => (
+/** Section: card with two-column skill tiles of equal height */
+const SkillGrid: React.FC<{ title: string; icon: React.ElementType; items: string[]; iconCls: string }> = ({ title, icon, items, iconCls }) => (
   <Card className="p-4">
-    <SectionHeadV2 icon={icon} title={title} iconCls={iconCls} />
+    <SectionHead icon={icon} title={title} iconCls={iconCls} />
     {items.length === 0 ? (
       <p className="text-xs text-slate-400">No Skills Found</p>
     ) : (
@@ -96,8 +45,8 @@ const SkillGridV2: React.FC<{ title: string; icon: React.ElementType; items: str
   </Card>
 );
 
-/** V2 certificate row: status icon, name, type + status */
-const CertificateRowV2: React.FC<{ cert: StaffCertificate }> = ({ cert: c }) => {
+/** Certificate row: status icon, name, type + status */
+const CertificateRow: React.FC<{ cert: StaffCertificate }> = ({ cert: c }) => {
   const done = c.status === 'Completed';
   const StatusIcon = done ? CheckCircle2 : Clock3;
   return (
@@ -124,35 +73,28 @@ const CertificateRowV2: React.FC<{ cert: StaffCertificate }> = ({ cert: c }) => 
 /* ---------------------------------- Tab ----------------------------------- */
 
 /** Desktop "Skills & Qualification" tab (skills_qualification.tpl) */
-export const StaffSkillsTab: React.FC<{ skills: StaffSkills; v2?: boolean }> = ({ skills, v2 }) =>
-  v2 ? (
-    <div className="mt-2.5 space-y-3">
-      <Card className="grid grid-cols-3 divide-x divide-slate-100">
-        <StatCell icon={Sparkles} value={skills.technical.length} label="Technical Skills" tint="bg-[#EFF6FF] text-[#2F68FE]" />
-        <StatCell icon={Laptop} value={skills.software.length} label="Software Skills" tint="bg-[#EEF2FF] text-[#4F46E5]" />
-        <StatCell icon={Award} value={skills.certificates.length} label="Academic Certifications" tint="bg-[#ECFDF5] text-[#10B981]" />
+export const StaffSkillsTab: React.FC<{ skills: StaffSkills }> = ({ skills }) => (
+  <div className="mt-2.5 space-y-3">
+    <Card className="grid grid-cols-3 divide-x divide-slate-100">
+      <StatCell icon={Sparkles} value={skills.technical.length} label="Technical Skills" tint="bg-[#EFF6FF] text-[#2F68FE]" />
+      <StatCell icon={Laptop} value={skills.software.length} label="Software Skills" tint="bg-[#EEF2FF] text-[#4F46E5]" />
+      <StatCell icon={Award} value={skills.certificates.length} label="Academic Certifications" tint="bg-[#ECFDF5] text-[#10B981]" />
+    </Card>
+
+    <SkillGrid title="Technical Skills" icon={Sparkles} items={skills.technical} iconCls="text-[#2F68FE]" />
+    <SkillGrid title="Software Skills" icon={Laptop} items={skills.software} iconCls="text-[#4F46E5]" />
+
+    {skills.certificates.length > 0 && (
+      <Card className="p-4">
+        <SectionHead icon={Award} title="Academic Certifications" iconCls="text-[#10B981]" />
+        <ul className="divide-y divide-slate-100">
+          {skills.certificates.map((c, i) => (
+            <li key={`${c.name}-${i}`} className="py-3 first:pt-0 last:pb-0">
+              <CertificateRow cert={c} />
+            </li>
+          ))}
+        </ul>
       </Card>
-
-      <SkillGridV2 title="Technical Skills" icon={Sparkles} items={skills.technical} iconCls="text-[#2F68FE]" />
-      <SkillGridV2 title="Software Skills" icon={Laptop} items={skills.software} iconCls="text-[#4F46E5]" />
-
-      {skills.certificates.length > 0 && (
-        <Card className="p-4">
-          <SectionHeadV2 icon={Award} title="Academic Certifications" iconCls="text-[#10B981]" />
-          <ul className="divide-y divide-slate-100">
-            {skills.certificates.map((c, i) => (
-              <li key={`${c.name}-${i}`} className="py-3 first:pt-0 last:pb-0">
-                <CertificateRowV2 cert={c} />
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-    </div>
-  ) : (
-    <div className="mt-2.5 space-y-3">
-      <SkillSectionV1 title="Technical Skills" items={skills.technical} dot="bg-[#2F68FE]" />
-      <SkillSectionV1 title="Software Skills" items={skills.software} dot="bg-[#4F46E5]" />
-      {skills.certificates.length > 0 && <CertificatesV1 certificates={skills.certificates} />}
-    </div>
-  );
+    )}
+  </div>
+);

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BriefcaseBusiness,
   CalendarCheck,
-  CalendarX,
   ClipboardCheck,
   Clock,
   FileSignature,
@@ -35,7 +34,7 @@ import {
 } from '../data/clientStaffProfileData';
 import type { AmendRequest } from '../data/clientAttendanceData';
 import { StaffAvatar, StaffStatusPill } from './ClientStaffParts';
-import { Card, CardHeading, DesignVersion, Field, InfoCard, RowList, ScreenHeader } from './tabs/StaffTabParts';
+import { Field, InfoCard, ScreenHeader } from './tabs/StaffTabParts';
 import { StaffReportingToTab } from './tabs/StaffReportingToTab';
 import { StaffAttendanceLeaveTab } from './tabs/StaffAttendanceLeaveTab';
 import { StaffSkillsTab } from './tabs/StaffSkillsTab';
@@ -59,8 +58,6 @@ const TAB_ICONS: Record<StaffProfileTab, React.ElementType> = {
   SOP: ListChecks,
 };
 
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
-
 /** Changes made on this screen, kept in ClientApp so they survive Back and module switches */
 export interface StaffProfileEdits {
   contacts?: MappedContact[];
@@ -68,35 +65,6 @@ export interface StaffProfileEdits {
 }
 
 type InfoGroup = { title: string; icon: React.ElementType; fields: Field[] };
-
-/** V2 info section: one card per group, gradient icon heading, label / value rows (long values drop under the label) */
-const InfoTilesV2: React.FC<{ groups: InfoGroup[] }> = ({ groups }) => (
-  <div className="mt-3 space-y-3">
-    {groups.map((g) => {
-      const Icon = g.icon;
-      return (
-        <section key={g.title} className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-3.5">
-          <h4 className="flex items-center gap-2.5 pb-3 border-b border-slate-100 text-sm font-bold text-[#1E293B]">
-            <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-              <Icon className="w-4 h-4" />
-            </span>
-            {g.title}
-          </h4>
-          <dl className="mt-3 grid grid-cols-2 gap-2">
-            {g.fields
-              .filter((f) => f.value)
-              .map((f) => (
-                <div key={f.label} className={`min-w-0 px-3 py-2.5 rounded-xl bg-slate-50/80 border border-slate-100 ${f.wide ? 'col-span-2' : ''}`}>
-                  <dt className="text-[11px] font-semibold text-slate-400 leading-snug">{f.label}</dt>
-                  <dd className="mt-0.5 text-xs font-bold text-[#1E293B] leading-snug break-words tabular-nums">{f.value}</dd>
-                </div>
-              ))}
-          </dl>
-        </section>
-      );
-    })}
-  </div>
-);
 
 const dateParts = (iso: string) => {
   const d = new Date(`${iso}T00:00:00`);
@@ -131,9 +99,6 @@ interface ClientStaffDetailViewProps {
   /** Saved Reporting To / SOP changes for this staff member */
   edits?: StaffProfileEdits;
   onEdit?: (patch: StaffProfileEdits) => void;
-  /** Follows the My Staff V1 / V2 switch */
-  version?: DesignVersion;
-  onVersionChange?: (v: DesignVersion) => void;
 }
 
 /** Staff details (desktop eye icon in My Staff): profile header + desktop tabs */
@@ -149,10 +114,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
   amends,
   edits,
   onEdit,
-  version = 'V1',
-  onVersionChange,
 }) => {
-  const v2 = version === 'V2';
   const [tab, setTab] = useState<StaffProfileTab>(initialTab ?? 'Personal Information');
   const tabsRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -171,7 +133,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
     const observer = new IntersectionObserver(([entry]) => setTabsStuck(!entry.isIntersecting), { root, threshold: 0 });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [v2]);
+  }, []);
 
   const work = useMemo(() => {
     const info = workInfoFor(member);
@@ -196,7 +158,7 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
     onEdit?.({ sops: next });
   };
 
-  const info = (groups: InfoGroup[]) => (v2 ? <InfoTilesV2 groups={groups} /> : <InfoCard groups={groups} />);
+  const info = (groups: InfoGroup[]) => <InfoCard groups={groups} />;
 
   const panel = () => {
     switch (tab) {
@@ -246,13 +208,13 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
           },
         ]);
       case 'Reporting To':
-        return <StaffReportingToTab staffName={member.name} contacts={contacts} onChange={setContacts} v2={v2} />;
+        return <StaffReportingToTab staffName={member.name} contacts={contacts} onChange={setContacts} />;
       case 'Attendance & Leave':
-        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} amends={amends} v2={v2} />;
+        return <StaffAttendanceLeaveTab member={member} workMode={work.currentMode} amends={amends} />;
       case 'Skills & Qualification':
-        return <StaffSkillsTab skills={skills} v2={v2} />;
+        return <StaffSkillsTab skills={skills} />;
       case 'Employee Documents':
-        return <StaffDocumentsTab documents={documents} staffName={member.name} v2={v2} />;
+        return <StaffDocumentsTab documents={documents} staffName={member.name} />;
       case 'Terms of Employment':
         return info([
           {
@@ -277,109 +239,17 @@ export const ClientStaffDetailView: React.FC<ClientStaffDetailViewProps> = ({
           },
         ]);
       case 'Training & Development':
-        return <StaffTrainingTab trainings={trainings} tniRequests={tniRequests} onOpenTrainingNeed={onOpenTrainingNeed} v2={v2} />;
+        return <StaffTrainingTab trainings={trainings} tniRequests={tniRequests} onOpenTrainingNeed={onOpenTrainingNeed} />;
       case 'System & IT Details':
-        return <StaffSystemTab devices={devices} access={access} v2={v2} />;
+        return <StaffSystemTab devices={devices} access={access} />;
       case 'Assessments':
-        return <StaffAssessmentsTab assessments={assessments} v2={v2} />;
+        return <StaffAssessmentsTab assessments={assessments} />;
       case 'SOP':
-        return <StaffSopTab staffName={member.name} clientName={clientName} sops={sops} onChange={setSops} v2={v2} />;
+        return <StaffSopTab staffName={member.name} clientName={clientName} sops={sops} onChange={setSops} />;
     }
   };
 
-  const header = (
-    <ScreenHeader
-      title="Staff Details"
-      onBack={onBack}
-      backLabel="Back to My Staff"
-      version={onVersionChange ? { versions: DESIGN_VERSIONS, value: version, onChange: onVersionChange } : undefined}
-    />
-  );
-
-  if (v2) {
-    return (
-      <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">
-        {header}
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-          {/* Profile card: avatar + name / designation, status on the right, email strip underneath */}
-          <div className="px-4 pt-3">
-            <section className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs overflow-hidden">
-              <div className="p-3.5 flex items-center gap-3">
-                <StaffAvatar name={member.name} tint={tint} />
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-bold text-[#1E293B] leading-tight truncate">{member.name}</h2>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-snug truncate">{member.designation}</p>
-                </div>
-                <span className="self-start shrink-0">
-                  <StaffStatusPill status={member.status} />
-                </span>
-              </div>
-              <div className="px-3.5 py-2.5 border-t border-slate-100 bg-slate-50/50">
-                <a
-                  href={`mailto:${member.email}`}
-                  className="inline-flex max-w-full items-center gap-1.5 text-xs font-semibold text-[#2F68FE] active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] rounded"
-                >
-                  <Mail className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{member.email}</span>
-                </a>
-              </div>
-              {leaving && (
-                <p className="px-3.5 py-2.5 border-t border-amber-200/50 bg-[#FEF8E7] text-xs text-amber-700 flex items-center gap-2">
-                  <CalendarX className="w-4 h-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-                  <span>
-                    Last working day: <strong className="font-bold">{formatStaffDate(member.lastWorkingDay!)}</strong>
-                  </span>
-                </p>
-              )}
-            </section>
-          </div>
-
-          {/* Desktop tab bar → sticky scrolling pill chips (icon + label) */}
-          <div ref={tabsSentinelRef} className="h-px mt-3" aria-hidden="true" />
-          <nav
-            className={`sticky top-0 z-10 py-2.5 bg-white border-y border-[#EBF0F7] transition-colors duration-200 ${
-              tabsStuck ? 'bg-white/95 backdrop-blur-md' : ''
-            }`}
-            aria-label="Staff profile sections"
-          >
-            <div ref={tabsRef} className="flex gap-2 overflow-x-auto no-scrollbar px-4" role="tablist">
-              {STAFF_PROFILE_TABS.map((t) => {
-                const Icon = TAB_ICONS[t];
-                const on = t === tab;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    role="tab"
-                    aria-selected={on}
-                    onClick={() => setTab(t)}
-                    className={`h-9 pl-1 pr-3.5 rounded-full flex items-center gap-2 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-                      on
-                        ? 'bg-[#2F68FE] text-white'
-                        : 'bg-white border border-slate-200 text-slate-600 active:bg-slate-50'
-                    }`}
-                  >
-                    <span
-                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${on ? 'bg-white/20' : 'bg-[#EEF2FF] text-[#2F68FE]'}`}
-                      aria-hidden="true"
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                    {t}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-
-          <div key={tab} className="px-4 pt-0.5 animate-in fade-in slide-in-from-bottom-1 duration-200" role="tabpanel" aria-label={tab}>
-            {panel()}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const header = <ScreenHeader title="Staff Details" onBack={onBack} backLabel="Back to My Staff" />;
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none animate-in fade-in slide-in-from-right-4 duration-200">

@@ -5,7 +5,7 @@ import { CommentThreadSheet } from '../../../common/CommentThreadSheet';
 import { SegmentedTabs } from '../../../../design-system/components/SegmentedTabs';
 import { formatStaffDate } from '../../data/clientStaffData';
 import { SOP_DECISIONS, SOP_DOC_FORMATS, SOP_VIDEO_FORMATS, SopRecord, SopStatus } from '../../data/clientStaffProfileData';
-import { ACCENT, AccentCard, Card, ConfirmSheet, EmptyCard, Pill, RowList, SheetHeader, TextField, Tone, useNotice } from './StaffTabParts';
+import { ACCENT, AccentCard, ConfirmSheet, EmptyCard, Pill, RowList, SheetHeader, TextField, Tone, useNotice } from './StaffTabParts';
 import { useClientPermission } from '../../context/ClientPermissionContext';
 import { FileUploadField } from '../../../common/FileUploadField';
 
@@ -14,7 +14,6 @@ interface StaffSopTabProps {
   clientName: string;
   sops: SopRecord[];
   onChange: (next: SopRecord[]) => void;
-  v2?: boolean;
 }
 
 type Mode = 'document' | 'ai';
@@ -34,7 +33,7 @@ const todayIso = () => {
 const extOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
 /** Desktop "SOP" tab (sop_tab.tpl): status decision, feedback, view, delete, publish */
-export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName, sops, onChange, v2 }) => {
+export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName, sops, onChange }) => {
   const [notice, showNotice] = useNotice();
   const perm = useClientPermission('my-staff');
   const [confirm, setConfirm] = useState<Confirm>(null);
@@ -158,221 +157,104 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
             const canPublish = perm.edit && s.kind === 'ai' && s.createdByMe && !s.published;
             // Desktop `can_edit`: own, unpublished, not Approved AI SOP → editor in the staff user panel
             const canEdit = canPublish && s.status !== 'Approved';
-            if (v2) {
-              const actions: { key: string; label: string; icon: React.ElementType; onClick: () => void; cls: string; badge?: number }[] = [
-                { key: 'view', label: 'View', icon: Eye, onClick: () => showNotice(`Opening ${s.name}.`), cls: 'text-[#2F68FE] active:bg-[#EFF6FF]' },
-                ...(canEdit
-                  ? [{ key: 'edit', label: 'Edit', icon: Pencil, onClick: () => showNotice(`Opening ${s.name} in the SOP editor.`), cls: 'text-slate-600 active:bg-slate-50' }]
-                  : []),
-                {
-                  key: 'feedback',
-                  label: 'Feedback',
-                  icon: MessageSquare,
-                  onClick: () => setFeedbackFor(s.id),
-                  cls: 'text-slate-600 active:bg-slate-50',
-                  badge: s.feedback.length || undefined,
-                },
-                ...(canDelete ? [{ key: 'delete', label: 'Delete', icon: Trash2, onClick: () => setConfirm({ kind: 'delete', sop: s }), cls: 'text-rose-500 active:bg-rose-50' }] : []),
-              ];
-              return (
-                <AccentCard key={s.id} accent={ACCENT[STATUS_TONE[s.status]]}>
-                  <div className="pl-4 pr-3.5 pt-3.5">
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${s.kind === 'ai' ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-[#FEF2F2] text-rose-500'}`}
-                      >
-                        {s.kind === 'ai' ? <Video className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] text-slate-400">SOP Name</p>
-                        <p className="text-sm font-bold text-[#1E293B] leading-snug">{s.name}</p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                          <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>
-                          {s.published && (
-                            <Pill tone="green">
-                              <CheckCircle2 className="w-3 h-3" /> Published
-                            </Pill>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <RowList
-                      className="mt-2.5 border-t border-slate-100"
-                      rows={[
-                        { label: 'Approved/Rejected On', value: s.decidedOn ? formatStaffDate(s.decidedOn) : '-' },
-                        { label: 'Approved/Rejected By', value: s.decidedBy ?? '-' },
-                        { label: 'Created By', value: s.createdBy },
-                      ]}
-                    />
-                    {perm.edit && s.status === 'Pending' && (
-                      <div className="mt-1 mb-3 p-1 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] grid grid-cols-3 gap-1">
-                        {SOP_DECISIONS.map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => setConfirm({ kind: 'status', sop: s, status: d })}
-                            className={`h-9 rounded-xl text-[11px] font-bold cursor-pointer ${
-                              d === 'Approved'
-                                ? 'bg-[#10B981] text-white active:bg-emerald-600'
-                                : d === 'Rejected'
-                                  ? 'bg-white text-rose-600 border border-rose-200 active:bg-rose-50'
-                                  : 'bg-white text-slate-600 border border-slate-200 active:bg-slate-50'
-                            }`}
-                          >
-                            {d === 'Approved' ? 'Approve' : d === 'Rejected' ? 'Reject' : 'Not Required'}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {!s.published && canPublish && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirm({ kind: 'publish', sop: s })}
-                        className="mb-3 w-full h-10 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] transition-colors cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5" /> Publish SOP
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex border-t border-slate-100 divide-x divide-slate-100" aria-label="Action">
-                    {actions.map((a) => {
-                      const Icon = a.icon;
-                      return (
-                        <button
-                          key={a.key}
-                          type="button"
-                          onClick={a.onClick}
-                          aria-label={`${a.label} ${s.name}`}
-                          className={`flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${a.cls}`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          {a.label}
-                          {a.badge !== undefined && (
-                            <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
-                              {a.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </AccentCard>
-              );
-            }
+            const actions: { key: string; label: string; icon: React.ElementType; onClick: () => void; cls: string; badge?: number }[] = [
+              { key: 'view', label: 'View', icon: Eye, onClick: () => showNotice(`Opening ${s.name}.`), cls: 'text-[#2F68FE] active:bg-[#EFF6FF]' },
+              ...(canEdit
+                ? [{ key: 'edit', label: 'Edit', icon: Pencil, onClick: () => showNotice(`Opening ${s.name} in the SOP editor.`), cls: 'text-slate-600 active:bg-slate-50' }]
+                : []),
+              {
+                key: 'feedback',
+                label: 'Feedback',
+                icon: MessageSquare,
+                onClick: () => setFeedbackFor(s.id),
+                cls: 'text-slate-600 active:bg-slate-50',
+                badge: s.feedback.length || undefined,
+              },
+              ...(canDelete ? [{ key: 'delete', label: 'Delete', icon: Trash2, onClick: () => setConfirm({ kind: 'delete', sop: s }), cls: 'text-rose-500 active:bg-rose-50' }] : []),
+            ];
             return (
-              <Card key={s.id} className="p-3.5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.kind === 'ai' ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-[#FEF2F2] text-rose-500'}`}
-                  >
-                    {s.kind === 'ai' ? <Video className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-slate-400">SOP Name</p>
-                    <p className="mt-0.5 text-[13px] font-bold text-[#1E293B] leading-snug">{s.name}</p>
-                  </div>
-                </div>
-
-                {/* Approved/Rejected On | By, then Status | Created By (50 / 50) */}
-                <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  {(
-                    [
-                      ['Approved/Rejected On', s.decidedOn ? formatStaffDate(s.decidedOn) : '-'],
-                      ['Approved/Rejected By', s.decidedBy ?? '-'],
-                      ['Status', <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>],
-                      ['Created By', s.createdBy],
-                    ] as [string, React.ReactNode][]
-                  ).map(([label, value]) => (
-                    <div key={label} className="min-w-0">
-                      <dt className="text-[11px] text-slate-400">{label}</dt>
-                      <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-snug break-words tabular-nums">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-
-                {perm.edit && s.status === 'Pending' && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {SOP_DECISIONS.map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setConfirm({ kind: 'status', sop: s, status: d })}
-                        className={`h-9 rounded-xl text-[11px] font-bold border cursor-pointer ${
-                          d === 'Approved'
-                            ? 'border-emerald-200/50 bg-[#E8F8F0] text-emerald-700 active:bg-emerald-100'
-                            : d === 'Rejected'
-                              ? 'border-rose-200 bg-[#FEF2F2] text-rose-600 active:bg-rose-100'
-                              : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
-                        }`}
-                      >
-                        {d === 'Approved' ? 'Approve' : d === 'Rejected' ? 'Reject' : 'Not Required'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
-                  {/* All four actions don't fit one row: 2 × 2 */}
-                  <div className={canEdit && canDelete ? 'grid grid-cols-2 gap-2' : 'flex items-center gap-2'}>
-                    <button
-                      type="button"
-                      onClick={() => showNotice(`Opening ${s.name}.`)}
-                      aria-label={`View ${s.name}`}
-                      className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-100 cursor-pointer"
+              <AccentCard key={s.id} accent={ACCENT[STATUS_TONE[s.status]]}>
+                <div className="pl-4 pr-3.5 pt-3.5">
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${s.kind === 'ai' ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-[#FEF2F2] text-rose-500'}`}
                     >
-                      <Eye className="w-4 h-4 shrink-0" /> View
-                    </button>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => showNotice(`Opening ${s.name} in the SOP editor.`)}
-                        aria-label={`Edit ${s.name}`}
-                        className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
-                      >
-                        <Pencil className="w-4 h-4 shrink-0" /> Edit
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setFeedbackFor(s.id)}
-                      aria-label={`Feedback on ${s.name}`}
-                      className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4 shrink-0" /> Feedback
-                      {s.feedback.length > 0 && (
-                        <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums shrink-0">
-                          {s.feedback.length}
-                        </span>
-                      )}
-                    </button>
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirm({ kind: 'delete', sop: s })}
-                        aria-label={`Delete ${s.name}`}
-                        className="flex-1 min-w-0 h-9 px-2 rounded-xl border border-rose-200 text-rose-500 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-rose-50 cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4 shrink-0" /> Delete
-                      </button>
-                    )}
-                  </div>
-                  {s.published ? (
-                    <span className="h-9 px-3 rounded-xl bg-[#E8F8F0] border border-emerald-200/50 text-emerald-700 text-xs font-bold flex items-center justify-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" /> Published
+                      {s.kind === 'ai' ? <Video className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                     </span>
-                  ) : (
-                    canPublish && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirm({ kind: 'publish', sop: s })}
-                        className="w-full h-9 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5" /> Publish SOP
-                      </button>
-                    )
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-slate-400">SOP Name</p>
+                      <p className="text-sm font-bold text-[#1E293B] leading-snug">{s.name}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <Pill tone={STATUS_TONE[s.status]}>{s.status}</Pill>
+                        {s.published && (
+                          <Pill tone="green">
+                            <CheckCircle2 className="w-3 h-3" /> Published
+                          </Pill>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <RowList
+                    className="mt-2.5 border-t border-slate-100"
+                    rows={[
+                      { label: 'Approved/Rejected On', value: s.decidedOn ? formatStaffDate(s.decidedOn) : '-' },
+                      { label: 'Approved/Rejected By', value: s.decidedBy ?? '-' },
+                      { label: 'Created By', value: s.createdBy },
+                    ]}
+                  />
+                  {perm.edit && s.status === 'Pending' && (
+                    <div className="mt-1 mb-3 p-1 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] grid grid-cols-3 gap-1">
+                      {SOP_DECISIONS.map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setConfirm({ kind: 'status', sop: s, status: d })}
+                          className={`h-9 rounded-xl text-[11px] font-bold cursor-pointer ${
+                            d === 'Approved'
+                              ? 'bg-[#10B981] text-white active:bg-emerald-600'
+                              : d === 'Rejected'
+                                ? 'bg-white text-rose-600 border border-rose-200 active:bg-rose-50'
+                                : 'bg-white text-slate-600 border border-slate-200 active:bg-slate-50'
+                          }`}
+                        >
+                          {d === 'Approved' ? 'Approve' : d === 'Rejected' ? 'Reject' : 'Not Required'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!s.published && canPublish && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirm({ kind: 'publish', sop: s })}
+                      className="mb-3 w-full h-10 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] transition-colors cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Publish SOP
+                    </button>
                   )}
                 </div>
-              </Card>
+                <div className="flex border-t border-slate-100 divide-x divide-slate-100" aria-label="Action">
+                  {actions.map((a) => {
+                    const Icon = a.icon;
+                    return (
+                      <button
+                        key={a.key}
+                        type="button"
+                        onClick={a.onClick}
+                        aria-label={`${a.label} ${s.name}`}
+                        className={`flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${a.cls}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {a.label}
+                        {a.badge !== undefined && (
+                          <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                            {a.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </AccentCard>
             );
           })
         )}

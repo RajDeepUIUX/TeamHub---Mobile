@@ -54,12 +54,12 @@ export const matchesFilters = (selection: FilterSelection, valuesById: Record<st
 /* ------------------------------ Trigger icon ------------------------------ */
 
 /** The one filter button used on every screen (44px, funnel icon, count badge when filters are on) */
-export const FilterIconButton: React.FC<{ count: number; onClick: () => void; label?: string }> = ({ count, onClick, label = 'Filters' }) => (
+export const FilterIconButton: React.FC<{ count: number; onClick: () => void; label?: string; compact?: boolean }> = ({ count, onClick, label = 'Filters', compact }) => (
   <button
     type="button"
     onClick={onClick}
     aria-label={count ? `${label} (${count} applied)` : label}
-    className={`relative w-11 h-11 rounded-xl border flex items-center justify-center shadow-2xs transition-colors shrink-0 cursor-pointer ${
+    className={`relative ${compact ? 'w-10 h-10' : 'w-11 h-11'} rounded-xl border flex items-center justify-center shadow-2xs transition-colors shrink-0 cursor-pointer ${
       count ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200 text-[#2F68FE] active:bg-slate-50'
     }`}
   >
