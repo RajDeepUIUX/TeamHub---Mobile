@@ -14,6 +14,10 @@ import {
   ExternalLink,
   Video,
   FileText,
+  Clock3,
+  Mic,
+  Sparkles,
+  Pencil,
 } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { ProfileValue, ProfileValues } from '../../data/profileData';
@@ -405,50 +409,75 @@ export const IntroVideoSection: React.FC<IntroVideoSectionProps> = ({ values, ed
             </div>
           </div>
         ) : (
-          <div className="py-7 px-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/30 flex flex-col items-center text-center">
-            <span className="w-12 h-12 rounded-2xl bg-white text-[#2F68FE] shadow-2xs flex items-center justify-center">
-              <Video className="w-5.5 h-5.5" />
-            </span>
-            <p className="mt-3 text-sm font-bold text-[#1E293B]">No intro video added yet</p>
-            <p className="mt-1 text-[11.5px] text-slate-500 leading-relaxed max-w-[260px]">
-              A 60–90 second video helps clients get to know you and connects you with opportunities faster.
-            </p>
-            {editing ? (
-              <div className="mt-4 w-full grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAdding('link')}
-                  className="h-11 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
-                >
-                  <Link2 className="w-4 h-4" />
-                  Add Link
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdding('upload')}
-                  className="h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] cursor-pointer"
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload Video
-                </button>
+          <div className="rounded-2xl border border-[#DBE6FE] bg-gradient-to-b from-[#EEF4FF] to-white overflow-hidden">
+            {/* Illustration: a little video frame with a play button */}
+            <div className="relative pt-6 pb-4 flex justify-center" aria-hidden="true">
+              <span className="absolute left-8 top-5 w-2 h-2 rounded-full bg-violet-300" />
+              <span className="absolute right-10 top-9 w-1.5 h-1.5 rounded-full bg-sky-300" />
+              <span className="absolute left-14 bottom-5 w-1.5 h-1.5 rounded-full bg-amber-300" />
+              <div className="relative w-36 h-24 rounded-2xl bg-white border border-[#DBE6FE] shadow-[0_8px_24px_rgba(47,104,254,0.15)] flex items-center justify-center">
+                <span className="absolute top-2 left-2.5 flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
+                </span>
+                <span className="w-11 h-11 rounded-full bg-linear-to-br from-[#2F68FE] to-violet-500 text-white flex items-center justify-center shadow-md">
+                  <PlayCircle className="w-6 h-6" />
+                </span>
+                <span className="absolute bottom-2 right-2.5 px-1.5 py-px rounded-md bg-slate-900/80 text-white text-[9px] font-bold tabular-nums">1:30</span>
               </div>
-            ) : (
-              <p className="mt-3 text-[11px] font-semibold text-[#2F68FE]">Tap Edit to add or update your video.</p>
-            )}
+            </div>
+
+            <div className="px-4 pb-4 text-center">
+              <p className="text-sm font-bold text-[#1E293B]">No intro video added yet</p>
+              <p className="mt-1 mx-auto text-[11.5px] text-slate-500 leading-relaxed max-w-[270px]">
+                A 60–90 second video helps clients get to know you and connects you with opportunities faster.
+              </p>
+
+              {/* Quick tips */}
+              <ul className="mt-3.5 grid grid-cols-3 gap-2 text-left">
+                {[
+                  { icon: Clock3, text: '60–90 seconds' },
+                  { icon: Mic, text: 'Clear audio & good light' },
+                  { icon: Sparkles, text: 'Your skills & experience' },
+                ].map(({ icon: Icon, text }) => (
+                  <li key={text} className="px-2 py-2 rounded-xl bg-white border border-slate-100 flex flex-col items-center text-center gap-1">
+                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-[#2F68FE] flex items-center justify-center">
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-600 leading-tight">{text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {editing ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdding('link')}
+                    className="h-11 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:bg-slate-50 cursor-pointer"
+                  >
+                    <Link2 className="w-4 h-4" />
+                    Add Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdding('upload')}
+                    className="h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Video
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-[11px] font-semibold text-[#2F68FE]">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Tap Edit below to add your video
+                </p>
+              )}
+            </div>
           </div>
         )}
-      </section>
-
-      {/* Staffhub resumes (web table → list) */}
-      <section className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
-        <h3 className="pb-2.5 mb-3 border-b border-slate-100 text-[13px] font-bold text-[#1E293B]">Staffhub Resumes</h3>
-        <div className="py-5 flex flex-col items-center text-center">
-          <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center">
-            <FileText className="w-5 h-5" />
-          </span>
-          <p className="mt-2 text-xs font-semibold text-slate-600">No resumes added yet</p>
-          <p className="text-[11px] text-slate-400">Resumes shared on Staffhub will show here with their video status.</p>
-        </div>
       </section>
 
       <AddVideoSheet

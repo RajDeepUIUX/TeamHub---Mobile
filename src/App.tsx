@@ -211,7 +211,15 @@ export default function App() {
   // profile tabs never does. A ref so a confirmed action does not ask again.
   const profileDirtyRef = useRef(false);
   const [pendingLeave, setPendingLeave] = useState<null | (() => void)>(null);
-  const askToLeave = (action: () => void) => setPendingLeave(() => action);
+  // The side menu / notifications would cover the confirmation, so close them first and ask once they've slid away.
+  // "Discard" then carries on to the module that was picked.
+  const askToLeave = (action: () => void) => {
+    const overlayOpen = isMenuOpen || isNotificationsOpen;
+    setIsMenuOpen(false);
+    setIsNotificationsOpen(false);
+    if (overlayOpen) window.setTimeout(() => setPendingLeave(() => action), 220);
+    else setPendingLeave(() => action);
+  };
   const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
   // Company Feed: shared by every role; read state + the user's reactions live for the session
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
@@ -1034,10 +1042,14 @@ export default function App() {
   // Prototype stand-in for the IT team: ~3.5s after a request is approved, IT marks its review done
   const IT_REVIEW_DELAY_MS = 3500;
   const itReviewTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Requests already Approved in the demo data when the app loads are left alone; otherwise every refresh
+  // would fire "IT review done" toasts a few seconds later (even on the sign-in page)
+  const approvedAtLoad = useRef<Set<string> | null>(null);
   useEffect(() => {
     const approved = [...flexRequests, ...teamFlexRequests, ...managerFlexRequests].filter((r) => r.status === 'Approved');
+    if (!approvedAtLoad.current) approvedAtLoad.current = new Set(approved.map((r) => r.id));
     approved.forEach((req) => {
-      if (itReviewTimers.current.has(req.id)) return;
+      if (itReviewTimers.current.has(req.id) || approvedAtLoad.current!.has(req.id)) return;
       const timer = setTimeout(() => {
         itReviewTimers.current.delete(req.id);
         const itReviewedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   Search,
@@ -17,6 +17,7 @@ import {
   Mic,
 } from 'lucide-react';
 import { FEED_CATEGORIES, FeedBlock, FeedCategory, FeedPost, FeedReaction } from '../../data/companyFeedData';
+import { UnderlineTabs } from '../../design-system/components/UnderlineTabs';
 
 /* ------------------------------- Helpers ------------------------------- */
 
@@ -253,12 +254,6 @@ export const CompanyFeedView: React.FC<CompanyFeedViewProps> = ({
 }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [query, setQuery] = useState('');
-  const tabsRef = useRef<HTMLDivElement>(null);
-
-  // Keep the active tab in view when it changes
-  useEffect(() => {
-    tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [category]);
 
   const q = query.trim().toLowerCase();
   const visible = posts
@@ -316,39 +311,19 @@ export const CompanyFeedView: React.FC<CompanyFeedViewProps> = ({
           </div>
         )}
 
-        {/* Category tabs (scroll sideways) */}
-        {!q && (
-          <div ref={tabsRef} className="flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-3" role="tablist" aria-label="Feed categories">
-            {FEED_CATEGORIES.map((c) => {
-              const on = c === category;
-              const unread = unreadIn(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  role="tab"
-                  aria-selected={on}
-                  onClick={() => onCategoryChange(c)}
-                  className={`shrink-0 h-8 pl-3 ${unread ? 'pr-1.5' : 'pr-3'} rounded-full text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    on ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600 active:bg-slate-200'
-                  }`}
-                >
-                  {c}
-                  {unread > 0 && (
-                    <span
-                      className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
-                        on ? 'bg-white text-[#2F68FE]' : 'bg-[#2F68FE] text-white'
-                      }`}
-                    >
-                      {unread}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </header>
+
+      {/* Category tabs: same underline tabs as My Profile, on the page background below the header (unread count as the badge) */}
+      {!q && (
+        <UnderlineTabs
+          separated
+          className="shrink-0 bg-[#F8FAFC]"
+          ariaLabel="Feed categories"
+          options={FEED_CATEGORIES.map((c) => ({ id: c, label: c, badge: unreadIn(c) }))}
+          value={category}
+          onChange={onCategoryChange}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
         {q && (

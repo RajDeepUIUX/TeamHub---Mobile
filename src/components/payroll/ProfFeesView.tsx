@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, MinusCircle, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Check, ChevronDown, FileText, GraduationCap, MinusCircle, Pencil, Plus, Upload, UserPlus, Users, Wand2, X } from 'lucide-react';
 import { Dropdown } from '../../design-system/components/Dropdown';
 import { LocationFields } from '../common/LocationFields';
 import { FileUploadField } from '../common/FileUploadField';
 import { BottomSheet } from '../common/BottomSheet';
 import { DateWheelSheet } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
+import { QualificationData, QualificationSheet } from '../profile/QualificationSheet';
+import { FAMILY_RELATIONS } from '../../data/profileData';
 
 /* ---------------------------------- Model ---------------------------------- */
 
@@ -15,6 +17,11 @@ export interface FamilyMember {
   relationship: string;
   /** YYYY-MM-DD */
   dob: string;
+  /** Added from this screen: the rest of the Edit Profile family member details */
+  gender?: string;
+  phone?: string;
+  dependent?: string;
+  qualifications?: QualificationData;
 }
 
 type FileField = 'panCard' | 'aadhaarCard' | 'chequeImage' | 'resume';
@@ -54,8 +61,6 @@ export interface ProfFeeAccount {
 
 type AccountErrors = Partial<Record<keyof ProfFeeAccount, string>>;
 
-/** Relation Type options in Add New Family Member (as on the web) */
-const NEW_MEMBER_RELATIONS = ['Brother', 'Sister', 'Father in-law', 'Mother in-law', 'Sister in-law', 'Brother in-law', 'Cousin'];
 /** Nature of Relationship options on an account (as on the web) */
 const RELATIONSHIPS = [
   'Father',
@@ -434,45 +439,67 @@ const AccountCard: React.FC<{
 
 /* -------------------------- Add family member sheet -------------------------- */
 
-type NewMemberErrors = Partial<Record<'relationship' | 'name' | 'dob', string>>;
+// Same fields as a family member in Edit Profile › Personal › Family Details
+type NewMemberErrors = Partial<Record<'name' | 'relationship' | 'dob' | 'gender' | 'phone' | 'dependent', string>>;
+const GENDERS = ['Male', 'Female', 'Other'];
+const EMPTY_QUALS: QualificationData = { qualifications: [], certifications: [] };
 
 const AddFamilyMemberSheet: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSave: (member: Omit<FamilyMember, 'id'> & { phone: string }) => void;
+  onSave: (member: Omit<FamilyMember, 'id'>) => void;
 }> = ({ isOpen, onClose, onSave }) => {
-  const [relationship, setRelationship] = useState('');
   const [name, setName] = useState('');
+  const [relationship, setRelationship] = useState('');
   const [dob, setDob] = useState('');
+  const [gender, setGender] = useState('');
   const [phone, setPhone] = useState('');
+  const [dependent, setDependent] = useState('');
+  const [qualifications, setQualifications] = useState<QualificationData>(EMPTY_QUALS);
   const [errors, setErrors] = useState<NewMemberErrors>({});
   const [isDobOpen, setIsDobOpen] = useState(false);
+  const [isQualOpen, setIsQualOpen] = useState(false);
   const [wasOpen, setWasOpen] = useState(isOpen);
 
   // Start blank every time the sheet opens
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen);
     if (isOpen) {
-      setRelationship('');
       setName('');
+      setRelationship('');
       setDob('');
+      setGender('');
       setPhone('');
+      setDependent('');
+      setQualifications(EMPTY_QUALS);
       setErrors({});
     }
   }
 
+  const clear = (k: keyof NewMemberErrors) => setErrors((p) => ({ ...p, [k]: undefined }));
+
   const save = () => {
     const e: NewMemberErrors = {};
-    if (!relationship) e.relationship = 'Relation Type is required.';
-    if (!name.trim()) e.name = 'Full Name is required.';
+    if (!name.trim()) e.name = 'Name is required.';
+    if (!relationship) e.relationship = 'Relation is required.';
     if (!dob) e.dob = 'Date of Birth is required.';
+    if (!gender) e.gender = 'Gender is required.';
+    if (!phone) e.phone = 'Phone Number is required.';
+    else if (phone.length !== 10) e.phone = 'Enter a 10-digit number.';
+    if (!dependent) e.dependent = 'Dependent is required.';
     setErrors(e);
     if (Object.keys(e).length) return;
-    onSave({ relationship, name: name.trim(), dob, phone });
+    onSave({ name: name.trim(), relationship, dob, gender, phone, dependent, qualifications });
   };
 
+  const nq = qualifications.qualifications.length;
+  const nc = qualifications.certifications.length;
+  const qualSummary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[85%]">
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[92%]">
       <div className="pt-3 pb-1 flex justify-center shrink-0">
         <div className="w-10 h-1 bg-slate-300 rounded-full" />
       </div>
@@ -488,22 +515,8 @@ const AddFamilyMemberSheet: React.FC<{
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3">
-        <Field label="Relation Type" required error={errors.relationship}>
-          <Dropdown
-            size="md"
-            ariaLabel="Relation Type"
-            sheetTitle="Relation Type"
-            value={relationship || null}
-            placeholder="Select Relation"
-            options={NEW_MEMBER_RELATIONS}
-            onChange={(v) => {
-              setRelationship(v);
-              setErrors((p) => ({ ...p, relationship: undefined }));
-            }}
-          />
-        </Field>
-        <Field label="Full Name" required error={errors.name} htmlFor="new-member-name">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-3.5">
+        <Field label="Name" required error={errors.name} htmlFor="new-member-name">
           <input
             id="new-member-name"
             type="text"
@@ -513,38 +526,119 @@ const AddFamilyMemberSheet: React.FC<{
             placeholder="Enter full name"
             onChange={(e) => {
               setName(e.target.value);
-              setErrors((p) => ({ ...p, name: undefined }));
+              clear('name');
             }}
             className={inputCls(errors.name)}
           />
         </Field>
-        <Field label="Date of Birth" required error={errors.dob}>
-          <button
-            type="button"
-            onClick={() => setIsDobOpen(true)}
-            className={`w-full h-11 px-3.5 bg-white border rounded-xl flex items-center gap-2 text-xs shadow-2xs cursor-pointer ${
-              errors.dob ? 'border-rose-300' : 'border-slate-200'
-            }`}
-          >
-            <CalendarDays className={`w-4 h-4 shrink-0 ${dob ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-            <span className={`flex-1 text-left tabular-nums ${dob ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-400'}`}>
-              {dob ? formatDob(dob) : 'DD/MM/YYYY'}
-            </span>
-          </button>
-        </Field>
-        <Field label="Phone Number" htmlFor="new-member-phone">
-          <input
-            id="new-member-phone"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={10}
-            value={phone}
-            placeholder="Enter phone number"
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-            className={inputCls()}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Relation" required error={errors.relationship}>
+            <Dropdown
+              size="md"
+              ariaLabel="Relation"
+              sheetTitle="Relation"
+              value={relationship || null}
+              placeholder="Select"
+              options={FAMILY_RELATIONS}
+              onChange={(v) => {
+                setRelationship(v);
+                clear('relationship');
+              }}
+            />
+          </Field>
+          <Field label="Date of Birth" required error={errors.dob}>
+            <button
+              type="button"
+              onClick={() => setIsDobOpen(true)}
+              className={`w-full h-11 px-3.5 bg-white border rounded-xl flex items-center gap-2 text-xs shadow-2xs cursor-pointer ${
+                errors.dob ? 'border-rose-300' : 'border-slate-200'
+              }`}
+            >
+              <span className={`flex-1 text-left tabular-nums truncate ${dob ? 'font-semibold text-[#1E293B]' : 'font-medium text-slate-400'}`}>
+                {dob ? formatDob(dob) : 'Select date'}
+              </span>
+              <CalendarDays className={`w-4 h-4 shrink-0 ${dob ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
+            </button>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Gender" required error={errors.gender}>
+            <Dropdown
+              size="md"
+              ariaLabel="Gender"
+              sheetTitle="Gender"
+              value={gender || null}
+              placeholder="Select"
+              options={GENDERS}
+              onChange={(v) => {
+                setGender(v);
+                clear('gender');
+              }}
+            />
+          </Field>
+          <Field label="Phone Number" required error={errors.phone} htmlFor="new-member-phone">
+            <input
+              id="new-member-phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={10}
+              value={phone}
+              placeholder="Enter here"
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                clear('phone');
+              }}
+              className={inputCls(errors.phone)}
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Dependent" required error={errors.dependent}>
+            <div
+              role="radiogroup"
+              aria-label="Dependent"
+              className={`h-11 p-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 border ${errors.dependent ? 'border-rose-300' : 'border-transparent'}`}
+            >
+              {['Yes', 'No'].map((o) => {
+                const on = dependent === o;
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      setDependent(o);
+                      clear('dependent');
+                    }}
+                    className={`rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      on ? 'bg-white text-[#2F68FE] shadow-[0_1px_3px_rgba(15,23,42,0.12)]' : 'text-slate-500'
+                    }`}
+                  >
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
+
+        {/* Qualification & Certificate: same sheet as in Edit Profile */}
+        <button
+          type="button"
+          onClick={() => setIsQualOpen(true)}
+          className={`w-full min-h-11 px-3 py-2 rounded-xl border flex items-center gap-2.5 text-left cursor-pointer ${
+            qualSummary ? 'border-slate-200 bg-slate-50 active:bg-slate-100' : 'border-dashed border-[#2F68FE]/50 bg-blue-50/40 active:bg-blue-50'
+          }`}
+        >
+          <GraduationCap className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+          <span className="flex-1 min-w-0">
+            <span className="block text-xs font-bold text-[#2F68FE]">{qualSummary ? 'Qualification & Certificate' : 'Add Qualification & Certificate'}</span>
+            {qualSummary && <span className="block text-[10.5px] text-slate-500 truncate">{qualSummary}</span>}
+          </span>
+          {qualSummary ? <Pencil className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" /> : <Plus className="w-4 h-4 text-[#2F68FE] shrink-0" />}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
@@ -571,8 +665,18 @@ const AddFamilyMemberSheet: React.FC<{
         onClose={() => setIsDobOpen(false)}
         onApply={(v) => {
           setDob(v);
-          setErrors((p) => ({ ...p, dob: undefined }));
+          clear('dob');
           setIsDobOpen(false);
+        }}
+      />
+      <QualificationSheet
+        isOpen={isQualOpen}
+        subtitle={[relationship, name.trim()].filter(Boolean).join(' · ') || 'New family member'}
+        initial={qualifications}
+        onClose={() => setIsQualOpen(false)}
+        onSave={(d) => {
+          setQualifications(d);
+          setIsQualOpen(false);
         }}
       />
     </BottomSheet>
@@ -776,8 +880,8 @@ export const ProfFeesView: React.FC<{
       <AddFamilyMemberSheet
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        onSave={({ relationship, name, dob }) => {
-          const member: FamilyMember = { id: `fm-${Date.now()}`, name, relationship, dob };
+        onSave={(details) => {
+          const member: FamilyMember = { id: `fm-${Date.now()}`, ...details };
           onAddMember(member);
           // Select the new member straight away so their account form opens
           setAccounts((prev) => [...prev, newAccount(member, vendorCode(members, member.id))]);

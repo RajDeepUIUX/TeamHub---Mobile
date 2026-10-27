@@ -24,8 +24,9 @@ import {
   X,
   AlertTriangle,
   Lock,
+  UserPlus,
 } from 'lucide-react';
-import { QualificationSheet, parseQualificationData } from './QualificationSheet';
+import { AcademicQualificationSheet, Qualification, QualificationSheet, parseQualificationData } from './QualificationSheet';
 import { citiesOf, statesOf } from '../../data/locations';
 import { FileUploadField } from '../common/FileUploadField';
 import { ProfileAvatar } from './ProfileAvatar';
@@ -35,6 +36,7 @@ import { DateWheelSheet, todayIso } from '../common/DateWheelSheet';
 import { MultiSelectSheet } from '../common/MultiSelectSheet';
 import { TimeWheelSheet } from '../common/TimeWheelSheet';
 import { IntroVideoSection } from './IntroVideoSection';
+import { useEdgeBounce } from '../../hooks/useEdgeBounce';
 import {
   MyProfileData,
   PROFILE_TABS,
@@ -566,6 +568,53 @@ const FieldInput: React.FC<{
 /** 2-column grid of fields (view or edit), with Father / Mother style sub-groups */
 /** Profile value key holding a family member's qualifications & certificates (JSON) */
 const qualKey = (group: string) => `qual${group}`;
+/** Family member's "Add Qualification & Certificate" (edit) / summary line (view), opening the Qualification sheet */
+const QualificationCTA: React.FC<{ raw: ProfileValue | undefined; editing: boolean; onOpen: () => void; className?: string }> = ({
+  raw,
+  editing,
+  onOpen,
+  className = '',
+}) => {
+  const data = parseQualificationData(raw);
+  const nq = data.qualifications.length;
+  const nc = data.certifications.length;
+  const summary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
+    .filter(Boolean)
+    .join(' · ');
+  if (!editing && !summary) return null;
+  return (
+    <div className={className}>
+      {editing ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`w-full min-h-11 px-3 py-2 rounded-xl border flex items-center gap-2.5 text-left cursor-pointer ${
+            summary ? 'border-slate-200 bg-slate-50 active:bg-slate-100' : 'border-dashed border-[#2F68FE]/50 bg-blue-50/40 active:bg-blue-50'
+          }`}
+        >
+          <GraduationCap className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
+          <span className="flex-1 min-w-0">
+            <span className="block text-xs font-bold text-[#2F68FE]">{summary ? 'Qualification & Certificate' : 'Add Qualification & Certificate'}</span>
+            {summary && <span className="block text-[10.5px] text-slate-500 truncate">{summary}</span>}
+          </span>
+          {summary ? <Pencil className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" /> : <Plus className="w-4 h-4 text-[#2F68FE] shrink-0" />}
+        </button>
+      ) : (
+        <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600">
+          <GraduationCap className="w-4 h-4 text-[#2F68FE] shrink-0" />
+          <span className="font-semibold text-[#1E293B]">Qualification &amp; Certificate</span>
+          <span className="ml-auto truncate">{summary}</span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+/** List items (e.g. Family Members) keep their qualifications under this key */
+const MEMBER_QUAL_KEY = 'qualifications';
+/** `qualFor` value meaning "this list item" rather than a Father / Mother / Guardian group */
+const THIS_MEMBER = '__member__';
+
 /** Groups that are family members (get the insurance option and Qualification & Certificate) */
 const FAMILY_GROUPS = ['Father', 'Mother', 'Guardian'];
 const FieldGrid: React.FC<{
@@ -575,9 +624,9 @@ const FieldGrid: React.FC<{
   errors: Record<string, string>;
   errorKey: (fieldKey: string) => string;
   onChange: (fieldKey: string, v: ProfileValue) => void;
-  /** The section already carries an "Auto" tag */
-  hideAutoTags?: boolean;
-}> = ({ fields, values, editing, errors, errorKey, onChange, hideAutoTags }) => {
+  /** List item that is a person: adds their Qualification & Certificate (subtitle like "Sister · Emma Smith") */
+  memberQualification?: { subtitle: string };
+}> = ({ fields, values, editing, errors, errorKey, onChange, memberQualification }) => {
   // Which family member's Qualification & Certificate sheet is open
   const [qualFor, setQualFor] = useState<string | null>(null);
   // e.g. "Robert Smith": the group's Full Name, shown under the sheet title
@@ -585,6 +634,11 @@ const FieldGrid: React.FC<{
     const nameField = fields.find((x) => x.group === group && x.label === 'Full Name');
     return nameField ? String(values[nameField.key] ?? '') : '';
   };
+  // Where the open sheet reads / saves: this list item, or a Father / Mother / Guardian group
+  const qualTarget = (q: string) =>
+    q === THIS_MEMBER && memberQualification
+      ? { key: MEMBER_QUAL_KEY, subtitle: memberQualification.subtitle }
+      : { key: qualKey(q), subtitle: [q, memberName(q)].filter(Boolean).join(' · ') };
   const gap = editing ? 'gap-x-3 gap-y-3.5' : 'gap-x-4 gap-y-3.5';
   // Country → State → City: a new Country clears State and City, a new State clears City
   const changeWithCascade = (f: ProfileField, v: ProfileValue) => {
@@ -789,13 +843,11 @@ const FieldGrid: React.FC<{
       <div key={f.key} data-field={key} className={`space-y-1.5 ${isWide(f) ? 'col-span-2' : 'min-w-0'}`}>
         {f.type !== 'checkbox' && (
           <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 min-w-0">
-            <span className="leading-snug">
+            {/* Labels stay on one line so the inputs in a row line up */}
+            <span className="leading-snug truncate" title={f.editLabel ?? f.label}>
               {f.editLabel ?? f.label}
               {f.required && !isReadOnly(f) && <span className="text-rose-500"> *</span>}
             </span>
-            {f.type === 'auto' && !hideAutoTags && (
-              <span className="px-1.5 py-px rounded-md bg-blue-50 text-[9px] font-bold uppercase tracking-wide text-[#2F68FE] shrink-0">Auto</span>
-            )}
           </label>
         )}
         <FieldInput field={f} values={values} error={error} onChange={(v) => changeWithCascade(f, v)} />
@@ -854,57 +906,26 @@ const FieldGrid: React.FC<{
             </div>
             <div className={`grid grid-cols-2 items-start p-3.5 ${gap}`}>{run.fields.filter((f) => !(f.type === 'checkbox' && f.inHeader)).map(render)}</div>
             {/* Family member's qualifications & certificates (edited in a sheet, saved with the profile draft) */}
-            {(() => {
-              const group = run.group;
-              const data = parseQualificationData(values[qualKey(group)]);
-              const nq = data.qualifications.length;
-              const nc = data.certifications.length;
-              const summary = [nq && `${nq} ${nq === 1 ? 'qualification' : 'qualifications'}`, nc && `${nc} ${nc === 1 ? 'certificate' : 'certificates'}`]
-                .filter(Boolean)
-                .join(' · ');
-              if (!FAMILY_GROUPS.includes(group) || (!editing && !summary)) return null;
-              return (
-                <div className="px-3.5 pb-3.5">
-                  {editing ? (
-                    <button
-                      type="button"
-                      onClick={() => setQualFor(group)}
-                      className={`w-full min-h-11 px-3 py-2 rounded-xl border flex items-center gap-2.5 text-left cursor-pointer ${
-                        summary ? 'border-slate-200 bg-slate-50 active:bg-slate-100' : 'border-dashed border-[#2F68FE]/50 bg-blue-50/40 active:bg-blue-50'
-                      }`}
-                    >
-                      <GraduationCap className="w-4.5 h-4.5 text-[#2F68FE] shrink-0" />
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-xs font-bold text-[#2F68FE]">
-                          {summary ? 'Qualification & Certificate' : 'Add Qualification & Certificate'}
-                        </span>
-                        {summary && <span className="block text-[10.5px] text-slate-500 truncate">{summary}</span>}
-                      </span>
-                      {summary ? <Pencil className="w-3.5 h-3.5 text-[#2F68FE] shrink-0" /> : <Plus className="w-4 h-4 text-[#2F68FE] shrink-0" />}
-                    </button>
-                  ) : (
-                    <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600">
-                      <GraduationCap className="w-4 h-4 text-[#2F68FE] shrink-0" />
-                      <span className="font-semibold text-[#1E293B]">Qualification &amp; Certificate</span>
-                      <span className="ml-auto truncate">{summary}</span>
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
+            {FAMILY_GROUPS.includes(run.group) && (
+              <QualificationCTA raw={values[qualKey(run.group)]} editing={editing} onOpen={() => setQualFor(run.group ?? null)} className="px-3.5 pb-3.5" />
+            )}
           </div>
         ) : (
           <React.Fragment key={`run-${i}`}>{run.fields.map(render)}</React.Fragment>
         )
       )}
+      {/* A list item (e.g. a family member): its own Qualification & Certificate */}
+      {memberQualification && (
+        <QualificationCTA raw={values[MEMBER_QUAL_KEY]} editing={editing} onOpen={() => setQualFor(THIS_MEMBER)} className="col-span-2" />
+      )}
     </div>
     <QualificationSheet
       isOpen={Boolean(qualFor)}
-      subtitle={qualFor ? [qualFor, memberName(qualFor)].filter(Boolean).join(' · ') : ''}
-      initial={parseQualificationData(qualFor ? values[qualKey(qualFor)] : '')}
+      subtitle={qualFor ? qualTarget(qualFor).subtitle : ''}
+      initial={parseQualificationData(qualFor ? values[qualTarget(qualFor).key] : '')}
       onClose={() => setQualFor(null)}
       onSave={(data) => {
-        if (qualFor) onChange(qualKey(qualFor), JSON.stringify(data));
+        if (qualFor) onChange(qualTarget(qualFor).key, JSON.stringify(data));
         setQualFor(null);
       }}
     />
@@ -916,6 +937,33 @@ const FieldGrid: React.FC<{
 
 const listErrorKey = (listKey: string, id: string, field: string) => `${listKey}-${id}-${field}`;
 
+// Academic Qualification rows ↔ the sheet's model (the row keeps the upload under "certificate")
+const str = (v: ProfileValue | undefined) => (typeof v === 'string' ? v : '');
+const listItemToQualification = (it: ProfileListItem): Qualification => ({
+  id: it.id,
+  education: str(it.education) || null,
+  subject: str(it.subject) || null,
+  school: str(it.school),
+  board: str(it.board),
+  country: str(it.country) || null,
+  state: str(it.state),
+  city: str(it.city),
+  year: str(it.year),
+  file: str(it.certificate) || null,
+});
+const qualificationToListItem = (q: Qualification): ProfileListItem => ({
+  id: `qualifications-${q.id}`,
+  education: q.education ?? '',
+  subject: q.subject ?? '',
+  school: q.school,
+  board: q.board,
+  country: q.country ?? '',
+  state: q.state,
+  city: q.city,
+  year: q.year,
+  certificate: q.file ?? '',
+});
+
 const ListSection: React.FC<{
   title: string;
   config: ProfileListConfig;
@@ -925,10 +973,20 @@ const ListSection: React.FC<{
   onAdd: () => void;
   onRemove: (id: string) => void;
   onChange: (id: string, key: string, value: ProfileValue) => void;
-}> = ({ title, config, items, editing, errors, onAdd, onRemove, onChange }) => {
+  /** Inside another section's card (e.g. Family Members under Family Details): no card of its own, a subheading instead */
+  embedded?: boolean;
+  /** Each item is a person: give them Qualification & Certificate */
+  qualifications?: boolean;
+  /** For lists edited in a sheet (config.sheet): open an entry */
+  onEditItem?: (id: string) => void;
+}> = ({ title, config, items, editing, errors, onAdd, onRemove, onChange, embedded = false, qualifications = false, onEditItem }) => {
   const stats = config.summary?.(items);
+  // Sheet-edited lists show entries read-only, with Edit / Remove on each
+  const inSheet = Boolean(config.sheet);
   return (
-    <section className="bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
+    // Embedded (Family Members): no heading or divider, the member cards just continue the card, with "Add Family Member" at the end
+    <section className={embedded ? 'mt-3' : 'bg-white rounded-2xl border border-slate-100 shadow-2xs p-4'}>
+      {!embedded && (
       <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
         <h3 className="text-[13px] font-bold text-[#1E293B]">
           {title}
@@ -945,6 +1003,7 @@ const ListSection: React.FC<{
           </button>
         )}
       </div>
+      )}
 
       {stats && items.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -960,7 +1019,7 @@ const ListSection: React.FC<{
         </div>
       )}
 
-      {items.length === 0 ? (
+      {items.length === 0 && !embedded ? (
         <div className="py-5 flex flex-col items-center text-center">
           <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center">
             <Inbox className="w-5 h-5" />
@@ -996,6 +1055,16 @@ const ListSection: React.FC<{
                     </span>
                     {!isNew && lead && <span className="block text-[10.5px] text-slate-500">{`${config.itemLabel} ${i + 1}`}</span>}
                   </span>
+                  {editing && inSheet && (
+                    <button
+                      type="button"
+                      onClick={() => onEditItem?.(item.id)}
+                      className="h-8 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-[#2F68FE] active:bg-blue-50 cursor-pointer shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+                  )}
                   {editing && (
                     <button
                       type="button"
@@ -1011,10 +1080,15 @@ const ListSection: React.FC<{
                   <FieldGrid
                     fields={config.fields}
                     values={item}
-                    editing={editing}
+                    editing={editing && !inSheet}
                     errors={errors}
                     errorKey={(k) => listErrorKey(config.key, item.id, k)}
                     onChange={(k, v) => onChange(item.id, k, v)}
+                    memberQualification={
+                      qualifications
+                        ? { subtitle: [item.relation, item.name].filter(Boolean).join(' · ') || `${config.itemLabel} ${i + 1}` }
+                        : undefined
+                    }
                   />
                 </div>
               </div>
@@ -1022,7 +1096,239 @@ const ListSection: React.FC<{
           })}
         </div>
       )}
+      {embedded && editing && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className={`w-full p-3.5 rounded-2xl border border-dashed border-[#2F68FE]/40 bg-linear-to-br from-[#EEF4FF] to-white flex items-center gap-3 text-left active:scale-[0.99] transition-transform cursor-pointer ${
+            items.length ? 'mt-3' : ''
+          }`}
+        >
+          <span className="w-10 h-10 rounded-xl bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <UserPlus className="w-5 h-5" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13px] font-bold text-[#1E293B]">{config.addLabel}</span>
+            <span className="block text-[11px] text-slate-500 leading-snug">
+              {items.length ? `${items.length} added · add another` : 'Siblings, in-laws, cousins or friends'}
+            </span>
+          </span>
+          <Plus className="w-5 h-5 text-[#2F68FE] shrink-0" />
+        </button>
+      )}
     </section>
+  );
+};
+
+/* ------------------------------ List entry sheet ------------------------------ */
+
+const ENTRY_SHEET_ICONS: Record<string, React.ReactNode> = {
+  experiences: <BriefcaseBusiness className="w-5 h-5" />,
+};
+
+/**
+ * Add / edit a list's entries in a bottom sheet (config.sheet === 'form', e.g. Experience).
+ * "Add" lands straight on a blank form; "Add another" stacks more as an accordion where only one is open.
+ */
+const ListEntrySheet: React.FC<{
+  config: ProfileListConfig;
+  isOpen: boolean;
+  /** The entry being edited; none = adding new ones */
+  editing: ProfileListItem | null;
+  onClose: () => void;
+  onSave: (entries: ProfileListItem[]) => void;
+}> = ({ config, isOpen, editing, onClose, onSave }) => {
+  const [entries, setEntries] = useState<ProfileListItem[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Fixed when the sheet opens so the title doesn't flip while it slides away
+  const [isEdit, setIsEdit] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const noun = config.itemLabel.toLowerCase();
+
+  const blank = (): ProfileListItem => ({ id: `${config.key}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const first = editing ? { ...editing } : blank();
+    setIsEdit(Boolean(editing));
+    setEntries([first]);
+    setOpenId(first.id);
+    setErrors({});
+    bodyRef.current?.scrollTo({ top: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const reveal = (id: string) =>
+    requestAnimationFrame(() => bodyRef.current?.querySelector(`[data-entry="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // FieldGrid can fire several changes at once (location cascade), so update functionally
+  const patch = (id: string, key: string, value: ProfileValue) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
+    setErrors((prev) => {
+      const k = listErrorKey(config.key, id, key);
+      if (!prev[k]) return prev;
+      const next = { ...prev };
+      delete next[k];
+      return next;
+    });
+  };
+  const addAnother = () => {
+    const e = blank();
+    setEntries((prev) => [...prev, e]);
+    setOpenId(e.id);
+    reveal(e.id);
+  };
+  const toggle = (id: string) => {
+    setOpenId((cur) => (cur === id ? null : id));
+    if (openId !== id) reveal(id);
+  };
+  const remove = (id: string) => {
+    const next = entries.filter((e) => e.id !== id);
+    setEntries(next);
+    if (openId === id) setOpenId(next[next.length - 1]?.id ?? null);
+  };
+
+  const started = (e: ProfileListItem) =>
+    Object.entries(e).some(([k, v]) => k !== 'id' && (Array.isArray(v) ? v.length > 0 : Boolean(v)));
+  const hasError = (id: string) => Object.keys(errors).some((k) => k.startsWith(listErrorKey(config.key, id, '')) && errors[k]);
+
+  const save = () => {
+    // Extra entries left blank are dropped; if nothing was filled, the first one asks for its required fields
+    const filled = entries.filter(started);
+    const toCheck = filled.length ? filled : entries.slice(0, 1);
+    const found: Record<string, string> = {};
+    toCheck.forEach((e) =>
+      visibleFields(config.fields, e).forEach((f) => {
+        const msg = validate(f, e);
+        if (msg) found[listErrorKey(config.key, e.id, f.key)] = msg;
+      })
+    );
+    setErrors(found);
+    const firstKey = Object.keys(found)[0];
+    if (firstKey) {
+      const bad = toCheck.find((e) => firstKey.startsWith(listErrorKey(config.key, e.id, '')));
+      if (bad) setOpenId(bad.id);
+      setTimeout(() => bodyRef.current?.querySelector(`[data-field="${firstKey}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      return;
+    }
+    onSave(filled);
+  };
+
+  const count = entries.filter(started).length;
+  const grid = (e: ProfileListItem) => (
+    <FieldGrid
+      fields={config.fields}
+      values={e}
+      editing
+      errors={errors}
+      errorKey={(k) => listErrorKey(config.key, e.id, k)}
+      onChange={(k, v) => patch(e.id, k, v)}
+    />
+  );
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[94%]">
+      <div className="pt-3 pb-1 flex justify-center shrink-0">
+        <div className="w-10 h-1 bg-slate-300 rounded-full" />
+      </div>
+      <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-10 h-10 rounded-xl bg-[#2F68FE] text-white flex items-center justify-center shrink-0 shadow-sm">
+            {ENTRY_SHEET_ICONS[config.key] ?? <FileText className="w-5 h-5" />}
+          </span>
+          <h2 className="text-base font-bold text-[#1E293B] truncate">{isEdit ? `Edit ${config.itemLabel}` : config.addLabel}</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 cursor-pointer shrink-0"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 py-4 space-y-3 bg-[#F8FAFC]">
+        {entries.map((e, i) => {
+          if (entries.length === 1)
+            // A single entry needs no card chrome: just the form
+            return (
+              <div key={e.id} data-entry={e.id} className="rounded-xl border border-slate-200 bg-white p-3.5">
+                {grid(e)}
+              </div>
+            );
+          // Several: an accordion, only the one being filled is open
+          const open = openId === e.id;
+          const bad = hasError(e.id);
+          const lead = config.entryTitle?.(e) || `${config.itemLabel} ${i + 1}`;
+          const summary = config.entrySummary?.(e) || (started(e) ? 'In progress' : 'Not filled yet');
+          return (
+            <div
+              key={e.id}
+              data-entry={e.id}
+              className={`rounded-xl border bg-white overflow-hidden scroll-mt-2 ${
+                bad ? 'border-rose-300' : open ? 'border-[#2F68FE]/40 ring-2 ring-[#2F68FE]/10' : 'border-slate-200'
+              }`}
+            >
+              <div className={`flex items-center gap-2.5 pl-3.5 pr-2 py-2.5 ${open ? 'bg-blue-50/60 border-b border-blue-100' : ''}`}>
+                <button type="button" onClick={() => toggle(e.id)} className="flex-1 min-w-0 flex items-center gap-2.5 text-left cursor-pointer">
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      bad ? 'bg-rose-100 text-rose-500' : open ? 'bg-[#2F68FE] text-white' : 'bg-blue-100 text-[#2F68FE]'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-[#1E293B] truncate">{lead}</span>
+                    <span className={`block text-[11px] truncate ${bad ? 'text-rose-500 font-medium' : 'text-slate-500'}`}>
+                      {bad ? 'Needs attention' : summary}
+                    </span>
+                  </span>
+                  <ChevronDown className={`w-4.5 h-4.5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(e.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-500 active:bg-rose-50 cursor-pointer shrink-0"
+                  aria-label={`Delete ${noun} ${i + 1}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              {open && <div className="p-3.5 animate-in fade-in duration-200">{grid(e)}</div>}
+            </div>
+          );
+        })}
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={addAnother}
+            className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/40 bg-white flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-[#EEF4FF] cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            Add another {noun}
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0 bg-white">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-12 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold bg-white active:bg-slate-50 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={save}
+          className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold active:bg-[#1D4ED8] cursor-pointer"
+        >
+          {isEdit ? 'Save Changes' : count > 1 ? `${config.addLabel.replace(/^Add /, 'Add ' + count + ' ')}s` : config.addLabel}
+        </button>
+      </div>
+    </BottomSheet>
   );
 };
 
@@ -1190,7 +1496,20 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState<null | 'back' | 'cancel' | { tab: ProfileTabId }>(null);
   const [scrollToItem, setScrollToItem] = useState<string | null>(null);
+  // Academic Qualification: add several / edit one in a sheet (editId null = adding)
+  const [qualSheet, setQualSheet] = useState<{ listKey: string; editId: string | null } | null>(null);
+  // Experience: same idea with the list's own fields (kept after closing so the sheet can slide away)
+  const [entrySheet, setEntrySheet] = useState<{ config: ProfileListConfig; editId: string | null; open: boolean } | null>(null);
+  /** Add (id null) or edit an entry of a list: in its sheet, or inline for lists without one */
+  const openEntry = (config: ProfileListConfig, id: string | null) => {
+    if (config.sheet === 'qualification') setQualSheet({ listKey: config.key, editId: id });
+    else if (config.sheet === 'form') setEntrySheet({ config, editId: id, open: true });
+    else addItem(config);
+  };
   const tabRefs = useRef<Partial<Record<ProfileTabId, HTMLButtonElement | null>>>({});
+  // Tab strip: small bounce when scrolled past either end
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEdgeBounce(tabStripRef);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Tabs are transparent at rest; once pinned to the top they get a backdrop so content doesn't show through
   const tabsSentinelRef = useRef<HTMLDivElement>(null);
@@ -1221,7 +1540,17 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
   useEffect(() => () => onDirtyChange?.(false), []);
 
   useEffect(() => {
-    tabRefs.current[tab]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    // A new tab opens at its first section: if we'd scrolled past the tab bar, jump back to just under it
+    const root = scrollRef.current;
+    const sentinel = tabsSentinelRef.current;
+    if (root && sentinel) {
+      const barTop = root.scrollTop + sentinel.getBoundingClientRect().top - root.getBoundingClientRect().top;
+      if (root.scrollTop > barTop) root.scrollTo({ top: barTop });
+    }
+    // Centre the chosen tab in the strip (scrolls the strip only, never the page)
+    const el = tabRefs.current[tab];
+    const strip = el?.parentElement;
+    if (el && strip) strip.scrollTo({ left: el.offsetLeft - (strip.clientWidth - el.clientWidth) / 2, behavior: 'smooth' });
   }, [tab]);
 
   useEffect(() => {
@@ -1310,7 +1639,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
     });
   };
 
-  const hasReadOnly = current.sections.some((s) => s.fields?.some((f) => f.locked));
 
   return (
     <div className="flex-1 flex flex-col bg-[#F5F7FB] text-[#1E293B] overflow-hidden select-none">
@@ -1371,12 +1699,14 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
         {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
         <div ref={tabsSentinelRef} className="h-px -mb-px" aria-hidden="true" />
         <nav
-          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 transition-colors duration-200 ${
-            tabsStuck ? 'bg-[#F5F7FB]/95 backdrop-blur-md' : 'bg-transparent'
+          // Solid page colour (not see-through / blurred): text on a translucent layer renders at a different
+          // weight on Windows, which made the labels look bold on some tabs (e.g. Intro Video)
+          className={`sticky top-0 z-10 border-b border-slate-200/80 mb-3 bg-[#F5F7FB] transition-shadow duration-200 ${
+            tabsStuck ? 'shadow-[0_1px_0_rgba(15,23,42,0.04)]' : ''
           }`}
           aria-label="Profile sections"
         >
-          <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
+          <div ref={tabStripRef} className="flex gap-1 overflow-x-auto overscroll-x-contain no-scrollbar px-2" role="tablist">
             {PROFILE_TABS.map((t) => {
               const Icon = TAB_ICONS[t.id];
               const on = t.id === tab;
@@ -1421,12 +1751,6 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
             </section>
           ) : (
             <>
-              {editing && hasReadOnly && (
-                <p className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 text-[11px] text-slate-500">
-                  <Info className="w-3.5 h-3.5 shrink-0" />
-                  Greyed-out fields are managed by HR. Raise a ticket to change them.
-                </p>
-              )}
 
               {current.sections.map((section) =>
                 section.video ? (
@@ -1440,7 +1764,7 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     editing={editing}
                     onChange={(items) => updateList(section.skills!.key, () => items)}
                   />
-                ) : section.list ? (
+                ) : section.list && !section.fields ? (
                   <ListSection
                     key={section.title}
                     title={section.title}
@@ -1448,7 +1772,8 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                     items={shown.lists[section.list.key] ?? []}
                     editing={editing}
                     errors={errors}
-                    onAdd={() => addItem(section.list!)}
+                    onAdd={() => openEntry(section.list!, null)}
+                    onEditItem={(id) => openEntry(section.list!, id)}
                     onRemove={(id) => updateList(section.list!.key, (items) => items.filter((it) => it.id !== id))}
                     onChange={(id, key, value) => {
                       updateList(section.list!.key, (items) => items.map((it) => (it.id === id ? { ...it, [key]: value } : it)));
@@ -1488,8 +1813,25 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
                       errors={errors}
                       errorKey={(k) => k}
                       onChange={setValue}
-                      hideAutoTags={Boolean(section.badge)}
                     />
+                    {/* Fields + a list in one card (Family Details: parents / guardian, then Family Members) */}
+                    {section.list && (
+                      <ListSection
+                        embedded
+                        qualifications
+                        title={section.list.title ?? section.title}
+                        config={section.list}
+                        items={shown.lists[section.list.key] ?? []}
+                        editing={editing}
+                        errors={errors}
+                        onAdd={() => addItem(section.list!)}
+                        onRemove={(id) => updateList(section.list!.key, (items) => items.filter((it) => it.id !== id))}
+                        onChange={(id, key, value) => {
+                          updateList(section.list!.key, (items) => items.map((it) => (it.id === id ? { ...it, [key]: value } : it)));
+                          clearError(listErrorKey(section.list!.key, id, key));
+                        }}
+                      />
+                    )}
                     {section.note && <p className="mt-3.5 pt-3 border-t border-slate-100 text-[10.5px] text-slate-400 leading-relaxed">{section.note}</p>}
                   </section>
                 )
@@ -1528,13 +1870,52 @@ export const MyProfileView: React.FC<MyProfileViewProps> = ({ profile, photoUrl,
               className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
             >
               <Pencil className="w-4 h-4" />
-              Edit {current.label}
+              {/* "Availability & Work Preferences" is too long for the button, so that tab uses its short name */}
+              Edit {tab === 'availability' ? PROFILE_TAB_SHORT[tab] : current.label}
             </button>
           )}
         </div>
       )}
 
-      {/* Discard confirmation */}
+      {/* Experience (and other sheet: 'form' lists): add several / edit one */}
+      {entrySheet && (
+        <ListEntrySheet
+          config={entrySheet.config}
+          isOpen={entrySheet.open}
+          editing={entrySheet.editId ? draft.lists[entrySheet.config.key]?.find((it) => it.id === entrySheet.editId) ?? null : null}
+          onClose={() => setEntrySheet((s) => s && { ...s, open: false })}
+          onSave={(entries) => {
+            const { config, editId } = entrySheet;
+            updateList(config.key, (items) =>
+              editId ? items.map((it) => (it.id === editId ? { ...entries[0], id: editId } : it)) : [...items, ...entries]
+            );
+            // Fields on the entries were checked in the sheet; drop any stale page errors for them
+            setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(`${config.key}-`))));
+            if (!editId && entries[0]) setScrollToItem(entries[0].id);
+            setEntrySheet((s) => s && { ...s, open: false });
+          }}
+        />
+      )}
+
+      {/* Academic Qualification */}
+      <AcademicQualificationSheet
+        isOpen={qualSheet !== null}
+        editing={(() => {
+          const item = qualSheet?.editId ? draft.lists[qualSheet.listKey]?.find((it) => it.id === qualSheet.editId) : undefined;
+          return item ? listItemToQualification(item) : null;
+        })()}
+        onClose={() => setQualSheet(null)}
+        onSave={(entries) => {
+          const { listKey, editId } = qualSheet!;
+          const rows = entries.map(qualificationToListItem);
+          updateList(listKey, (items) =>
+            editId ? items.map((it) => (it.id === editId ? { ...rows[0], id: editId } : it)) : [...items, ...rows]
+          );
+          if (!editId && rows[0]) setScrollToItem(rows[0].id);
+          setQualSheet(null);
+        }}
+      />
+
       <BottomSheet isOpen={confirmDiscard !== null} onClose={() => setConfirmDiscard(null)} maxHeight="max-h-[50%]">
         <div className="pt-3 pb-1 flex justify-center shrink-0">
           <div className="w-10 h-1 bg-slate-300 rounded-full" />

@@ -299,24 +299,31 @@ export const MyTeamView: React.FC<MyTeamViewProps> = ({ members, onBack, onEditD
                 </div>
 
                 {/* Numbers */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-[#EFF4FF] px-2.5 py-2">
-                    <span className="block text-[10px] font-semibold text-[#2F68FE]">Available FTE</span>
-                    <span className="block mt-1 text-[15px] font-extrabold text-[#1E293B] tabular-nums leading-tight">{m.availableFte}</span>
+                {/* Same row style as the dashboard's action list: count tile, title, hint, › when it opens something */}
+                <div className="rounded-xl border border-slate-100 overflow-hidden">
+                  <div className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-100">
+                    <span className="min-w-9 h-9 px-1.5 rounded-xl bg-blue-50 text-[#2F68FE] text-sm font-extrabold flex items-center justify-center shrink-0 tabular-nums">
+                      {m.availableFte}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-xs font-semibold text-[#1E293B] truncate">Available FTE</span>
+                      <span className="block text-[11px] text-slate-400 truncate">Capacity free for new work</span>
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setLeavesOf(m)}
-                    className="rounded-xl bg-[#ECFDF5] px-2.5 py-2 text-left active:bg-emerald-100 transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left active:bg-slate-50 transition-colors cursor-pointer"
                     aria-label={`View ${m.staffName}'s leaves`}
                   >
-                    <span className="flex items-center justify-between text-[10px] font-semibold text-[#059669]">
-                      Total Leaves
-                      <ChevronRight className="w-3.5 h-3.5 -mr-1" />
-                    </span>
-                    <span className="block mt-1 text-[15px] font-extrabold text-[#1E293B] tabular-nums leading-tight underline decoration-dotted decoration-emerald-400 underline-offset-4">
+                    <span className="min-w-9 h-9 px-1.5 rounded-xl bg-emerald-50 text-emerald-600 text-sm font-extrabold flex items-center justify-center shrink-0 tabular-nums">
                       {totalLeavesOf(m)}
                     </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-xs font-semibold text-[#1E293B] truncate">Total Leaves</span>
+                      <span className="block text-[11px] text-slate-400 truncate">Tap to see the leave breakdown</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-[#2F68FE] shrink-0" />
                   </button>
                 </div>
               </div>
