@@ -5,10 +5,13 @@ import { SheetHeader } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import { MandatoryCourse, MlAssignment, formatMlDate, newestAssignedFirst } from '../data/clientMandatoryLearningData';
-import { MlStatusPill } from './MandatoryLearningParts';
+import { MlProgressTrack, MlStatusPill } from './MandatoryLearningParts';
 
 /** Desktop loads the panel by ajax (spinner) */
 const LOAD_MS = 350;
+
+const ROW = 'bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-3.5';
+const LABEL = 'text-[11px] font-medium text-slate-400';
 
 interface Props {
   isOpen: boolean;
@@ -36,30 +39,25 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
   const row = (a: MlAssignment) => {
     const m = memberOf(a.staffId);
     return (
-      <li key={a.staffId} className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-        <dl className="p-3.5 flex items-center gap-3">
+      <li key={a.staffId} className={ROW}>
+        <div className="flex items-center gap-3">
           {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
-          <div className="flex-1 min-w-0">
-            <dt className="text-[11px] font-medium text-slate-400">User Name</dt>
-            <dd className="mt-0.5 text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</dd>
-          </div>
-          <div className="shrink-0 text-right">
-            <dt className="text-[11px] font-medium text-slate-400">Status</dt>
-            <dd className="mt-1">
-              <MlStatusPill status={a.status} />
-            </dd>
-          </div>
-        </dl>
-        <dl className="mx-3.5 mb-3.5 p-3 grid grid-cols-2 divide-x divide-slate-100 rounded-xl bg-slate-50/80 border border-slate-100">
-          <div className="min-w-0 pr-3">
-            <dt className="text-[11px] font-medium text-slate-400">Assigned On</dt>
-            <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{formatMlDate(a.assignedOn)}</dd>
-          </div>
-          <div className="min-w-0 pl-3">
-            <dt className="text-[11px] font-medium text-slate-400">Completed On</dt>
-            <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{formatMlDate(a.completedOn)}</dd>
-          </div>
-        </dl>
+          <p className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">{m?.name ?? 'Staff'}</p>
+          <MlStatusPill status={a.status} />
+        </div>
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <MlProgressTrack status={a.status} />
+          <dl className="mt-1.5 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <dt className={LABEL}>Assigned On</dt>
+              <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{formatMlDate(a.assignedOn)}</dd>
+            </div>
+            <div className="min-w-0 text-right">
+              <dt className={LABEL}>Completed On</dt>
+              <dd className={`mt-0.5 text-xs font-semibold tabular-nums ${a.completedOn ? 'text-[#1E293B]' : 'text-slate-400'}`}>{formatMlDate(a.completedOn)}</dd>
+            </div>
+          </dl>
+        </div>
       </li>
     );
   };
@@ -67,20 +65,23 @@ export const MandatoryCourseSheet: React.FC<Props> = ({ isOpen, course, staff, t
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[92%]">
       <SheetHeader title="Progress Details" onClose={onClose} />
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 bg-[#F8FAFC]">
         {loading ? (
           <div className="space-y-3" aria-busy="true" aria-label="Loading progress details">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-                <div className="p-3.5 flex items-center gap-3">
+              <div key={i} className={ROW}>
+                <div className="flex items-center gap-3">
                   <StaffSkeleton className="w-10 h-10 rounded-full" />
-                  <div className="flex-1 space-y-1.5">
-                    <StaffSkeleton className="w-20 h-2.5" />
-                    <StaffSkeleton className="w-32 h-3.5" />
-                  </div>
-                  <StaffSkeleton className="w-16 h-5 rounded-md" />
+                  <StaffSkeleton className="flex-1 max-w-32 h-3.5" />
+                  <StaffSkeleton className="w-16 h-5 rounded-full" />
                 </div>
-                <StaffSkeleton className="mx-3.5 mb-3.5 h-12 rounded-xl" />
+                <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                  <StaffSkeleton className="w-full h-1" />
+                  <div className="flex justify-between">
+                    <StaffSkeleton className="w-20 h-2.5" />
+                    <StaffSkeleton className="w-20 h-2.5" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>

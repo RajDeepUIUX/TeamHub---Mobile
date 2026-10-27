@@ -851,32 +851,32 @@ const ServicesCard: React.FC<{ onOpen: (focusId?: string) => void }> = ({ onOpen
         </button>
       </div>
 
-      <ul className="mt-3 px-4 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-px-4">
+      <ul className="mt-2 px-4 divide-y divide-slate-100">
         {suggested.map((s) => {
           const Icon = SERVICE_ICONS[s.id] ?? LayoutGrid;
           return (
-            <li key={s.id} className="snap-start shrink-0 w-[152px]">
+            <li key={s.id}>
               <button
                 type="button"
                 onClick={() => onOpen(s.id)}
-                className="w-full h-full p-3 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs text-left flex flex-col active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
               >
-                <span className="flex items-start justify-between gap-2">
-                  <span className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4" />
-                  </span>
-                  <ArrowUpRight className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
+                <span className="w-11 h-11 min-w-11 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">
+                  <Icon className="w-5 h-5 shrink-0" />
                 </span>
-                <span className="mt-2.5 block text-[13px] font-bold text-[#1E293B] leading-tight truncate">{s.title}</span>
-                <span className="mt-1 block text-[11px] text-slate-500 leading-snug line-clamp-2">{s.description}</span>
-                {s.tag && <span className="mt-auto pt-2 block text-[10px] font-semibold text-[#2F68FE] truncate">{s.tag}</span>}
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13px] font-bold text-[#1E293B] truncate">{s.title}</span>
+                  <span className="block text-[11px] text-slate-500 truncate">{s.description}</span>
+                  {s.tag && <span className="mt-1 block text-[11px] font-semibold text-[#2F68FE] truncate">{s.tag}</span>}
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
               </button>
             </li>
           );
         })}
       </ul>
 
-      <div className="px-4 mt-3">
+      <div className="px-4 mt-2">
         <button
           type="button"
           onClick={() => onOpen(current.id)}

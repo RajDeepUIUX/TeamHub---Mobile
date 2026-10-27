@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronRight, CircleCheck, CirclePlus, ClipboardList, GraduationCap, Loader2, MessageSquareText, MonitorCog, SearchX, X } from 'lucide-react';
+import { CalendarDays, ClipboardList, GraduationCap, Loader2, MessageSquareText, MonitorCog, Plus, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, Card, EmptyCard } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import { StaffAvatar, StaffSkeleton } from '../staff/ClientStaffParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { isoOfDate } from '../data/clientInterviewsData';
@@ -40,22 +40,25 @@ type Sheet = 'filter' | 'software' | 'notes' | null;
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading TNI requests">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl p-4 shadow-2xs space-y-3">
-        <div className="flex items-center gap-3">
-          <StaffSkeleton className="w-10 h-10 rounded-full" />
-          <div className="flex-1 space-y-1.5">
-            <StaffSkeleton className="w-32 h-3.5" />
-            <StaffSkeleton className="w-44 h-3" />
+      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="p-4 space-y-3.5">
+          <div className="flex items-center gap-3">
+            <StaffSkeleton className="w-10 h-10 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <StaffSkeleton className="w-32 h-3.5" />
+              <StaffSkeleton className="w-44 h-3" />
+            </div>
           </div>
+          <StaffSkeleton className="w-full h-24 rounded-xl" />
         </div>
-        <StaffSkeleton className="w-full h-20 rounded-xl" />
+        <div className="h-11 border-t border-slate-100" />
       </div>
     ))}
   </div>
 );
 
 /** Desktop table column label */
-const LABEL = 'text-[11px] font-semibold text-slate-400';
+const LABEL = 'text-[11px] font-medium text-slate-400';
 
 /** Programme / topic summary used for the Notes header */
 const trainingLabel = (r: TniRequest) => r.mainProgramme || r.trainingNames[0] || r.software[0] || 'TNI Request';
@@ -71,6 +74,7 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   const [notice, showNotice] = useTimesheetNotice();
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<TniFilters>(EMPTY_TNI_FILTERS);
+  const [query, setQuery] = useState('');
   const [sheet, setSheet] = useState<Sheet>(null);
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
@@ -94,9 +98,11 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   // Same avatar colour as My Staff
   const tintOf = (id: string) => sortedStaff.findIndex((s) => s.id === id);
 
+  const term = query.trim().toLowerCase();
   const results = requests
     .filter((r) => {
       const m = memberOf(r.staffId);
+      if (term && ![m?.name ?? '', r.mainProgramme, ...r.subProgrammes, ...r.trainingNames, ...r.software].some((v) => v.toLowerCase().includes(term))) return false;
       if (filters.staff.length && !(m && filters.staff.includes(m.name))) return false;
       if (filters.requestedOn && r.requestedOn !== filters.requestedOn) return false;
       if (filters.status && r.status !== filters.status) return false;
@@ -108,7 +114,7 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   const visible = results.slice(0, pages * PAGE_SIZE);
 
   const filterCount = tniFilterCount(filters);
-  const isFiltered = filterCount > 0;
+  const isFiltered = filterCount > 0 || term !== '';
   const applied: { key: string; label: string; next: TniFilters }[] = [
     ...filters.staff.map((n) => ({ key: `s-${n}`, label: n, next: { ...filters, staff: filters.staff.filter((x) => x !== n) } })),
     ...(filters.requestedOn ? [{ key: 'req', label: `Requested ${formatTniDate(filters.requestedOn)}`, next: { ...filters, requestedOn: '' } }] : []),
@@ -126,6 +132,10 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
     reload();
   };
   const clearAll = () => applyFilters(EMPTY_TNI_FILTERS);
+  const onSearch = (v: string) => {
+    setQuery(v);
+    setPages(1);
+  };
 
   const openAdd = () => {
     listScroll.current = listRef.current?.scrollTop ?? 0;
@@ -176,114 +186,75 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
   const card = (r: TniRequest) => {
     const m = memberOf(r.staffId);
     const name = m?.name ?? 'Staff';
-    const done = r.status === 'Completed';
-    const shownSoftware = r.software.slice(0, 2);
-    const moreSoftware = r.software.length - shownSoftware.length;
+    const footerBtn = 'h-11 flex items-center justify-center gap-1.5 text-xs font-bold transition-colors';
+    const bubble = 'min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums';
     return (
       <li key={r.id}>
         <Card className="overflow-hidden">
-          <div className="p-3.5 flex items-start gap-3">
-            {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-[#1E293B] truncate">{name}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 tabular-nums">
-                <CalendarDays className="w-3 h-3 shrink-0" />
-                Requested On {formatTniDate(r.requestedOn)}
-              </p>
-            </div>
-            <span className="shrink-0">
-              <TniStatusPill status={r.status} />
-            </span>
-          </div>
-
-          <div className="px-3.5 pb-3.5 space-y-3">
-            <div>
-              <p className={LABEL}>Training Name</p>
-              {r.trainingNames.length ? (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {r.trainingNames.map((t) => (
-                    <span key={t} className="px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] leading-snug break-words">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-1 text-xs text-slate-400">-</p>
-              )}
+          <div className="p-4 space-y-3.5">
+            <div className="flex items-start gap-3">
+              {m && <StaffAvatar name={m.name} tint={tintOf(m.id)} />}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-[#1E293B] truncate">{name}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400 tabular-nums">
+                  <CalendarDays className="w-3 h-3 shrink-0" />
+                  Requested On {formatTniDate(r.requestedOn)}
+                </p>
+              </div>
+              <span className="shrink-0">
+                <TniStatusPill status={r.status} />
+              </span>
             </div>
 
             <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-              <div className="flex items-start gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
-                  <GraduationCap className="w-4 h-4" />
+              <div className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-4.5 h-4.5" />
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={LABEL}>Main Training Programme</p>
-                  <p className="mt-0.5 text-[13px] font-semibold text-[#1E293B] leading-snug break-words">{r.mainProgramme || '-'}</p>
+                  <p className="text-[13px] font-bold text-[#1E293B] leading-snug break-words">{r.mainProgramme || '-'}</p>
                 </div>
               </div>
-              <p className={`${LABEL} mt-3`}>Sub Training Programme</p>
-              {r.subProgrammes.length ? (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {r.subProgrammes.map((s) => (
-                    <span key={s} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-600 leading-snug break-words">
-                      {s}
-                    </span>
-                  ))}
+              <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-2.5">
+                <div>
+                  <p className={LABEL}>Sub Training Programme</p>
+                  <p className="mt-0.5 text-xs font-semibold text-[#1E293B] leading-relaxed break-words">{r.subProgrammes.length ? r.subProgrammes.join(', ') : '-'}</p>
                 </div>
-              ) : (
-                <p className="mt-1 text-xs text-slate-400">-</p>
-              )}
-            </div>
-
-            <div>
-              <p className={LABEL}>Software</p>
-              {r.software.length ? (
-                <button
-                  type="button"
-                  onClick={() => openSheet('software', r.id)}
-                  aria-label={`View ${r.software.length} software for ${name}`}
-                  className="mt-1.5 w-full min-h-11 px-3 py-2 rounded-xl border border-slate-200 bg-white flex items-center gap-2 text-left active:bg-slate-50 cursor-pointer"
-                >
-                  <MonitorCog className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="flex-1 min-w-0 flex flex-wrap gap-1.5">
-                    {shownSoftware.map((s) => (
-                      <span key={s} className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-700">
-                        {s}
-                      </span>
-                    ))}
-                    {moreSoftware > 0 && <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-bold text-[#2F68FE] tabular-nums">+{moreSoftware}</span>}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                </button>
-              ) : (
-                <p className="mt-1 text-xs text-slate-400">-</p>
-              )}
+                <div>
+                  <p className={LABEL}>Training Name</p>
+                  {r.trainingNames.length ? (
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {r.trainingNames.map((t) => (
+                        <span key={t} className="px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] leading-snug break-words">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-slate-400">-</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center gap-3">
-            {/* Desktop shows the date only once the L&D team marks the request Completed */}
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-slate-100 text-slate-400'}`}>
-                <CircleCheck className="w-3.5 h-3.5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] font-semibold text-slate-400">Completed On</span>
-                <span className={`block text-xs font-semibold tabular-nums ${done ? 'text-[#1E293B]' : 'text-slate-400'}`}>{done ? formatTniDate(r.completedOn) : '-'}</span>
-              </span>
-            </div>
+          <div className="grid grid-cols-2 border-t border-slate-100 divide-x divide-slate-100">
             <button
               type="button"
-              onClick={() => openSheet('notes', r.id)}
-              aria-label={`Notes for ${name}`}
-              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 flex items-center gap-1.5 active:bg-slate-50 shrink-0 cursor-pointer"
+              disabled={!r.software.length}
+              onClick={() => openSheet('software', r.id)}
+              aria-label={r.software.length ? `View ${r.software.length} software for ${name}` : `No software for ${name}`}
+              className={`${footerBtn} text-slate-700 active:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer`}
             >
+              <MonitorCog className={`w-4 h-4 ${r.software.length ? 'text-[#2F68FE]' : 'text-slate-300'}`} />
+              Software
+              {r.software.length > 0 && <span className={bubble}>{r.software.length}</span>}
+            </button>
+            <button type="button" onClick={() => openSheet('notes', r.id)} aria-label={`Notes for ${name}`} className={`${footerBtn} text-slate-700 active:bg-slate-50 cursor-pointer`}>
               <MessageSquareText className="w-4 h-4 text-[#2F68FE]" />
               Notes
-              {r.notes.length > 0 && (
-                <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{r.notes.length}</span>
-              )}
+              {r.notes.length > 0 && <span className={bubble}>{r.notes.length}</span>}
             </button>
           </div>
         </Card>
@@ -298,19 +269,9 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <div className="px-4 pt-3.5">
           <div className="flex items-center gap-2.5">
-            <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">
-              {loading ? '' : `${results.length} ${results.length === 1 ? 'Record' : 'Records'}`}
-            </span>
-            {canAdd && (
-              <button
-                type="button"
-                onClick={openAdd}
-                className="h-11 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shadow-2xs active:bg-blue-50 shrink-0 cursor-pointer"
-              >
-                <CirclePlus className="w-4 h-4" />
-                TNI Request
-              </button>
-            )}
+            <div className="flex-1 min-w-0">
+              <SearchField value={query} onChange={onSearch} placeholder="Search Staff, Programme, Training Or Software" />
+            </div>
             <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
           </div>
 
@@ -318,7 +279,10 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
             <div className="mt-3 flex items-center gap-2">
               <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
                 {applied.map((a) => (
-                  <span key={a.key} className="shrink-0 h-8 pl-3 pr-1 rounded-full bg-white border border-slate-200 text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                  <span
+                    key={a.key}
+                    className="shrink-0 h-8 pl-3 pr-1 rounded-full bg-white border border-slate-200 text-[11px] font-semibold text-slate-600 flex items-center gap-1.5"
+                  >
                     {a.label}
                     <button
                       type="button"
@@ -361,7 +325,14 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
               text="Try a different staff, status or date."
               action={
                 isFiltered ? (
-                  <button type="button" onClick={clearAll} className="mt-4 h-10 px-5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      clearAll();
+                    }}
+                    className="mt-4 h-10 px-5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 cursor-pointer"
+                  >
                     Clear All
                   </button>
                 ) : undefined
@@ -395,6 +366,19 @@ export const ClientTrainingNeedView: React.FC<Props> = ({ requests, staff, onCha
           )}
         </div>
       </div>
+
+      {canAdd && (
+        <div className="shrink-0 p-4 pb-5 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
+          <button
+            type="button"
+            onClick={openAdd}
+            className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            TNI Request
+          </button>
+        </div>
+      )}
 
       <TrainingNeedFilterSheet
         isOpen={sheet === 'filter'}

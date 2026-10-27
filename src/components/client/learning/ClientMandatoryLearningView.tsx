@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BookMarked, ChevronRight, Loader2, SearchX } from 'lucide-react';
-import { ScreenHeader, Card, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { BookMarked, ChevronRight, Loader2, SearchX, Users } from 'lucide-react';
+import { ScreenHeader, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import { MandatoryCourse, countsOf, matchesCourseName } from '../data/clientMandatoryLearningData';
 import { MandatoryCourseSheet } from './MandatoryCourseSheet';
+import { CompletionRing } from './MandatoryLearningParts';
 
 interface Props {
   courses: MandatoryCourse[];
@@ -18,19 +19,32 @@ const PAGE_SIZE = 6;
 /** Desktop loads the table by ajax */
 const LOAD_MS = 600;
 
+const TICKET = 'bg-white border border-[#EBF0F7] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden';
+/** Hours stub; callers add the flex direction */
+const STUB = 'w-[76px] shrink-0 bg-slate-50 border-r border-slate-100 flex items-center justify-center gap-1 px-1 py-4 text-center';
+
 const ListSkeleton: React.FC = () => (
   <div className="space-y-3" aria-busy="true" aria-label="Loading mandatory courses">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-        <div className="p-4 flex items-start gap-3">
-          <StaffSkeleton className="w-10 h-10 rounded-xl shrink-0" />
-          <div className="flex-1 space-y-1.5">
+      <div key={i} className={TICKET}>
+        <div className="flex">
+          <div className={`${STUB} flex-col`}>
+            <StaffSkeleton className="w-6 h-5" />
+            <StaffSkeleton className="w-12 h-2" />
+          </div>
+          <div className="flex-1 p-3.5 space-y-1.5">
             <StaffSkeleton className="w-20 h-2.5" />
-            <StaffSkeleton className="w-48 h-3.5" />
+            <StaffSkeleton className="w-40 h-3.5" />
+            <div className="pt-2 flex items-center gap-3">
+              <StaffSkeleton className="w-12 h-12 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <StaffSkeleton className="w-full h-2.5" />
+                <StaffSkeleton className="w-full h-2.5" />
+              </div>
+            </div>
           </div>
         </div>
-        <StaffSkeleton className="mx-4 mb-4 h-16 rounded-xl" />
-        <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="h-11 px-4 border-t border-slate-100 flex items-center justify-between">
           <StaffSkeleton className="w-24 h-2.5" />
           <StaffSkeleton className="w-10 h-2.5" />
         </div>
@@ -92,10 +106,10 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, o
 
   const target = openId ? courses.find((c) => c.id === openId) ?? null : null;
 
-  const stat = (label: string, value: React.ReactNode) => (
-    <div className="min-w-0 px-2 text-center">
-      <dt className="text-[11px] font-semibold text-slate-500 truncate">{label}</dt>
-      <dd className="mt-1 text-base font-extrabold text-[#1E293B] tabular-nums">{value}</dd>
+  const count = (label: string, value: number) => (
+    <div className="py-1.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+      <dt className="text-[11px] font-medium text-slate-500 truncate">{label}</dt>
+      <dd className="text-xs font-bold text-[#1E293B] tabular-nums">{value}</dd>
     </div>
   );
 
@@ -103,36 +117,43 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, o
     const k = countsOf(c.assignments);
     return (
       <li key={c.id}>
-        <Card className="overflow-hidden">
-          <div className="p-4 flex items-start gap-3">
-            <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-              <BookMarked className="w-5 h-5" />
-            </span>
-            <dl className="flex-1 min-w-0">
-              <dt className="text-[11px] font-medium text-slate-400">Course Name</dt>
-              <dd className="mt-0.5 text-sm font-bold text-[#1E293B] leading-snug break-words">{c.name}</dd>
+        <section className={TICKET}>
+          <div className="flex">
+            <dl className={`${STUB} flex-col-reverse`}>
+              <dt className="text-[10px] font-semibold text-slate-400 leading-tight">Hours (hrs)</dt>
+              <dd className="text-lg font-extrabold text-[#2F68FE] tabular-nums leading-none">{c.hours}</dd>
             </dl>
+            <div className="flex-1 min-w-0 p-3.5">
+              <dl>
+                <dt className="text-[11px] font-medium text-slate-400">Course Name</dt>
+                <dd className="mt-0.5 text-sm font-bold text-[#1E293B] leading-snug break-words">{c.name}</dd>
+              </dl>
+              <div className="mt-3 flex items-center gap-3">
+                <CompletionRing completed={k.completed} assigned={k.assigned} />
+                <dl className="flex-1 min-w-0 divide-y divide-slate-100">
+                  {count('Total Assigned', k.assigned)}
+                  {count('Total Completed', k.completed)}
+                </dl>
+              </div>
+            </div>
           </div>
-
-          <dl className="mx-4 mb-4 py-3 grid grid-cols-3 divide-x divide-slate-100 rounded-xl bg-slate-50/80 border border-slate-100">
-            {stat('Hours (hrs)', c.hours)}
-            {stat('Total Assigned', k.assigned)}
-            {stat('Total Completed', k.completed)}
-          </dl>
 
           <button
             type="button"
             onClick={() => openCourse(c.id)}
             aria-label={`View progress details for ${c.name}`}
-            className="w-full px-4 py-3 border-t border-slate-100 flex items-center justify-between gap-3 text-left active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
+            className="w-full h-11 px-4 border-t border-slate-100 flex items-center justify-between gap-3 text-left active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]"
           >
-            <span className="text-[11px] font-medium text-slate-500">Progress details</span>
-            <span className="flex items-center gap-0.5 text-[11px] font-bold text-[#2F68FE]">
+            <span className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+              <Users className="w-4 h-4 text-slate-400" aria-hidden="true" />
+              Progress details
+            </span>
+            <span className="flex items-center gap-0.5 text-xs font-bold text-[#2F68FE]">
               View
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </span>
           </button>
-        </Card>
+        </section>
       </li>
     );
   };
@@ -142,21 +163,21 @@ export const ClientMandatoryLearningView: React.FC<Props> = ({ courses, staff, o
       <ScreenHeader title="Mandatory Learning" onBack={onBack} />
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
         <form
-          className="mx-4 mt-4 p-3.5 bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs"
+          className="sticky top-0 z-10 px-4 py-3 bg-white border-b border-[#EBF0F7] flex items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             search();
           }}
         >
-          <SearchField value={draft} onChange={setDraft} placeholder="Search By Course Name" variant="sheet" />
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <button type="submit" className="h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
-              Search
-            </button>
-            <button type="button" onClick={clearAll} className="h-11 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold active:bg-blue-50 transition-colors cursor-pointer">
-              Clear All
-            </button>
+          <div className="flex-1 min-w-0">
+            <SearchField value={draft} onChange={setDraft} placeholder="Search By Course Name" variant="sheet" />
           </div>
+          <button type="submit" className="shrink-0 h-11 px-3.5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer">
+            Search
+          </button>
+          <button type="button" onClick={clearAll} className="shrink-0 h-11 px-3 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold whitespace-nowrap active:bg-blue-50 transition-colors cursor-pointer">
+            Clear All
+          </button>
         </form>
 
         <div className="px-4 mt-4">

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Info, Loader2, Plus, X } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Info, Loader2, MessageSquareText, MonitorCog, Plus, UserRound, X } from 'lucide-react';
 import { Dropdown } from '../../../design-system/components/Dropdown';
 import { MultiSelectDropdown } from '../../common/MultiSelectDropdown';
 import { ConfirmSheet, InfoSheet, fieldInputClass } from '../staff/tabs/StaffTabParts';
@@ -32,11 +32,16 @@ const FieldError: React.FC<{ message?: string }> = ({ message }) =>
 
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => <span className="block text-xs font-bold text-[#1E293B]">{children}</span>;
 
-/** Desktop card (`rt-card`): title over a hairline + body */
-const SectionCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-    <h2 className="px-4 pt-4 pb-3 border-b border-slate-100 text-sm font-bold text-[#1E293B]">{title}</h2>
-    <div className="p-4 space-y-4">{children}</div>
+/** Staff form section (`more/WfhRequestFields` FormSection): icon tile + caps title over the fields */
+const SectionCard: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode }> = ({ icon: Icon, title, children }) => (
+  <section className="bg-white border border-[#EBF0F7] rounded-2xl p-3.5 shadow-2xs space-y-3">
+    <div className="flex items-center gap-2.5">
+      <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4" />
+      </span>
+      <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#1E293B]">{title}</h2>
+    </div>
+    {children}
   </section>
 );
 
@@ -100,20 +105,22 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
       </header>
 
       <div ref={bodyRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-3.5">
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-1.5">
-          <MultiSelectDropdown
-            label="Select Staff"
-            placeholder="Select Staff"
-            options={staff.map((s) => ({ value: s.id, label: s.name }))}
-            selected={draft.staffIds}
-            onChange={(next) => set('staffIds', next)}
-            searchable
-          />
-          <FieldError message={errors.staffIds} />
-          {draft.staffIds.length > 1 && <p className="px-0.5 text-[11px] text-slate-400">One request is created for each staff member.</p>}
-        </div>
+        <SectionCard icon={UserRound} title="Staff">
+          <div className="space-y-1.5">
+            <MultiSelectDropdown
+              label="Select Staff"
+              placeholder="Select Staff"
+              options={staff.map((s) => ({ value: s.id, label: s.name }))}
+              selected={draft.staffIds}
+              onChange={(next) => set('staffIds', next)}
+              searchable
+            />
+            <FieldError message={errors.staffIds} />
+            {draft.staffIds.length > 1 && <p className="px-0.5 text-[11px] text-slate-400">One request is created for each staff member.</p>}
+          </div>
+        </SectionCard>
 
-        <SectionCard title="Request Training Programme">
+        <SectionCard icon={GraduationCap} title="Request Training Programme">
           <div className="space-y-1.5">
             <Label>Main Training Programme</Label>
             <Dropdown
@@ -207,7 +214,7 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
           </div>
         </SectionCard>
 
-        <SectionCard title="Request Software Training">
+        <SectionCard icon={MonitorCog} title="Request Software Training">
           <div className="space-y-1.5">
             <MultiSelectDropdown
               label="Select Software"
@@ -224,9 +231,9 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
           </div>
         </SectionCard>
 
-        <div className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-1.5">
-          <label htmlFor="tni-message">
-            <Label>Message</Label>
+        <SectionCard icon={MessageSquareText} title="Message">
+          <label htmlFor="tni-message" className="sr-only">
+            Message
           </label>
           <div className="relative">
             <textarea
@@ -242,7 +249,7 @@ export const TrainingNeedFormView: React.FC<Props> = ({ staff, onBack, onSubmit 
               {draft.message.length}/{TNI_MAX_MESSAGE}
             </span>
           </div>
-        </div>
+        </SectionCard>
       </div>
 
       <div className="shrink-0 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 pb-5 grid grid-cols-2 gap-3 z-20">
