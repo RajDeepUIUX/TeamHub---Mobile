@@ -115,7 +115,7 @@ export const RequirementSavedSheet: React.FC<{
           : count > 1
             ? `${count} requirements for ${profile} have been added (one per staff).`
             : `The requirement for ${profile} has been added.`}{' '}
-        You can now review matching profiles available in the Available Staff Hub.
+        You can now review matching profiles available in the Talent Marketplace.
       </p>
     </div>
     <div className={`grid gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0 ${onViewResumes ? 'grid-cols-2' : 'grid-cols-1'}`}>

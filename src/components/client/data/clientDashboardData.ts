@@ -254,7 +254,7 @@ MYCPE ONE`,
     publishDate: '2026-09-01',
     description: `Hello Everyone,
 
-Reserve temporary **tax preparers and reviewers for January – April 2027**. Early requests get first pick of experienced profiles from the Available Staff Hub.
+Reserve temporary **tax preparers and reviewers for January – April 2027**. Early requests get first pick of experienced profiles from the Talent Marketplace.
 
 - 1040, 1065, 1120 and 1120-S experience
 - Software: CCH Axcess, Drake, Lacerte, UltraTax

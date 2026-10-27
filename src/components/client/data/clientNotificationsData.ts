@@ -76,7 +76,7 @@ const unmappedNames = unmappedStaffIds(billingSeedFor(MY_STAFF_SEED), billableSt
 );
 const nameList = (n: string[]) => (n.length > 1 ? `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}` : n[0] ?? '');
 
-/** Hub resumes that match a profile the client already hired for (Available Staff Hub mock) */
+/** Hub resumes that match a profile the client already hired for (Talent Marketplace mock) */
 const HUB_MATCH_PROFILE = 'Associate - Tax Preparer';
 const hubMatchCount = HUB_PROFILES_SEED.filter((p) => p.profile === HUB_MATCH_PROFILE).length;
 
@@ -130,7 +130,7 @@ export const CLIENT_NOTIFICATIONS_SEED: ClientNotification[] = [
     id: 'cn-16',
     category: 'Hiring',
     title: `${hubMatchCount} new resumes match ${HUB_MATCH_PROFILE}`,
-    body: 'Browse them in the Available Staff Hub, save the ones you like and shortlist candidates to interview.',
+    body: 'Browse them in the Talent Marketplace, save the ones you like and request to hire the candidates you want to interview.',
     createdAt: ago(60 * 7),
     read: false,
     link: 'staff-hub',

@@ -23,6 +23,10 @@ interface ScheduleProps {
   isOpen: boolean;
   candidate: ShortlistedCandidate | null;
   mode: 'request' | 'reschedule';
+  /** Sheet title instead of the mode's (Talent Marketplace "Request to Hire") */
+  title?: string;
+  /** Extra panel above the scheduler (e.g. the requirement Request to Hire creates) */
+  notice?: React.ReactNode;
   onClose: () => void;
   onSchedule: (candidateId: string, interview: ScheduledInterview) => void;
 }
@@ -33,7 +37,7 @@ const TZ_OPTIONS = INTERVIEW_TIMEZONES.map((t) => ({ value: t.value, label: t.la
  * Desktop "Request Interview" offcanvas (also used to Reschedule): fixed 30-minute duration, time zone, date calendar and
  * the candidate's available Zoom slots. Slots for the same day are never offered and already-booked slots are removed.
  */
-export const InterviewScheduleSheet: React.FC<ScheduleProps> = ({ isOpen, candidate, mode, onClose, onSchedule }) => {
+export const InterviewScheduleSheet: React.FC<ScheduleProps> = ({ isOpen, candidate, mode, title, notice, onClose, onSchedule }) => {
   const [tz, setTz] = useState<InterviewTz>(CLIENT_TZ);
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
@@ -70,12 +74,13 @@ export const InterviewScheduleSheet: React.FC<ScheduleProps> = ({ isOpen, candid
   return (
     <BottomSheet isOpen={isOpen} onClose={close} maxHeight="max-h-[94%]">
       <SheetHeader
-        title={isReschedule ? 'Reschedule Interview' : 'Request Interview'}
+        title={title ?? (isReschedule ? 'Reschedule Interview' : 'Request Interview')}
         subtitle={candidate ? `${candidate.name} · ${candidate.profile}` : undefined}
         onClose={close}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
+        {notice}
         <p className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11.5px] text-[#1D4ED8] leading-snug">
           <Info className="w-4 h-4 shrink-0 mt-px" />
           Please select a convenient date and time slot for the interview. Each interview is scheduled for {INTERVIEW_MINUTES} minutes.

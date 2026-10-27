@@ -37,7 +37,7 @@ import { CLIENT_NOTIFICATIONS_SEED, ClientNotification } from './data/clientNoti
 import { ClientDirectoryView } from './directory/ClientDirectoryView';
 import { ClientInterviewsView } from './interviews/ClientInterviewsView';
 import { SHORTLISTED_SEED, ShortlistedCandidate, isoOfDate } from './data/clientInterviewsData';
-import { ClientStaffHubView } from './hub/ClientStaffHubView';
+import { ClientTalentMarketplaceView } from './marketplace/ClientTalentMarketplaceView';
 import { ClientRequirementsView } from './requirements/ClientRequirementsView';
 import { OFFSHORE_LOCATIONS, REQUIREMENTS_SEED, StaffRequirement } from './data/clientRequirementsData';
 import { HUB_PROFILES_SEED, HUB_SAVED_SEED } from './data/clientStaffHubData';
@@ -217,9 +217,11 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
   // Hire New Staff › Shortlisted Candidates (interviews, feedback and assessments; kept while switching modules)
   const [candidates, setCandidates] = useState<ShortlistedCandidate[]>(SHORTLISTED_SEED);
 
-  // Hire New Staff › Available Staff Hub: Saved Resumes (profile ids); shortlisting adds a row to Shortlisted Candidates (newest first)
+  // Hire New Staff › Talent Marketplace: Saved Resumes (profile ids); Request to Hire adds a row to Shortlisted Candidates (newest first)
   const [hubSaved, setHubSaved] = useState<string[]>(HUB_SAVED_SEED);
-  // Dashboard › Previously Saved Profiles: Saved Resumes newest first (shortlisted ones leave the hub, like its Saved Resumes tab)
+  // Talent Marketplace Compare selection (desktop keeps it for the session)
+  const [marketplaceCompare, setMarketplaceCompare] = useState<string[]>([]);
+  // Dashboard › Previously Saved Profiles: Saved Resumes newest first (requested ones leave the marketplace, like its Saved Resumes view)
   const savedHubProfiles = useMemo(
     () =>
       [...hubSaved]
@@ -234,7 +236,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
 
   // Hire New Staff › Staff Requirements (created, edited and commented; kept while switching modules)
   const [requirements, setRequirements] = useState<StaffRequirement[]>(REQUIREMENTS_SEED);
-  // Requirement row link → Available Staff Hub / Shortlisted Candidates filtered to its profile
+  // Requirement row link → Talent Marketplace / Shortlisted Candidates filtered to its profile
   const [hiringProfile, setHiringProfile] = useState<string | null>(null);
   // Dashboard › Staff Requirement: requirement opened straight on View Requirement, or Add Requirement
   const [requirementEntry, setRequirementEntry] = useState<{ id?: string; add?: boolean } | null>(null);
@@ -313,7 +315,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
       pushNotification({
         category: 'Hiring',
         title: 'Staff requirement submitted',
-        body: `${next[0].profile} (${next[0].level}) is with your account manager. Matching resumes will appear in the Available Staff Hub.`,
+        body: `${next[0].profile} (${next[0].level}) is with your account manager. Matching resumes will appear in the Talent Marketplace.`,
         link: 'requirements',
       });
     }
@@ -359,7 +361,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
     setMoreModuleId(id);
   };
 
-  // Staff Requirement / Pricing links: Available Staff Hub or Shortlisted Candidates filtered to one profile
+  // Staff Requirement / Pricing links: Talent Marketplace or Shortlisted Candidates filtered to one profile
   const openHiring = (id: 'staff-hub' | 'interviews', profile?: string) =>
     openFrom(here(), () => {
       openModule(id);
@@ -650,13 +652,15 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
         ) : tab === 'more' && moreModuleId === 'inclusions' ? (
           <ClientInclusionsView onBack={goBack} />
         ) : tab === 'more' && moreModuleId === 'staff-hub' ? (
-          <ClientStaffHubView
+          <ClientTalentMarketplaceView
             onBack={goBack}
             profiles={HUB_PROFILES_SEED}
             candidates={candidates}
             savedIds={hubSaved}
             onToggleSave={(id) => setHubSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))}
-            onShortlist={(c) => {
+            compareIds={marketplaceCompare}
+            onCompareChange={setMarketplaceCompare}
+            onRequestToHire={(c) => {
               setCandidates((prev) => [c, ...prev]);
               pushNotification({
                 category: 'Hiring',
@@ -674,8 +678,8 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
             onOpenShortlisted={canList('interviews') ? () => openFrom(here(), () => openModule('interviews')) : undefined}
             onContactManager={() => openModule('account-manager')}
             initialProfile={hiringProfile}
-            initialTab={hubEntry ? 'saved' : 'available'}
-            initialResumeId={hubEntry?.resumeId}
+            initialSaved={hubEntry !== null}
+            initialProfileId={hubEntry?.resumeId}
           />
         ) : tab === 'more' && moreModuleId === 'requirements' ? (
           <ClientRequirementsView

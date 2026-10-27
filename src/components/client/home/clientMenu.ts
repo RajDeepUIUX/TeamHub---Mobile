@@ -119,7 +119,7 @@ export const CLIENT_MENU_GROUPS: ClientMenuGroup[] = [
     label: 'Hire New Staff',
     icon: UserPlus,
     modules: [
-      { id: 'staff-hub', label: 'Available Staff Hub', hint: 'Browse resumes & shortlist candidates', icon: Store, designed: true },
+      { id: 'staff-hub', label: 'Talent Marketplace', hint: 'Browse talent & request to hire', icon: Store, designed: true },
       { id: 'requirements', label: 'Staff Requirements', hint: 'Create & track requirements', icon: ClipboardList, designed: true },
       { id: 'interviews', label: 'Shortlisted Candidates', hint: 'Candidates, interviews & feedback', icon: MessagesSquare, designed: true },
       { id: 'hiring-pricing', label: 'Pricing & Hiring', hint: 'Rates by level, hiring models & terms', icon: Tag, designed: true },

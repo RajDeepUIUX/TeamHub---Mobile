@@ -26,7 +26,7 @@ import { BottomSheet } from '../../common/BottomSheet';
 import { DateRangeFields } from '../../common/DateRangeFields';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
 import { ACCENT, Pill, SheetHeader } from '../staff/tabs/StaffTabParts';
-import { DomainTile } from '../hub/HubParts';
+import { DomainTile } from '../marketplace/MarketplaceParts';
 import { CandidateStatusPill } from '../interviews/InterviewParts';
 import {
   CLIENT_SERVICE_SECTIONS,
@@ -80,7 +80,7 @@ interface ClientDashboardProps {
   loading: boolean;
   onSeeTab: (tab: ClientFeedTab) => void;
   onUpdatePost: (id: string, patch: Partial<ClientFeedPost>) => void;
-  /** Hidden when the role has no Available Staff Hub / My Staff access */
+  /** Hidden when the role has no Talent Marketplace / My Staff access */
   onHireNewStaff?: () => void;
   onOpenMyStaff?: () => void;
   /** Staff for the Staff Utilization section; hidden when the role has no Staff Utilization Report access */
@@ -90,11 +90,11 @@ interface ClientDashboardProps {
   onOpenBilling?: () => void;
   /** Services You May Need → services sheet, scrolled to the tapped service / section */
   onOpenServices: (focusId?: string) => void;
-  /** Available Staff Hub Saved Resumes, newest first; hidden when the role has no Available Staff Hub access */
+  /** Talent Marketplace Saved Resumes, newest first; hidden when the role has no Talent Marketplace access */
   savedProfiles?: HubProfile[];
   /** Opens View Resume for one profile (Back returns to the Dashboard) */
   onOpenSavedProfile?: (profileId: string) => void;
-  /** Opens the Available Staff Hub on its Saved Resumes tab */
+  /** Opens the Talent Marketplace on its Saved Resumes view */
   onOpenSavedResumes?: () => void;
   /** Shortlisted Candidates list; hidden when the role has no Shortlisted Candidates access */
   shortlistedCandidates?: ShortlistedCandidate[];
@@ -518,7 +518,7 @@ const StaffUtilizationCard: React.FC<{ members: ClientStaffMember[] }> = ({ memb
 
 /* ----------------------- Previously Saved Profiles ----------------------- */
 
-/** Available Staff Hub Saved Resumes (desktop `linkedprofile`); a row opens View Resume */
+/** Talent Marketplace Saved Resumes (desktop `linkedprofile`); a row opens the Talent Profile */
 const SavedProfilesCard: React.FC<{
   profiles: HubProfile[];
   onOpenProfile?: (profileId: string) => void;
@@ -551,7 +551,7 @@ const SavedProfilesCard: React.FC<{
       <div className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
         <span className="flex-1 min-w-0">
           <span className="block text-xs font-bold text-[#1E293B]">No saved profiles yet</span>
-          <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Save resumes in the Available Staff Hub to find them here.</span>
+          <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Save profiles in the Talent Marketplace to find them here.</span>
         </span>
         {onOpenAll && (
           <button
@@ -637,7 +637,7 @@ const ShortlistedCandidatesCard: React.FC<{
         <div className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
           <span className="flex-1 min-w-0">
             <span className="block text-xs font-bold text-[#1E293B]">No candidates in progress</span>
-            <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Shortlist profiles in the Available Staff Hub to track them here.</span>
+            <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Request to hire profiles in the Talent Marketplace to track them here.</span>
           </span>
           {onBrowse && (
             <button
@@ -748,7 +748,7 @@ const StaffRequirementCard: React.FC<{
         <div className="mt-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
           <span className="flex-1 min-w-0">
             <span className="block text-xs font-bold text-[#1E293B]">No open requirements</span>
-            <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Add a requirement to get matching resumes from the Available Staff Hub.</span>
+            <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Add a requirement to get matching resumes from the Talent Marketplace.</span>
           </span>
           {onAdd && (
             <button
@@ -1013,7 +1013,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-bold text-[#1E293B] leading-tight">Hire New Staff</span>
-                <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Browse ready-to-hire profiles in the Available Staff Hub</span>
+                <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Browse ready-to-hire profiles in the Talent Marketplace</span>
               </span>
               <span className="w-8 h-8 rounded-full bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white flex items-center justify-center shrink-0">
                 <ChevronRight className="w-4 h-4" />

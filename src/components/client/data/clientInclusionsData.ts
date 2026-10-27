@@ -44,7 +44,7 @@ export const INCLUSION_SECTIONS: InclusionSection[] = [
       { title: 'End-to-End Hiring', desc: '7-step vetting process covering sourcing, screening, testing, and appointment' },
       { title: 'Sr. Recruiter Support', desc: 'Shared Senior Recruiter support throughout the hiring cycle' },
       { title: 'Job Description Support', desc: 'Assistance in documenting detailed job roles and responsibilities' },
-      { title: 'Candidate Sourcing', desc: 'Sourcing & pre-screening using internal portals and Available Staff Hub (ASH)' },
+      { title: 'Candidate Sourcing', desc: 'Sourcing & pre-screening using internal portals and Talent Marketplace' },
       { title: 'Testing & Shortlisting', desc: 'Conducting recruitment tests and submitting resumes to client/staff in-charge' },
       { title: 'Background Verification', desc: 'Complete background and reference checks for shortlisted candidates' },
       { title: 'Offer & Negotiation', desc: 'Communicating terms, issuing offer letters, and securing candidate confirmation' },

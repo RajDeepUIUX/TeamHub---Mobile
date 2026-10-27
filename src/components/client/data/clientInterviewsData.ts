@@ -1,7 +1,7 @@
 /**
  * Mock data for Hire New Staff → Shortlisted Candidates (desktop `interviews` controller, `shortlistedcandidates.tpl`,
  * `viewresume.tpl`, `shortlisted_candidates_list_combined`, `save_shortlisted_candidates_feedback`, SC assessments).
- * Desktop list = Available Staff Hub profiles (`project` source) + recruiter-sourced candidates (`candidate` source, MOS clients).
+ * Desktop list = Talent Marketplace profiles (`project` source) + recruiter-sourced candidates (`candidate` source, MOS clients).
  * All names, resume IDs, companies, links and scores are dummy data.
  */
 
@@ -190,7 +190,7 @@ export interface FeedbackCriterion {
   hint?: string;
 }
 
-/** Desktop `getInterviewEvaluationlist` + tooltips (Available Staff Hub candidates) */
+/** Desktop `getInterviewEvaluationlist` + tooltips (Talent Marketplace candidates) */
 export const HUB_FEEDBACK_CRITERIA: FeedbackCriterion[] = [
   {
     label: 'Job-Specific Skills',

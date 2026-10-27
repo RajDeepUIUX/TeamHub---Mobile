@@ -131,6 +131,7 @@ export const REQUIREMENT_DOMAINS: DomainSpec[] = [
       { name: 'Associate - Bookkeeper', levels: [1, 2] },
       { name: 'Associate - Accountant', levels: [2, 3] },
       { name: 'Senior - Accountant', levels: [4] },
+      { name: 'Team Lead - Accounting', levels: [4, 5] },
     ],
     software: ['QuickBooks Online', 'Xero', 'FreshBooks', 'Sage Intacct', 'Excel'],
     skills: ['Accounts payable / receivable', 'Bank reconciliations', 'Month-end close', 'Payroll entries', 'Journal entries', 'Financial statement preparation', 'Sales tax filings', 'Budget vs actual reporting'],
@@ -161,7 +162,30 @@ export const REQUIREMENT_DOMAINS: DomainSpec[] = [
     software: ['Excel', 'Power BI', 'QuickBooks Online', 'Fathom'],
     skills: ['Cash-flow forecasting', 'KPI dashboards', 'Process documentation', 'Budgeting & planning', 'Client reporting', 'Business case analysis'],
   },
+  {
+    name: 'Non Technical',
+    profiles: [
+      { name: 'Consultant - Virtual Assistant', levels: [1, 2, 3] },
+      { name: 'Sr. Consultant - Talent Acquisition', levels: [2, 3] },
+      { name: 'Specialist - HR & Operations', levels: [3, 4] },
+    ],
+    software: ['Microsoft Office', 'Google Workspace', 'HubSpot', 'Zoho Recruit', 'Calendly'],
+    skills: ['Calendar & inbox management', 'Client meeting scheduling', 'Data entry & indexing', 'CRM updates', 'Recruitment coordination', 'Employee onboarding'],
+  },
+  {
+    name: 'Specialized',
+    profiles: [
+      { name: 'Specialist - Forensic Accountant', levels: [3, 4] },
+      { name: 'Team Lead - Technology & ERP', levels: [4, 5] },
+    ],
+    software: ['Excel', 'IDEA', 'NetSuite', 'Power BI', 'Alteryx'],
+    skills: ['Forensic accounting review', 'Fraud risk assessment', 'Litigation support', 'ERP implementation', 'Process documentation (SOP)', 'SOX controls testing'],
+  },
 ];
+
+/** Requirement domain that lists a profile (Talent Marketplace groups domains differently, e.g. "Audit" vs "Audit & Assurance") */
+export const requirementDomainOf = (profile: string, fallback: string) =>
+  REQUIREMENT_DOMAINS.find((d) => d.profiles.some((p) => p.name === profile))?.name ?? fallback;
 
 export const domainSpecOf = (domain: string) => REQUIREMENT_DOMAINS.find((d) => d.name === domain);
 export const profilesOfDomain = (domain: string) => domainSpecOf(domain)?.profiles ?? [];
@@ -243,12 +267,12 @@ const timelineFor = (startDate: string, today: string) => {
   return months <= 3 ? TIMELINE_OPTIONS[0] : months <= 6 ? TIMELINE_OPTIONS[1] : months <= 12 ? TIMELINE_OPTIONS[2] : TIMELINE_OPTIONS[3];
 };
 
-/** Available Staff Hub "Add Staff Requirement": domain / profile / level / work mode / location come from the resume */
+/** Talent Marketplace "Request to Hire": domain / profile / level / work mode / location come from the resume */
 export const requirementsFromHub = (p: HubProfile, req: HubRequirement, createdOn: string): StaffRequirement[] =>
   requirementsFromDraft(
     {
       ...EMPTY_REQUIREMENT_DRAFT,
-      domain: p.domain,
+      domain: requirementDomainOf(p.profile, p.domain),
       profile: p.profile,
       level: p.resume.level,
       pricing: tentativePricing(p.domain, p.resume.level),
@@ -258,7 +282,7 @@ export const requirementsFromHub = (p: HubProfile, req: HubRequirement, createdO
       staffCount: req.staffCount,
       availableUpto: '22:00',
       workMode: p.workMode,
-      locations: [p.location],
+      locations: OFFSHORE_LOCATIONS.includes(p.location) ? [p.location] : [],
     },
     createdOn,
   );
@@ -419,7 +443,7 @@ export const REQUIREMENTS_SEED: StaffRequirement[] = [
     jobDescription: 'Prepare individual and small-business returns for US clients, respond to reviewer notes and keep organizers up to date.',
     createdOn: '2026-10-05',
     comments: [
-      { id: 'c1', author: 'Priya Desai', role: 'Support', text: 'Thanks for the requirement. We have shared 4 matching resumes in the Available Staff Hub.', createdAt: '2026-10-06T09:40:00' },
+      { id: 'c1', author: 'Priya Desai', role: 'Support', text: 'Thanks for the requirement. We have shared 4 matching resumes in the Talent Marketplace.', createdAt: '2026-10-06T09:40:00' },
     ],
   }),
   base({
