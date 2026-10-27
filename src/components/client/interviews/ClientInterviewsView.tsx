@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  Briefcase,
   CalendarClock,
   CalendarPlus,
   Check,
@@ -15,16 +14,14 @@ import {
   MessageSquareText,
   MoreHorizontal,
   SearchX,
-  SlidersHorizontal,
   UsersRound,
   Video,
   X,
 } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
-import { ScreenHeader, DesignVersion, EmptyCard } from '../staff/tabs/StaffTabParts';
-import { StaffAvatar } from '../staff/ClientStaffParts';
+import { FilterIconButton } from '../../common/TeamFilterSheet';
+import { ScreenHeader, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import {
   ASSESSMENT_CATALOG,
@@ -65,8 +62,7 @@ import { InterviewFeedbackSheet } from './InterviewFeedbackSheet';
 import { InterviewFilterSheet } from './InterviewFilterSheet';
 import {
   CandidateCvSheet,
-  CandidateListSkeletonV1,
-  CandidateListSkeletonV2,
+  CandidateListSkeleton,
   CandidateStatusPill,
   CardActionsSheet,
   InterviewConfirmSheet,
@@ -103,8 +99,6 @@ const useNow = (intervalMs = 30_000) => {
 
 type StatusTone = ReturnType<typeof statusTone>;
 
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
-
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]';
 
 /** Desktop status card icons: tick (Applied / Shortlisted), hourglass (waiting), circle tick (done), circle cross (closed) */
@@ -120,21 +114,13 @@ const STATUS_ICON: Record<CandidateStatus, React.ElementType> = {
   Left: CircleX,
 };
 
-/** Status palette (same tone as the status pill): chip, dot and text */
-const TONE: Record<StatusTone, { chip: string; dot: string; text: string }> = {
-  blue: { chip: 'bg-[#EFF6FF] text-[#2F68FE]', dot: 'bg-[#2F68FE]', text: 'text-[#2F68FE]' },
-  amber: { chip: 'bg-[#FEF8E7] text-[#D97706]', dot: 'bg-[#D97706]', text: 'text-[#D97706]' },
-  green: { chip: 'bg-[#E8F8F0] text-[#10B981]', dot: 'bg-[#10B981]', text: 'text-[#10B981]' },
-  rose: { chip: 'bg-[#FEF2F2] text-[#EF4444]', dot: 'bg-[#EF4444]', text: 'text-[#EF4444]' },
+/** Status card icon tile (same tone as the status pill) */
+const TONE: Record<StatusTone, string> = {
+  blue: 'bg-[#EFF6FF] text-[#2F68FE]',
+  amber: 'bg-[#FEF8E7] text-[#D97706]',
+  green: 'bg-[#E8F8F0] text-[#10B981]',
+  rose: 'bg-[#FEF2F2] text-[#EF4444]',
 };
-
-/** V2: label / value row */
-const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="flex items-center justify-between gap-3 py-2 min-h-9">
-    <dt className="text-[11px] font-medium text-slate-500 shrink-0">{label}</dt>
-    <dd className="min-w-0 text-xs font-semibold text-[#1E293B] text-right flex items-center justify-end gap-2 flex-wrap">{children}</dd>
-  </div>
-);
 
 const Dash: React.FC = () => <span className="text-slate-400 font-medium">-</span>;
 
@@ -151,7 +137,7 @@ const SelectBox: React.FC<{ checked: boolean; disabled: boolean; round?: boolean
 
 type ActTone = 'primary' | 'success' | 'soft';
 
-/** Card footer action (same set in both designs) */
+/** Card footer action */
 interface CardAct {
   key: string;
   label: string;
@@ -169,14 +155,12 @@ const stop = (fn: () => void) => (e: React.MouseEvent) => {
 /**
  * Hire New Staff › Shortlisted Candidates (desktop `interviews&task=shortlistedcandidates`): status cards, search, candidate
  * list with assessments, View Resume, Interview Feedback, Request / Reschedule / Cancel Interview, Join Interview and
- * bulk "Request Assessment". V1 / V2 = two list designs with the same content and behaviour.
+ * bulk "Request Assessment".
  */
 export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, onContactManager, initialProfile, initialCandidateId, onBack }) => {
   // view = resume / feedback / progress; add = feedback, request interview, assign assessment; edit = reschedule; delete = cancel interview; download = files
   const { view: canView, add: canAdd, edit: canEdit, delete: canDelete, download: canDownload } = useClientPermission('interviews');
 
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   const now = useNow();
   const [loading, setLoading] = useState(true);
   const [chip, setChip] = useState<CandidateStatusChip>('All');
@@ -325,7 +309,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     return out;
   };
 
-  /** Values + actions shared by both designs (same content and behaviour) */
+  /** Card values + actions */
   const cardData = (c: ShortlistedCandidate) => {
     const win = c.interview ? interviewWindow(c.interview, now) : null;
     const selectable = selectMode && isBulkSelectable(c);
@@ -396,19 +380,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   };
   type CardData = ReturnType<typeof cardData>;
 
-  const interviewValue = (d: CardData, badge: (soon: boolean) => string) =>
-    d.iv ? (
-      <>
-        <span className="tabular-nums">
-          {d.iv.date} · {d.iv.time.replace(` (${CLIENT_TZ})`, '')}
-        </span>
-        {d.countdown && <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${badge(d.countdown.soon)}`}>{d.countdown.label}</span>}
-      </>
-    ) : (
-      <Dash />
-    );
-
-  /** Assessment slots + text-link Assign / View (same rules in both designs) */
+  /** Assessment slots + text-link Assign / View */
   const assessmentsValue = (c: ShortlistedCandidate, d: CardData, dot: string) =>
     d.assessAction === 'none' ? (
       <Dash />
@@ -423,7 +395,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           {d.used}/{ASSESSMENT_MAX}
         </span>
         {d.assessAction === 'assign' && canAdd && !selectMode && (
-          <button type="button" onClick={stop(() => openAssign([c.id]))} aria-label={`Assign assessments to ${c.name}`} className={`ml-1 text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
+          <button type="button" onClick={stop(() => openAssign([c.id]))} aria-label={`Assign assessments to ${c.name}`} className={`basis-full text-left text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
             Assign
           </button>
         )}
@@ -432,7 +404,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             type="button"
             onClick={stop(() => openSheet('progress', c.id))}
             aria-label={`View assessment progress for ${c.name}`}
-            className={`ml-1 text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
+            className={`basis-full text-left text-xs font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}
           >
             View
           </button>
@@ -440,210 +412,146 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
       </>
     );
 
-  /* ---------- Card (V1): soft card ---------- */
-  const cardV1 = (c: ShortlistedCandidate) => {
+  /* ---------- Card: ticket — status / Resume ID header, avatar + name + profile, perforated stub (Interview | Completed On | Assessments), footer ---------- */
+  const card = (c: ShortlistedCandidate) => {
     const d = cardData(c);
-    const pill = `h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
+    const btn = `h-9 px-3.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
     const actStyle: Record<ActTone, string> = {
       primary: 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]',
       success: 'bg-emerald-600 text-white active:bg-emerald-700',
       soft: 'border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
     };
-    const roundIcon = (Icon: React.ElementType, label: string, onClick: () => void) => (
-      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-9 shrink-0 border border-slate-200 bg-white text-slate-600 active:bg-slate-100 ${pill}`}>
-        <Icon className="w-4 h-4" />
-      </button>
-    );
+    const soon = Boolean(d.countdown?.soon);
+    const picked = selectMode && d.checked;
+    const notch = `absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F8FAFC] border ${picked ? 'border-[#2F68FE]' : 'border-[#EBF0F7]'}`;
 
     return (
       <li key={c.id}>
         <article
-          className={`relative bg-white rounded-2xl border shadow-2xs ${
-            selectMode && d.checked ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-[#EBF0F7]'
+          className={`bg-white rounded-[20px] border shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden transition-colors ${
+            picked ? 'border-[#2F68FE] ring-4 ring-blue-50' : 'border-[#EBF0F7]'
           }`}
         >
-          <div {...d.tapProps} className={`px-4 pt-4 ${d.showFooter || d.accountManagerNote ? 'pb-3' : 'pb-4'} rounded-2xl ${d.tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}>
-            <div className="flex items-center gap-3">
-              {d.selectable && <SelectBox round checked={d.checked} disabled={d.atMax} />}
-              <StaffAvatar name={c.name} tint={candidates.findIndex((x) => x.id === c.id)} />
-              <span className="flex-1 min-w-0">
-                <span className="block text-sm font-bold text-[#1E293B] truncate">{c.name}</span>
-                <span className="block mt-0.5 text-[11px] text-slate-500 truncate">
-                  Resume ID <span className="font-semibold text-slate-700 tabular-nums">{c.resumeId || '-'}</span>
-                </span>
-              </span>
-              <span className="shrink-0 self-start">
+          <div {...d.tapProps} className={`block transition-colors ${d.tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''}`}>
+            <div className="px-4 pt-3.5 pb-4">
+              <div className="flex items-center gap-2">
+                {d.selectable && <SelectBox round checked={d.checked} disabled={d.atMax} />}
                 <CandidateStatusPill status={c.status} />
-              </span>
-            </div>
-
-            <div className="mt-3 flex items-start gap-2">
-              <Briefcase className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
-              <p className="min-w-0 text-[13px] leading-snug">
-                <span className="sr-only">Profile: </span>
-                <span className="font-semibold text-[#1E293B]">{c.profile || '-'}</span>
-                {c.domain && (
-                  <span className="ml-1.5 inline-block align-middle px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] whitespace-nowrap">{c.domain}</span>
-                )}
-              </p>
-            </div>
-
-            <dl className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5 flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-lg bg-white border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-                <CalendarClock className="w-4.5 h-4.5" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <dt className="text-[11px] font-medium text-slate-500 leading-tight">Interview ({CLIENT_TZ})</dt>
-                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] flex items-center gap-2 flex-wrap">
-                  {interviewValue(d, (soon) => (soon ? 'bg-[#2F68FE] text-white' : 'bg-white text-[#2F68FE] border border-blue-100'))}
-                </dd>
+                <span className="ml-auto min-w-0 text-[11px] text-slate-400 truncate">
+                  Resume ID <span className="font-bold text-[#1E293B] tabular-nums">{c.resumeId || '-'}</span>
+                </span>
               </div>
-            </dl>
 
-            <dl className="mt-2 grid grid-cols-2 gap-2">
-              <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-start gap-2">
-                <CircleCheck className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
-                <div className="min-w-0">
-                  <dt className="text-[11px] font-medium text-slate-400 leading-tight">Completed On</dt>
-                  <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] tabular-nums">{c.completedOn ? formatShortDate(c.completedOn) : <Dash />}</dd>
-                </div>
-              </div>
-              <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-start gap-2">
-                <ClipboardCheck className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
-                <div className="min-w-0">
-                  <dt className="text-[11px] font-medium text-slate-400 leading-tight">Assessments</dt>
-                  <dd className="mt-0.5 text-xs font-semibold text-[#1E293B] flex items-center gap-1.5 flex-wrap">{assessmentsValue(c, d, 'w-1.5 h-1.5 rounded-full')}</dd>
-                </div>
-              </div>
-            </dl>
-          </div>
-
-          {d.accountManagerNote && (
-            <p className="mx-4 mb-3 pl-3 pr-1.5 py-1.5 rounded-xl bg-[#FEF8E7] border border-amber-200/50 text-[11px] text-amber-700 leading-snug flex items-center gap-2">
-              <Headset className="w-4 h-4 shrink-0 text-[#D97706]" aria-hidden="true" />
-              <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
-              <button
-                type="button"
-                onClick={onContactManager}
-                className={`shrink-0 h-8 px-3 rounded-xl bg-white border border-amber-200/50 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${FOCUS}`}
-              >
-                Contact
-              </button>
-            </p>
-          )}
-
-          {d.showFooter && (
-            <div className="px-4 pb-4 flex items-center gap-2">
-              {d.actions.map((a) => (
-                <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`flex-1 min-w-0 px-3 ${actStyle[a.tone]} ${pill}`}>
-                  <a.icon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{a.label}</span>
-                </button>
-              ))}
-              {d.resumeReady &&
-                (d.actions.length === 0 ? (
-                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 min-w-0 px-3 border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50 ${pill}`}>
-                    <Eye className="w-4 h-4 shrink-0" />
-                    <span className="truncate">View Resume</span>
-                  </button>
-                ) : (
-                  roundIcon(Eye, `View resume of ${c.name}`, () => openResume(c))
-                ))}
-              {d.actions.length === 0 && !d.resumeReady && <span className="flex-1" />}
-              {d.hasMenu && roundIcon(MoreHorizontal, `More actions for ${c.name}`, () => openSheet('more', c.id))}
-            </div>
-          )}
-        </article>
-      </li>
-    );
-  };
-
-  /* ---------- Card (V2): compact ticket ---------- */
-  const cardV2 = (c: ShortlistedCandidate) => {
-    const d = cardData(c);
-    const t = TONE[d.tone];
-    const seg = `relative min-w-0 h-11 px-1.5 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#2F68FE]`;
-    const actStyle: Record<ActTone, string> = {
-      primary: 'font-bold text-[#2F68FE] active:bg-blue-50',
-      success: 'font-bold text-emerald-600 active:bg-[#E8F8F0]',
-      soft: 'font-semibold text-slate-600 active:bg-slate-50',
-    };
-    const iconSeg = (Icon: React.ElementType, label: string, onClick: () => void) => (
-      <button type="button" onClick={stop(onClick)} aria-label={label} title={label} className={`w-12 shrink-0 text-slate-400 active:bg-slate-100 ${seg}`}>
-        <Icon className="w-4 h-4" />
-      </button>
-    );
-
-    return (
-      <li key={c.id}>
-        <article className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${selectMode && d.checked ? 'border-[#2F68FE] ring-1 ring-[#2F68FE]' : 'border-[#EBF0F7]'}`}>
-          <div {...d.tapProps} className={`block ${d.tapOpens ? 'active:bg-slate-50 cursor-pointer' : ''} transition-colors`}>
-            <div className="h-10 px-3.5 flex items-center gap-2 border-b border-slate-100">
-              {d.selectable && <SelectBox checked={d.checked} disabled={d.atMax} />}
-              <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${t.chip}`}>
-                <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
-                {c.status}
-              </span>
-              <span className="ml-auto text-[11px] font-medium text-slate-500 truncate">
-                Resume ID <span className="font-bold text-[#1E293B] tabular-nums">{c.resumeId || '-'}</span>
-              </span>
-            </div>
-
-            <div className="px-3.5 pt-3 pb-2">
-              <div className="flex items-center gap-2.5">
-                <span className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`} aria-hidden="true">
+              <div className="mt-3.5 flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ring-4 ring-slate-50 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`}
+                >
                   {initialsOf(c.name)}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="flex items-center gap-1 text-sm font-bold text-[#1E293B]">
-                    <span className="truncate">{c.name}</span>
-                    {d.tapOpens && !selectMode && <ChevronRight className="w-4 h-4 shrink-0 text-[#2F68FE]" aria-hidden="true" />}
-                  </span>
-                  <span className="block mt-0.5 text-[11px] text-slate-500 truncate">
+                  <span className="block text-base font-bold text-[#1E293B] leading-tight truncate">{c.name}</span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-snug">
                     <span className="sr-only">Profile: </span>
-                    <span className="font-semibold text-slate-700">{c.profile || '-'}</span>
-                    {c.domain && <span className="text-slate-400"> · {c.domain}</span>}
+                    <span className="min-w-0 font-semibold text-slate-600">{c.profile || '-'}</span>
+                    {c.domain && <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] whitespace-nowrap">{c.domain}</span>}
                   </span>
                 </span>
               </div>
+            </div>
 
-              <dl className="mt-2 divide-y divide-slate-100">
-                <Row label={`Interview (${CLIENT_TZ})`}>{interviewValue(d, (soon) => (soon ? 'bg-[#2F68FE] text-white' : 'bg-blue-50 text-[#2F68FE]'))}</Row>
-                <Row label="Completed On">{c.completedOn ? <span className="tabular-nums">{formatShortDate(c.completedOn)}</span> : <Dash />}</Row>
-                <Row label="Assessments">{assessmentsValue(c, d, 'w-2.5 h-1.5 rounded-sm')}</Row>
+            <div className="relative h-0" aria-hidden="true">
+              <span className={`${notch} -left-3`} />
+              <span className={`${notch} -right-3`} />
+              <span className="absolute left-5 right-5 top-0 border-t-2 border-dashed border-slate-200" />
+            </div>
+
+            <div className="bg-slate-50/60">
+              <dl className="px-4 pt-3.5 pb-3.5 grid grid-cols-[1.25fr_1.1fr_1fr] divide-x divide-slate-200/70">
+                <div className="min-w-0 pr-2.5">
+                  <dt className="text-[11px] font-medium text-slate-400 leading-tight whitespace-nowrap">Interview ({CLIENT_TZ})</dt>
+                  <dd className="mt-1">
+                    {d.iv ? (
+                      <>
+                        <span className="block text-xs font-bold text-[#1E293B] tabular-nums">{d.iv.date}</span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                          <span className="text-[11px] font-semibold text-slate-600 tabular-nums">{d.iv.time.replace(` (${CLIENT_TZ})`, '')}</span>
+                          {d.countdown && (
+                            <span
+                              className={`px-1.5 py-px rounded-full text-[10px] font-bold whitespace-nowrap ${
+                                soon ? 'bg-[#2F68FE] text-white' : 'bg-blue-50 text-[#2F68FE] border border-blue-100'
+                              }`}
+                            >
+                              {d.countdown.label}
+                            </span>
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold">
+                        <Dash />
+                      </span>
+                    )}
+                  </dd>
+                </div>
+                <div className="min-w-0 px-2.5">
+                  <dt className="text-[11px] font-medium text-slate-400 leading-tight whitespace-nowrap">Completed On</dt>
+                  <dd className="mt-1 text-xs font-bold text-[#1E293B] tabular-nums">{c.completedOn ? formatShortDate(c.completedOn) : <Dash />}</dd>
+                </div>
+                <div className="min-w-0 pl-2.5">
+                  <dt className="text-[11px] font-medium text-slate-400 leading-tight whitespace-nowrap">Assessments</dt>
+                  <dd className="mt-1 text-xs font-bold text-[#1E293B] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">{assessmentsValue(c, d, 'w-3 h-1.5 rounded-full')}</dd>
+                </div>
               </dl>
+
+              {d.accountManagerNote && (
+                <p className="mx-4 mb-3.5 pl-3 pr-1.5 py-1.5 rounded-xl bg-[#FEF8E7] border border-amber-200/50 text-[11px] text-amber-700 leading-snug flex items-center gap-2">
+                  <Headset className="w-4 h-4 shrink-0 text-[#D97706]" aria-hidden="true" />
+                  <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
+                  <button
+                    type="button"
+                    onClick={stop(onContactManager)}
+                    className={`shrink-0 h-8 px-3 rounded-xl bg-white border border-amber-200/50 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer ${FOCUS}`}
+                  >
+                    Contact
+                  </button>
+                </p>
+              )}
             </div>
           </div>
 
-          {d.accountManagerNote && (
-            <div className="px-3.5 py-2 border-t border-amber-200/50 bg-[#FEF8E7] flex items-center gap-2 text-[11px] text-amber-700 leading-snug">
-              <Headset className="w-3.5 h-3.5 shrink-0 text-[#D97706]" aria-hidden="true" />
-              <span className="flex-1">{`${c.replacement ? 'Replacement profile. ' : ''}Your account manager will schedule this interview.`}</span>
-              <button type="button" onClick={onContactManager} className={`shrink-0 text-[11px] font-bold text-[#2F68FE] cursor-pointer rounded ${FOCUS}`}>
-                Contact
-              </button>
-            </div>
-          )}
-
           {d.showFooter && (
-            <div className="flex border-t border-slate-100 divide-x divide-slate-100">
-              {d.actions.map((a) => (
-                <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`flex-1 ${actStyle[a.tone]} ${seg}`}>
-                  <a.icon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{a.label}</span>
+            <div className="px-4 py-2.5 border-t border-slate-100 flex items-center gap-2">
+              {d.resumeReady && (
+                <button
+                  type="button"
+                  onClick={stop(() => openResume(c))}
+                  aria-label={`View resume of ${c.name}`}
+                  className={`shrink-0 h-9 -ml-1.5 px-1.5 rounded-lg flex items-center gap-1.5 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50/50 transition-colors cursor-pointer ${FOCUS}`}
+                >
+                  <Eye className="w-4 h-4" />
+                  View Resume
                 </button>
-              ))}
-              {d.resumeReady &&
-                (d.actions.length === 0 ? (
-                  <button type="button" onClick={stop(() => openResume(c))} aria-label={`View resume of ${c.name}`} className={`flex-1 font-bold text-[#2F68FE] active:bg-blue-50 ${seg}`}>
-                    <Eye className="w-4 h-4 shrink-0" />
-                    <span className="truncate">View Resume</span>
+              )}
+              <div className="flex-1 min-w-0 flex items-center justify-end gap-2">
+                {d.actions.map((a) => (
+                  <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`min-w-0 ${btn} ${actStyle[a.tone]}`}>
+                    <a.icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{a.label}</span>
                   </button>
-                ) : (
-                  iconSeg(Eye, `View resume of ${c.name}`, () => openResume(c))
                 ))}
-              {d.actions.length === 0 && !d.resumeReady && <span className="flex-1" />}
-              {d.hasMenu && iconSeg(MoreHorizontal, `More actions for ${c.name}`, () => openSheet('more', c.id))}
+                {d.hasMenu && (
+                  <button
+                    type="button"
+                    onClick={stop(() => openSheet('more', c.id))}
+                    aria-label={`More actions for ${c.name}`}
+                    title={`More actions for ${c.name}`}
+                    className={`w-9 h-9 shrink-0 rounded-full border border-slate-200 bg-white text-slate-600 flex items-center justify-center active:bg-slate-100 transition-colors cursor-pointer ${FOCUS}`}
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </article>
@@ -651,7 +559,6 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
     );
   };
 
-  const countLabel = results.length === 1 ? 'candidate' : 'candidates';
   const appliedFilters = (
     [
       ['resumeId', 'Resume ID'],
@@ -664,180 +571,88 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   };
   const toggleSelect = () => (selectMode ? exitSelect() : setSelectMode(true));
 
-  /* ---------- Toolbar (V1): big count, pill Select, round filter, pill chips, pill status chips ---------- */
-  const toolbarV1 = (
-    <div className="pt-3">
-      <div className="px-4 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          {loading ? (
-            <span className="block w-24 h-4 rounded-md bg-slate-200/70 animate-pulse" aria-hidden="true" />
-          ) : (
-            <p className="flex items-baseline gap-1 truncate tabular-nums">
-              <span className="text-base font-extrabold text-[#1E293B] leading-none">{results.length}</span>
-              <span className="text-xs font-semibold text-slate-500">{countLabel}</span>
-            </p>
-          )}
-        </div>
-        {anySelectable && (
-          <button
-            type="button"
-            onClick={toggleSelect}
-            disabled={loading}
-            aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-            className={`h-11 pl-3 pr-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
-              selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-[#2F68FE] bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
-            }`}
-          >
-            {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
-            {selectMode ? 'Cancel' : 'Select'}
-          </button>
-        )}
-        <FilterIconButton count={filterCount} onClick={() => openSheet('filter')} />
-      </div>
-
-      {filterCount > 0 && (
-        <div className="mt-3 px-4 flex items-center gap-2">
-          <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
-            {appliedFilters.map(([key, label]) => (
-              <span key={key} className="shrink-0 h-8 pl-2.5 pr-1 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] font-semibold text-[#1E293B] flex items-center gap-1.5">
-                <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" />
-                {label}: {filters[key].trim()}
-                <button
-                  type="button"
-                  onClick={() => applyFilters({ ...filters, [key]: '' })}
-                  aria-label={`Remove ${label} filter`}
-                  className="w-5.5 h-5.5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
+  /* ---------- Toolbar: one compact row — status chips scroll on the left, Select + Filter on the right; applied filters below ---------- */
+  const toolbar = (
+    <div className="px-4 pt-3.5">
+      <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
+        <div className="py-2 pr-2 flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="pl-2 pr-6 flex gap-1.5 overflow-x-auto no-scrollbar snap-x scroll-px-2" role="group" aria-label="Candidate status">
+              {CANDIDATE_STATUSES.map((s) => {
+                const Icon = STATUS_ICON[s];
+                const active = chip === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={`${s} (${counts[s]})`}
+                    onClick={() => pickStatus(s)}
+                    className={`shrink-0 snap-start h-9 pl-1.5 pr-1.5 rounded-xl border flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
+                      active ? 'border-[#2F68FE] bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'
+                    }`}
+                  >
+                    <span aria-hidden="true" className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${active ? 'bg-[#2F68FE] text-white' : TONE[statusTone(s)]}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    <span className={`text-[11px] font-semibold ${active ? 'text-[#2F68FE]' : 'text-slate-600'}`}>{s}</span>
+                    <span
+                      className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
+                        active ? 'bg-[#2F68FE] text-white' : counts[s] ? 'bg-slate-100 text-[#1E293B]' : 'bg-slate-100 text-slate-400'
+                      }`}
+                    >
+                      {counts[s]}
+                    </span>
+                    <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-0.5 shrink-0 ${active ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
+                  </button>
+                );
+              })}
+            </div>
+            <span aria-hidden="true" className="pointer-events-none absolute right-0 inset-y-0 w-8 bg-linear-to-l from-white to-transparent" />
           </div>
-          <button type="button" onClick={clearAll} className="shrink-0 h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
-            Clear All
-          </button>
-        </div>
-      )}
-
-      <div className="mt-3 px-4 pb-1 flex gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Candidate status">
-        {CANDIDATE_STATUSES.map((s) => {
-          const Icon = STATUS_ICON[s];
-          const on = TONE[statusTone(s)];
-          const active = chip === s;
-          return (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={active}
-              onClick={() => pickStatus(s)}
-              className={`shrink-0 h-9 pl-2.5 pr-1.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
-                active ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
-              }`}
-            >
-              <Icon aria-hidden="true" className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : on.text}`} />
-              {s}
-              <span className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                {counts[s]}
-              </span>
-              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-0.5 shrink-0 ${active ? 'text-white/80' : 'text-slate-400'}`} />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  /* ---------- Toolbar (V2): sticky white bar, text Select / Filter, square chips, one-line status tabs ---------- */
-  const toolbarV2 = (
-    <>
-      <div className="sticky top-0 z-10 bg-[#F8FAFC] px-4 pt-3 pb-1">
-      <div className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs px-3.5 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="flex-1 min-w-0 truncate text-xs font-semibold text-slate-500 tabular-nums">{loading ? '' : `${results.length} ${countLabel}`}</span>
+          <span aria-hidden="true" className="w-px h-7 bg-slate-200 shrink-0" />
           {anySelectable && (
             <button
               type="button"
               onClick={toggleSelect}
               disabled={loading}
               aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-              className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
-                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-slate-200 bg-white text-[#2F68FE] active:bg-blue-50'
+              className={`h-10 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
+                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs active:bg-blue-50'
               }`}
             >
               {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
               {selectMode ? 'Cancel' : 'Select'}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => openSheet('filter')}
-            aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-            className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${FOCUS} ${
-              filterCount ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4 text-[#2F68FE]" />
-            Filter
-            {filterCount > 0 && (
-              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">{filterCount}</span>
-            )}
-          </button>
+          <FilterIconButton compact count={filterCount} onClick={() => openSheet('filter')} />
         </div>
 
         {filterCount > 0 && (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="px-3 py-2.5 border-t border-slate-100 flex items-center gap-2">
             <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
               {appliedFilters.map(([key, label]) => (
-                <span key={key} className="shrink-0 h-7 pl-2 pr-0.5 rounded-md bg-slate-100 text-[11px] font-semibold text-slate-700 flex items-center gap-0.5">
+                <span key={key} className="shrink-0 h-8 pl-2.5 pr-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-[#1E293B] flex items-center gap-1.5">
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[#2F68FE]" />
                   {label}: {filters[key].trim()}
                   <button
                     type="button"
                     onClick={() => applyFilters({ ...filters, [key]: '' })}
                     aria-label={`Remove ${label} filter`}
-                    className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 active:bg-slate-200 cursor-pointer"
+                    className="w-5.5 h-5.5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 active:bg-slate-100 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
             </div>
-            <button type="button" onClick={clearAll} className="shrink-0 h-7 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
+            <button type="button" onClick={clearAll} className="shrink-0 h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
               Clear All
             </button>
           </div>
         )}
-      </div>
-      </div>
-
-      <div className="pt-2 px-4 flex gap-1.5 overflow-x-auto no-scrollbar snap-x scroll-px-4" role="group" aria-label="Candidate status">
-        {CANDIDATE_STATUSES.map((s) => {
-          const on = TONE[statusTone(s)];
-          const active = chip === s;
-          return (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={active}
-              onClick={() => pickStatus(s)}
-              className={`relative shrink-0 snap-start h-9 pl-3 pr-1.5 rounded-xl border flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${FOCUS} ${
-                active ? 'border-[#2F68FE] bg-blue-50' : 'border-slate-200 bg-white active:bg-slate-50'
-              }`}
-            >
-              <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${on.dot}`} />
-              <span className={`text-[11px] ${active ? 'text-[#2F68FE] font-bold' : 'text-slate-600 font-semibold'}`}>{s}</span>
-              <span
-                className={`min-w-6 h-6 px-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center tabular-nums ${
-                  active ? 'bg-[#2F68FE] text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {counts[s]}
-              </span>
-              <ChevronRight aria-hidden="true" className={`w-3.5 h-3.5 -ml-1 shrink-0 ${active ? 'text-[#2F68FE]' : 'text-slate-400'}`} />
-            </button>
-          );
-        })}
-      </div>
-    </>
+      </section>
+    </div>
   );
 
   /* ---------- View Resume ---------- */
@@ -860,18 +675,14 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Shortlisted Candidates" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      <ScreenHeader title="Shortlisted Candidates" onBack={onBack} />
       {notice}
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {v2 ? toolbarV2 : toolbarV1}
+        {toolbar}
 
-        <div className={`px-4 ${v2 ? 'mt-3' : 'mt-4'}`}>
+        <div className="px-4 mt-4">
           {loading ? (
-            v2 ? (
-              <CandidateListSkeletonV2 />
-            ) : (
-              <CandidateListSkeletonV1 />
-            )
+            <CandidateListSkeleton />
           ) : candidates.length === 0 ? (
             <EmptyCard icon={UsersRound} title="No shortlisted candidates yet." text="Candidates shortlisted for your staff requirements will show up here." />
           ) : results.length === 0 ? (
@@ -893,11 +704,11 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             />
           ) : (
             <>
-              <div className="mb-2.5 flex items-center justify-between gap-2">
-                <p className={v2 ? 'text-[11px] font-bold text-slate-500 uppercase tracking-wide' : 'text-sm font-bold text-[#1E293B]'}>
-                  {chip === 'All' ? 'All Candidates' : chip} <span className="text-slate-400 font-semibold tabular-nums">({results.length})</span>
-                </p>
-                {chip !== 'All' && (
+              {chip !== 'All' && (
+                <div className="mb-2.5 flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-[#1E293B]">
+                    {chip} <span className="text-slate-400 font-semibold tabular-nums">({results.length})</span>
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
@@ -908,9 +719,9 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                   >
                     Show all
                   </button>
-                )}
-              </div>
-              <ul className={v2 ? 'space-y-2.5' : 'space-y-3.5'}>{visible.map(v2 ? cardV2 : cardV1)}</ul>
+                </div>
+              )}
+              <ul className="space-y-3">{visible.map(card)}</ul>
 
               {visible.length < results.length && (
                 <button
@@ -923,9 +734,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                       setMoreLoading(false);
                     }, LOAD_MS);
                   }}
-                  className={`mt-3 w-full h-11 border text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 disabled:cursor-wait transition-colors cursor-pointer ${
-                    v2 ? 'rounded-xl border-blue-100 bg-blue-50 active:bg-blue-100' : 'rounded-xl border-slate-200 bg-white shadow-2xs active:bg-slate-50'
-                  }`}
+                  className="mt-3 w-full h-11 rounded-xl border border-slate-200 bg-white shadow-2xs text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 active:bg-slate-50 disabled:cursor-wait transition-colors cursor-pointer"
                 >
                   {moreLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {moreLoading ? 'Loading…' : `Load More (${results.length - visible.length})`}
@@ -941,54 +750,29 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
         </div>
       </div>
 
-      {selectMode &&
-        (v2 ? (
-          <div className="shrink-0 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-4 py-3 flex items-center gap-3">
-            <span className="flex-1 min-w-0 flex items-center gap-2.5">
-              <span className="text-xs font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
-              <button
-                type="button"
-                onClick={() => setSelected(allPicked ? [] : pickable.map((c) => c.id))}
-                disabled={pickable.length === 0}
-                className="text-[11px] font-bold text-[#2F68FE] disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
-              >
-                {allPicked ? 'Clear selection' : 'Select all'}
-              </button>
-            </span>
+      {selectMode && (
+        <div className="shrink-0 z-20 p-4 bg-white/95 backdrop-blur-md border-t border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center gap-3">
+          <span className="flex-1 min-w-0">
+            <span className="block text-xs font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
             <button
               type="button"
-              disabled={selectedReady.length === 0}
-              onClick={() => openAssign(selectedReady.map((c) => c.id))}
-              className={`h-11 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
+              onClick={() => setSelected(allPicked ? [] : pickable.map((c) => c.id))}
+              disabled={pickable.length === 0}
+              className={`mt-0.5 text-[11px] font-semibold text-[#2F68FE] rounded disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed ${FOCUS}`}
             >
-              Request Assessment{selectedReady.length > 0 ? ` (${selectedReady.length})` : ''}
+              {allPicked ? 'Clear selection' : 'Select all'}
             </button>
-          </div>
-        ) : (
-          <div className="shrink-0 px-3 pb-3 pt-1">
-            <div className="rounded-2xl bg-white border border-[#EBF0F7] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pl-4 pr-1.5 py-1.5 flex items-center gap-3">
-              <span className="flex-1 min-w-0">
-                <span className="block text-xs font-bold text-[#1E293B] tabular-nums">{selectedReady.length} selected</span>
-                <button
-                  type="button"
-                  onClick={() => setSelected(allPicked ? [] : pickable.map((c) => c.id))}
-                  disabled={pickable.length === 0}
-                  className="text-[11px] font-semibold text-[#2F68FE] disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {allPicked ? 'Clear selection' : 'Select all'}
-                </button>
-              </span>
-              <button
-                type="button"
-                disabled={selectedReady.length === 0}
-                onClick={() => openAssign(selectedReady.map((c) => c.id))}
-                className={`h-11 px-4 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
-              >
-                Request Assessment{selectedReady.length > 0 ? ` (${selectedReady.length})` : ''}
-              </button>
-            </div>
-          </div>
-        ))}
+          </span>
+          <button
+            type="button"
+            disabled={selectedReady.length === 0}
+            onClick={() => openAssign(selectedReady.map((c) => c.id))}
+            className={`h-12 px-5 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${FOCUS}`}
+          >
+            Request Assessment{selectedReady.length > 0 ? ` (${selectedReady.length})` : ''}
+          </button>
+        </div>
+      )}
 
       <InterviewFilterSheet
         isOpen={sheet === 'filter'}

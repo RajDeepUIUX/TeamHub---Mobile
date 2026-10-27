@@ -352,6 +352,18 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               <SearchField value={query} onChange={onSearch} placeholder="Search By Invoice No" />
             </div>
             <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
+            {canDownload && (
+              <button
+                type="button"
+                onClick={() => setExportOpen(true)}
+                disabled={loading}
+                aria-label="Export"
+                className="h-11 px-3 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 disabled:opacity-60 transition-colors shrink-0 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            )}
           </div>
 
           {filterCount > 0 && (
@@ -359,20 +371,6 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               {appliedChips}
               <button type="button" onClick={clearAll} className="h-8 px-1 text-[11px] font-bold text-[#2F68FE] cursor-pointer">
                 Clear All
-              </button>
-            </div>
-          )}
-
-          {canDownload && (
-            <div className="mt-3.5 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setExportOpen(true)}
-                disabled={loading}
-                className="h-9 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 disabled:opacity-60 transition-colors shrink-0 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Export
               </button>
             </div>
           )}

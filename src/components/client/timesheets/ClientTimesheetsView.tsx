@@ -163,15 +163,19 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
           </dl>
 
           {(canView || canDownload) && (
-            <div className={`mt-2.5 grid gap-2 ${canView && canDownload ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div
+              className={`-mx-3 -mb-3 mt-3 grid divide-x divide-slate-100 border-t border-slate-100 rounded-b-2xl overflow-hidden ${
+                canView && canDownload ? 'grid-cols-2' : 'grid-cols-1'
+              }`}
+            >
               {canView && (
                 <button
                   type="button"
                   onClick={() => openRow(r)}
                   aria-label={`View timesheet of ${name}, ${date}`}
-                  className={`h-9 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 transition-colors cursor-pointer ${FOCUS}`}
+                  className={`h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] hover:bg-blue-50/60 active:bg-blue-50 cursor-pointer transition-colors ${FOCUS}`}
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-3.5 h-3.5" />
                   View
                 </button>
               )}
@@ -180,9 +184,9 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
                   type="button"
                   onClick={() => downloadDay(r)}
                   aria-label={`Download timesheet of ${name}, ${date}`}
-                  className={`h-9 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer ${FOCUS}`}
+                  className={`h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] hover:bg-blue-50/60 active:bg-blue-50 cursor-pointer transition-colors ${FOCUS}`}
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                   Download
                 </button>
               )}

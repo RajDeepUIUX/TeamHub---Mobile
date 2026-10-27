@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Eye, EyeOff, Info, Loader2, Lock, Pencil, Plus, Save, Trash2, Zap } from 'lucide-react';
+import { AlertTriangle, CreditCard, Eye, EyeOff, Info, Landmark, Loader2, Lock, Pencil, Plus, Save, Trash2, Zap } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, ConfirmSheet, DesignVersion, InfoSheet } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, ConfirmSheet, InfoSheet, Pill } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
@@ -18,7 +18,20 @@ import {
   newBillingId,
   unmappedStaffIds,
 } from '../data/clientBillingData';
-import { AddTile, BankAccountCard, BillingSection, BillingSkeleton, BillingTabs, CreditCardTile, MethodIcon, StaffChips, StepHeader } from './BillingParts';
+import {
+  AddTile,
+  BankAccountCard,
+  BillingSection,
+  BillingSkeleton,
+  BillingTabs,
+  CountPill,
+  CreditCardTile,
+  MappedStaffSheet,
+  MappingRing,
+  MethodIcon,
+  StaffSelectField,
+  StepHeader,
+} from './BillingParts';
 import { PaymentMethodSheet, PaymentMethodTarget } from './PaymentMethodSheet';
 import { VerifyPasswordSheet } from './VerifyPasswordSheet';
 import { MappingStaff, PaymentMappingSheet } from './PaymentMappingSheet';
@@ -40,9 +53,8 @@ type VerifyThen = { purpose: string; then: () => void };
 
 const LOAD_MS = 700;
 const SUBMIT_MS = 900;
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
-const listNames = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? '');
+const listNames = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? ''));
 
 /**
  * Invoices › Billing Details — MyCPE ONE "Billing → HRMS (Offshoring)" (data in system C via `HrmsPaymentService`):
@@ -59,15 +71,18 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   const [verify, setVerify] = useState<VerifyThen | null>(null);
   const [methodTarget, setMethodTarget] = useState<PaymentMethodTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-  const [mappingEdit, setMappingEdit] = useState<{ row: PaymentMappingRow; isNew: boolean } | null>(null);
+  const [mappingEdit, setMappingEdit] = useState<{
+    row: PaymentMappingRow;
+    isNew: boolean;
+  } | null>(null);
   const [removeRowId, setRemoveRowId] = useState<string | null>(null);
   const [disableDirect, setDisableDirect] = useState(false);
   const [directBusy, setDirectBusy] = useState(false);
   const [submitting, setSubmitting] = useState<'draft' | 'submit' | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  // Row kept while the sheet slides out
+  const [staffSheet, setStaffSheet] = useState<{ rowId: string; open: boolean } | null>(null);
   const [notice, showNotice] = useTimesheetNotice();
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   const mappingRef = useRef<HTMLElement>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const busyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -87,7 +102,13 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   const countryCode = billingCountryOf(country);
   const billable = useMemo(() => billableStaffOf(staff), [staff]);
   const mappingStaff: MappingStaff[] = useMemo(
-    () => billable.map((s, tint) => ({ id: s.id, name: s.name, designation: s.designation, tint })),
+    () =>
+      billable.map((s, tint) => ({
+        id: s.id,
+        name: s.name,
+        designation: s.designation,
+        tint,
+      })),
     [billable],
   );
   const staffById = (id: string) => mappingStaff.find((s) => s.id === id);
@@ -122,7 +143,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   };
 
   const openNewMapping = (staffIds: string[] = []) =>
-    setMappingEdit({ row: { id: newBillingId('map'), staffIds, type: 'bank', methodId: null }, isNew: true });
+    setMappingEdit({
+      row: { id: newBillingId('map'), staffIds, type: 'bank', methodId: null },
+      isNew: true,
+    });
 
   const saveMapping = (row: PaymentMappingRow) => {
     const exists = billing.mappings.some((r) => r.id === row.id);
@@ -146,12 +170,18 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
     if (unmapped.length) {
       const names = unmapped.map((id) => staffById(id)?.name ?? id);
       showNotice(`${unmapped.length} staff ${unmapped.length > 1 ? 'have' : 'has'} not been mapped to any payment details yet: ${listNames(names)}.`, true);
-      mappingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      mappingRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
       return;
     }
     if (incomplete.length || !rows.length) {
       showNotice('Please complete all mapping rows before saving.', true);
-      mappingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      mappingRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
       return;
     }
     setSubmitting('submit');
@@ -190,7 +220,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
     if (!deleteTarget) return null;
     const n = staffOnMethod(deleteTarget.kind, deleteTarget.id);
     const label = methodLabel(billing, deleteTarget.kind, deleteTarget.id);
-    return { label, note: n ? `${n} staff ${n === 1 ? 'is' : 'are'} mapped to ${label}. You'll need to map them to another payment method and submit.` : undefined };
+    return {
+      label,
+      note: n ? `${n} staff ${n === 1 ? 'is' : 'are'} mapped to ${label}. You'll need to map them to another payment method and submit.` : undefined,
+    };
   })();
 
   const toggleDirect = () => {
@@ -213,107 +246,63 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   if (loading)
     return (
       <div className="flex-1 bg-[#F8FAFC] overflow-hidden">
-        <BillingSkeleton v2={v2} />
+        <BillingSkeleton />
       </div>
     );
 
   // Desktop shows the Direct Pay tab only for eligible accounts
   const paneTabs = [
-    { id: 'bank' as const, label: 'Bank Details' },
-    { id: 'card' as const, label: 'Credit Card' },
-    ...(billing.directPayEligible ? [{ id: 'direct' as const, label: 'Direct Pay' }] : []),
+    { id: 'bank' as const, label: 'Bank Details', icon: Landmark },
+    { id: 'card' as const, label: 'Credit Card', icon: CreditCard },
+    ...(billing.directPayEligible ? [{ id: 'direct' as const, label: 'Direct Pay', icon: Zap }] : []),
   ];
-  const countPill = (n: number, one: string, many: string) => (
-    <span
-      className={`px-2 py-0.5 text-[11px] font-bold text-[#2F68FE] flex items-center whitespace-nowrap tabular-nums ${
-        v2 ? 'rounded-md border border-blue-100 bg-white' : 'rounded-full bg-[#EFF6FF]'
-      }`}
-    >
-      {n} {n === 1 ? one : many}
-    </span>
-  );
   const noData = <p className="py-6 text-center text-xs font-medium text-slate-500">No Data Found</p>;
-  const mappedPct = billableIds.length ? Math.round((mappedCount / billableIds.length) * 100) : 0;
+  const directOn = billing.directPayEnabled;
+  const showViewBank = billing.banks.length > 0 && canView;
+  const allMapped = billableIds.length > 0 && mappedCount === billableIds.length;
+  const staffSheetRow = billing.mappings.find((r) => r.id === staffSheet?.rowId);
 
-  /* ---------- Mapping row: V1 soft card (staff + type / method tiles, pill actions) ---------- */
-  const rowV1 = (r: PaymentMappingRow) => {
+  /* ---------- Mapping row: method first, then its staff ---------- */
+  const mappingRow = (r: PaymentMappingRow) => {
     const complete = isMappingComplete(billing, r);
-    return (
-      <li key={r.id} className={`rounded-2xl border p-3.5 ${complete ? 'border-slate-100 bg-slate-50/80' : 'border-rose-300 bg-white'}`}>
-        <span className="block text-[11px] font-semibold text-slate-500">Select Staff(s)</span>
-        <div className="mt-2">
-          <StaffChips names={chipsFor(r.staffIds)} />
-        </div>
-        <dl className="mt-3 grid grid-cols-2 gap-2">
-          <div className="min-w-0 p-2.5 rounded-xl bg-white border border-slate-100 flex items-center gap-2.5">
-            <MethodIcon type={r.type} className="w-8 h-8" />
-            <span className="min-w-0">
-              <dt className="text-[11px] text-slate-400">Payment Type</dt>
-              <dd className="mt-0.5 text-xs font-semibold text-[#1E293B]">{PAYMENT_TYPE_LABEL[r.type]}</dd>
-            </span>
-          </div>
-          <div className="min-w-0 p-2.5 rounded-xl bg-white border border-slate-100">
-            <dt className="text-[11px] text-slate-400">Payment Method</dt>
-            <dd className={`mt-0.5 text-xs font-semibold break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
-              {complete ? methodLabel(billing, r.type, r.methodId) : r.type === 'direct' ? '-' : 'Please Select'}
-            </dd>
-          </div>
-        </dl>
-        {!complete && (
-          <p className="mt-2.5 px-3 py-2 rounded-xl bg-[#FFF1F2] border border-[#FECDD3] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            {r.type === 'direct' ? 'Direct Pay is disabled — pick another method.' : 'Its payment method was removed — pick another.'}
-          </p>
-        )}
-        {canEdit && (
-          <div className="mt-3 flex items-center justify-end gap-2">
-            <span className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setMappingEdit({ row: r, isNew: false })}
-                className="h-8 px-3 rounded-full bg-blue-50 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-100 cursor-pointer"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setRemoveRowId(r.id)}
-                className="h-8 px-3 rounded-full bg-[#FEF2F2] text-[11px] font-bold text-rose-600 flex items-center gap-1.5 active:bg-rose-100 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Remove
-              </button>
-            </span>
-          </div>
-        )}
-      </li>
-    );
-  };
-
-  /* ---------- Mapping row: V2 ledger (status rail, dashed rows, segmented actions) ---------- */
-  const rowV2 = (r: PaymentMappingRow) => {
-    const complete = isMappingComplete(billing, r);
+    // Keep "•••• 1234" on one line
+    const label = methodLabel(billing, r.type, r.methodId);
+    const masked = label.match(/^(.*) (•••• \d{4})$/);
     return (
       <li key={r.id} className={`rounded-2xl border bg-white shadow-2xs overflow-hidden ${complete ? 'border-[#EBF0F7]' : 'border-rose-300'}`}>
-        <div className="p-3.5">
-          <span className="block text-[11px] font-bold tracking-wide uppercase text-slate-400">Select Staff(s)</span>
-          <div className="mt-2">
-            <StaffChips names={chipsFor(r.staffIds)} v2 />
-          </div>
+        <div className="p-3.5 flex items-start gap-3">
+          <MethodIcon type={r.type} danger={!complete} />
+          <dl className="flex-1 min-w-0 grid grid-cols-[minmax(0,1fr)_auto] gap-x-2">
+            <div className="min-w-0">
+              <dt className="text-[11px] font-medium text-slate-500">Payment Method</dt>
+              <dd className={`mt-0.5 text-[13px] font-bold leading-snug break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
+                {!complete ? (
+                  r.type === 'direct' ? (
+                    '-'
+                  ) : (
+                    'Please Select'
+                  )
+                ) : masked ? (
+                  <>
+                    {masked[1]} <span className="whitespace-nowrap">{masked[2]}</span>
+                  </>
+                ) : (
+                  label
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="sr-only">Payment Type</dt>
+              <dd>
+                <Pill tone="blue">{PAYMENT_TYPE_LABEL[r.type]}</Pill>
+              </dd>
+            </div>
+          </dl>
         </div>
-        <dl className="px-3.5 border-t border-slate-100">
-          <div className="flex items-center justify-between gap-3 py-2.5 border-b border-slate-100">
-            <dt className="text-[11px] font-medium text-slate-500 shrink-0">Payment Type</dt>
-            <dd className="text-xs font-semibold text-[#1E293B] text-right">{PAYMENT_TYPE_LABEL[r.type]}</dd>
-          </div>
-          <div className="flex items-start justify-between gap-3 py-2.5">
-            <dt className="text-[11px] font-medium text-slate-500 shrink-0">Payment Method</dt>
-            <dd className={`text-xs font-semibold text-right break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
-              {complete ? methodLabel(billing, r.type, r.methodId) : r.type === 'direct' ? '-' : 'Please Select'}
-            </dd>
-          </div>
-        </dl>
+        <div className="px-3.5 pb-3.5">
+          <span className="block text-[11px] font-medium text-slate-500">Select Staff(s)</span>
+          <StaffSelectField staff={chipsFor(r.staffIds)} onOpen={() => setStaffSheet({ rowId: r.id, open: true })} />
+        </div>
         {!complete && (
           <p className="px-3.5 py-2 bg-[#FFF1F2] border-t border-[#FECDD3] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -321,86 +310,98 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
           </p>
         )}
         {canEdit && (
-          <div className="px-3.5 py-2.5 border-t border-slate-100 flex items-center justify-end gap-2">
-            <span className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMappingEdit({ row: r, isNew: false })}
-                className="h-9 px-3.5 rounded-xl border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 active:bg-blue-50 cursor-pointer"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => setRemoveRowId(r.id)}
-                className="h-9 px-3.5 rounded-xl border border-rose-200 bg-white text-[11px] font-bold text-rose-600 flex items-center gap-1.5 active:bg-rose-50 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Remove
-              </button>
-            </span>
+          <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setMappingEdit({ row: r, isNew: false })}
+              className="h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 cursor-pointer transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setRemoveRowId(r.id)}
+              className="h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-rose-600 active:bg-rose-50 cursor-pointer transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Remove
+            </button>
           </div>
         )}
       </li>
     );
   };
 
-  const directOn = billing.directPayEnabled;
-
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Billing Details" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      <ScreenHeader title="Billing Details" onBack={onBack} />
       {notice}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 space-y-4">
+          {!canEdit && (
+            <p className="flex items-center gap-2 p-3.5 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs text-xs font-medium text-slate-500">
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              View only — your role can't change billing details.
+            </p>
+          )}
+
           {/* 1 Payment Information */}
           <BillingSection
-            v2={v2}
+            ariaLabel="Payment Information"
             header={
-              <StepHeader
-                v2={v2}
-                step={1}
-                title="Payment Information"
-                text="Add and manage payment methods"
-                aside={
-                  <span className="flex flex-col items-end gap-1 shrink-0">
-                    {countPill(billing.banks.length, 'Bank', 'Banks')}
-                    {countPill(billing.cards.length, 'Card', 'Cards')}
-                  </span>
-                }
-              />
+              <StepHeader step={1} title="Payment Information" text="Add and manage payment methods" done={hasPayment}>
+                <span className="mt-1.5 flex flex-wrap gap-1">
+                  <CountPill icon={Landmark}>
+                    {billing.banks.length} {billing.banks.length === 1 ? 'Bank' : 'Banks'}
+                  </CountPill>
+                  <CountPill icon={CreditCard}>
+                    {billing.cards.length} {billing.cards.length === 1 ? 'Card' : 'Cards'}
+                  </CountPill>
+                </span>
+              </StepHeader>
             }
           >
-            <BillingTabs v2={v2} options={paneTabs} value={tab} onChange={setTab} ariaLabel="Payment method type" />
+            <BillingTabs options={paneTabs} value={tab} onChange={setTab} ariaLabel="Payment method type" />
 
             {tab === 'bank' && (
-              <div className="mt-3.5">
-                {billing.banks.length > 0 && canView && (
-                  <div className="mb-2.5 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => (revealed ? hide() : setVerify({ purpose: 'view bank details', then: reveal }))}
-                      className={`h-8 px-3 text-[11px] font-bold text-[#2F68FE] flex items-center gap-1.5 cursor-pointer ${
-                        v2 ? 'rounded-xl border border-slate-200 bg-white shadow-2xs active:bg-blue-50' : 'rounded-full bg-blue-50 active:bg-blue-100'
-                      }`}
-                    >
-                      {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      {revealed ? 'Hide Details' : 'View Bank Details'}
-                    </button>
-                  </div>
-                )}
-                {canAdd && (
-                  <div className={billing.banks.length ? 'mb-2.5' : ''}>
-                    <AddTile v2={v2} label="Add Bank" onClick={() => setMethodTarget({ kind: 'bank' })} />
+              <div className="mt-3.5 space-y-2.5">
+                {(canAdd || showViewBank) && (
+                  <div className="flex gap-2.5">
+                    {canAdd && (
+                      <div className="flex-1 min-w-0">
+                        <AddTile label="Add Bank" onClick={() => setMethodTarget({ kind: 'bank' })} />
+                      </div>
+                    )}
+                    {showViewBank && (
+                      <button
+                        type="button"
+                        aria-pressed={revealed}
+                        onClick={() =>
+                          revealed
+                            ? hide()
+                            : setVerify({
+                                purpose: 'view bank details',
+                                then: reveal,
+                              })
+                        }
+                        className={`h-10 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                          canAdd ? 'shrink-0' : 'flex-1'
+                        } ${
+                          revealed ? 'border-amber-200/60 bg-[#FEF8E7] text-[#D97706] active:bg-amber-100/60' : 'border-slate-200 bg-white shadow-2xs text-[#1E293B] active:bg-slate-50'
+                        }`}
+                      >
+                        {revealed ? <EyeOff className="w-4 h-4 shrink-0" /> : <Eye className="w-4 h-4 shrink-0 text-[#2F68FE]" />}
+                        <span className="whitespace-nowrap">{revealed ? 'Hide Details' : 'View Bank Details'}</span>
+                      </button>
+                    )}
                   </div>
                 )}
                 {billing.banks.length > 0 ? (
-                  <ul className={v2 ? 'space-y-2.5' : 'space-y-3'}>
+                  <ul className="space-y-2.5">
                     {billing.banks.map((b) => (
                       <BankAccountCard
                         key={b.id}
-                        v2={v2}
                         bank={b}
                         revealed={revealed}
                         onEdit={canEdit && canView ? () => withVerify('edit this bank account', () => setMethodTarget({ kind: 'bank', edit: b })) : undefined}
@@ -415,16 +416,12 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
             )}
 
             {tab === 'card' && (
-              <div className="mt-3.5">
-                {canAdd && (
-                  <div className={billing.cards.length ? 'mb-2.5' : ''}>
-                    <AddTile v2={v2} label={billing.cards.length ? 'Add New Card' : 'Add Payment Method'} onClick={() => setMethodTarget({ kind: 'card' })} />
-                  </div>
-                )}
+              <div className="mt-3.5 space-y-2.5">
+                {canAdd && <AddTile label={billing.cards.length ? 'Add New Card' : 'Add Payment Method'} onClick={() => setMethodTarget({ kind: 'card' })} />}
                 {billing.cards.length > 0 ? (
-                  <ul className={v2 ? 'space-y-2.5' : 'space-y-3'}>
+                  <ul className="space-y-2.5">
                     {billing.cards.map((c) => (
-                      <CreditCardTile key={c.id} v2={v2} card={c} onDelete={canDelete ? () => setDeleteTarget({ kind: 'card', id: c.id }) : undefined} />
+                      <CreditCardTile key={c.id} card={c} onDelete={canDelete ? () => setDeleteTarget({ kind: 'card', id: c.id }) : undefined} />
                     ))}
                   </ul>
                 ) : (
@@ -433,90 +430,58 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               </div>
             )}
 
-            {tab === 'direct' &&
-              (v2 ? (
-                <div className="mt-3.5 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs overflow-hidden">
-                  <div className="p-3.5 flex items-center gap-3">
-                    <span
-                      className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
-                        directOn ? 'bg-[#E8F8F0] border-emerald-200/50 text-[#10B981]' : 'bg-blue-50 border-blue-100 text-[#2F68FE]'
-                      }`}
-                    >
-                      <Zap className="w-5 h-5" />
-                    </span>
-                    <p className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-snug">
-                      {directOn ? 'Direct pay is currently enabled for your account' : 'Enable Direct Payment Method'}
-                    </p>
-                  </div>
-                  {canEdit && (
-                    <div className="p-3.5 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={toggleDirect}
-                        disabled={directBusy}
-                        className={`w-full h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
-                          directOn ? 'border border-rose-200 bg-white text-rose-600 active:bg-rose-50' : 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
-                        }`}
-                      >
-                        {directBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : !directOn && <Zap className="w-4 h-4" />}
-                        {directOn ? 'Disable Direct Pay' : directBusy ? 'Enabling…' : 'Enable & Save Direct Pay'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className="mt-3.5 p-5 rounded-2xl border border-slate-100 bg-slate-50/80 flex flex-col items-center text-center"
-                >
+            {tab === 'direct' && (
+              <div className="mt-3.5 px-4 pt-6 pb-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col items-center text-center">
+                <span className="relative">
                   <span
-                    className={`w-14 h-14 rounded-full text-white flex items-center justify-center ${
-                      directOn ? 'bg-[#10B981] ring-8 ring-emerald-50' : 'bg-[#2F68FE] ring-8 ring-blue-50'
+                    className={`w-14 h-14 rounded-2xl ring-8 ring-white flex items-center justify-center transition-colors ${
+                      directOn ? 'bg-[#E8F8F0] text-[#10B981]' : 'bg-[#EEF2FF] text-[#2F68FE]'
                     }`}
+                    aria-hidden="true"
                   >
                     <Zap className="w-6 h-6" />
                   </span>
-                  <p className="mt-4 text-sm font-bold text-[#1E293B]">
-                    {directOn ? 'Direct pay is currently enabled for your account' : 'Enable Direct Payment Method'}
-                  </p>
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={toggleDirect}
-                      disabled={directBusy}
-                      className={`mt-4 h-12 px-6 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
-                        directOn ? 'border border-rose-200 bg-white text-rose-600 active:bg-rose-50' : 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
-                      }`}
-                    >
-                      {directBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : !directOn && <Zap className="w-4 h-4" />}
-                      {directOn ? 'Disable Direct Pay' : directBusy ? 'Enabling…' : 'Enable & Save Direct Pay'}
-                    </button>
-                  )}
-                </div>
-              ))}
+                  {directOn && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#10B981] ring-2 ring-white" aria-hidden="true" />}
+                </span>
+                <p className="mt-5 max-w-[240px] text-sm font-bold text-[#1E293B] leading-snug">
+                  {directOn ? 'Direct pay is currently enabled for your account' : 'Enable Direct Payment Method'}
+                </p>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={toggleDirect}
+                    disabled={directBusy}
+                    className={`mt-5 w-full h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
+                      directOn ? 'border border-rose-200 bg-white text-rose-600 active:bg-rose-50' : 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]'
+                    }`}
+                  >
+                    {directBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : !directOn && <Zap className="w-4 h-4" />}
+                    {directOn ? 'Disable Direct Pay' : directBusy ? 'Enabling…' : 'Enable & Save Direct Pay'}
+                  </button>
+                )}
+              </div>
+            )}
           </BillingSection>
 
           {/* 2 Payment Mapping */}
           <BillingSection
             ref={mappingRef}
-            v2={v2}
             ariaLabel="Payment Mapping"
-            className="mt-4 scroll-mt-3"
+            className="scroll-mt-3"
             header={
               <StepHeader
-                v2={v2}
                 step={2}
                 title="Payment Mapping"
                 text="Assign Saved payment methods to Staff"
+                done={hasPayment && allMapped && !dirty && Boolean(billing.submittedAt)}
                 aside={
                   <button
                     type="button"
                     onClick={() => setShowHelp(true)}
                     aria-haspopup="dialog"
                     aria-label="How payment mapping works"
-                    className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
-                      v2
-                        ? `rounded-xl border shadow-2xs ${showHelp ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-400'} active:bg-slate-50`
-                        : `-mr-1 rounded-full ${showHelp ? 'bg-blue-50 text-[#2F68FE]' : 'text-slate-400'} active:bg-slate-100`
+                    className={`w-9 h-9 rounded-full border flex items-center justify-center active:bg-slate-50 cursor-pointer shrink-0 ${
+                      showHelp ? 'border-[#2F68FE] bg-blue-50 text-[#2F68FE]' : 'border-slate-200 bg-white text-slate-400'
                     }`}
                   >
                     <Info className="w-4 h-4" />
@@ -525,70 +490,45 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               />
             }
           >
-            <InfoSheet isOpen={showHelp} title="Payment Mapping" onClose={() => setShowHelp(false)}>
-              If you have multiple timesheets and want to setup different payment methods for your timesheets then in step 1 you can add multiple
-              payment methods and map specific timesheets to them below. Group multiple staff timesheet numbers per method.
-            </InfoSheet>
-
             {!hasPayment ? (
-              <div
-                className={`py-6 px-4 flex flex-col items-center text-center ${
-                  v2 ? 'rounded-2xl border border-dashed border-slate-300 bg-white' : 'rounded-2xl border border-slate-100 bg-slate-50/80'
-                }`}
-              >
-                <span className={`flex items-center justify-center text-slate-400 ${v2 ? 'w-10 h-10 rounded-xl bg-slate-100' : 'w-14 h-14 rounded-2xl bg-white border border-slate-100'}`}>
+              <div className="py-7 px-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center text-center">
+                <span className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-slate-400">
                   <Lock className="w-5 h-5" />
                 </span>
-                <p className="mt-3 text-sm font-bold text-[#1E293B]">Add at least one payment method to unlock mapping</p>
+                <p className="mt-3 max-w-[220px] text-[13px] font-bold text-[#1E293B] leading-snug">Add at least one payment method to unlock mapping</p>
               </div>
             ) : (
               <>
-                {rows.length > 0 ? <ul className={v2 ? 'space-y-2.5' : 'space-y-3'}>{rows.map(v2 ? rowV2 : rowV1)}</ul> : noData}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3.5">
+                  <MappingRing mapped={mappedCount} total={billableIds.length} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[10px] font-bold tracking-wider text-slate-400">STATUS OVERVIEW</span>
+                    <span className={`block mt-1 text-sm font-bold tabular-nums ${allMapped ? 'text-[#10B981]' : 'text-[#1E293B]'}`}>
+                      {mappedCount} / {billableIds.length} Staff Mapped
+                    </span>
+                  </span>
+                </div>
+
+                {rows.length > 0 ? <ul className="mt-3 space-y-2.5">{rows.map(mappingRow)}</ul> : noData}
 
                 {canEdit && (
                   <button
                     type="button"
                     onClick={() => openNewMapping()}
                     disabled={!unmapped.length}
-                    className={`mt-3 w-full h-11 rounded-xl text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed ${
-                      v2
-                        ? 'border border-dashed border-slate-300 bg-white active:border-[#2F68FE] active:bg-blue-50/50 disabled:border-slate-200 disabled:bg-slate-50'
-                        : 'border border-[#2F68FE] bg-white active:bg-blue-50 disabled:border-slate-200 disabled:bg-slate-50'
-                    }`}
+                    className="mt-3 w-full h-12 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 transition-colors cursor-pointer active:border-[#2F68FE] active:bg-blue-50 disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
-                    {unmapped.length ? <Plus className="w-4 h-4" /> : null}
+                    {unmapped.length ? (
+                      <span className="w-6 h-6 rounded-lg bg-[#2F68FE] text-white flex items-center justify-center shrink-0" aria-hidden="true">
+                        <Plus className="w-4 h-4" strokeWidth={2.5} />
+                      </span>
+                    ) : null}
                     {unmapped.length ? 'Add Payment Mapping' : 'All staff have mapped payment details.'}
                   </button>
                 )}
 
-                {v2 ? (
-                  <div className="mt-3 rounded-xl border border-slate-100 overflow-hidden">
-                    <div className="px-3 py-2.5 flex items-center justify-between gap-2 bg-slate-50">
-                      <span className="text-[11px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
-                      <span className="text-xs font-bold tabular-nums">
-                        {mappedCount} / {billableIds.length} Staff Mapped
-                      </span>
-                    </div>
-                    <span className="block h-1 bg-slate-100" aria-hidden="true">
-                      <span className="block h-full bg-[#2F68FE] transition-[width]" style={{ width: `${mappedPct}%` }} />
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mt-3 p-3 rounded-xl bg-white border border-slate-100">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold tracking-wide text-slate-400">STATUS OVERVIEW</span>
-                      <span className="text-xs font-bold tabular-nums">
-                        {mappedCount} / {billableIds.length} Staff Mapped
-                      </span>
-                    </div>
-                    <span className="mt-2 block h-1.5 rounded-full bg-slate-100" aria-hidden="true">
-                      <span className="block h-full rounded-full bg-linear-to-r from-[#2F68FE] to-[#6366F1] transition-[width]" style={{ width: `${mappedPct}%` }} />
-                    </span>
-                  </div>
-                )}
-
                 {canEdit && (
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => submitMapping(true)}
@@ -612,19 +552,19 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               </>
             )}
           </BillingSection>
-
-          {!canEdit && (
-            <p
-              className={`mt-4 flex items-center gap-2 p-3.5 text-xs font-medium text-slate-500 ${
-                v2 ? 'rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs' : 'rounded-2xl border border-slate-200/80 bg-slate-50/70'
-              }`}
-            >
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              View only — your role can't change billing details.
-            </p>
-          )}
         </div>
       </div>
+
+      <MappedStaffSheet
+        isOpen={Boolean(staffSheet?.open && staffSheetRow)}
+        method={staffSheetRow ? methodLabel(billing, staffSheetRow.type, staffSheetRow.methodId) : ''}
+        staff={staffSheetRow ? chipsFor(staffSheetRow.staffIds) : []}
+        onClose={() => setStaffSheet((s) => (s ? { ...s, open: false } : s))}
+      />
+      <InfoSheet isOpen={showHelp} title="Payment Mapping" onClose={() => setShowHelp(false)}>
+        If you have multiple timesheets and want to setup different payment methods for your timesheets then in step 1 you can add multiple payment methods
+        and map specific timesheets to them below. Group multiple staff timesheet numbers per method.
+      </InfoSheet>
 
       <VerifyPasswordSheet
         isOpen={verify !== null}
@@ -650,7 +590,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
             setTab('card');
             showNotice('Payment method added successfully.');
           } else {
-            onChange({ ...billing, banks: m.isEdit ? billing.banks.map((b) => (b.id === m.bank.id ? m.bank : b)) : [...billing.banks, m.bank] });
+            onChange({
+              ...billing,
+              banks: m.isEdit ? billing.banks.map((b) => (b.id === m.bank.id ? m.bank : b)) : [...billing.banks, m.bank],
+            });
             setTab('bank');
             showNotice(m.isEdit ? 'Payment method updated successfully.' : 'Payment method added successfully.');
           }

@@ -15,7 +15,7 @@ import {
   todayIso,
 } from '../data/clientFeedbackData';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
-import { ScreenHeader, Card, DesignVersion, EmptyCard } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, Card, DesignVersion, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import { EMPTY_FEEDBACK_FILTERS, FeedbackFilterSheet, FeedbackFilters, feedbackFilterCount } from './FeedbackFilterSheet';
 import { SurveyFormView } from './SurveyFormView';
 import { SurveyIntroView } from './SurveyIntroView';
@@ -91,6 +91,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FeedbackFilters>(EMPTY_FEEDBACK_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [pages, setPages] = useState(1);
   const [moreLoading, setMoreLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -128,7 +129,9 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   const isMine = (s: ClientSurvey) => s.assignedTo === userName;
   const canFill = (s: ClientSurvey) => perm.edit && isMine(s) && s.type !== 'hbr' && (surveyStatus(s) === 'Not Started' || surveyStatus(s) === 'In Progress');
 
+  const q = query.trim().toLowerCase();
   const results = sorted.filter((s) => {
+    if (q && ![SURVEY_TYPE_LABEL[s.type], s.staffName, s.period].some((f) => f?.toLowerCase().includes(q))) return false;
     if (filters.type.length && !filters.type.includes(s.type)) return false;
     if (filters.staff.length && !(s.staffName && filters.staff.includes(s.staffName))) return false;
     if (filters.period.length && !(s.period && filters.period.includes(s.period))) return false;
@@ -137,7 +140,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   const visible = results.slice(0, pages * FEEDBACK_PAGE_SIZE);
 
   const filterCount = feedbackFilterCount(filters);
-  const isFiltered = filterCount > 0;
+  const isFiltered = filterCount > 0 || q.length > 0;
   const applied: { key: string; label: string; next: FeedbackFilters }[] = [
     ...filters.type.map((t) => ({ key: `t-${t}`, label: SURVEY_TYPE_LABEL[t as SurveyType], next: { ...filters, type: filters.type.filter((x) => x !== t) } })),
     ...filters.staff.map((n) => ({ key: `s-${n}`, label: n, next: { ...filters, staff: filters.staff.filter((x) => x !== n) } })),
@@ -154,7 +157,10 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     setFilters(next);
     reload();
   };
-  const clearAll = () => applyFilters(EMPTY_FEEDBACK_FILTERS);
+  const clearAll = () => {
+    setQuery('');
+    applyFilters(EMPTY_FEEDBACK_FILTERS);
+  };
 
   const download = (s: ClientSurvey) => {
     setDownloadingId(s.id);
@@ -307,16 +313,10 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
       <li key={s.id}>
         <Card className="overflow-hidden">
           <div className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex-1 min-w-0">
-                <span className="block text-[11px] font-medium text-slate-400">Survey Type</span>
-                <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-sm')}</span>
-              </span>
-              <span className="shrink-0 flex flex-col items-end">
-                <span className="text-[11px] font-medium text-slate-400">Status</span>
-                <span className="mt-0.5">
-                  <SurveyStatusPill status={status} />
-                </span>
+            <div className="flex items-center gap-3">
+              <span className="flex-1 min-w-0">{surveyTitle(s, clickable, 'text-sm')}</span>
+              <span className="shrink-0">
+                <SurveyStatusPill status={status} />
               </span>
             </div>
 
@@ -475,17 +475,19 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     </div>
   );
 
-  const countLabel = loading ? '' : `${results.length} ${results.length === 1 ? 'survey' : 'surveys'}`;
-
   const toolbarV1 = (
     <div className="px-4 pt-3">
       <div className="flex items-center gap-2.5">
-        <span className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
-            <ClipboardCheck className="w-4 h-4" />
-          </span>
-          <span className="min-w-0 truncate text-sm font-bold text-[#1E293B] tabular-nums">{countLabel}</span>
-        </span>
+        <div className="flex-1 min-w-0">
+          <SearchField
+            value={query}
+            onChange={(v) => {
+              setQuery(v);
+              setPages(1);
+            }}
+            placeholder="Search by survey, staff or period"
+          />
+        </div>
         <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
       </div>
       {applied.length > 0 && (

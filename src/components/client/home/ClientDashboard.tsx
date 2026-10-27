@@ -25,7 +25,7 @@ import { Dropdown } from '../../../design-system/components/Dropdown';
 import { BottomSheet } from '../../common/BottomSheet';
 import { DateRangeFields } from '../../common/DateRangeFields';
 import { avatarTint, initialsOf } from '../../home/celebrationUtils';
-import { ACCENT, Pill, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { Pill, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { DomainTile } from '../marketplace/MarketplaceParts';
 import { CandidateStatusPill } from '../interviews/InterviewParts';
 import {
@@ -54,7 +54,6 @@ import {
   hasResumeOf,
   interviewLabels,
   pipelineCandidatesOf,
-  statusTone,
 } from '../data/clientInterviewsData';
 import {
   REQUIREMENT_PREVIEW_COUNT,
@@ -597,9 +596,9 @@ const SavedProfilesCard: React.FC<{
 
 /* ------------------------ Shortlisted Candidates ------------------------ */
 
-const CANDIDATE_CARD = 'relative overflow-hidden pl-4 pr-3 py-3 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs flex items-center gap-3';
+const CANDIDATE_ROW = 'py-3 flex items-start gap-3 rounded-lg';
 
-/** Candidates still in the hiring pipeline (desktop Shortlisted Candidates) as status-strip cards; a card opens View Resume / the CV */
+/** Candidates still in the hiring pipeline (desktop Shortlisted Candidates) as rows; a row opens View Resume / the CV */
 const ShortlistedCandidatesCard: React.FC<{
   candidates: ShortlistedCandidate[];
   onOpenCandidate?: (candidateId: string) => void;
@@ -651,33 +650,39 @@ const ShortlistedCandidatesCard: React.FC<{
           )}
         </div>
       ) : (
-        <ul className="mt-3 space-y-2.5">
-          {preview.map((c, idx) => {
+        <ul className="mt-2 -mb-1 divide-y divide-slate-100">
+          {preview.map((c) => {
             const interview = interviewLabels(c);
             const opens = onOpenCandidate && hasResumeOf(c);
             const body = (
               <>
-                <span aria-hidden="true" className={`absolute left-0 inset-y-0 w-1 ${ACCENT[statusTone(c.status)]}`} />
-                <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${avatarTint(idx)}`}>
+                <span
+                  aria-hidden="true"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`}
+                >
                   {initialsOf(c.name)}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[13px] font-bold text-[#1E293B] truncate">{c.name}</span>
-                  <span className="block text-[11px] text-slate-500 truncate">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 text-[13px] font-bold text-[#1E293B] truncate">{c.name}</span>
+                    <span className="shrink-0">
+                      <CandidateStatusPill status={c.status} />
+                    </span>
+                  </span>
+                  <span className="block mt-0.5 text-[11px] text-slate-500 truncate">
                     {c.profile}
                     {c.resumeId !== '-' && <span className="tabular-nums"> · {c.resumeId}</span>}
                   </span>
-                  <span className="mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1">
-                    <CandidateStatusPill status={c.status} />
-                    {interview && (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 tabular-nums">
-                        <CalendarClock className="w-3 h-3 text-[#2F68FE]" aria-hidden="true" />
+                  {interview && (
+                    <span className="mt-1.5 inline-flex max-w-full items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE] tabular-nums">
+                      <CalendarClock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">
                         {interview.date}, {interview.time}
                       </span>
-                    )}
-                  </span>
+                    </span>
+                  )}
                 </span>
-                {opens && <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />}
+                {opens ? <ChevronRight className="w-4 h-4 self-center text-slate-400 shrink-0" aria-hidden="true" /> : <span className="w-4 shrink-0" aria-hidden="true" />}
               </>
             );
             return (
@@ -687,12 +692,12 @@ const ShortlistedCandidatesCard: React.FC<{
                     type="button"
                     onClick={() => onOpenCandidate(c.id)}
                     aria-label={`${c.name}, ${c.status}. View resume`}
-                    className={`w-full ${CANDIDATE_CARD} text-left active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]`}
+                    className={`w-full ${CANDIDATE_ROW} text-left active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]`}
                   >
                     {body}
                   </button>
                 ) : (
-                  <div className={CANDIDATE_CARD}>{body}</div>
+                  <div className={CANDIDATE_ROW}>{body}</div>
                 )}
               </li>
             );

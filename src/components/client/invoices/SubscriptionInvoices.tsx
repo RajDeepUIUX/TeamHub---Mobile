@@ -73,7 +73,7 @@ export const SubscriptionInvoices: React.FC<{ canDownload: boolean; onNotice: (m
       <div className="px-4 pt-3.5 pb-3 flex items-start gap-3">
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-bold text-[#1E293B] break-words">{s.title}</span>
-          <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-500">
+          <span className="mt-1.5 flex items-center gap-1 text-xs font-medium text-slate-500">
             <GraduationCap className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
             {licenseText(s)}
           </span>
