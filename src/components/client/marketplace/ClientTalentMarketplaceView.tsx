@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowDownUp,
   Bookmark,
   BookmarkCheck,
   Briefcase,
   Check,
+  ChevronDown,
+  ChevronRight,
   CircleCheck,
   CircleCheckBig,
   FileText,
+  Filter,
   GraduationCap,
   Headset,
   IdCard,
@@ -15,12 +19,12 @@ import {
   SearchX,
   Store,
   WandSparkles,
+  Wrench,
   X,
 } from 'lucide-react';
-import { Dropdown } from '../../../design-system/components/Dropdown';
-import { FilterIconButton } from '../../common/TeamFilterSheet';
+import { BottomSheet } from '../../common/BottomSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { EmptyCard, ScreenHeader } from '../staff/tabs/StaffTabParts';
+import { EmptyCard, ScreenHeader, SheetHeader } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import { InterviewScheduleSheet, InterviewScheduledSheet } from '../interviews/InterviewScheduleSheet';
 import { ScheduledInterview, ShortlistedCandidate, formatShortDate, isoOfDate } from '../data/clientInterviewsData';
@@ -29,7 +33,6 @@ import {
   AVAILABILITY_OPTIONS,
   AiSearchResult,
   BEST_MATCH_OPTION,
-  CARD_SKILL_LIMIT,
   COST_OPTIONS,
   EMPTY_MARKETPLACE_FILTERS,
   EXPERIENCE_OPTIONS,
@@ -215,10 +218,12 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState<string | null>('Loading profiles…');
   const [moreLoading, setMoreLoading] = useState(false);
-  const [expanded, setExpanded] = useState<string[]>([]);
+  // Card whose AI Insights or Key Skills sheet is open
+  const [detail, setDetail] = useState<{ id: string; kind: 'insights' | 'skills' } | null>(null);
   const [entryProfileId] = useState(canView ? (initialProfileId ?? null) : null);
   const [openId, setOpenId] = useState<string | null>(entryProfileId);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [sortOpen, setSortOpen] = useState(false);
   const [hireId, setHireId] = useState<string | null>(null);
   const [hireCreatesRequirement, setHireCreatesRequirement] = useState(false);
   const [scheduledCandidateId, setScheduledCandidateId] = useState<string | null>(null);
@@ -468,11 +473,9 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
     const assessment = avgAssessment(p);
     const qualification = r.qualifications.join(', ');
     const skills = cardSkillsOf(p);
-    const more = skills.length - CARD_SKILL_LIMIT;
+    const hasInsights = p.aiInsights.length > 0 || Boolean(r.summary);
     const price = priceParts(p);
     const match = aiActive ? scores[p.id] : undefined;
-    const isExpanded = expanded.includes(p.id);
-    const longInsights = p.aiInsights.some((b) => b.length > 95);
     const stats = [
       ...(experience ? [{ key: 'exp', icon: Briefcase, label: 'Experience', value: experience }] : []),
       ...(minutes > 0 ? [{ key: 'cpe', icon: GraduationCap, label: 'Learning Hours', value: cpeLabel(minutes) }] : []),
@@ -560,65 +563,53 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
               {isAiUpskilled(p) && <AiUpskilledChip />}
             </div>
 
-            {p.aiInsights.length > 0 ? (
-              <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#7C3AED]">
-                  <WandSparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                  AI Insights
-                </p>
-                <ul className="mt-2 space-y-1.5" id={`tm-insights-${p.id}`}>
-                  {p.aiInsights.map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-[11px] text-slate-600 leading-snug">
-                      <Check className="w-3.5 h-3.5 mt-px text-[#7C3AED] shrink-0" aria-hidden="true" />
-                      <span className={isExpanded ? '' : 'line-clamp-2'}>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-                {longInsights && (
+            {(hasInsights || skills.length > 0) && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {hasInsights && (
                   <button
                     type="button"
-                    onClick={() => setExpanded((e) => (e.includes(p.id) ? e.filter((x) => x !== p.id) : [...e, p.id]))}
-                    aria-expanded={isExpanded}
-                    aria-controls={`tm-insights-${p.id}`}
-                    className="mt-1.5 h-7 px-1 -ml-1 rounded-md text-[11px] font-bold text-[#2F68FE] active:bg-blue-50/50 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                    onClick={() => setDetail({ id: p.id, kind: 'insights' })}
+                    aria-haspopup="dialog"
+                    aria-label={p.aiInsights.length ? `AI Insights for ${p.resumeId} (${p.aiInsights.length})` : `Summary of ${p.resumeId}`}
+                    className={`h-10 pl-2.5 pr-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-left active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                      skills.length ? '' : 'col-span-2'
+                    }`}
                   >
-                    {isExpanded ? 'Show less' : 'Show more'}
+                    {p.aiInsights.length ? (
+                      <WandSparkles className="w-4 h-4 text-[#7C3AED] shrink-0" aria-hidden="true" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                    )}
+                    <span className={`flex-1 min-w-0 truncate text-[11px] font-bold ${p.aiInsights.length ? 'text-[#7C3AED]' : 'text-slate-600'}`}>
+                      {p.aiInsights.length ? 'AI Insights' : 'Summary'}
+                    </span>
+                    {p.aiInsights.length > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#F5F3FF] text-[10px] font-bold text-[#7C3AED] flex items-center justify-center tabular-nums">
+                        {p.aiInsights.length}
+                      </span>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                  </button>
+                )}
+                {skills.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDetail({ id: p.id, kind: 'skills' })}
+                    aria-haspopup="dialog"
+                    aria-label={`Key skills of ${p.resumeId} (${skills.length})`}
+                    className={`h-10 pl-2.5 pr-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-left active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                      hasInsights ? '' : 'col-span-2'
+                    }`}
+                  >
+                    <Wrench className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
+                    <span className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1E293B]">Key Skills</span>
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-50 text-[10px] font-bold text-[#2F68FE] flex items-center justify-center tabular-nums">
+                      {skills.length}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
                   </button>
                 )}
               </div>
-            ) : (
-              r.summary && (
-                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-                    Summary
-                  </p>
-                  <p className="mt-1.5 text-[11px] text-slate-600 leading-snug line-clamp-3">{summarySnippet(r.summary)}</p>
-                </div>
-              )
-            )}
-
-            {skills.length > 0 && (
-              <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Key skills">
-                {skills.slice(0, CARD_SKILL_LIMIT).map((s) => (
-                  <li key={s} className="max-w-full px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-600 leading-snug truncate">
-                    {s}
-                  </li>
-                ))}
-                {more > 0 && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => open(p)}
-                      disabled={!canView}
-                      aria-label={`View all ${skills.length} skills`}
-                      className="px-2.5 py-1 rounded-lg bg-blue-50 text-[11px] font-bold text-[#2F68FE] leading-snug enabled:active:bg-blue-100 enabled:cursor-pointer disabled:cursor-default focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
-                    >
-                      +{more}
-                    </button>
-                  </li>
-                )}
-              </ul>
             )}
           </div>
 
@@ -660,19 +651,38 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`shrink-0 h-8 pl-3 pr-1.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+      className={`shrink-0 h-7 pl-2.5 pr-1 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
         on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
       }`}
     >
       {icon}
       {label}
-      <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${on ? 'bg-white text-[#2F68FE]' : 'bg-slate-100 text-slate-500'}`}>
+      <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${on ? 'bg-white text-[#2F68FE]' : 'bg-slate-100 text-slate-500'}`}>
         {count}
       </span>
     </button>
   );
 
   const sortOptions = aiActive ? [BEST_MATCH_OPTION, ...SORT_OPTIONS] : SORT_OPTIONS;
+  const sortLabel = sortOptions.find((o) => o.value === effectiveSort)?.label;
+  const detailProfile = profileOf(detail?.id ?? null);
+  const detailSkills = detailProfile ? cardSkillsOf(detailProfile) : [];
+  const closeDetail = () => setDetail(null);
+  const detailFooter =
+    canView && detailProfile ? (
+      <div className="p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            closeDetail();
+            open(detailProfile);
+          }}
+          className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+        >
+          View Profile
+        </button>
+      </div>
+    ) : null;
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
@@ -680,61 +690,63 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
       {notice}
 
       <div ref={listRef} inert={Boolean(openProfile)} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        <div className="px-4 pt-3.5">
-          <p className="text-xs text-slate-500 leading-relaxed">
+        <div className="px-4 pt-3">
+          <p className="text-[11px] text-slate-500 leading-snug">
             Browse pre-vetted offshore tax, audit &amp; accounting talent, filter by domain, skills, cost &amp; availability.
           </p>
 
-          <section className="mt-3 p-2 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs" aria-label="Search talent">
-            <div role="search" className="flex items-center gap-1 pr-1 rounded-xl bg-slate-50 border border-slate-200 focus-within:bg-white focus-within:border-[#2F68FE] focus-within:ring-4 focus-within:ring-blue-50 transition-colors">
+          <div
+            role="search"
+            aria-label="Search talent"
+            className="mt-2.5 h-11 flex items-center gap-1 pr-1 rounded-xl bg-white border border-slate-200 shadow-2xs focus-within:border-[#2F68FE] focus-within:ring-4 focus-within:ring-blue-50 transition-colors"
+          >
+            <button
+              type="button"
+              onClick={searchResumeId}
+              aria-label="Search by Resume ID"
+              className="w-9 h-9 ml-0.5 rounded-lg flex items-center justify-center text-[#2F68FE] active:bg-blue-50 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+            <SmartSearchInput
+              value={input}
+              onChange={setInput}
+              onEnter={() => (saved ? searchResumeId() : runAi(input))}
+              animate={!saved}
+              staticPlaceholder="Search by Resume ID"
+            />
+            {input && (
               <button
                 type="button"
-                onClick={searchResumeId}
-                aria-label="Search by Resume ID"
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-[#2F68FE] active:bg-blue-50 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                onClick={() => setInput('')}
+                aria-label="Clear search text"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 shrink-0 cursor-pointer"
               >
-                <Search className="w-[18px] h-[18px]" />
+                <X className="w-3.5 h-3.5" />
               </button>
-              <SmartSearchInput
-                value={input}
-                onChange={setInput}
-                onEnter={() => (saved ? searchResumeId() : runAi(input))}
-                animate={!saved}
-                staticPlaceholder="Search by Resume ID"
-              />
-              {input && (
-                <button
-                  type="button"
-                  onClick={() => setInput('')}
-                  aria-label="Clear search text"
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 active:bg-slate-100 shrink-0 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            )}
             {!saved && (
               <button
                 type="button"
                 onClick={() => runAi(input)}
                 disabled={loading === 'Searching…'}
-                className="mt-2 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:bg-[#1D4ED8] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                className="h-8 px-2.5 rounded-lg bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1.5 shrink-0 active:bg-[#1D4ED8] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
               >
-                {loading === 'Searching…' ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                {loading === 'Searching…' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <WandSparkles className="w-3.5 h-3.5" />}
                 AI Smart Search
               </button>
             )}
-          </section>
+          </div>
 
           {!saved && !aiActive && (
-            <div className="mt-3 -mx-4 px-4 flex items-center gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Try a search">
-              <span className="shrink-0 text-[11px] font-semibold text-slate-400">Try:</span>
+            <div className="mt-2 -mx-4 px-4 flex items-center gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Try a search">
+              <span className="shrink-0 text-[10px] font-semibold text-slate-400">Try:</span>
               {TRY_QUERIES.map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => runAi(t)}
-                  className="shrink-0 h-8 px-3 rounded-full border border-blue-100 bg-blue-50 text-[11px] font-semibold text-[#2F68FE] active:bg-blue-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                  className="shrink-0 h-7 px-2.5 rounded-full border border-blue-100 bg-blue-50 text-[11px] font-semibold text-[#2F68FE] active:bg-blue-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
                 >
                   {t}
                 </button>
@@ -743,8 +755,8 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
           )}
 
           {chips.length > 0 && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="shrink-0 text-[11px] font-semibold text-slate-400">Applied:</span>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="shrink-0 text-[10px] font-semibold text-slate-400">Applied:</span>
               <ul className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Applied filters">
                 {chips.map((c) => (
                   <li key={c.key} className="shrink-0">
@@ -770,16 +782,30 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="sticky top-0 z-10 mt-3 px-4 py-2.5 bg-[#F8FAFC]/95 backdrop-blur-sm border-b border-[#EBF0F7] flex items-center gap-2">
+        <div className="sticky top-0 z-10 mt-2.5 px-4 py-2 bg-[#F8FAFC]/95 backdrop-blur-sm border-b border-[#EBF0F7] flex items-center gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {pill(saved, toggleSavedView, saved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />, 'Saved', savedPool.length)}
             {!saved && pill(upskilled, toggleUpskilled, <WandSparkles className={`w-3.5 h-3.5 ${upskilled ? '' : 'text-[#7C3AED]'}`} />, 'AI-Upskilled', upskilledCount)}
           </div>
-          <FilterIconButton count={filterCount} onClick={() => setSheet('filter')} />
+          <button
+            type="button"
+            onClick={() => setSheet('filter')}
+            aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
+            className={`relative w-9 h-9 rounded-xl border flex items-center justify-center shadow-2xs transition-colors shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+              filterCount ? 'bg-blue-50 border-[#2F68FE] text-[#2F68FE]' : 'bg-white border-slate-200 text-[#2F68FE] active:bg-slate-50'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            {filterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[#F8FAFC] tabular-nums">
+                {filterCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        <div className="px-4 pt-3 flex items-center gap-3">
-          <p className="flex-1 min-w-0 text-xs text-slate-500 tabular-nums" aria-live="polite">
+        <div className="px-4 pt-2 flex items-center gap-2">
+          <p className="flex-1 min-w-0 text-[11px] text-slate-500 tabular-nums" aria-live="polite">
             {loading ? (
               <span className="inline-flex items-center gap-1.5 font-semibold text-[#2F68FE]">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -791,18 +817,21 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
               </>
             )}
           </p>
-          <div className="w-[168px] shrink-0">
-            <Dropdown
-              ariaLabel="Sort By"
-              sheetTitle="Sort By"
-              value={effectiveSort}
-              options={sortOptions}
-              onChange={(v) => changeSort(v as MarketplaceSort)}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setSortOpen(true)}
+            aria-haspopup="dialog"
+            aria-label={`Sort By: ${sortLabel}`}
+            className="h-8 -mr-1.5 px-1.5 rounded-lg flex items-center gap-1 text-[11px] text-slate-500 active:bg-slate-100 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+          >
+            <ArrowDownUp className="w-3.5 h-3.5 text-slate-400" />
+            Sort:
+            <span className="font-bold text-[#1E293B]">{sortLabel}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </button>
         </div>
 
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-2.5">
           {loading ? (
             <MarketplaceSkeleton label={loading} />
           ) : !saved && pool.length === 0 ? (
@@ -908,6 +937,83 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
           onNotice={(text, error) => showNotice(text, error)}
         />
       )}
+
+      <BottomSheet isOpen={sortOpen} onClose={() => setSortOpen(false)} maxHeight="max-h-[70%]">
+        <SheetHeader title="Sort By" onClose={() => setSortOpen(false)} />
+        <ul className="px-3 py-3 pb-6 space-y-1" role="radiogroup" aria-label="Sort By">
+          {sortOptions.map((o) => {
+            const on = o.value === effectiveSort;
+            return (
+              <li key={o.value}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => {
+                    setSortOpen(false);
+                    changeSort(o.value);
+                  }}
+                  className={`w-full min-h-11 px-3 rounded-xl flex items-center justify-between gap-3 text-left text-[13px] transition-colors cursor-pointer ${
+                    on ? 'bg-blue-50 text-[#2F68FE] font-bold' : 'text-slate-700 font-medium active:bg-slate-50'
+                  }`}
+                >
+                  {o.label}
+                  {on && <Check className="w-4 h-4" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </BottomSheet>
+
+      <BottomSheet isOpen={detail?.kind === 'insights' && detailProfile !== null} onClose={closeDetail} maxHeight="max-h-[80%]">
+        <SheetHeader
+          title={detailProfile?.aiInsights.length ? `AI Insights (${detailProfile.aiInsights.length})` : 'Summary'}
+          subtitle={detailProfile ? `${detailProfile.profile} · # ${detailProfile.resumeId}` : undefined}
+          onClose={closeDetail}
+        />
+        {detailProfile && (
+          <>
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4">
+              {detailProfile.aiInsights.length > 0 ? (
+                <ul className="space-y-2.5" aria-label="AI Insights">
+                  {detailProfile.aiInsights.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed">
+                      <Check className="w-3.5 h-3.5 mt-0.5 text-[#7C3AED] shrink-0" aria-hidden="true" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-slate-600 leading-relaxed">{summarySnippet(detailProfile.resume.summary)}</p>
+              )}
+            </div>
+            {detailFooter}
+          </>
+        )}
+      </BottomSheet>
+
+      <BottomSheet isOpen={detail?.kind === 'skills' && detailProfile !== null} onClose={closeDetail} maxHeight="max-h-[80%]">
+        <SheetHeader
+          title={`Key Skills (${detailSkills.length})`}
+          subtitle={detailProfile ? `${detailProfile.profile} · # ${detailProfile.resumeId}` : undefined}
+          onClose={closeDetail}
+        />
+        {detailProfile && (
+          <>
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-4">
+              <ul className="flex flex-wrap gap-1.5" aria-label="Key skills">
+                {detailSkills.map((sk) => (
+                  <li key={sk} className="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-600 leading-snug">
+                    {sk}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {detailFooter}
+          </>
+        )}
+      </BottomSheet>
 
       <MarketplaceFilterSheet
         isOpen={sheet === 'filter'}

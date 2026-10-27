@@ -266,39 +266,42 @@ export const TalentProfileView: React.FC<Props> = ({
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-3.5 pb-6 space-y-3">
         {/* Summary */}
-        <Card className="p-4">
+        <Card className="p-3.5">
           <div className="flex items-start gap-3">
-            <DomainTile domain={p.domain} vetted={r.backgroundVerified} />
+            <DomainTile domain={p.domain} vetted={r.backgroundVerified} size="sm" />
             <div className="flex-1 min-w-0">
-              <ul className="flex flex-wrap items-center gap-1.5" aria-label="Profile badges">
-                <li className="px-2 py-0.5 rounded-md bg-blue-50 text-[11px] font-semibold text-[#2F68FE]">{p.domain}</li>
+              <h2 className="text-sm font-bold text-[#1E293B] leading-snug">
+                {p.profile} <span className="text-xs font-semibold text-slate-400 tabular-nums">({p.resumeId})</span>
+              </h2>
+              <ul className="mt-1 flex flex-wrap items-center gap-1" aria-label="Profile badges">
+                <li className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-semibold text-[#2F68FE]">{p.domain}</li>
                 {aiMatch ? (
-                  <li className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-[#F5F3FF] text-[11px] font-bold text-[#7C3AED] tabular-nums">
-                    <WandSparkles className="w-3 h-3" aria-hidden="true" />
+                  <li className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#F5F3FF] text-[10px] font-bold text-[#7C3AED] tabular-nums">
+                    <WandSparkles className="w-2.5 h-2.5" aria-hidden="true" />
                     {aiMatch}% AI Match
                   </li>
                 ) : null}
-                <li className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600">{r.level}</li>
+                <li className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600">{r.level}</li>
                 {r.backgroundVerified && (
-                  <li className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F8F0] text-[11px] font-bold text-[#10B981]">
-                    <CircleCheck className="w-3 h-3" aria-hidden="true" />
+                  <li className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#E8F8F0] text-[10px] font-bold text-[#10B981]">
+                    <CircleCheck className="w-2.5 h-2.5" aria-hidden="true" />
                     Pre-vetted
                   </li>
                 )}
               </ul>
             </div>
-            <div className="flex items-center gap-1 -mt-1 -mr-1 shrink-0">
+            <div className="flex items-center -mt-1 -mr-1.5 shrink-0">
               {canRequest && (
                 <button
                   type="button"
                   onClick={onToggleSave}
                   aria-pressed={saved}
                   aria-label={saved ? 'Remove from saved resumes' : 'Save this profile'}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
                     saved ? 'text-[#2F68FE] bg-blue-50' : 'text-slate-500 active:bg-slate-100'
                   }`}
                 >
-                  {saved ? <BookmarkCheck className="w-[18px] h-[18px]" /> : <Bookmark className="w-[18px] h-[18px]" />}
+                  {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                 </button>
               )}
               <button
@@ -306,50 +309,45 @@ export const TalentProfileView: React.FC<Props> = ({
                 onClick={onToggleCompare}
                 aria-pressed={inCompare}
                 aria-label={inCompare ? 'Remove from Compare' : 'Add to Compare'}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
                   inCompare ? 'text-[#2F68FE] bg-blue-50' : 'text-slate-500 active:bg-slate-100'
                 }`}
               >
-                <Columns2 className="w-[18px] h-[18px]" />
+                <Columns2 className="w-4 h-4" />
               </button>
+              {canDownload && (
+                <button
+                  type="button"
+                  onClick={() => onNotice('Resume downloaded.')}
+                  aria-label="Download Resume"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE]"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          <h2 className="mt-3 text-base font-bold text-[#1E293B] leading-snug">
-            {p.profile} <span className="text-sm font-semibold text-slate-400 tabular-nums">({p.resumeId})</span>
-          </h2>
-
-          <ul className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1.5 text-xs text-slate-600" aria-label="Highlights">
+          <ul className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600" aria-label="Highlights">
             {experience && (
-              <li className="inline-flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+              <li className="inline-flex items-center gap-1">
+                <Briefcase className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 <strong className="font-bold text-[#1E293B]">{experience}</strong>
               </li>
             )}
-            <li className="inline-flex items-center gap-1.5">
-              <Clock3 className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+            <li className="inline-flex items-center gap-1">
+              <Clock3 className="w-3 h-3 text-slate-400" aria-hidden="true" />
               {joiningLabel(p.noticeDays)}
             </li>
-            <li className="inline-flex items-center gap-1.5">
-              <WorkIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+            <li className="inline-flex items-center gap-1">
+              <WorkIcon className="w-3 h-3 text-slate-400" aria-hidden="true" />
               {p.workMode}
             </li>
-            <li className="inline-flex items-center gap-1.5">
+            <li className="inline-flex items-center gap-1">
               <CountryFlag country={p.country} />
               {p.country || 'Not specified'}
             </li>
           </ul>
-
-          {canDownload && (
-            <button
-              type="button"
-              onClick={() => onNotice('Resume downloaded.')}
-              className="mt-3.5 w-full h-10 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-            >
-              <Download className="w-4 h-4" />
-              Download Resume
-            </button>
-          )}
         </Card>
 
         {/* At a Glance */}
