@@ -210,7 +210,15 @@ export default function App() {
   // profile tabs never does. A ref so a confirmed action does not ask again.
   const profileDirtyRef = useRef(false);
   const [pendingLeave, setPendingLeave] = useState<null | (() => void)>(null);
-  const askToLeave = (action: () => void) => setPendingLeave(() => action);
+  // The side menu / notifications would cover the confirmation, so close them first and ask once they've slid away.
+  // "Discard" then carries on to the module that was picked.
+  const askToLeave = (action: () => void) => {
+    const overlayOpen = isMenuOpen || isNotificationsOpen;
+    setIsMenuOpen(false);
+    setIsNotificationsOpen(false);
+    if (overlayOpen) window.setTimeout(() => setPendingLeave(() => action), 220);
+    else setPendingLeave(() => action);
+  };
   const [moreReturnTab, setMoreReturnTab] = useState<AppTab>('home');
   // Company Feed: shared by every role; read state + the user's reactions live for the session
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(FEED_POSTS_SEED);
