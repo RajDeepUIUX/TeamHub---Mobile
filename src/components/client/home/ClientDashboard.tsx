@@ -570,7 +570,6 @@ const SavedProfilesCard: React.FC<{
               aria-label={`${p.profile} (${p.resumeId}). View resume`}
               className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
             >
-              <DomainTile domain={p.domain} />
               <span className="flex-1 min-w-0">
                 <span className="block text-[13px] font-bold text-[#1E293B] truncate">{p.profile}</span>
                 <span className="block text-[11px] text-slate-500 truncate">
