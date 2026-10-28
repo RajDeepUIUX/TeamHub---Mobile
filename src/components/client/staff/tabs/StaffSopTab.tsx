@@ -203,19 +203,13 @@ export const StaffSopTab: React.FC<StaffSopTabProps> = ({ staffName, clientName,
                     ]}
                   />
                   {perm.edit && s.status === 'Pending' && (
-                    <div className="mt-1 mb-3 p-1 rounded-2xl bg-[#F8FAFC] border border-[#EBF0F7] grid grid-cols-3 gap-1">
+                    <div className="mt-1 mb-3 grid grid-cols-3 gap-2">
                       {SOP_DECISIONS.map((d) => (
                         <button
                           key={d}
                           type="button"
                           onClick={() => setConfirm({ kind: 'status', sop: s, status: d })}
-                          className={`h-9 rounded-xl text-[11px] font-bold cursor-pointer ${
-                            d === 'Approved'
-                              ? 'bg-[#10B981] text-white active:bg-emerald-600'
-                              : d === 'Rejected'
-                                ? 'bg-white text-rose-600 border border-rose-200 active:bg-rose-50'
-                                : 'bg-white text-slate-600 border border-slate-200 active:bg-slate-50'
-                          }`}
+                          className="h-8 px-2 rounded-lg border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] whitespace-nowrap active:bg-blue-50 transition-colors cursor-pointer"
                         >
                           {d === 'Approved' ? 'Approve' : d === 'Rejected' ? 'Reject' : 'Not Required'}
                         </button>

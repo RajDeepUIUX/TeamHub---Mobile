@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BriefcaseBusiness, CalendarDays, Clock, Eye, FileText, Layers, Loader2, MapPin, Search, UsersRound, X } from 'lucide-react';
+import { Eye, FileText, Loader2, Search, UsersRound, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import {
@@ -15,9 +15,7 @@ import { ClientStaffFilterSheet, ClientStaffFilters, EMPTY_STAFF_FILTERS, staffF
 import { StaffAvatar, StaffSkeleton, StaffStatusPill } from './ClientStaffParts';
 import { ClientStaffDetailView, StaffProfileEdits } from './ClientStaffDetailView';
 import type { AmendRequest } from '../data/clientAttendanceData';
-import { DesignVersion, ScreenHeader } from './tabs/StaffTabParts';
-
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
+import { ScreenHeader } from './tabs/StaffTabParts';
 
 type ListKey = 'level' | 'designation' | 'engagementType' | 'location';
 const LIST_LABELS: Record<ListKey, string> = { level: 'Level', designation: 'Designation', engagementType: 'Engagement Type', location: 'Location' };
@@ -76,8 +74,6 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
   const [moreLoading, setMoreLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(focus?.staffId ?? null);
   // Shared by the list and Staff Details
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   const listTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -232,9 +228,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
         <button
           type="button"
           onClick={clearAll}
-          className={`mt-4 h-10 px-5 rounded-xl text-[#2F68FE] text-xs font-bold cursor-pointer ${
-            v2 ? 'bg-[#EEF2FF] active:bg-[#E0E7FF]' : 'active:bg-blue-50/50'
-          }`}
+          className="mt-4 h-10 px-5 rounded-xl text-[#2F68FE] text-xs font-bold active:bg-blue-50/50 cursor-pointer"
         >
           Clear All
         </button>
@@ -260,7 +254,7 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
     </button>
   );
 
-  /* ---------- Card (V1) ---------- */
+  /* ---------- Card ---------- */
 
   const card = (s: ClientStaffMember) => (
     <li key={s.id} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
@@ -338,134 +332,30 @@ export const ClientMyStaffView: React.FC<ClientMyStaffViewProps> = ({ staff, cli
     </li>
   );
 
-  /* ---------- Card (V2): accent rail, identity row, 3-up fact strip, chip row, icon action pair ---------- */
-
-  const cardV2 = (s: ClientStaffMember) => (
-    <li key={s.id}>
-      <article className="relative bg-white rounded-[20px] border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="px-3.5 pt-3.5 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSelectedId(s.id)}
-            disabled={!canView}
-            aria-label={`View ${s.name}`}
-            className="flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl active:opacity-70 disabled:active:opacity-100 cursor-pointer disabled:cursor-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-          >
-            <StaffAvatar name={s.name} tint={tintOf(s.id)} />
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-bold text-[#1E293B] leading-snug truncate">{s.name}</span>
-              <span className="block text-[11px] text-slate-400 leading-snug break-words">{s.designation}</span>
-            </span>
-          </button>
-          <StaffStatusPill status={s.status} />
-        </div>
-
-        {/* Desktop table columns */}
-        <dl className="mt-3 mx-3.5 grid grid-cols-3 rounded-xl bg-slate-50/80 border border-slate-100 divide-x divide-slate-100">
-          {[
-            { icon: Layers, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Level', value: s.level },
-            { icon: CalendarDays, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Joining Date', value: formatStaffDate(s.joiningDate) },
-            { icon: MapPin, tint: 'bg-[#EEF2FF] text-[#2F68FE]', label: 'Location', value: s.location },
-          ].map(({ icon: Icon, tint, label, value }) => (
-            <div key={label} className="px-2 py-2.5 min-w-0 flex flex-col items-center text-center">
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center ${tint}`} aria-hidden="true">
-                <Icon className="w-3.5 h-3.5" />
-              </span>
-              <dt className="mt-1.5 max-w-full text-[10px] font-semibold text-slate-400 truncate">{label}</dt>
-              <dd className="mt-0.5 max-w-full text-xs font-bold text-[#1E293B] truncate tabular-nums">{value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <dl className="px-3.5 pt-2.5 flex flex-wrap gap-1.5">
-          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center gap-1.5 min-w-0">
-            <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <dt className="text-[11px] font-medium truncate">Engagement Type:</dt>
-            <dd className="text-[11px] font-bold shrink-0">{s.engagementType ?? '--'}</dd>
-          </div>
-          <div className="max-w-full h-7 px-2.5 rounded-full bg-[#EFF6FF] text-[#2F68FE] flex items-center gap-1.5 min-w-0">
-            <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <dt className="text-[11px] font-medium truncate">Additional Availability (Per Week):</dt>
-            <dd className="text-[11px] font-bold shrink-0 tabular-nums">{s.additionalAvailability ? `${s.additionalAvailability} hrs` : '--'}</dd>
-          </div>
-        </dl>
-
-        {(canView || onOpenTimesheets) ? (
-          <div className="px-3.5 py-3 mt-3 border-t border-slate-100 flex items-center gap-2">
-            {onOpenTimesheets && (
-              <button
-                type="button"
-                onClick={() => onOpenTimesheets(s)}
-                aria-label={`Timesheets of ${s.name}`}
-                className="flex-1 h-9 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-              >
-                <FileText className="w-4 h-4 shrink-0" />
-                Timesheets
-              </button>
-            )}
-            {canView && (
-              <button
-                type="button"
-                onClick={() => setSelectedId(s.id)}
-                aria-label={`View details of ${s.name}`}
-                className="flex-1 h-9 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
-              >
-                <Eye className="w-4 h-4 shrink-0" />
-                View Details
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="pb-3.5" />
-        )}
-      </article>
-    </li>
-  );
-
   const list = loading ? (
     <ListSkeleton />
   ) : results.length === 0 ? (
     emptyState
   ) : (
-    <ul className="space-y-3">{visible.map((s) => (v2 ? cardV2(s) : card(s)))}</ul>
+    <ul className="space-y-3">{visible.map(card)}</ul>
   );
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="My Staff" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
-      {v2 ? (
-        <>
-          {/* Search toolbar pinned under the header */}
-          <div className="shrink-0 bg-white px-4 py-3 border-b border-[#EBF0F7] flex items-center gap-2.5">
-            {searchBox}
-            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
-          </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-            <div ref={listTopRef} />
-            {appliedRow}
-            <div className="px-4 mt-3.5">
-              {list}
-              {loadMore}
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Search + filters pinned under the header */}
-          <div className="shrink-0 bg-white px-4 py-3 border-b border-[#EBF0F7] flex items-center gap-2.5">
-            {searchBox}
-            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
-          </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
-            <div ref={listTopRef} />
-            {appliedRow}
-            <div className="px-4 mt-3.5">
-              {list}
-              {loadMore}
-            </div>
-          </div>
-        </>
-      )}
+      <ScreenHeader title="My Staff" onBack={onBack} />
+      {/* Search + filters pinned under the header */}
+      <div className="shrink-0 bg-white px-4 py-3 border-b border-[#EBF0F7] flex items-center gap-2.5">
+        {searchBox}
+        <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
+      </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
+        <div ref={listTopRef} />
+        {appliedRow}
+        <div className="px-4 mt-3.5">
+          {list}
+          {loadMore}
+        </div>
+      </div>
 
       <ClientStaffFilterSheet
         isOpen={filterOpen}

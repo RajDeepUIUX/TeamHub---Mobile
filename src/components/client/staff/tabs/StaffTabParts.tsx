@@ -71,7 +71,7 @@ export function SwitchTiles<T extends string>({
   label: string;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2" role="tablist" aria-label={label}>
+    <div className="p-1 rounded-xl bg-white border border-[#EBF0F7] shadow-2xs grid grid-cols-2 gap-1" role="tablist" aria-label={label}>
       {options.map((o) => {
         const on = o.id === value;
         const Icon = o.icon;
@@ -82,19 +82,15 @@ export function SwitchTiles<T extends string>({
             role="tab"
             aria-selected={on}
             onClick={() => onChange(o.id)}
-            className={`h-13 px-3 rounded-2xl flex items-center gap-2.5 text-left transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-              on
-                ? 'bg-[#2F68FE] text-white'
-                : 'bg-white border border-[#EBF0F7] text-slate-600 active:bg-slate-50'
+            className={`h-9 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+              on ? 'bg-[#2F68FE] text-white shadow-xs' : 'text-slate-500 active:bg-slate-50'
             }`}
           >
-            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${on ? 'bg-white/20' : 'bg-[#EEF2FF] text-[#2F68FE]'}`} aria-hidden="true">
-              <Icon className="w-4 h-4" />
-            </span>
-            <span className="flex-1 min-w-0 text-xs font-bold leading-tight">{o.label}</span>
+            <Icon className={`w-4 h-4 shrink-0 ${on ? '' : 'text-[#2F68FE]'}`} aria-hidden="true" />
+            <span className="min-w-0 truncate text-xs font-bold">{o.label}</span>
             {o.count !== undefined && (
               <span
-                className={`min-w-6 h-6 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums ${
+                className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center tabular-nums ${
                   on ? 'bg-white text-[#2F68FE]' : 'bg-slate-100 text-slate-500'
                 }`}
               >
