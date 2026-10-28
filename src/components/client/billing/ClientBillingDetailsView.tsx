@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Briefcase, CreditCard, Eye, EyeOff, GraduationCap, Info, Landmark, Loader2, Lock, Pencil, Plus, Trash2, Zap } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
-import { ScreenHeader, ConfirmSheet, InfoSheet, Pill } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, ConfirmSheet, InfoSheet } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
@@ -253,13 +253,29 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
     const label = methodLabel(billing, r.type, r.methodId);
     const masked = label.match(/^(.*) (•••• \d{4})$/);
     return (
-      <li key={r.id} className={`rounded-2xl border bg-white shadow-2xs overflow-hidden ${complete ? 'border-[#EBF0F7]' : 'border-rose-300'}`}>
-        <div className="p-3.5 flex items-start gap-3">
-          <MethodIcon type={r.type} danger={!complete} />
-          <dl className="flex-1 min-w-0 grid grid-cols-[minmax(0,1fr)_auto] gap-x-2">
-            <div className="min-w-0">
-              <dt className="text-[11px] font-medium text-slate-500">Payment Method</dt>
-              <dd className={`mt-0.5 text-[13px] font-bold leading-snug break-words ${complete ? 'text-[#1E293B]' : 'text-rose-600'}`}>
+      <li key={r.id} className={`rounded-2xl border bg-white shadow-2xs overflow-hidden ${complete ? 'border-[#E0E7FF]' : 'border-rose-300'}`}>
+        <div className={`px-3.5 pt-3 pb-3.5 ${complete ? 'bg-[#F5F7FF]' : 'bg-[#FFF5F6]'}`}>
+          <span className="block text-[11px] font-bold text-[#1E293B]">Select Staff(s)</span>
+          <StaffSelectField staff={chipsFor(r.staffIds)} onOpen={() => setStaffSheet({ rowId: r.id, open: true })} />
+        </div>
+        <dl className="p-3.5 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-2.5 border-t border-slate-100">
+          <div className="min-w-0">
+            <dt className="text-[11px] font-bold text-[#1E293B]">Payment Type</dt>
+            <dd className="mt-1.5 h-12 px-2.5 rounded-xl border border-slate-200 bg-white flex items-center gap-2 min-w-0">
+              <span className="scale-75 -mx-1.5 shrink-0">
+                <MethodIcon type={r.type} danger={!complete} />
+              </span>
+              <span className="text-xs font-semibold text-[#1E293B] truncate">{PAYMENT_TYPE_LABEL[r.type]}</span>
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-[11px] font-bold text-[#1E293B]">Payment Method</dt>
+            <dd
+              className={`mt-1.5 min-h-12 px-3 py-1.5 rounded-xl border flex items-center text-xs font-semibold leading-snug break-words ${
+                complete ? 'border-slate-200 bg-white text-[#1E293B]' : 'border-rose-300 bg-[#FFF5F6] text-rose-600'
+              }`}
+            >
+              <span className="min-w-0">
                 {!complete ? (
                   r.type === 'direct' ? (
                     '-'
@@ -273,20 +289,10 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                 ) : (
                   label
                 )}
-              </dd>
-            </div>
-            <div>
-              <dt className="sr-only">Payment Type</dt>
-              <dd>
-                <Pill tone="blue">{PAYMENT_TYPE_LABEL[r.type]}</Pill>
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <div className="px-3.5 pb-3.5">
-          <span className="block text-[11px] font-medium text-slate-500">Select Staff(s)</span>
-          <StaffSelectField staff={chipsFor(r.staffIds)} onOpen={() => setStaffSheet({ rowId: r.id, open: true })} />
-        </div>
+              </span>
+            </dd>
+          </div>
+        </dl>
         {canEdit && (
           <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
             <button
@@ -550,13 +556,13 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               <>
                 {rows.length > 0 ? <ul className="space-y-2.5">{rows.map(mappingRow)}</ul> : noData}
 
-                <div className="mt-3 flex flex-col items-center gap-2">
+                <div className="mt-3 flex flex-col items-center gap-2.5">
                   {canEdit && (
                     <button
                       type="button"
                       onClick={() => openNewMapping()}
                       disabled={!unmapped.length}
-                      className="h-9 flex items-center gap-1.5 text-xs font-bold text-[#2F68FE] cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed"
+                      className="w-full h-11 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] transition-colors cursor-pointer active:bg-blue-50 disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
                     >
                       <span
                         className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${unmapped.length ? 'bg-[#2F68FE] text-white' : 'border border-slate-300 text-slate-400'}`}
@@ -567,7 +573,11 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                       Add Payment Mapping
                     </button>
                   )}
-                  <p className="h-8 px-3 rounded-lg bg-[#EEF2FF] flex items-center gap-1 text-[11px] font-medium text-slate-600 whitespace-nowrap">
+                  <p
+                    className={`w-full h-10 px-3 rounded-xl flex items-center justify-center gap-1 text-[11px] font-medium whitespace-nowrap ${
+                      allMapped ? 'bg-[#E8F8F0] text-[#047857]' : 'bg-[#EEF2FF] text-slate-600'
+                    }`}
+                  >
                     Status Overview :
                     <span className={`font-bold tabular-nums ${allMapped ? 'text-[#10B981]' : 'text-[#1E293B]'}`}>
                       {mappedCount} / {billableIds.length} Staff Mapped

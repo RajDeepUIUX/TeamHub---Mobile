@@ -54,7 +54,7 @@ export const AllowToggle: React.FC<{
   </div>
 );
 
-/** V1: three-position knob switch — knob rests in the middle until answered, slides to Allowed (left) or Not Allowed (right); tapping the active side clears it */
+/** Three-position knob switch — knob rests in the middle until answered, slides to Allowed (left) or Not Allowed (right); tapping the active side clears it */
 export const AllowPills: React.FC<{
   value: YesNo | null;
   onChange: (v: YesNo) => void;
@@ -114,66 +114,6 @@ export const AllowPills: React.FC<{
         )}
       </span>
     </span>
-  </div>
-);
-
-/** V2: Allowed / Not Allowed as two on/off toggle cells — only one can be on; switching the active one off clears it */
-export const AllowChoice: React.FC<{
-  value: YesNo | null;
-  onChange: (v: YesNo) => void;
-  label: string;
-  disabled?: boolean;
-  compact?: boolean;
-}> = ({ value, onChange, label, disabled, compact }) => (
-  <div role="radiogroup" aria-label={label} className={`grid grid-cols-2 gap-2 ${disabled ? 'opacity-60' : ''}`}>
-    {(['yes', 'no'] as const).map((v) => {
-      const on = value === v;
-      const yes = v === 'yes';
-      return (
-        <button
-          key={v}
-          type="button"
-          role="radio"
-          aria-checked={on}
-          disabled={disabled}
-          onClick={() => onChange(v)}
-          className={`${compact ? 'h-11' : 'h-12'} min-w-0 pl-3 pr-2 rounded-xl border flex items-center justify-between gap-2 shadow-2xs transition-colors duration-300 cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
-            on
-              ? yes
-                ? 'bg-[#E8F8F0] border-emerald-200'
-                : 'bg-[#FEF2F2] border-rose-200'
-              : 'bg-white border-slate-200 active:bg-slate-50'
-          }`}
-        >
-          <span
-            className={`min-w-0 truncate text-xs transition-colors duration-300 ${
-              on ? `font-bold ${yes ? 'text-[#10B981]' : 'text-[#EF4444]'}` : 'font-semibold text-slate-500'
-            }`}
-          >
-            {yes ? 'Allowed' : 'Not Allowed'}
-          </span>
-          <span
-            aria-hidden="true"
-            className={`w-10 h-6 p-0.5 rounded-full shrink-0 transition-colors duration-300 ${
-              on ? (yes ? 'bg-[#10B981]' : 'bg-[#EF4444]') : 'bg-slate-300'
-            }`}
-          >
-            <span
-              className={`w-5 h-5 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] flex items-center justify-center transition-transform duration-300 ease-out ${
-                on ? 'translate-x-4' : 'translate-x-0'
-              }`}
-            >
-              {on &&
-                (yes ? (
-                  <Check className="w-3 h-3 stroke-[3.5] text-[#10B981]" />
-                ) : (
-                  <X className="w-3 h-3 stroke-[3.5] text-[#EF4444]" />
-                ))}
-            </span>
-          </span>
-        </button>
-      );
-    })}
   </div>
 );
 
