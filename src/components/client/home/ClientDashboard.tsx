@@ -3,6 +3,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
+  Award,
   BookmarkCheck,
   ArrowUpRight,
   CalendarClock,
@@ -63,7 +64,7 @@ import {
   shortlistedFor,
 } from '../data/clientRequirementsData';
 import type { ClientStaffMember } from '../data/clientStaffData';
-import { HubProfile, rateLabel } from '../data/clientStaffHubData';
+import { HubProfile, RECOMMENDED_PREVIEW_COUNT, avgAssessment, experienceLabel, rateLabel } from '../data/clientStaffHubData';
 import { TimesheetRange, formatHm, formatTimesheetRange, isoOf, parseIso } from '../data/clientTimesheetsData';
 import { formatPostDate } from './ClientPostCard';
 import { SERVICE_ICONS } from './ClientServicesSheet';
@@ -95,6 +96,12 @@ interface ClientDashboardProps {
   onOpenSavedProfile?: (profileId: string) => void;
   /** Opens the Talent Marketplace on its Saved Resumes view */
   onOpenSavedResumes?: () => void;
+  /** Strongest Talent Marketplace profiles (not saved / requested), best first; hidden when the role has no Talent Marketplace access */
+  recommendedProfiles?: HubProfile[];
+  /** Opens the Talent Profile for one recommended profile (Back returns to the Dashboard) */
+  onOpenRecommendedProfile?: (profileId: string) => void;
+  /** Opens the Talent Marketplace on its available profiles */
+  onOpenMarketplace?: () => void;
   /** Shortlisted Candidates list; hidden when the role has no Shortlisted Candidates access */
   shortlistedCandidates?: ShortlistedCandidate[];
   /** Opens View Resume (Hub profile) or the CV sheet (recruiter candidate) for one candidate */
@@ -515,6 +522,68 @@ const StaffUtilizationCard: React.FC<{ members: ClientStaffMember[] }> = ({ memb
   );
 };
 
+/* -------------------- Profiles You May Be Interested In -------------------- */
+
+/** Top Talent Marketplace profiles (`recommendedProfilesOf`); a row opens the Talent Profile */
+const RecommendedProfilesCard: React.FC<{
+  profiles: HubProfile[];
+  onOpenProfile?: (profileId: string) => void;
+  onOpenAll?: () => void;
+}> = ({ profiles, onOpenProfile, onOpenAll }) => (
+  <section className="bg-white border border-[#EBF0F7] rounded-[20px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)]" aria-labelledby="client-recommended-title">
+    <div className="flex items-center gap-2.5">
+      <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
+        <Award className="w-4 h-4" />
+      </span>
+      <h2 id="client-recommended-title" className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] leading-snug">
+        Profiles You May Be Interested In
+      </h2>
+      {onOpenAll && (
+        <button
+          type="button"
+          onClick={onOpenAll}
+          className="shrink-0 h-8 px-2 -mr-2 rounded-lg flex items-center gap-0.5 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50/50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+        >
+          View All
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+
+    <ul className="mt-2 -mb-1 divide-y divide-slate-100">
+      {profiles.slice(0, RECOMMENDED_PREVIEW_COUNT).map((p) => {
+        const assessment = avgAssessment(p);
+        return (
+          <li key={p.id}>
+            <button
+              type="button"
+              onClick={() => onOpenProfile?.(p.id)}
+              aria-label={`${p.profile} (${p.resumeId}). View profile`}
+              className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+            >
+              <DomainTile domain={p.domain} vetted={p.resume.backgroundVerified} size="sm" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-bold text-[#1E293B] truncate">{p.profile}</span>
+                <span className="block text-[11px] text-slate-500 truncate">{[p.domain, p.resume.level, experienceLabel(p)].filter(Boolean).join(' · ')}</span>
+                <span className="mt-1 flex items-center flex-wrap gap-x-2.5 gap-y-1 text-[11px] font-semibold text-slate-600 tabular-nums">
+                  {rateLabel(p)}
+                  {assessment !== null && (
+                    <span className="flex items-center gap-1 text-[#059669]">
+                      <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                      {assessment}% Avg. assessment
+                    </span>
+                  )}
+                </span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+);
+
 /* ----------------------- Previously Saved Profiles ----------------------- */
 
 /** Talent Marketplace Saved Resumes (desktop `linkedprofile`); a row opens the Talent Profile */
@@ -775,7 +844,7 @@ const StaffRequirementCard: React.FC<{
               const shortlisted = shortlistedFor(r, candidates);
               const body = (
                 <>
-                  <DomainTile domain={r.domain} />
+                  <DomainTile domain={r.domain} size="sm" />
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-bold text-[#1E293B] truncate">{r.profile}</span>
                     <span className="block text-[11px] text-slate-500 truncate">
@@ -859,8 +928,8 @@ const ServicesCard: React.FC<{ onOpen: (focusId?: string) => void }> = ({ onOpen
                 onClick={() => onOpen(s.id)}
                 className="w-full py-2.5 flex items-center gap-3 text-left rounded-lg active:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
               >
-                <span className="w-11 h-11 min-w-11 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">
-                  <Icon className="w-5 h-5 shrink-0" />
+                <span className="w-9 h-9 min-w-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">
+                  <Icon className="w-4 h-4 shrink-0" />
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[13px] font-bold text-[#1E293B] truncate">{s.title}</span>
@@ -926,6 +995,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
   savedProfiles,
   onOpenSavedProfile,
   onOpenSavedResumes,
+  recommendedProfiles,
+  onOpenRecommendedProfile,
+  onOpenMarketplace,
   shortlistedCandidates,
   onOpenCandidate,
   onOpenShortlisted,
@@ -1023,6 +1095,10 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
         {actionItems && <ActionRequiredCard items={actionItems} onOpenBilling={onOpenBilling} />}
 
         {utilizationMembers && <StaffUtilizationCard members={utilizationMembers} />}
+
+        {recommendedProfiles && recommendedProfiles.length > 0 && (
+          <RecommendedProfilesCard profiles={recommendedProfiles} onOpenProfile={onOpenRecommendedProfile} onOpenAll={onOpenMarketplace} />
+        )}
 
         {savedProfiles && <SavedProfilesCard profiles={savedProfiles} onOpenProfile={onOpenSavedProfile} onOpenAll={onOpenSavedResumes} />}
 

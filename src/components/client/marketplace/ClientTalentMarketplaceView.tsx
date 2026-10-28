@@ -570,7 +570,7 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
                     type="button"
                     onClick={() => setDetail({ id: p.id, kind: 'insights' })}
                     aria-haspopup="dialog"
-                    aria-label={p.aiInsights.length ? `AI Insights for ${p.resumeId} (${p.aiInsights.length})` : `Summary of ${p.resumeId}`}
+                    aria-label={p.aiInsights.length ? `AI Insights for ${p.resumeId}` : `Summary of ${p.resumeId}`}
                     className={`h-10 pl-2.5 pr-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-left active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
                       skills.length ? '' : 'col-span-2'
                     }`}
@@ -583,11 +583,6 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
                     <span className={`flex-1 min-w-0 truncate text-[11px] font-bold ${p.aiInsights.length ? 'text-[#7C3AED]' : 'text-slate-600'}`}>
                       {p.aiInsights.length ? 'AI Insights' : 'Summary'}
                     </span>
-                    {p.aiInsights.length > 0 && (
-                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#F5F3FF] text-[10px] font-bold text-[#7C3AED] flex items-center justify-center tabular-nums">
-                        {p.aiInsights.length}
-                      </span>
-                    )}
                     <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
                   </button>
                 )}
@@ -596,16 +591,13 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
                     type="button"
                     onClick={() => setDetail({ id: p.id, kind: 'skills' })}
                     aria-haspopup="dialog"
-                    aria-label={`Key skills of ${p.resumeId} (${skills.length})`}
+                    aria-label={`Key skills of ${p.resumeId}`}
                     className={`h-10 pl-2.5 pr-1.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-1.5 text-left active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
                       hasInsights ? '' : 'col-span-2'
                     }`}
                   >
                     <Wrench className="w-4 h-4 text-[#2F68FE] shrink-0" aria-hidden="true" />
                     <span className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1E293B]">Key Skills</span>
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-50 text-[10px] font-bold text-[#2F68FE] flex items-center justify-center tabular-nums">
-                      {skills.length}
-                    </span>
                     <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
                   </button>
                 )}

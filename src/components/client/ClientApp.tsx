@@ -40,7 +40,7 @@ import { SHORTLISTED_SEED, ShortlistedCandidate, isoOfDate } from './data/client
 import { ClientTalentMarketplaceView } from './marketplace/ClientTalentMarketplaceView';
 import { ClientRequirementsView } from './requirements/ClientRequirementsView';
 import { OFFSHORE_LOCATIONS, REQUIREMENTS_SEED, StaffRequirement } from './data/clientRequirementsData';
-import { HUB_PROFILES_SEED, HUB_SAVED_SEED } from './data/clientStaffHubData';
+import { HUB_PROFILES_SEED, HUB_SAVED_SEED, recommendedProfilesOf } from './data/clientStaffHubData';
 import { ClientHiringPricingView } from './pricing/ClientHiringPricingView';
 import { ClientTimesheetsView } from './timesheets/ClientTimesheetsView';
 import { ClientInvoicesView } from './invoices/ClientInvoicesView';
@@ -229,8 +229,13 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
         .flatMap((id) => HUB_PROFILES_SEED.filter((p) => p.id === id && !candidates.some((c) => c.resumeId === p.resumeId))),
     [hubSaved, candidates],
   );
-  // Opened from that section: Saved Resumes tab, optionally straight on one resume
-  const [hubEntry, setHubEntry] = useState<{ resumeId?: string } | null>(null);
+  // Dashboard › Profiles You May Be Interested In: strongest marketplace profiles not yet saved or requested
+  const recommendedHubProfiles = useMemo(
+    () => recommendedProfilesOf(HUB_PROFILES_SEED.filter((p) => !hubSaved.includes(p.id) && !candidates.some((c) => c.resumeId === p.resumeId))),
+    [hubSaved, candidates],
+  );
+  // Opened from those sections: Saved Resumes tab (`available` → available profiles), optionally straight on one resume
+  const [hubEntry, setHubEntry] = useState<{ resumeId?: string; available?: boolean } | null>(null);
   // Dashboard › Shortlisted Candidates: candidate opened straight on its resume / CV
   const [interviewEntry, setInterviewEntry] = useState<string | null>(null);
 
@@ -507,6 +512,12 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
               openModule('staff-hub');
               setHubEntry({});
             }}
+            recommendedProfiles={canList('staff-hub') ? recommendedHubProfiles : undefined}
+            onOpenRecommendedProfile={(resumeId) => {
+              openModule('staff-hub');
+              setHubEntry({ resumeId, available: true });
+            }}
+            onOpenMarketplace={() => openModule('staff-hub')}
             shortlistedCandidates={canList('interviews') ? candidates : undefined}
             onOpenCandidate={
               permissionFor(role, 'interviews').view
@@ -668,7 +679,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
             onOpenShortlisted={canList('interviews') ? () => openFrom(here(), () => openModule('interviews')) : undefined}
             onContactManager={() => openModule('account-manager')}
             initialProfile={hiringProfile}
-            initialSaved={hubEntry !== null}
+            initialSaved={hubEntry !== null && !hubEntry.available}
             initialProfileId={hubEntry?.resumeId}
           />
         ) : tab === 'more' && moreModuleId === 'requirements' ? (

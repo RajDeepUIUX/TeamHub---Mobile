@@ -320,6 +320,23 @@ export const sortProfiles = (list: HubProfile[], sort: MarketplaceSort, scores: 
     return cmp !== 0 ? cmp : Number(b.id.replace(/\D/g, '')) - Number(a.id.replace(/\D/g, ''));
   });
 
+/* ------------------------ Dashboard recommendations ------------------------ */
+
+/** Dashboard "Profiles You May Be Interested In" rows */
+export const RECOMMENDED_PREVIEW_COUNT = 3;
+
+/** Strong-profile score: avg. assessment, background verified, AI-upskilled, learning hours, quick joining */
+const recommendScore = (p: HubProfile) =>
+  ((avgAssessment(p) ?? 0) / 100) * 3 +
+  (p.resume.backgroundVerified ? 1 : 0) +
+  (isAiUpskilled(p) ? 1 : 0) +
+  Math.min(cpeMinutes(p) / 3000, 1) +
+  (p.noticeDays === 0 ? 1 : p.noticeDays <= 15 ? 0.5 : 0);
+
+/** Best profiles first; equal scores keep the more experienced profile first */
+export const recommendedProfilesOf = (list: HubProfile[]) =>
+  [...list].sort((a, b) => recommendScore(b) - recommendScore(a) || experienceMonths(b) - experienceMonths(a));
+
 /* ----------------------------- AI Smart Search ----------------------------- */
 
 const STOP_WORDS = new Set(
