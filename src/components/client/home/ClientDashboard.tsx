@@ -162,14 +162,13 @@ const DashboardSkeleton: React.FC = () => (
 /** Expiring soon = warning (amber), expired = critical (rose) */
 const ACTION_STYLE: Record<
   BillingActionItem['state'],
-  { panel: string; tile: string; dot: string; chip: string; divider: string; Icon: React.ElementType }
+  { panel: string; tile: string; dot: string; chip: string; Icon: React.ElementType }
 > = {
   soon: {
     panel: 'bg-[#FFFBEB]/70 border-amber-100',
     tile: 'border-amber-200/70 text-[#D97706]',
     dot: 'bg-[#F59E0B]',
     chip: 'bg-[#FEF8E7] text-[#D97706] border-amber-200/60',
-    divider: 'border-amber-200/50',
     Icon: Clock,
   },
   expired: {
@@ -177,7 +176,6 @@ const ACTION_STYLE: Record<
     tile: 'border-rose-200/70 text-[#EF4444]',
     dot: 'bg-[#EF4444]',
     chip: 'bg-[#FEF2F2] text-[#EF4444] border-rose-200/60',
-    divider: 'border-rose-200/50',
     Icon: AlertCircle,
   },
 };
@@ -215,25 +213,22 @@ const ActionRequiredCard: React.FC<{ items: BillingActionItem[]; onOpenBilling?:
           </span>
         </div>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="space-y-2">
           {items.map((item) => {
             const style = ACTION_STYLE[item.state];
             return (
-              <li key={item.id} className={`p-3 rounded-2xl border ${style.panel}`}>
-                <div className="flex gap-3">
-                  <span className={`relative w-10 h-10 rounded-xl bg-white border flex items-center justify-center shrink-0 ${style.tile}`}>
-                    <CreditCard className="w-5 h-5" />
-                    <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ring-2 ring-white text-white flex items-center justify-center ${style.dot}`} aria-hidden="true">
-                      <style.Icon className="w-2.5 h-2.5" strokeWidth={3} />
-                    </span>
+              <li key={item.id} className={`p-3 rounded-xl border ${style.panel}`}>
+                <div className="flex gap-2.5">
+                  <span className={`w-9 h-9 rounded-lg bg-white border flex items-center justify-center shrink-0 ${style.tile}`}>
+                    <CreditCard className="w-4 h-4" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold text-[#1E293B] leading-snug">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">{item.description}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-600 leading-snug">{item.description}</p>
                   </div>
                 </div>
-                <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 ${style.divider}`}>
-                  <span className={`h-6 px-2.5 rounded-full border flex items-center gap-1 text-[11px] font-bold tabular-nums ${style.chip}`}>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className={`h-7 px-2.5 rounded-full border flex items-center gap-1 text-[11px] font-bold tabular-nums ${style.chip}`}>
                     <style.Icon className="w-3 h-3" aria-hidden="true" />
                     {item.status}
                   </span>
@@ -241,7 +236,7 @@ const ActionRequiredCard: React.FC<{ items: BillingActionItem[]; onOpenBilling?:
                     <button
                       type="button"
                       onClick={onOpenBilling}
-                      className="shrink-0 h-8 px-3 rounded-full bg-white border border-blue-100 shadow-2xs flex items-center gap-1 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                      className="shrink-0 h-7 px-2.5 rounded-full bg-white border border-blue-100 shadow-2xs flex items-center gap-1 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
                     >
                       Update Card
                       <ArrowRight className="w-3.5 h-3.5" />
