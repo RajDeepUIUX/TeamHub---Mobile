@@ -415,11 +415,11 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   /* ---------- Card: ticket — status / Resume ID header, avatar + name + profile, perforated stub (Interview | Completed On | Assessments), footer ---------- */
   const card = (c: ShortlistedCandidate) => {
     const d = cardData(c);
-    const btn = `h-9 px-3.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
+    const btn = `h-8 px-2.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1 whitespace-nowrap transition-colors cursor-pointer ${FOCUS}`;
     const actStyle: Record<ActTone, string> = {
-      primary: 'bg-[#2F68FE] text-white shadow-xs active:bg-[#1D4ED8]',
-      success: 'bg-emerald-600 text-white active:bg-emerald-700',
-      soft: 'border border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
+      primary: 'border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
+      success: 'border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
+      soft: 'border-[#2F68FE] bg-white text-[#2F68FE] active:bg-blue-50',
     };
     const soon = Boolean(d.countdown?.soon);
     const picked = selectMode && d.checked;
@@ -445,7 +445,7 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
               <div className="mt-3.5 flex items-center gap-3">
                 <span
                   aria-hidden="true"
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ring-4 ring-slate-50 ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-extrabold tracking-wide shrink-0 border border-current/15 shadow-[0_2px_6px_rgba(15,23,42,0.06)] ${avatarTint(candidates.findIndex((x) => x.id === c.id))}`}
                 >
                   {initialsOf(c.name)}
                 </span>
@@ -521,22 +521,22 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
           </div>
 
           {d.showFooter && (
-            <div className="px-4 py-2.5 border-t border-slate-100 flex items-center gap-2">
+            <div className="px-4 py-2.5 border-t border-slate-100 flex items-center gap-1.5">
               {d.resumeReady && (
                 <button
                   type="button"
                   onClick={stop(() => openResume(c))}
                   aria-label={`View resume of ${c.name}`}
-                  className={`shrink-0 h-9 -ml-1.5 px-1.5 rounded-lg flex items-center gap-1.5 text-[11px] font-bold text-[#2F68FE] active:bg-blue-50/50 transition-colors cursor-pointer ${FOCUS}`}
+                  className={`shrink-0 ${btn} ${actStyle.soft}`}
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-3.5 h-3.5 shrink-0" />
                   View Resume
                 </button>
               )}
-              <div className="flex-1 min-w-0 flex items-center justify-end gap-2">
+              <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5">
                 {d.actions.map((a) => (
                   <button key={a.key} type="button" onClick={stop(a.onClick)} aria-label={a.ariaLabel ?? a.label} className={`min-w-0 ${btn} ${actStyle[a.tone]}`}>
-                    <a.icon className="w-4 h-4 shrink-0" />
+                    <a.icon className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{a.label}</span>
                   </button>
                 ))}
@@ -546,9 +546,9 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
                     onClick={stop(() => openSheet('more', c.id))}
                     aria-label={`More actions for ${c.name}`}
                     title={`More actions for ${c.name}`}
-                    className={`w-9 h-9 shrink-0 rounded-full border border-slate-200 bg-white text-slate-600 flex items-center justify-center active:bg-slate-100 transition-colors cursor-pointer ${FOCUS}`}
+                    className={`w-8 h-8 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-600 flex items-center justify-center active:bg-slate-100 transition-colors cursor-pointer ${FOCUS}`}
                   >
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreHorizontal className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>

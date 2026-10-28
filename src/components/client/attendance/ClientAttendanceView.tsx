@@ -265,12 +265,12 @@ const shortDate = (iso: string) =>
 const DateBlock: React.FC<{ iso: string }> = ({ iso }) => {
   const d = parse(iso)!;
   return (
-    <span className="w-12 shrink-0 rounded-xl border border-blue-100 bg-white overflow-hidden text-center" aria-label={shortDate(iso)}>
-      <span className="block py-0.5 bg-[#2F68FE] text-white text-[10px] font-bold uppercase tracking-wide">
+    <span className="w-14 shrink-0 rounded-xl border border-[#DBE5FF] bg-[#F8FAFF] overflow-hidden text-center shadow-2xs" aria-label={shortDate(iso)}>
+      <span className="block py-1 bg-[#2F68FE] text-white text-[9px] font-bold uppercase tracking-wider leading-none">
         {d.toLocaleDateString('en-US', { weekday: 'short' })}
       </span>
-      <span className="block pt-1 text-lg font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
-      <span className="block pt-0.5 pb-1 text-[10px] font-semibold text-slate-500">
+      <span className="block pt-1.5 text-xl font-extrabold leading-none tabular-nums text-[#1E293B]">{String(d.getDate()).padStart(2, '0')}</span>
+      <span className="block pt-1 pb-1.5 text-[9px] font-semibold leading-none whitespace-nowrap text-slate-500">
         {d.toLocaleDateString('en-US', { month: 'short' })} {d.getFullYear()}
       </span>
     </span>
@@ -436,7 +436,20 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     apply(defaults[tab]);
   };
 
+  const decide = (ids: string[], status: 'Approved' | 'Rejected', note: string, offDate: string | null) => {
+    onDecide(ids, status, note, offDate);
+    showNotice(
+      ids.length > 1
+        ? `${ids.length} requests ${status.toLowerCase()}.`
+        : `Request ${status.toLowerCase()} for ${memberOf(requests.find((r) => r.id === ids[0])?.staffId ?? '')?.name ?? 'staff'}.`,
+    );
+  };
+
   const open = (ids: string[], status: 'Approved' | 'Rejected') => {
+    // Approve goes straight through unless a "Left Early and Set Off Hours" request needs its make-up day
+    if (status === 'Approved' && !requests.some((r) => ids.includes(r.id) && r.reason === SET_OFF_REASON)) {
+      return decide(ids, status, '', null);
+    }
     setDecision({ ids, status });
     setComment('');
     setSetOffDate('');
@@ -452,12 +465,7 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
     if (!decision) return;
     if (decision.status === 'Rejected' && !comment.trim()) return setError('Add a comment so the staff member knows why.');
     if (needsSetOff && !setOffDate) return setError('Select the day the hours will be made up.');
-    onDecide(decision.ids, decision.status, comment.trim(), needsSetOff ? setOffDate : null);
-    showNotice(
-      decision.ids.length > 1
-        ? `${decision.ids.length} requests ${decision.status.toLowerCase()}.`
-        : `Request ${decision.status.toLowerCase()} for ${memberOf(target[0]?.staffId ?? '')?.name ?? 'staff'}.`,
-    );
+    decide(decision.ids, decision.status, decision.status === 'Rejected' ? comment.trim() : '', needsSetOff ? setOffDate : null);
     setDecision(null);
   };
 
@@ -754,25 +762,27 @@ export const ClientAttendanceView: React.FC<Props> = ({ requests, staff, onDecid
                   )}
                 </div>
               )}
-              <div className="space-y-1">
-                <label htmlFor="amend-comment" className="block text-xs font-bold text-[#1E293B]">
-                  Comment
-                  {decision.status === 'Rejected' && <span className="text-rose-500"> *</span>}
-                </label>
-                <textarea
-                  id="amend-comment"
-                  rows={3}
-                  maxLength={300}
-                  value={comment}
-                  onChange={(e) => {
-                    setComment(e.target.value);
-                    setError('');
-                  }}
-                  placeholder={decision.status === 'Approved' ? 'Optional note for the staff member' : 'Why is this being rejected?'}
-                  className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium placeholder:text-slate-400 focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 resize-none select-text"
-                />
-                {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
-              </div>
+              {decision.status === 'Rejected' && (
+                <div className="space-y-1">
+                  <label htmlFor="amend-comment" className="block text-xs font-bold text-[#1E293B]">
+                    Comment
+                    <span className="text-rose-500"> *</span>
+                  </label>
+                  <textarea
+                    id="amend-comment"
+                    rows={3}
+                    maxLength={300}
+                    value={comment}
+                    onChange={(e) => {
+                      setComment(e.target.value);
+                      setError('');
+                    }}
+                    placeholder="Why is this being rejected?"
+                    className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium placeholder:text-slate-400 focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 resize-none select-text"
+                  />
+                </div>
+              )}
+              {error && <p className="px-0.5 text-[11px] font-medium text-rose-500">{error}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3 p-4 pt-3 pb-6 border-t border-slate-100 shrink-0">
               <button

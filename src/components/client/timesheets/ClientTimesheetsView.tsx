@@ -146,6 +146,8 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
   const card = (r: TimesheetRow) => {
     const name = nameOf(r.staffId);
     const date = formatTimesheetDate(r.date);
+    const actBtn =
+      'h-8 px-2.5 rounded-lg border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] flex items-center justify-center gap-1 whitespace-nowrap active:bg-blue-50 transition-colors cursor-pointer';
     return (
       <li key={r.id}>
         <article className="bg-white rounded-2xl border border-[#EBF0F7] shadow-2xs p-3">
@@ -163,17 +165,13 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
           </dl>
 
           {(canView || canDownload) && (
-            <div
-              className={`-mx-3 -mb-3 mt-3 grid divide-x divide-slate-100 border-t border-slate-100 rounded-b-2xl overflow-hidden ${
-                canView && canDownload ? 'grid-cols-2' : 'grid-cols-1'
-              }`}
-            >
+            <div className="-mx-3 -mb-3 mt-3 px-3 py-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
               {canView && (
                 <button
                   type="button"
                   onClick={() => openRow(r)}
                   aria-label={`View timesheet of ${name}, ${date}`}
-                  className={`h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] hover:bg-blue-50/60 active:bg-blue-50 cursor-pointer transition-colors ${FOCUS}`}
+                  className={`${actBtn} ${FOCUS}`}
                 >
                   <Eye className="w-3.5 h-3.5" />
                   View
@@ -184,7 +182,7 @@ export const ClientTimesheetsView: React.FC<ClientTimesheetsViewProps> = ({ staf
                   type="button"
                   onClick={() => downloadDay(r)}
                   aria-label={`Download timesheet of ${name}, ${date}`}
-                  className={`h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] hover:bg-blue-50/60 active:bg-blue-50 cursor-pointer transition-colors ${FOCUS}`}
+                  className={`ml-auto ${actBtn} ${FOCUS}`}
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download

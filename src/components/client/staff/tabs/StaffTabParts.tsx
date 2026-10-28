@@ -229,11 +229,12 @@ export function ChipRow<T extends string>({
 /**
  * Same as Staff / Manager search boxes: `page` = list screens (CelebrationsView), `sheet` = inside a bottom sheet (MultiSelectSheet)
  */
-export const SearchField: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string; variant?: 'page' | 'sheet' }> = ({
+export const SearchField: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string; variant?: 'page' | 'sheet'; compact?: boolean }> = ({
   value,
   onChange,
   placeholder,
   variant = 'page',
+  compact,
 }) => (
   <div className="relative">
     <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -246,7 +247,7 @@ export const SearchField: React.FC<{ value: string; onChange: (v: string) => voi
       className={
         variant === 'sheet'
           ? 'w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 select-text [&::-webkit-search-cancel-button]:hidden'
-          : 'w-full h-11 pl-10 pr-9 bg-white border border-slate-200 rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 shadow-2xs select-text [&::-webkit-search-cancel-button]:hidden'
+          : `w-full ${compact ? 'h-10' : 'h-11'} pl-10 pr-9 bg-white border border-slate-200 rounded-xl text-xs font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-hidden focus:border-[#2F68FE] focus:ring-4 focus:ring-blue-50 shadow-2xs select-text [&::-webkit-search-cancel-button]:hidden`
       }
     />
     {value &&

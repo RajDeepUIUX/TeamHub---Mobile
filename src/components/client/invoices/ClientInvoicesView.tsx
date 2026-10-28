@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Briefcase, ChevronRight, Download, FileDown, FolderSearch, GraduationCap, Loader2, ReceiptText, SearchX, X } from 'lucide-react';
+import { Briefcase, Download, FileDown, FolderSearch, GraduationCap, Loader2, ReceiptText, SearchX, X } from 'lucide-react';
 import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { ScreenHeader, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
@@ -178,6 +178,8 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
   /* ---------- Ledger cards (divided rows, amount footer, segmented actions) ---------- */
   const invoiceCard = (inv: ClientInvoice) => {
     const { isManual, lineCount, showPdf, showEmployees } = cardData(inv);
+    const actBtn =
+      'h-8 px-2.5 rounded-lg border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] flex items-center justify-center gap-1 whitespace-nowrap active:bg-blue-50 transition-colors cursor-pointer';
     return (
       <li key={inv.id} className="bg-white border border-[#EBF0F7] rounded-2xl overflow-hidden shadow-2xs">
         <dl>
@@ -227,29 +229,23 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
         </dl>
 
         {(showPdf || showEmployees) && (
-          <div className="flex divide-x divide-slate-100 border-t border-slate-100">
+          <div className="px-4 py-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
             {showPdf && (
               <button
                 type="button"
                 onClick={() => downloadPdf(inv)}
                 disabled={busy !== null}
                 aria-label={`Download invoice ${inv.invoiceNo}`}
-                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 active:bg-slate-50 disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
+                className={`${actBtn} disabled:opacity-60 disabled:cursor-wait`}
               >
-                {pdfBusy(inv) ? <Loader2 className="w-4 h-4 animate-spin text-[#2F68FE]" /> : <FileDown className="w-4 h-4 text-[#2F68FE]" />}
+                {pdfBusy(inv) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
                 Invoice
               </button>
             )}
             {showEmployees && (
-              <button
-                type="button"
-                onClick={() => openInvoice(inv)}
-                aria-label={`View invoice details for ${inv.invoiceNo}`}
-                className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer"
-              >
-                <FolderSearch className="w-4 h-4" />
+              <button type="button" onClick={() => openInvoice(inv)} aria-label={`View invoice details for ${inv.invoiceNo}`} className={`ml-auto ${actBtn}`}>
+                <FolderSearch className="w-3.5 h-3.5" />
                 Invoice Details
-                <ChevronRight className="w-3.5 h-3.5 -ml-0.5" />
               </button>
             )}
           </div>
@@ -339,19 +335,19 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
       </nav>
 
       {isHrms && (
-        <div className="px-4 pt-3.5">
-          <div className="flex items-center gap-2.5">
+        <div className="px-4 pt-3">
+          <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
-              <SearchField value={query} onChange={onSearch} placeholder="Search By Invoice No" />
+              <SearchField compact value={query} onChange={onSearch} placeholder="Search By Invoice No" />
             </div>
-            <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
+            <FilterIconButton compact count={filterCount} onClick={() => setFilterOpen(true)} />
             {canDownload && (
               <button
                 type="button"
                 onClick={() => setExportOpen(true)}
                 disabled={loading}
                 aria-label="Export"
-                className="h-11 px-3 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 disabled:opacity-60 transition-colors shrink-0 cursor-pointer"
+                className="h-10 px-3 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-[11px] font-bold flex items-center gap-1.5 active:bg-blue-50 disabled:opacity-60 transition-colors shrink-0 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CalendarPlus, CalendarRange, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw, SearchX, SlidersHorizontal, X } from 'lucide-react';
+import { CalendarPlus, CalendarRange, CheckCircle2, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw, SearchX, X } from 'lucide-react';
 import {
   ClientSurvey,
   FEEDBACK_PAGE_SIZE,
@@ -13,6 +13,7 @@ import {
   surveyStatus,
   todayIso,
 } from '../data/clientFeedbackData';
+import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
 import { ScreenHeader, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { EMPTY_FEEDBACK_FILTERS, FeedbackFilterSheet, FeedbackFilters, feedbackFilterCount } from './FeedbackFilterSheet';
@@ -231,7 +232,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
         <button
           type="button"
           onClick={() => open(s)}
-          className="h-9 px-3.5 rounded-xl bg-[#2F68FE] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-xs active:bg-[#1D4ED8] transition-colors shrink-0 cursor-pointer"
+          className={outline}
         >
           {status === 'In Progress' ? <RotateCw className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
           {status === 'In Progress' ? 'Resume Survey' : 'Start Survey'}
@@ -400,24 +401,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
             </>
           )}
         </span>
-        <button
-          type="button"
-          onClick={() => setFilterOpen(true)}
-          aria-label={filterCount ? `Filters (${filterCount} applied)` : 'Filters'}
-          className={`h-9 pl-2.5 pr-2 rounded-xl border text-[#2F68FE] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
-            filterCount > 0 ? 'bg-blue-50 border-[#2F68FE]' : 'bg-white border-slate-200 active:bg-blue-50'
-          }`}
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          Filter
-          {filterCount > 0 ? (
-            <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#2F68FE] text-white text-[10px] font-bold flex items-center justify-center">
-              {filterCount}
-            </span>
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
-          )}
-        </button>
+        <FilterIconButton compact count={filterCount} onClick={() => setFilterOpen(true)} />
       </div>
 
       {applied.length > 0 && (

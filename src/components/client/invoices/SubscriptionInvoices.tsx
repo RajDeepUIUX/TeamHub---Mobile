@@ -57,9 +57,9 @@ export const SubscriptionInvoices: React.FC<{ canDownload: boolean; onNotice: (m
           onClick={() => download(a.key, a.file)}
           disabled={busy !== null}
           aria-label={a.aria}
-          className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
+          className="last:ml-auto h-8 px-2.5 rounded-lg border border-[#2F68FE] bg-white text-[11px] font-bold text-[#2F68FE] flex items-center justify-center gap-1 whitespace-nowrap active:bg-blue-50 disabled:opacity-60 disabled:cursor-wait transition-colors cursor-pointer"
         >
-          {busy === a.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+          {busy === a.key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
           {a.label}
         </button>
       );
@@ -94,7 +94,7 @@ export const SubscriptionInvoices: React.FC<{ canDownload: boolean; onNotice: (m
         ))}
       </dl>
 
-      {canDownload && <div className="flex divide-x divide-slate-100 border-t border-slate-100">{actions(s)}</div>}
+      {canDownload && <div className="px-4 py-2.5 border-t border-slate-100 flex items-center justify-between gap-2">{actions(s)}</div>}
     </li>
   );
 
