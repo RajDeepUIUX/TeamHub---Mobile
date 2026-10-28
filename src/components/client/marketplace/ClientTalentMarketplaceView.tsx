@@ -643,7 +643,7 @@ export const ClientTalentMarketplaceView: React.FC<Props> = ({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`shrink-0 h-7 pl-2.5 pr-1 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
+      className={`shrink-0 h-9 pl-3 pr-1.5 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE] ${
         on ? 'bg-[#2F68FE] border-[#2F68FE] text-white' : 'bg-white border-slate-200 text-slate-600 active:bg-slate-50'
       }`}
     >

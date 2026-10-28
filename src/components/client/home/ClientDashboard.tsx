@@ -1051,37 +1051,35 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-6 space-y-4">
         {/* Greeting card: greeting + Hire New Staff on the Sign In button gradient */}
-        <section className="relative isolate overflow-hidden bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] rounded-2xl p-4 text-white shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)]">
-          <span aria-hidden="true" className="absolute -z-10 -top-14 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-          <span aria-hidden="true" className="absolute -z-10 -bottom-16 -left-10 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-          <div className="flex items-start justify-between gap-3">
+        <section className="relative isolate overflow-hidden bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] rounded-2xl p-3 text-white shadow-[0_10px_20px_-10px_rgba(99,91,250,0.6)]">
+          <span aria-hidden="true" className="absolute -z-10 -top-12 -right-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+          <span aria-hidden="true" className="absolute -z-10 -bottom-14 -left-8 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm text-white/80 font-medium">{greetingFor(now)},</p>
-              <h1 className="text-2xl font-extrabold text-white leading-tight truncate">{firstName}.</h1>
+              <p className="text-[11px] text-white/80 font-medium leading-tight">{greetingFor(now)},</p>
+              <h1 className="text-lg font-extrabold text-white leading-tight truncate">{firstName}.</h1>
             </div>
-            <div className="shrink-0 flex flex-col items-end gap-1.5">
-              <span className="h-6 px-2.5 rounded-full bg-white/15 border border-white/20 text-white text-[11px] font-semibold flex items-center gap-1 tabular-nums">
-                <CalendarDays className="w-3 h-3 text-white/80" aria-hidden="true" />
-                {dateLabel}
-              </span>
-            </div>
+            <span className="shrink-0 h-5 px-2 rounded-full bg-white/15 border border-white/20 text-white text-[10px] font-semibold flex items-center gap-1 tabular-nums">
+              <CalendarDays className="w-3 h-3 text-white/80" aria-hidden="true" />
+              {dateLabel}
+            </span>
           </div>
 
           {onHireNewStaff && (
             <button
               type="button"
               onClick={onHireNewStaff}
-              className="mt-4 w-full p-3 rounded-xl bg-white text-left flex items-center gap-3 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.5)] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="mt-2.5 w-full px-2.5 py-2 rounded-xl bg-white text-left flex items-center gap-2.5 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.5)] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
-              <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
-                <UserPlus className="w-5 h-5" />
+              <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-[#2F68FE] flex items-center justify-center shrink-0">
+                <UserPlus className="w-4 h-4" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-sm font-bold text-[#1E293B] leading-tight">Hire New Staff</span>
-                <span className="block mt-0.5 text-[11px] text-slate-500 leading-snug">Browse ready-to-hire profiles in the Talent Marketplace</span>
+                <span className="block text-[13px] font-bold text-[#1E293B] leading-tight">Hire New Staff</span>
+                <span className="block text-[10px] text-slate-500 leading-snug truncate">Browse ready-to-hire profiles in the Talent Marketplace</span>
               </span>
-              <span className="w-8 h-8 rounded-full bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white flex items-center justify-center shrink-0">
-                <ChevronRight className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-full bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white flex items-center justify-center shrink-0">
+                <ChevronRight className="w-3.5 h-3.5" />
               </span>
             </button>
           )}
