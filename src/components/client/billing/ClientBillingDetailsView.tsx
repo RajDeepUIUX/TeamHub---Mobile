@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CreditCard, Eye, EyeOff, Info, Landmark, Loader2, Lock, Pencil, Plus, Save, Trash2, Zap } from 'lucide-react';
+import { Briefcase, CreditCard, Eye, EyeOff, GraduationCap, Info, Landmark, Loader2, Lock, Pencil, Plus, Trash2, Zap } from 'lucide-react';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { ScreenHeader, ConfirmSheet, InfoSheet, Pill } from '../staff/tabs/StaffTabParts';
 import { useTimesheetNotice } from '../timesheets/TimesheetParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
 import {
+  BillingCreditCard,
   BillingDetails,
+  CE_SUBSCRIPTION,
   PAYMENT_TYPE_LABEL,
   PaymentMappingRow,
-  REVEAL_MS,
   billableStaffOf,
   billingCountryOf,
   isMappingComplete,
-  mappingsEqual,
   methodLabel,
   needsMethodStaffIds,
   newBillingId,
@@ -27,7 +27,6 @@ import {
   CountPill,
   CreditCardTile,
   MappedStaffSheet,
-  MappingRing,
   MethodIcon,
   StaffSelectField,
   StepHeader,
@@ -48,6 +47,12 @@ interface Props {
 }
 
 type PaneTab = 'bank' | 'card' | 'direct';
+/** Desktop Billing service tabs (`billingServices`) */
+type BillingService = 'continuing-education' | 'hrms';
+const BILLING_SERVICES: { id: BillingService; label: string; icon: React.ElementType }[] = [
+  { id: 'continuing-education', label: 'Continuing Education', icon: GraduationCap },
+  { id: 'hrms', label: 'HRMS 24 × 7 (Offshoring)', icon: Briefcase },
+];
 type DeleteTarget = { kind: 'bank' | 'card'; id: string };
 type VerifyThen = { purpose: string; then: () => void };
 
@@ -57,15 +62,20 @@ const SUBMIT_MS = 900;
 const listNames = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? ''));
 
 /**
- * Invoices › Billing Details — MyCPE ONE "Billing → HRMS (Offshoring)" (data in system C via `HrmsPaymentService`):
+ * Invoices › Billing Details — MyCPE ONE "Billing" with the desktop service tabs:
+ * Continuing Education (subscription card + Payment Information) and HRMS (Offshoring) (data in system C via `HrmsPaymentService`):
  * 1 Payment Information (Bank Details / Credit Card / Direct Pay, portal password to view or edit bank details)
- * 2 Payment Mapping (each staff member → one saved payment method; Save As Draft / Submit Mapping).
+ * 2 Payment Mapping (each staff member → one saved payment method; Submit Mapping).
  */
 export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, country, userName, onChange, onBack }) => {
   // `is_view` = see bank numbers; `is_add` = add bank / card; `is_edit` = edit bank, Direct Pay, mapping; `is_delete` = remove methods
   const { view: canView, add: canAdd, edit: canEdit, delete: canDelete } = useClientPermission('billing-details');
 
   const [loading, setLoading] = useState(true);
+  const [service, setService] = useState<BillingService>('hrms');
+  const [ceCards, setCeCards] = useState<BillingCreditCard[]>([]);
+  const [ceAddOpen, setCeAddOpen] = useState(false);
+  const [ceDeleteId, setCeDeleteId] = useState<string | null>(null);
   const [tab, setTab] = useState<PaneTab>('bank');
   const [revealed, setRevealed] = useState(false);
   const [verify, setVerify] = useState<VerifyThen | null>(null);
@@ -78,26 +88,19 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   const [removeRowId, setRemoveRowId] = useState<string | null>(null);
   const [disableDirect, setDisableDirect] = useState(false);
   const [directBusy, setDirectBusy] = useState(false);
-  const [submitting, setSubmitting] = useState<'draft' | 'submit' | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   // Row kept while the sheet slides out
   const [staffSheet, setStaffSheet] = useState<{ rowId: string; open: boolean } | null>(null);
   const [notice, showNotice] = useTimesheetNotice();
   const mappingRef = useRef<HTMLElement>(null);
-  const revealTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const busyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), LOAD_MS);
     return () => clearTimeout(t);
   }, []);
-  useEffect(
-    () => () => {
-      clearTimeout(revealTimer.current);
-      clearTimeout(busyTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimeout(busyTimer.current), []);
 
   const countryCode = billingCountryOf(country);
   const billable = useMemo(() => billableStaffOf(staff), [staff]);
@@ -120,26 +123,18 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
   const mappedCount = billableIds.length - unmapped.length - needsMethod.length;
   const hasPayment = billing.banks.length > 0 || billing.cards.length > 0 || billing.directPayEnabled;
   const rows = billing.mappings.filter((r) => r.staffIds.length);
-  const dirty = !mappingsEqual(billing.mappings, billing.submittedMappings);
   const staffOnMethod = (type: PaymentMappingRow['type'], id: string | null) =>
     billing.mappings.filter((r) => r.type === type && (type === 'direct' || r.methodId === id)).reduce((n, r) => n + r.staffIds.length, 0);
   const directMapped = staffOnMethod('direct', null);
 
   /* ---------- Bank details reveal (portal password) ---------- */
-  const reveal = () => {
-    setRevealed(true);
-    clearTimeout(revealTimer.current);
-    revealTimer.current = setTimeout(() => setRevealed(false), REVEAL_MS);
-  };
-  const hide = () => {
-    clearTimeout(revealTimer.current);
-    setRevealed(false);
-  };
+  const reveal = () => setRevealed(true);
+  const hide = () => setRevealed(false);
   const withVerify = (purpose: string, then: () => void) => (revealed ? then() : setVerify({ purpose, then }));
 
   /* ---------- Mapping changes (working copy; Submit sends it) ---------- */
   const setMappings = (mappings: PaymentMappingRow[], patch: Partial<BillingDetails> = {}) => {
-    onChange({ ...billing, ...patch, mappings, draftSavedAt: null });
+    onChange({ ...billing, ...patch, mappings });
   };
 
   const openNewMapping = (staffIds: string[] = []) =>
@@ -155,16 +150,7 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
     showNotice(`${row.staffIds.length} staff mapped to ${methodLabel(billing, row.type, row.methodId)}. Submit to save.`);
   };
 
-  const submitMapping = (asDraft: boolean) => {
-    if (asDraft) {
-      setSubmitting('draft');
-      busyTimer.current = setTimeout(() => {
-        setSubmitting(null);
-        onChange({ ...billing, draftSavedAt: new Date().toISOString() });
-        showNotice('Draft saved. Submit Mapping once every staff member is mapped.');
-      }, 600);
-      return;
-    }
+  const submitMapping = () => {
     // Desktop checks: every row complete, at least one row, nobody left unmapped
     const incomplete = rows.filter((r) => !isMappingComplete(billing, r)).map((r) => r.id);
     if (unmapped.length) {
@@ -184,16 +170,15 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
       });
       return;
     }
-    setSubmitting('submit');
+    setSubmitting(true);
     busyTimer.current = setTimeout(() => {
-      setSubmitting(null);
+      setSubmitting(false);
       onChange({
         ...billing,
         mappings: rows,
         submittedMappings: rows,
         submittedAt: new Date().toISOString(),
         submittedBy: userName,
-        draftSavedAt: null,
       });
       showNotice('Payment mapping saved successfully.');
     }, SUBMIT_MS);
@@ -210,7 +195,6 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
       banks: kind === 'bank' ? billing.banks.filter((b) => b.id !== id) : billing.banks,
       cards: kind === 'card' ? billing.cards.filter((c) => c.id !== id) : billing.cards,
       mappings,
-      draftSavedAt: null,
     });
     setDeleteTarget(null);
     showNotice('Payment method deleted successfully.');
@@ -303,12 +287,6 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
           <span className="block text-[11px] font-medium text-slate-500">Select Staff(s)</span>
           <StaffSelectField staff={chipsFor(r.staffIds)} onOpen={() => setStaffSheet({ rowId: r.id, open: true })} />
         </div>
-        {!complete && (
-          <p className="px-3.5 py-2 bg-[#FFF1F2] border-t border-[#FECDD3] flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            {r.type === 'direct' ? 'Direct Pay is disabled — pick another method.' : 'Its payment method was removed — pick another.'}
-          </p>
-        )}
         {canEdit && (
           <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
             <button
@@ -338,19 +316,91 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
       <ScreenHeader title="Billing Details" onBack={onBack} />
       {notice}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
+        <nav aria-label="Billing services" className="border-b border-slate-200/80">
+          <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
+            {BILLING_SERVICES.map((s) => {
+              const Icon = s.icon;
+              const on = s.id === service;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setService(s.id)}
+                  className={`relative h-12 px-3 flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    on ? 'text-[#2F68FE]' : 'text-slate-500 active:text-[#1E293B]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {s.label}
+                  <span
+                    className={`absolute left-2 right-2 bottom-0 h-[3px] rounded-t-full bg-[#2F68FE] transition-opacity duration-200 ${on ? 'opacity-100' : 'opacity-0'}`}
+                    aria-hidden
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </nav>
         <div className="px-4 pt-4 space-y-4">
-          {!canEdit && (
-            <p className="flex items-center gap-2 p-3.5 rounded-2xl border border-[#EBF0F7] bg-white shadow-2xs text-xs font-medium text-slate-500">
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              View only — your role can't change billing details.
-            </p>
-          )}
+          {service === 'continuing-education' ? (
+            <>
+              <section aria-label="Subscription" className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-2">
+                <div className="p-4 rounded-xl bg-[#EEF2FF]">
+                  <p className="text-[11px] font-bold tracking-wide text-[#2F68FE] leading-snug">{CE_SUBSCRIPTION.name}</p>
+                  <p className="mt-1.5 text-2xl font-extrabold text-[#1E293B] leading-tight">
+                    {CE_SUBSCRIPTION.price} per user <span className="text-sm font-medium text-slate-600">/ 12 months</span>
+                  </p>
+                  <span className="mt-3 inline-flex h-7 px-3 rounded-full bg-[#1E293B] text-white text-[11px] font-bold items-center">
+                    Active Users - {CE_SUBSCRIPTION.activeUsers}
+                  </span>
+                </div>
+                <div className="px-2.5 pt-3.5 pb-2 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-slate-500">Complimentary Access</p>
+                    <p className="mt-0.5 text-sm font-bold text-[#1E293B]">Renewal Date :- {CE_SUBSCRIPTION.renewalDate}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showNotice('Buy Subscription opens the MyCPE ONE checkout.')}
+                    className="h-9 px-3 rounded-lg bg-[#EEF2FF] text-[#2F68FE] text-xs font-bold whitespace-nowrap shrink-0 active:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    Buy Subscription
+                  </button>
+                </div>
+              </section>
 
+              <BillingSection
+                ariaLabel="Payment Information"
+                header={
+                  <>
+                    <span className="block text-sm font-bold text-[#1E293B] leading-tight">Payment Information</span>
+                    <span className="block mt-0.5 text-[11px] font-medium text-slate-500 leading-snug">Add and manage payment methods</span>
+                  </>
+                }
+              >
+                <div className="space-y-2.5">
+                  {canAdd && <AddTile label="Add Payment Method" onClick={() => setCeAddOpen(true)} />}
+                  {ceCards.length > 0 ? (
+                    <ul className="space-y-2.5">
+                      {ceCards.map((c) => (
+                        <CreditCardTile key={c.id} card={c} onDelete={canDelete ? () => setCeDeleteId(c.id) : undefined} />
+                      ))}
+                    </ul>
+                  ) : (
+                    !canAdd && noData
+                  )}
+                </div>
+              </BillingSection>
+            </>
+          ) : (
+            <>
           {/* 1 Payment Information */}
           <BillingSection
             ariaLabel="Payment Information"
             header={
-              <StepHeader step={1} title="Payment Information" text="Add and manage payment methods" done={hasPayment}>
+              <StepHeader step={1} title="Payment Information" text="Add and manage payment methods">
                 <span className="mt-1.5 flex flex-wrap gap-1">
                   <CountPill icon={Landmark}>
                     {billing.banks.length} {billing.banks.length === 1 ? 'Bank' : 'Banks'}
@@ -473,7 +523,6 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
                 step={2}
                 title="Payment Mapping"
                 text="Assign Saved payment methods to Staff"
-                done={hasPayment && allMapped && !dirty && Boolean(billing.submittedAt)}
                 aside={
                   <button
                     type="button"
@@ -499,59 +548,49 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
               </div>
             ) : (
               <>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3.5">
-                  <MappingRing mapped={mappedCount} total={billableIds.length} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[10px] font-bold tracking-wider text-slate-400">STATUS OVERVIEW</span>
-                    <span className={`block mt-1 text-sm font-bold tabular-nums ${allMapped ? 'text-[#10B981]' : 'text-[#1E293B]'}`}>
+                {rows.length > 0 ? <ul className="space-y-2.5">{rows.map(mappingRow)}</ul> : noData}
+
+                <div className="mt-3 flex flex-col items-center gap-2">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => openNewMapping()}
+                      disabled={!unmapped.length}
+                      className="h-9 flex items-center gap-1.5 text-xs font-bold text-[#2F68FE] cursor-pointer disabled:text-slate-400 disabled:cursor-not-allowed"
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${unmapped.length ? 'bg-[#2F68FE] text-white' : 'border border-slate-300 text-slate-400'}`}
+                        aria-hidden="true"
+                      >
+                        <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </span>
+                      Add Payment Mapping
+                    </button>
+                  )}
+                  <p className="h-8 px-3 rounded-lg bg-[#EEF2FF] flex items-center gap-1 text-[11px] font-medium text-slate-600 whitespace-nowrap">
+                    Status Overview :
+                    <span className={`font-bold tabular-nums ${allMapped ? 'text-[#10B981]' : 'text-[#1E293B]'}`}>
                       {mappedCount} / {billableIds.length} Staff Mapped
                     </span>
-                  </span>
+                  </p>
                 </div>
-
-                {rows.length > 0 ? <ul className="mt-3 space-y-2.5">{rows.map(mappingRow)}</ul> : noData}
-
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => openNewMapping()}
-                    disabled={!unmapped.length}
-                    className="mt-3 w-full h-12 rounded-xl border border-dashed border-[#2F68FE]/50 bg-blue-50/40 text-xs font-bold text-[#2F68FE] flex items-center justify-center gap-2 transition-colors cursor-pointer active:border-[#2F68FE] active:bg-blue-50 disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
-                  >
-                    {unmapped.length ? (
-                      <span className="w-6 h-6 rounded-lg bg-[#2F68FE] text-white flex items-center justify-center shrink-0" aria-hidden="true">
-                        <Plus className="w-4 h-4" strokeWidth={2.5} />
-                      </span>
-                    ) : null}
-                    {unmapped.length ? 'Add Payment Mapping' : 'All staff have mapped payment details.'}
-                  </button>
-                )}
-
-                {canEdit && (
-                  <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => submitMapping(true)}
-                      disabled={!dirty || Boolean(submitting) || Boolean(billing.draftSavedAt)}
-                      className="h-12 rounded-xl border border-[#2F68FE] text-[#2F68FE] text-xs font-bold bg-white flex items-center justify-center gap-2 transition-colors active:bg-blue-50 cursor-pointer disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
-                    >
-                      {submitting === 'draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      Save As Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => submitMapping(false)}
-                      disabled={Boolean(submitting)}
-                      className="h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-colors active:bg-[#1D4ED8] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-                    >
-                      {submitting === 'submit' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {submitting === 'submit' ? 'Submitting…' : 'Submit Mapping'}
-                    </button>
-                  </div>
-                )}
               </>
             )}
           </BillingSection>
+
+          {canEdit && hasPayment && (
+            <button
+              type="button"
+              onClick={submitMapping}
+              disabled={submitting}
+              className="w-full h-12 rounded-xl bg-[#2F68FE] text-white text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-colors active:bg-[#1D4ED8] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitting ? 'Submitting…' : 'Submit Mapping'}
+            </button>
+          )}
+            </>
+          )}
         </div>
       </div>
 
@@ -634,6 +673,35 @@ export const ClientBillingDetailsView: React.FC<Props> = ({ billing, staff, coun
           setRemoveRowId(null);
         }}
         onClose={() => setRemoveRowId(null)}
+      />
+      <PaymentMethodSheet
+        isOpen={ceAddOpen}
+        target={ceAddOpen ? { kind: 'card' } : null}
+        billing={{ ...billing, cards: ceCards }}
+        country={countryCode}
+        onClose={() => setCeAddOpen(false)}
+        onSave={(m) => {
+          setCeAddOpen(false);
+          if (m.kind !== 'card') return;
+          setCeCards((cards) => [...cards, m.card]);
+          showNotice('Payment method added successfully.');
+        }}
+      />
+      <ConfirmSheet
+        isOpen={ceDeleteId !== null}
+        title="Delete Payment Method?"
+        message={(() => {
+          const c = ceCards.find((x) => x.id === ceDeleteId);
+          return `Are you sure? This will permanently remove ${c ? `${c.cardType} •••• ${c.lastFour}` : 'this payment method'}.`;
+        })()}
+        confirmLabel="Confirm Delete"
+        danger
+        onConfirm={() => {
+          setCeCards((cards) => cards.filter((c) => c.id !== ceDeleteId));
+          setCeDeleteId(null);
+          showNotice('Payment method deleted successfully.');
+        }}
+        onClose={() => setCeDeleteId(null)}
       />
       <ConfirmSheet
         isOpen={disableDirect}

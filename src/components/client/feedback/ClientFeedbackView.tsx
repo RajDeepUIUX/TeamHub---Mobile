@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CalendarPlus, CalendarRange, CheckCircle2, ChevronRight, ClipboardCheck, Download, Eye, Hourglass, Loader2, Play, RotateCw, SearchX, SlidersHorizontal, X } from 'lucide-react';
-import { FilterIconButton } from '../../common/TeamFilterSheet';
 import {
   ClientSurvey,
   FEEDBACK_PAGE_SIZE,
@@ -15,7 +14,7 @@ import {
   todayIso,
 } from '../data/clientFeedbackData';
 import { StaffSkeleton } from '../staff/ClientStaffParts';
-import { ScreenHeader, Card, DesignVersion, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
+import { ScreenHeader, EmptyCard } from '../staff/tabs/StaffTabParts';
 import { EMPTY_FEEDBACK_FILTERS, FeedbackFilterSheet, FeedbackFilters, feedbackFilterCount } from './FeedbackFilterSheet';
 import { SurveyFormView } from './SurveyFormView';
 import { SurveyIntroView } from './SurveyIntroView';
@@ -35,56 +34,33 @@ interface ClientFeedbackViewProps {
 }
 
 const LOAD_MS = 600;
-const DESIGN_VERSIONS = ['V1', 'V2'] as const;
 
-const ListSkeleton: React.FC<{ v2: boolean }> = ({ v2 }) => (
-  <div className={v2 ? 'space-y-4' : 'space-y-3'} aria-busy="true" aria-label="Loading surveys">
-    {[0, 1, 2].map((i) =>
-      v2 ? (
-        <div key={i} className="bg-white rounded-[20px] overflow-hidden border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-          <div className="p-3.5 flex items-center gap-2.5">
-            <StaffSkeleton className="w-10 h-10 rounded-xl" />
-            <StaffSkeleton className="flex-1 h-4" />
-            <StaffSkeleton className="w-16 h-5 rounded-md" />
-          </div>
-          <div className="mx-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-            <StaffSkeleton className="w-10 h-10 rounded-full" />
-            <StaffSkeleton className="flex-1 h-4" />
-          </div>
-          <div className="p-3.5 grid grid-cols-3 gap-3">
-            <StaffSkeleton className="h-9 rounded-lg" />
-            <StaffSkeleton className="h-9 rounded-lg" />
-            <StaffSkeleton className="h-9 rounded-lg" />
-          </div>
+const ListSkeleton: React.FC = () => (
+  <div className="space-y-4" aria-busy="true" aria-label="Loading surveys">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="bg-white rounded-[20px] overflow-hidden border border-[#EBF0F7] shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+        <div className="p-3.5 flex items-center gap-2.5">
+          <StaffSkeleton className="w-10 h-10 rounded-xl" />
+          <StaffSkeleton className="flex-1 h-4" />
+          <StaffSkeleton className="w-16 h-5 rounded-md" />
         </div>
-      ) : (
-        <div key={i} className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 space-y-1.5">
-              <StaffSkeleton className="w-40 h-3.5" />
-              <StaffSkeleton className="w-28 h-3" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <StaffSkeleton className="h-11 rounded-xl" />
-            <StaffSkeleton className="h-11 rounded-xl" />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <StaffSkeleton className="h-11 rounded-xl" />
-            <StaffSkeleton className="h-11 rounded-xl" />
-            <StaffSkeleton className="h-11 rounded-xl" />
-          </div>
+        <div className="mx-3.5 p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+          <StaffSkeleton className="w-10 h-10 rounded-full" />
+          <StaffSkeleton className="flex-1 h-4" />
         </div>
-      ),
-    )}
+        <div className="p-3.5 grid grid-cols-3 gap-3">
+          <StaffSkeleton className="h-9 rounded-lg" />
+          <StaffSkeleton className="h-9 rounded-lg" />
+          <StaffSkeleton className="h-9 rounded-lg" />
+        </div>
+      </div>
+    ))}
   </div>
 );
 
 /** Desktop "Feedback & Evaluation" (hbrreports): every survey assigned to the client, with Start / Resume / View / PDF */
 export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys, userName, onUpdate, onBack }) => {
   const [screen, setScreen] = useState<Screen>({ mode: 'list' });
-  const [version, setVersion] = useState<DesignVersion>('V1');
-  const v2 = version === 'V2';
   // Back from a survey returns to the same place in the list
   const listRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
@@ -300,70 +276,8 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
       <span className={`font-bold text-[#1E293B] leading-snug ${size}`}>{SURVEY_TYPE_LABEL[s.type]}</span>
     );
 
-  /** V1 — soft card: title head, staff / period chips, date tiles, pill actions */
-  const cardV1 = (s: ClientSurvey) => {
-    const { status, clickable, expires, tone } = cardInfo(s);
-    const expiresTile =
-      tone === 'expired'
-        ? 'bg-[#FEF2F2] border-rose-100 text-rose-600'
-        : tone === 'soon'
-          ? 'bg-[#FEF8E7] border-amber-100 text-[#D97706]'
-          : 'bg-slate-50 border-slate-100 text-[#1E293B]';
-    return (
-      <li key={s.id}>
-        <Card className="overflow-hidden">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <span className="flex-1 min-w-0">{surveyTitle(s, clickable, 'text-sm')}</span>
-              <span className="shrink-0">
-                <SurveyStatusPill status={status} />
-              </span>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {[
-                { label: 'Staff Name', value: s.staffName ?? '-' },
-                { label: 'Period', value: s.period ?? '-' },
-              ].map(({ label, value }) => (
-                <div key={label} className="min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="block text-[10px] font-semibold text-slate-400">{label}</span>
-                  <span className="block text-xs font-bold text-[#1E293B] truncate">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            <dl className="mt-2 grid grid-cols-3 gap-2">
-              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                <dt className="text-[10px] font-semibold text-slate-400">Assigned On</dt>
-                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] tabular-nums leading-snug">{formatSurveyDate(s.assignedOn)}</dd>
-              </div>
-              <div className="min-w-0 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                <dt className="text-[10px] font-semibold text-slate-400">Submitted On</dt>
-                <dd className="mt-0.5 text-xs font-bold text-[#1E293B] tabular-nums leading-snug">
-                  {s.submittedOn ? formatSurveyDate(s.submittedOn) : '-'}
-                </dd>
-              </div>
-              <div className={`min-w-0 px-2.5 py-2 rounded-xl border ${expiresTile}`}>
-                <dt className="text-[10px] font-semibold text-slate-400">Expires In</dt>
-                <dd className="mt-0.5 text-xs font-bold tabular-nums leading-snug">{expires}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-2">
-            <span className="flex-1 min-w-0">
-              <span className="block text-[10px] font-semibold text-slate-400">Submitted By</span>
-              <span className="block text-xs font-bold text-[#1E293B] truncate">{s.completed ? s.assignedTo : '-'}</span>
-            </span>
-            {actionButton(s)}
-          </div>
-        </Card>
-      </li>
-    );
-  };
-
-  /** V2 — person-card layout: type header, staff summary panel, stepper Assigned → Submitted → Expires, Submitted By footer + compact actions */
-  const cardV2 = (s: ClientSurvey) => {
+  /** Person-card layout: type header, staff summary panel, stepper Assigned → Submitted → Expires, Submitted By footer + compact actions */
+  const card = (s: ClientSurvey) => {
     const { status, clickable, expires, tone } = cardInfo(s);
     const hasExpiry = expires !== '-';
     const upcoming = 'bg-white text-slate-400 border border-slate-300';
@@ -399,11 +313,8 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
                 <span className="block text-[11px] font-medium text-slate-400">Survey Type</span>
                 <span className="block mt-0.5">{surveyTitle(s, clickable, 'text-sm')}</span>
               </span>
-              <span className="shrink-0 pt-0.5 flex flex-col items-end">
-                <span className="text-[11px] font-medium text-slate-400">Status</span>
-                <span className="mt-0.5">
-                  <SurveyStatusPill status={status} />
-                </span>
+              <span className="shrink-0 pt-0.5">
+                <SurveyStatusPill status={status} />
               </span>
             </div>
           </div>
@@ -455,11 +366,11 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
   };
 
   const appliedChips = (
-    <div className={v2 ? 'flex flex-wrap gap-1.5' : 'flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar'} aria-label="Applied filters">
+    <div className="flex flex-wrap gap-1.5" aria-label="Applied filters">
       {applied.map((a) => (
         <span
           key={a.key}
-          className={`shrink-0 h-7 pl-2.5 pr-1 rounded-full border border-blue-100 bg-blue-50 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 ${v2 ? 'max-w-full' : ''}`}
+          className={`shrink-0 h-7 pl-2.5 pr-1 rounded-full border border-blue-100 bg-blue-50 text-[11px] font-semibold text-[#2F68FE] flex items-center gap-1 max-w-full`}
         >
           {a.label}
           <button
@@ -475,37 +386,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
     </div>
   );
 
-  const toolbarV1 = (
-    <div className="px-4 pt-3">
-      <div className="flex items-center gap-2.5">
-        <div className="flex-1 min-w-0">
-          <SearchField
-            value={query}
-            onChange={(v) => {
-              setQuery(v);
-              setPages(1);
-            }}
-            placeholder="Search by survey, staff or period"
-          />
-        </div>
-        <FilterIconButton count={filterCount} onClick={() => setFilterOpen(true)} />
-      </div>
-      {applied.length > 0 && (
-        <div className="mt-2.5 flex items-center gap-2">
-          {appliedChips}
-          <button
-            type="button"
-            onClick={clearAll}
-            className="shrink-0 h-7 px-2 rounded-lg text-[11px] font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer"
-          >
-            Clear All
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  const toolbarV2 = (
+  const toolbar = (
     <div className="px-4 pt-3">
       <div className="h-14 pl-2.5 pr-2.5 rounded-2xl bg-white border border-[#EBF0F7] shadow-2xs flex items-center gap-2.5">
         <span className="w-9 h-9 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0" aria-hidden="true">
@@ -557,13 +438,13 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
 
   return (
     <div className="relative flex-1 flex flex-col bg-[#F8FAFC] text-[#1E293B] overflow-hidden select-none">
-      <ScreenHeader title="Feedback & Evaluation" onBack={onBack} version={{ versions: DESIGN_VERSIONS, value: version, onChange: setVersion }} />
+      <ScreenHeader title="Feedback & Evaluation" onBack={onBack} />
       <div ref={listRef} className="flex-1 overflow-y-auto no-scrollbar pb-6">
-        {v2 ? toolbarV2 : toolbarV1}
+        {toolbar}
 
         <div className="px-4 mt-4">
           {loading ? (
-            <ListSkeleton v2={v2} />
+            <ListSkeleton />
           ) : results.length === 0 ? (
             <EmptyCard
               icon={surveys.length === 0 ? ClipboardCheck : SearchX}
@@ -583,7 +464,7 @@ export const ClientFeedbackView: React.FC<ClientFeedbackViewProps> = ({ surveys,
             />
           ) : (
             <>
-              <ul className={v2 ? 'space-y-4' : 'space-y-3'}>{visible.map(v2 ? cardV2 : cardV1)}</ul>
+              <ul className="space-y-4">{visible.map(card)}</ul>
 
               {visible.length < results.length && (
                 <button

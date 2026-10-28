@@ -8,6 +8,7 @@ import {
   Building2,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleCheck,
   ClipboardCheck,
   Clock3,
@@ -35,7 +36,8 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react';
-import { Card, InfoSheet } from '../staff/tabs/StaffTabParts';
+import { Card, InfoSheet, SheetHeader } from '../staff/tabs/StaffTabParts';
+import { BottomSheet } from '../../common/BottomSheet';
 import { FileButton } from '../interviews/CandidateResumeView';
 import { CLIENT_IS_MOS } from '../data/clientTimesheetsData';
 import { CLIENT_ACCOUNT_MANAGER } from '../data/clientDashboardData';
@@ -176,8 +178,8 @@ const CopyButton: React.FC<{ value: string; label: string; onCopied: () => void 
 
 /**
  * Desktop Talent Profile (`staffingMarketplace&task=viewDetails`, 2026-10 redesign). Summary card (domain, AI match, level,
- * pre-vetted, experience / joining / work mode / country, Save · Compare · Download Resume), At a Glance (myCPE banner, Talent
- * Cost, facts), Availability, Your Account Manager, Hiring Details, Psychometric Test, AI-Upskilled Professional, Professional
+ * pre-vetted, experience / joining / work mode / country, Save · Download Resume), AI-Upskilled Professional, At a Glance (myCPE banner, Talent
+ * Cost, facts), Availability, Your Account Manager, Hiring Details, Psychometric Test, Professional
  * Summary, Total Experience, Technical / Software Skills, evaluation notes, Certificate (locked until an interview is scheduled),
  * myCPE Courses & Learning, Assessments Completed and the Video Profile (unlocked by Request to Hire).
  */
@@ -190,8 +192,6 @@ export const TalentProfileView: React.FC<Props> = ({
   canAdd,
   canDownload,
   compareCount,
-  inCompare,
-  onToggleCompare,
   onOpenCompare,
   onClearCompare,
   onBack,
@@ -204,6 +204,7 @@ export const TalentProfileView: React.FC<Props> = ({
   const [costOpen, setCostOpen] = useState(false);
   const [info, setInfo] = useState<'cost' | 'availability' | 'buyout' | null>(null);
   const [allCourses, setAllCourses] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const experience = experienceLabel(p);
   const pills = experiencePills(p);
@@ -304,17 +305,6 @@ export const TalentProfileView: React.FC<Props> = ({
                   {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={onToggleCompare}
-                aria-pressed={inCompare}
-                aria-label={inCompare ? 'Remove from Compare' : 'Add to Compare'}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2F68FE] ${
-                  inCompare ? 'text-[#2F68FE] bg-blue-50' : 'text-slate-500 active:bg-slate-100'
-                }`}
-              >
-                <Columns2 className="w-4 h-4" />
-              </button>
               {canDownload && (
                 <button
                   type="button"
@@ -349,6 +339,36 @@ export const TalentProfileView: React.FC<Props> = ({
             </li>
           </ul>
         </Card>
+
+        {/* AI-Upskilled Professional (compact — full detail opens in a bottom sheet) */}
+        {ai.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAiOpen(true)}
+            aria-haspopup="dialog"
+            className="relative isolate overflow-hidden w-full p-3.5 rounded-2xl bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white text-left flex items-center gap-3 shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+          >
+            <span aria-hidden="true" className="absolute -z-10 -top-14 -right-10 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+            <span className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 text-white flex items-center justify-center shrink-0" aria-hidden="true">
+              <WandSparkles className="w-5 h-5" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-white">
+                AI-Upskilled Professional
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-[10px] font-bold text-white">
+                  <Zap className="w-3 h-3" aria-hidden="true" />
+                  AI Ready
+                </span>
+              </span>
+              <span className="block mt-0.5 text-[11px] text-white/80">
+                {ai.length} AI &amp; automation course{ai.length === 1 ? '' : 's'} completed
+              </span>
+            </span>
+            <span className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0" aria-hidden="true">
+              <ChevronRight className="w-4 h-4" />
+            </span>
+          </button>
+        )}
 
         {/* At a Glance */}
         <Section icon={ListChecks} title="At a Glance">
@@ -521,41 +541,6 @@ export const TalentProfileView: React.FC<Props> = ({
 
         {p.hasPsychometricFile && canDownload && (
           <FileButton icon={Download} label="Download Psychometric Test" onClick={() => onNotice('Psychometric test downloaded.')} />
-        )}
-
-        {/* AI-Upskilled Professional */}
-        {ai.length > 0 && (
-          <Card className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0" aria-hidden="true">
-                <WandSparkles className="w-5 h-5" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-[#1E293B]">
-                  AI-Upskilled Professional
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#F5F3FF] text-[10px] font-bold text-[#7C3AED]">
-                    <Zap className="w-3 h-3" aria-hidden="true" />
-                    AI Ready
-                  </span>
-                </h3>
-                <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                  Has completed{' '}
-                  <strong className="font-bold text-[#1E293B]">
-                    {ai.length} AI &amp; automation course{ai.length === 1 ? '' : 's'}
-                  </strong>{' '}
-                  on the myCPE platform, trained to work alongside your firm&apos;s AI tools and accelerate research, review &amp; documentation.
-                </p>
-              </div>
-            </div>
-            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="AI courses">
-              {ai.map((c) => (
-                <li key={c.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-600">
-                  <Check className="w-3 h-3 text-[#7C3AED]" aria-hidden="true" />
-                  {c.name}
-                </li>
-              ))}
-            </ul>
-          </Card>
         )}
 
         {r.summary && (
@@ -767,12 +752,14 @@ export const TalentProfileView: React.FC<Props> = ({
 
         {/* Video Profile */}
         {showVideoLock ? (
-          <section className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-center">
-            <span className="mx-auto w-11 h-11 rounded-full bg-white border border-slate-200 text-slate-400 flex items-center justify-center" aria-hidden="true">
+          <section className="relative isolate overflow-hidden p-4 rounded-2xl bg-linear-to-r from-[#5B7BFA] to-[#7C5CFA] text-white text-center shadow-[0_12px_24px_-10px_rgba(99,91,250,0.6)]">
+            <span aria-hidden="true" className="absolute -z-10 -top-14 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
+            <span aria-hidden="true" className="absolute -z-10 -bottom-16 -left-10 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
+            <span className="mx-auto w-11 h-11 rounded-full bg-white/15 border border-white/20 text-white flex items-center justify-center" aria-hidden="true">
               <Lock className="w-5 h-5" />
             </span>
-            <h3 className="mt-2.5 text-sm font-bold text-[#1E293B]">Video Profile — Unlock by Requesting to Hire</h3>
-            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+            <h3 className="mt-2.5 text-sm font-bold text-white">Video Profile — Unlock by Requesting to Hire</h3>
+            <p className="mt-1 text-xs text-white/80 leading-relaxed">
               To protect candidates&apos; time, video introductions are revealed only to firms that have requested to hire them. Request to hire this candidate to
               unlock the video walkthrough of their experience and screening interview.
             </p>
@@ -780,7 +767,7 @@ export const TalentProfileView: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onRequestToHire}
-                className="mt-3.5 w-full h-11 rounded-xl border border-[#2F68FE] bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+                className="mt-3.5 w-full h-11 rounded-xl bg-white text-[#2F68FE] text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_8px_18px_-12px_rgba(15,23,42,0.5)] active:bg-blue-50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 <Send className="w-4 h-4" />
                 Request to Hire to Unlock Video
@@ -863,6 +850,45 @@ export const TalentProfileView: React.FC<Props> = ({
         </div>
       )}
 
+      <BottomSheet isOpen={aiOpen} onClose={() => setAiOpen(false)} maxHeight="max-h-[70%]">
+        <SheetHeader title="AI-Upskilled Professional" onClose={() => setAiOpen(false)} />
+        <div className="px-5 pt-4 pb-8 overflow-y-auto no-scrollbar">
+          <div className="flex items-start gap-3">
+            <span className="w-10 h-10 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0" aria-hidden="true">
+              <WandSparkles className="w-5 h-5" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#F5F3FF] text-[10px] font-bold text-[#7C3AED]">
+                <Zap className="w-3 h-3" aria-hidden="true" />
+                AI Ready
+              </span>
+              <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
+                Has completed{' '}
+                <strong className="font-bold text-[#1E293B]">
+                  {ai.length} AI &amp; automation course{ai.length === 1 ? '' : 's'}
+                </strong>{' '}
+                on the myCPE platform, trained to work alongside your firm&apos;s AI tools and accelerate research, review &amp; documentation.
+              </p>
+            </div>
+          </div>
+          <h4 className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-400">AI Courses</h4>
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="AI courses">
+            {ai.map((c) => (
+              <li key={c.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-600">
+                <Check className="w-3 h-3 text-[#7C3AED]" aria-hidden="true" />
+                {c.name}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => setAiOpen(false)}
+            className="mt-5 w-full h-11 rounded-xl bg-[#2F68FE] text-white text-[13px] font-bold active:bg-[#1D4ED8] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F68FE]"
+          >
+            Got it
+          </button>
+        </div>
+      </BottomSheet>
       <InfoSheet isOpen={info === 'cost'} title="Talent Cost" onClose={() => setInfo(null)}>
         Talent costs shown are indicative only. Actual amounts may differ as they are subject to currency conversion rate variations.
       </InfoSheet>

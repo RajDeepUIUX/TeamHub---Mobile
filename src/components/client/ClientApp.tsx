@@ -629,16 +629,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ onLogout, onSwitchRole }) 
             onBack={goBack}
             staff={staff}
             initialInvoiceNo={invoiceFocus}
-            onOpenTimesheets={
-              canList('timesheets')
-                ? (staffIds, range, invoiceNo) =>
-                    openFrom(here({ invoiceNo }), () => {
-                      openModule('timesheets');
-                      setTimesheetPreset({ staffIds, range });
-                    })
-                : undefined
-            }
-            onContactManager={() => openModule('account-manager')}
           />
         ) : tab === 'more' && moreModuleId === 'billing-details' ? (
           <ClientBillingDetailsView

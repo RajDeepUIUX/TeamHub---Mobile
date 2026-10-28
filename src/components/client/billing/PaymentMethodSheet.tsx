@@ -15,7 +15,6 @@ import {
   BillingDetails,
   CARD_TYPES,
   CardType,
-  detectCardType,
   expiryError,
   maskCardNumber,
   maskExpiry,
@@ -256,15 +255,7 @@ export const PaymentMethodSheet: React.FC<Props> = ({ isOpen, target, billing, c
                 inputMode="numeric"
                 autoComplete="cc-number"
                 value={card.cardNumber}
-                onChange={(e) => {
-                  const masked = maskCardNumber(e.target.value);
-                  setC('cardNumber', masked);
-                  const detected = detectCardType(masked.replace(/\D/g, ''));
-                  if (detected) {
-                    setCard((d) => ({ ...d, cardNumber: masked, cardType: detected }));
-                    setErrors((x) => ({ ...x, cardType: '' }));
-                  }
-                }}
+                onChange={(e) => setC('cardNumber', maskCardNumber(e.target.value))}
                 placeholder="Enter Card Number"
                 aria-invalid={Boolean(errors.cardNumber)}
                 className={`${fieldInputClass(errors.cardNumber)} tabular-nums tracking-wide`}

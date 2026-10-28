@@ -571,12 +571,32 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
   };
   const toggleSelect = () => (selectMode ? exitSelect() : setSelectMode(true));
 
-  /* ---------- Toolbar: one compact row — status chips scroll on the left, Select + Filter on the right; applied filters below ---------- */
+  /* ---------- Toolbar: Select left + Filter right on top; status chips scroll below; applied filters last ---------- */
   const toolbar = (
     <div className="px-4 pt-3.5">
       <section className="bg-white border border-[#EBF0F7] rounded-2xl shadow-2xs overflow-hidden">
-        <div className="py-2 pr-2 flex items-center gap-2">
-          <div className="relative flex-1 min-w-0">
+        <div className="p-2 flex items-center justify-between gap-2">
+          {anySelectable && (
+            <button
+              type="button"
+              onClick={toggleSelect}
+              disabled={loading}
+              aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
+              className={`h-10 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
+                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs active:bg-blue-50'
+              }`}
+            >
+              {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
+              {selectMode ? 'Cancel' : 'Select'}
+            </button>
+          )}
+          <div className="ml-auto">
+            <FilterIconButton compact count={filterCount} onClick={() => openSheet('filter')} />
+          </div>
+        </div>
+
+        <div className="pb-2 border-t border-slate-100 pt-2">
+          <div className="relative min-w-0">
             <div className="pl-2 pr-6 flex gap-1.5 overflow-x-auto no-scrollbar snap-x scroll-px-2" role="group" aria-label="Candidate status">
               {CANDIDATE_STATUSES.map((s) => {
                 const Icon = STATUS_ICON[s];
@@ -610,22 +630,6 @@ export const ClientInterviewsView: React.FC<Props> = ({ candidates, onUpdate, on
             </div>
             <span aria-hidden="true" className="pointer-events-none absolute right-0 inset-y-0 w-8 bg-linear-to-l from-white to-transparent" />
           </div>
-          <span aria-hidden="true" className="w-px h-7 bg-slate-200 shrink-0" />
-          {anySelectable && (
-            <button
-              type="button"
-              onClick={toggleSelect}
-              disabled={loading}
-              aria-label={selectMode ? 'Cancel selection' : 'Select candidates for assessment'}
-              className={`h-10 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-60 cursor-pointer ${FOCUS} ${
-                selectMode ? 'border-slate-200 bg-slate-100 text-slate-600 active:bg-slate-200' : 'border-[#2F68FE] bg-white text-[#2F68FE] shadow-2xs active:bg-blue-50'
-              }`}
-            >
-              {selectMode ? <X className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
-              {selectMode ? 'Cancel' : 'Select'}
-            </button>
-          )}
-          <FilterIconButton compact count={filterCount} onClick={() => openSheet('filter')} />
         </div>
 
         {filterCount > 0 && (

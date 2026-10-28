@@ -4,7 +4,7 @@ import { FilterIconButton } from '../../common/TeamFilterSheet';
 import { useClientPermission } from '../context/ClientPermissionContext';
 import { ScreenHeader, EmptyCard, SearchField } from '../staff/tabs/StaffTabParts';
 import type { ClientStaffMember } from '../data/clientStaffData';
-import { TimesheetRange, downloadCsv } from '../data/clientTimesheetsData';
+import { downloadCsv } from '../data/clientTimesheetsData';
 import {
   ClientInvoice,
   INVOICE_PAGE_SIZE,
@@ -27,9 +27,6 @@ interface ClientInvoicesViewProps {
   staff: ClientStaffMember[];
   /** Notification deep link: opens this invoice's details */
   initialInvoiceNo?: string | null;
-  /** Invoice staff row → Reports › Timesheets (staff + invoice period); hidden without Timesheets access */
-  onOpenTimesheets?: (staffIds: string[], range: TimesheetRange, invoiceNo: string) => void;
-  onContactManager: () => void;
   /** Header back arrow (Dashboard) */
   onBack?: () => void;
 }
@@ -50,13 +47,11 @@ const chipX = 'w-6 h-6 rounded-full flex items-center justify-center text-slate-
 /**
  * Invoices › Invoices — MyCPE ONE HRMS invoice tab (desktop `projects&task=invoice` redirects there):
  * search by invoice no., From / To date, Staff, Payment Status; Export CSV / ZIP. Cards follow the desktop columns:
- * Invoice No., Invoice Created On, Period, Employee, Amount, Payment Status, Action (Invoice PDF, Employees → Invoice Details).
+ * Invoice No., Invoice Created On, Period, Employee, Amount, Payment Status, Action (Invoice PDF, Invoice Details).
  */
 export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
   staff,
   initialInvoiceNo,
-  onOpenTimesheets,
-  onContactManager,
   onBack,
 }) => {
   // `is_view` = Invoice Details; `is_download` = Export, Invoice PDF, timesheets
@@ -161,8 +156,6 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
         tintOf={tintOf}
         canDownload={canDownload}
         onBack={() => setOpenId(null)}
-        onOpenTimesheets={onOpenTimesheets ? (ids, r) => onOpenTimesheets(ids, r, current.invoiceNo) : undefined}
-        onContactManager={onContactManager}
       />
     );
   }
@@ -251,11 +244,11 @@ export const ClientInvoicesView: React.FC<ClientInvoicesViewProps> = ({
               <button
                 type="button"
                 onClick={() => openInvoice(inv)}
-                aria-label={`View employees on invoice ${inv.invoiceNo}`}
+                aria-label={`View invoice details for ${inv.invoiceNo}`}
                 className="flex-1 h-11 flex items-center justify-center gap-1.5 text-xs font-bold text-[#2F68FE] active:bg-blue-50 transition-colors cursor-pointer"
               >
                 <FolderSearch className="w-4 h-4" />
-                Employees
+                Invoice Details
                 <ChevronRight className="w-3.5 h-3.5 -ml-0.5" />
               </button>
             )}

@@ -184,6 +184,7 @@ export const ClientUserProfileView: React.FC<{
   const [notice, showNotice] = useNotice();
   const fileInput = useRef<AttachmentInputHandle>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const tabStripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), LOAD_MS);
@@ -242,6 +243,14 @@ export const ClientUserProfileView: React.FC<{
     setTab(next);
     scrollRef.current?.scrollTo({ top: 0 });
   };
+
+  // Slide the tab strip so the selected tab sits centred (horizontal only, page doesn't jump)
+  useEffect(() => {
+    const strip = tabStripRef.current;
+    const btn = strip?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
+    if (!strip || !btn) return;
+    strip.scrollTo({ left: btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2, behavior: 'smooth' });
+  }, [tab, editing, loading]);
 
   const pickPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -352,13 +361,14 @@ export const ClientUserProfileView: React.FC<{
 
             {/* Underline tabs: icon + label, active one in blue with a bar underneath */}
             <nav className="sticky top-0 z-20 bg-[#F8FAFC]/95 backdrop-blur-md border-b border-slate-200/80" aria-label="Profile sections">
-              <div className="flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
+              <div ref={tabStripRef} className="relative flex gap-1 overflow-x-auto no-scrollbar px-2" role="tablist">
                 {TABS.map((t) => {
                   const Icon = TAB_ICONS[t.id];
                   const on = t.id === tab;
                   return (
                     <button
                       key={t.id}
+                      data-tab={t.id}
                       type="button"
                       role="tab"
                       aria-selected={on}

@@ -58,7 +58,6 @@ export interface BillingDetails {
   submittedMappings: PaymentMappingRow[];
   submittedAt: string | null;
   submittedBy: string | null;
-  draftSavedAt: string | null;
 }
 
 /** Desktop `country`: 1 Canada, 2 US, 3 UK, null = show every bank field */
@@ -96,16 +95,12 @@ export const CARD_BRAND: Record<CardType, { mark: string; className: string }> =
   'Diners Club': { mark: 'DC', className: 'bg-[#EEF2FF] text-[#4F46E5]' },
 };
 
-/** Card type from the number's first digits, so the select fills itself (Added by designer) */
-export const detectCardType = (digits: string): CardType | null => {
-  if (/^4/.test(digits)) return 'Visa';
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
-  if (/^3[47]/.test(digits)) return 'American Express';
-  if (/^3(0[0-5]|[68])/.test(digits)) return 'Diners Club';
-  if (/^35/.test(digits)) return 'JCB';
-  if (/^(6011|65|64[4-9])/.test(digits)) return 'Discover';
-  if (/^62/.test(digits)) return 'UnionPay';
-  return null;
+/** Billing › Continuing Education subscription card (dummy) */
+export const CE_SUBSCRIPTION = {
+  name: 'MYCPE ONE TEAMS SUBSCRIPTION - REGULAR',
+  price: '$199',
+  activeUsers: 88,
+  renewalDate: 'Jun 07, 2027',
 };
 
 export const PAYMENT_TYPE_LABEL: Record<PaymentType, string> = { bank: 'Bank', card: 'Credit Card', direct: 'Direct Pay' };
@@ -252,8 +247,6 @@ export const maskCardNumber = (raw: string) =>
 
 /** Mock portal password check (B `verifyHrmsPaymentPassword`): any password of 6+ characters passes */
 export const VERIFY_MIN_LENGTH = 6;
-/** How long verified bank numbers stay visible (Added by designer) */
-export const REVEAL_MS = 2 * 60_000;
 
 export const newBillingId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
@@ -313,7 +306,6 @@ export const billingSeedFor = (staff: ClientStaffMember[]): BillingDetails => {
     submittedMappings: mappings,
     submittedAt: '2026-10-05T15:20:00',
     submittedBy: 'Taylor Morgan',
-    draftSavedAt: null,
   };
 };
 
