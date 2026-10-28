@@ -528,12 +528,9 @@ const SavedProfilesCard: React.FC<{
       <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
         <BookmarkCheck className="w-4 h-4" />
       </span>
-      <span className="flex-1 min-w-0">
-        <h2 id="client-saved-profiles-title" className="text-sm font-bold text-[#1E293B] truncate">
-          Previously Saved Profiles
-        </h2>
-        {profiles.length > 0 && <span className="block text-[11px] font-medium text-slate-400 tabular-nums">{profiles.length} saved</span>}
-      </span>
+      <h2 id="client-saved-profiles-title" className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">
+        Previously Saved Profiles
+      </h2>
       {profiles.length > 0 && onOpenAll && (
         <button
           type="button"
@@ -614,12 +611,9 @@ const ShortlistedCandidatesCard: React.FC<{
         <span className="w-8 h-8 rounded-xl bg-[#EEF2FF] text-[#2F68FE] flex items-center justify-center shrink-0">
           <UserCheck className="w-4 h-4" />
         </span>
-        <span className="flex-1 min-w-0">
-          <h2 id="client-shortlisted-title" className="text-sm font-bold text-[#1E293B] truncate">
-            Shortlisted Candidates
-          </h2>
-          {pipeline.length > 0 && <span className="block text-[11px] font-medium text-slate-400 tabular-nums">{pipeline.length} in progress</span>}
-        </span>
+        <h2 id="client-shortlisted-title" className="flex-1 min-w-0 text-sm font-bold text-[#1E293B] truncate">
+          Shortlisted Candidates
+        </h2>
         {pipeline.length > 0 && onOpenAll && (
           <button
             type="button"
