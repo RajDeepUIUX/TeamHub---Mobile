@@ -313,7 +313,7 @@ export const TeamAdvanceList: React.FC<{
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-bold text-[#1E293B] truncate">{r.staffName}</span>
                   <span className="block text-[10.5px] text-slate-400">
-                    {r.staffCode} · Requested {formatAdvanceDate(r.submittedOn)}
+                    Requested {formatAdvanceDate(r.submittedOn)}
                   </span>
                 </span>
                 <span className={`px-2 py-0.5 rounded-full text-[10.5px] font-semibold shrink-0 max-w-[42%] text-right ${STATUS_TONE[r.status]}`}>
