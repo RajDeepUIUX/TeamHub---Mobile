@@ -3,10 +3,13 @@ import { McAuthPage, McButton, McCheckBox, McField, McSelectField } from '../com
 import { McQualificationSheet } from './McQualificationSheet';
 import { McTermsSheet } from './McTermsSheet';
 import { EMAIL_RE } from './McSignIn';
+import { McAccount } from '../data/mycpeHomeData';
+import { useQuickFill } from '../../../hooks/useQuickFill';
+import { demoEmail, demoFirstName, demoLastName, demoPassword, demoQualifications } from '../data/mycpeDemo';
 
 type Key = 'firstName' | 'lastName' | 'email' | 'password' | 'qualification';
 
-export const McSignUp: React.FC<{ onCreated: () => void; onSignIn: () => void }> = ({ onCreated, onSignIn }) => {
+export const McSignUp: React.FC<{ onCreated: (account: McAccount) => void; onSignIn: () => void }> = ({ onCreated, onSignIn }) => {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [qualifications, setQualifications] = useState<string[]>([]);
   const [accepted, setAccepted] = useState(false);
@@ -19,6 +22,16 @@ export const McSignUp: React.FC<{ onCreated: () => void; onSignIn: () => void }>
     clear(k);
   };
 
+  // Only blank fields are filled; the email matches the name
+  useQuickFill(() => {
+    const firstName = form.firstName.trim() || demoFirstName();
+    const lastName = form.lastName.trim() || demoLastName();
+    setForm({ firstName, lastName, email: form.email.trim() || demoEmail(firstName, lastName), password: form.password || demoPassword() });
+    if (!qualifications.length) setQualifications(demoQualifications());
+    setAccepted(true);
+    setErrors({});
+  });
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!accepted) return;
@@ -29,7 +42,7 @@ export const McSignUp: React.FC<{ onCreated: () => void; onSignIn: () => void }>
     if (!form.password) found.password = 'Enter a password.';
     if (!qualifications.length) found.qualification = 'Select your qualification.';
     setErrors(found);
-    if (!Object.keys(found).length) onCreated();
+    if (!Object.keys(found).length) onCreated({ firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim() });
   };
 
   const link = (text: string) => (

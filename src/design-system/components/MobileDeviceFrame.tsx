@@ -30,6 +30,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   if (bare) {
     return (
       <div
+        data-app-frame
         className="relative w-full h-dvh bg-[#F8FAFC] text-[#1E293B] flex flex-col overflow-hidden"
         style={
           immersive
@@ -78,6 +79,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
     <div className="flex flex-col items-center">
       {/* Device Hardware Bezel */}
       <div
+        data-app-frame
         className={`relative ${current.width} ${current.height} bg-slate-950 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_0_12px_#1e293b,0_0_0_14px_#334155] ${current.radius} flex flex-col overflow-hidden transition-all duration-300 border border-slate-800`}
       >
         {/* iOS Status Bar */}

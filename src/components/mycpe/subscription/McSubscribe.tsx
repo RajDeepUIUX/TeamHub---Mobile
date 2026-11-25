@@ -93,8 +93,12 @@ const FeatureList: React.FC<{ features: string[] }> = ({ features }) => {
   );
 };
 
-export const McSubscribe: React.FC<{ onClose: () => void; onSubscribe: (plan: MyCpePlanId) => void }> = ({ onClose, onSubscribe }) => {
-  const [planId, setPlanId] = useState<MyCpePlanId>('Gold');
+export const McSubscribe: React.FC<{ initialPlan?: MyCpePlanId; onClose: () => void; onSubscribe: (plan: MyCpePlanId) => void }> = ({
+  initialPlan = 'Gold',
+  onClose,
+  onSubscribe,
+}) => {
+  const [planId, setPlanId] = useState<MyCpePlanId>(initialPlan);
   const plan = MYCPE_PLANS.find((p) => p.id === planId)!;
 
   return (

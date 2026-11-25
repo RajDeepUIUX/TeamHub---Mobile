@@ -3,6 +3,8 @@ import { Search, X } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { McButton, McCheckBox } from '../common/McUi';
 import { MYCPE_QUALIFICATIONS } from '../data/mycpeAuthData';
+import { demoQualifications } from '../data/mycpeDemo';
+import { useQuickFill } from '../../../hooks/useQuickFill';
 
 /** Multi-select; nothing changes in the form until "Select" is tapped */
 export const McQualificationSheet: React.FC<{
@@ -20,6 +22,8 @@ export const McQualificationSheet: React.FC<{
     setQuery('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  useQuickFill(isOpen ? () => setPicked((p) => (p.length ? p : demoQualifications())) : undefined);
 
   const q = query.trim().toLowerCase();
   const list = MYCPE_QUALIFICATIONS.filter((x) => x.toLowerCase().includes(q));

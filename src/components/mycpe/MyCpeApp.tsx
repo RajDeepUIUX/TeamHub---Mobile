@@ -8,16 +8,21 @@ import { McOnboarding } from './auth/McOnboarding';
 import { McSignIn } from './auth/McSignIn';
 import { McSignUp } from './auth/McSignUp';
 import { McSubscribe } from './subscription/McSubscribe';
+import { McMain } from './home/McMain';
+import { McPending } from './common/McPage';
+import { DEFAULT_ACCOUNT, McAccount, McHomeState, NEW_HOME, RETURNING_HOME } from './data/mycpeHomeData';
 
-/** 'forgot' and 'home' are stand-ins until their designs are added */
+/** 'forgot' and the Subscriber's 'home' are stand-ins until their designs are added */
 type McStage = 'splash' | 'onboarding' | 'signin' | 'signup' | 'plans' | 'forgot' | 'home';
 const STAGES: McStage[] = ['splash', 'onboarding', 'signin', 'signup', 'plans', 'forgot', 'home'];
 
-/** ?screen=signup opens a MyCPE screen directly */
-const initialStage = (): McStage => {
-  const s = new URLSearchParams(window.location.search).get('screen');
-  return STAGES.find((x) => x === s) ?? 'splash';
+/** ?screen=signup opens a MyCPE screen directly; home / profile / certificates take &new=1 for a new account */
+const params = () => new URLSearchParams(window.location.search);
+const initialPage = () => {
+  const s = params().get('screen');
+  return s === 'profile' || s === 'certificates' ? s : undefined;
 };
+const initialStage = (): McStage => (initialPage() ? 'home' : STAGES.find((x) => x === params().get('screen')) ?? 'splash');
 
 interface MyCpeAppProps {
   userType: MyCpeUserType;
@@ -33,11 +38,39 @@ interface MyCpeAppProps {
 export const MyCpeApp: React.FC<MyCpeAppProps> = ({ userType, onUserTypeChange, isPhone = false }) => {
   const { onSwitchProduct } = useProduct();
   const [stage, setStage] = useState<McStage>(initialStage);
+  const [account, setAccount] = useState<McAccount>(DEFAULT_ACCOUNT);
+  const [home, setHome] = useState<McHomeState>(() => (params().has('new') ? NEW_HOME : RETURNING_HOME));
 
   // Plans are only for Non Subscribers
   useEffect(() => {
     if (userType === 'Subscriber' && stage === 'plans') setStage('home');
   }, [userType, stage]);
+
+  const signIn = () => {
+    setHome(RETURNING_HOME);
+    setStage('home');
+  };
+
+  /** Prototype switches for phones: Subscriber / Non Subscriber and HRMS / MyCPE */
+  const switches = (
+    <div className="space-y-2">
+      <div role="radiogroup" aria-label="MyCPE user" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-mc-line">
+        {MYCPE_USER_TYPES.map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="radio"
+            aria-checked={t === userType}
+            onClick={() => onUserTypeChange(t)}
+            className={`h-9 rounded-lg text-xs font-semibold cursor-pointer ${t === userType ? 'bg-white text-mc-primary shadow-2xs' : 'text-mc-text'}`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <ProductSwitcher />
+    </div>
+  );
 
   const screen = () => {
     switch (stage) {
@@ -46,13 +79,15 @@ export const MyCpeApp: React.FC<MyCpeAppProps> = ({ userType, onUserTypeChange, 
       case 'onboarding':
         return <McOnboarding onGetStarted={() => setStage('signup')} onHaveAccount={() => setStage('signin')} />;
       case 'signin':
-        return <McSignIn onSignIn={() => setStage('home')} onForgot={() => setStage('forgot')} onSignUp={() => setStage('signup')} />;
+        return <McSignIn onSignIn={signIn} onForgot={() => setStage('forgot')} onSignUp={() => setStage('signup')} />;
       case 'signup':
         return (
           <McSignUp
             onSignIn={() => setStage('signin')}
-            onCreated={() => {
-              // A new account has no plan yet
+            onCreated={(created) => {
+              // A new account has no plan yet and starts on the first-time Home
+              setAccount(created);
+              setHome(NEW_HOME);
               onUserTypeChange('Non Subscriber');
               setStage('plans');
             }}
@@ -68,8 +103,22 @@ export const MyCpeApp: React.FC<MyCpeAppProps> = ({ userType, onUserTypeChange, 
             }}
           />
         );
+      case 'home':
+        return userType === 'Non Subscriber' ? (
+          <McMain
+            account={account}
+            home={home}
+            onHomeChange={(patch) => setHome((h) => ({ ...h, ...patch }))}
+            onSubscribed={() => onUserTypeChange('Subscriber')}
+            onLogout={() => setStage('signin')}
+            initialPage={initialPage()}
+            switches={isPhone ? switches : undefined}
+          />
+        ) : (
+          <McPending title="Home" note="Subscriber" />
+        );
       default:
-        return <Pending title={stage === 'forgot' ? 'Forgot Password' : 'Home'} note={stage === 'home' ? userType : undefined} />;
+        return <McPending title="Forgot Password" />;
     }
   };
 
@@ -90,35 +139,11 @@ export const MyCpeApp: React.FC<MyCpeAppProps> = ({ userType, onUserTypeChange, 
         </button>
       )}
 
-      {isPhone && stage === 'home' && (
-        <div className="shrink-0 px-4 space-y-2" style={{ paddingBottom: 'calc(var(--safe-bottom) + 20px)' }}>
-          <div role="radiogroup" aria-label="MyCPE user" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-mc-page">
-            {MYCPE_USER_TYPES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="radio"
-                aria-checked={t === userType}
-                onClick={() => onUserTypeChange(t)}
-                className={`h-9 rounded-lg text-xs font-semibold cursor-pointer ${t === userType ? 'bg-white text-mc-primary shadow-2xs' : 'text-mc-text'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <ProductSwitcher />
+      {isPhone && stage === 'home' && userType === 'Subscriber' && (
+        <div className="shrink-0 px-4" style={{ paddingBottom: 'calc(var(--safe-bottom) + 20px)' }}>
+          {switches}
         </div>
       )}
     </div>
   );
 };
-
-/** Stand-in for a screen whose design hasn't been provided yet */
-const Pending: React.FC<{ title: string; note?: string }> = ({ title, note }) => (
-  <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-    <img src="/brand/Icon.png" alt="" className="w-14 h-16 object-contain" draggable={false} />
-    <h1 className="mt-5 text-2xl font-semibold text-mc-ink">{title}</h1>
-    {note && <span className="mt-2 px-3 h-7 rounded-full bg-mc-primary-soft text-mc-indigo text-xs font-semibold flex items-center">{note}</span>}
-    <p className="mt-2 text-sm text-mc-muted">This screen's design isn't added yet.</p>
-  </div>
-);

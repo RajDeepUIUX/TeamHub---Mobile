@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle2,
   RotateCcw,
+  Wand2,
   LogOut,
   Smartphone,
   Eye,
@@ -46,6 +47,7 @@ import { MYCPE_USER_TYPES, MyCpeUserType } from './types/mycpe';
 import { ProductProvider } from './context/ProductContext';
 import { ProductChooser } from './components/product/ProductChooser';
 import { MyCpeApp } from './components/mycpe/MyCpeApp';
+import { runQuickFill } from './hooks/useQuickFill';
 import { ClientApp } from './components/client/ClientApp';
 import { HomeDashboard } from './components/home/HomeDashboard';
 import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
@@ -195,6 +197,8 @@ export default function App() {
     urlParams.get('user')?.toLowerCase() === 'subscriber' ? 'Subscriber' : 'Non Subscriber'
   );
   const [mycpeRun, setMycpeRun] = useState(0);
+  // Quick Fill (studio toolbar, both products): says so briefly when the screen has no form
+  const [nothingToFill, setNothingToFill] = useState(false);
 
   // Logged-in user role (Staff by default, or ?role= in the URL); Manager review screens come later
   const [userRole, setUserRole] = useState<UserRole>(initialRole);
@@ -1316,6 +1320,22 @@ export default function App() {
 
         {/* Device Controls */}
         <div className="flex items-center gap-2">
+          {/* Quick Fill: fills the blank fields of the form on screen (both products) */}
+          {product && (
+            <button
+              type="button"
+              onClick={() => {
+                if (runQuickFill()) return setNothingToFill(false);
+                setNothingToFill(true);
+                setTimeout(() => setNothingToFill(false), 1800);
+              }}
+              className="h-7.5 w-32 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 active:bg-slate-700 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer"
+            >
+              {!nothingToFill && <Wand2 className="w-3.5 h-3.5" />}
+              {nothingToFill ? 'No form here' : 'Quick Fill'}
+            </button>
+          )}
+
           {/* Product Selector: HRMS or MyCPE */}
           <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
             {APP_PRODUCTS.map((p) => (

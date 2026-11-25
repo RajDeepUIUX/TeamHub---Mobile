@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { McAuthPage, McButton, McField } from '../common/McUi';
+import { useQuickFill } from '../../../hooks/useQuickFill';
+import { demoEmail, demoPassword } from '../data/mycpeDemo';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -8,6 +10,13 @@ export const McSignIn: React.FC<{ onSignIn: () => void; onForgot: () => void; on
   const [email, setEmail] = useState('Johndoe@my-cpe.com');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  // Only blank fields are filled
+  useQuickFill(() => {
+    if (!email.trim()) setEmail(demoEmail());
+    if (!password) setPassword(demoPassword());
+    setErrors({});
+  });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
