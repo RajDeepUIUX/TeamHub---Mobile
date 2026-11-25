@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Camera, ChevronRight, CircleAlert, CircleCheck, CircleHelp, Eye, FolderOpen, Images, Loader2, Plus, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { McButton } from '../common/McUi';
-import { ACCEPT, CertFile, formatSize, MAX_FILES } from './certModel';
+import { ACCEPT, CertFile, formatSize, MAX_FILES, UPLOAD_ERROR_TEXT } from './certModel';
 import { FileBadge } from './CertificateViewer';
 import { McSheetHandle, McSheetHeader } from './McFormControls';
 
@@ -18,24 +18,70 @@ interface UploadStepProps {
   /** Every uploaded certificate has been analyzed already (came back from review) */
   allAnalyzed: boolean;
   overLimit: boolean;
-  onAddFiles: (files: File[]) => void;
+  onAddFiles: (files: File[], replaceId?: string) => void;
   onRemoveFile: (id: string) => void;
+  onRetryUpload: (id: string) => void;
   onPreview: (id: string) => void;
   onAnalyze: () => void;
 }
 
-export const UploadStep: React.FC<UploadStepProps> = ({ files, allAnalyzed, overLimit, onAddFiles, onRemoveFile, onPreview, onAnalyze }) => {
+const FileRow: React.FC<{ file: CertFile; onPreview?: (id: string) => void; onRemove: (id: string) => void }> = ({ file: f, onPreview, onRemove }) => (
+  <div className="pl-3 pr-1 py-2 flex items-center gap-3">
+    <FileBadge file={f} />
+    <div className="flex-1 min-w-0">
+      <p className="text-sm leading-5 font-medium text-mc-ink-2 truncate">{f.name}</p>
+      <p className="mt-0.5 flex items-center gap-1.5 text-xs leading-4 text-mc-muted">
+        {formatSize(f.size)}
+        {f.status === 'uploading' && (
+          <>
+            <span aria-hidden="true">·</span>
+            <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            Uploading
+          </>
+        )}
+        {f.status === 'uploaded' && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="flex items-center gap-1 font-medium text-[#067647]">
+              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              Uploaded
+            </span>
+          </>
+        )}
+      </p>
+    </div>
+    {onPreview && (
+      <button type="button" onClick={() => onPreview(f.id)} className="w-11 h-12 flex items-center justify-center text-mc-text cursor-pointer" aria-label={`Preview ${f.name}`}>
+        <Eye className="w-5 h-5 stroke-[1.7]" />
+      </button>
+    )}
+    <button type="button" onClick={() => onRemove(f.id)} className="w-11 h-12 flex items-center justify-center text-mc-error cursor-pointer" aria-label={`Remove ${f.name}`}>
+      <Trash2 className="w-5 h-5 stroke-[1.7]" />
+    </button>
+  </div>
+);
+
+export const UploadStep: React.FC<UploadStepProps> = ({ files, allAnalyzed, overLimit, onAddFiles, onRemoveFile, onRetryUpload, onPreview, onAnalyze }) => {
   const [sheet, setSheet] = useState<'source' | 'how' | null>(null);
+  // The file with an error that the next pick takes the place of
+  const replacing = useRef<string | undefined>(undefined);
   const inputs = { files: useRef<HTMLInputElement>(null), photos: useRef<HTMLInputElement>(null), camera: useRef<HTMLInputElement>(null) };
 
-  const added = files.filter((f) => f.status !== 'error').length;
+  const errors = files.filter((f) => f.status === 'error');
+  const good = files.filter((f) => f.status !== 'error');
+  const added = good.length;
   const full = added >= MAX_FILES;
   const uploading = files.some((f) => f.status === 'uploading');
   const ready = files.some((f) => f.status === 'uploaded') && !uploading;
 
   const onPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onAddFiles([...(e.target.files ?? [])]);
+    onAddFiles([...(e.target.files ?? [])], replacing.current);
+    replacing.current = undefined;
     e.target.value = '';
+  };
+  const choose = (replaceId?: string) => {
+    replacing.current = replaceId;
+    setSheet('source');
   };
   // The system picker opens straight from the tap, then the sheet closes
   const pick = (from: keyof typeof inputs) => {
@@ -77,7 +123,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({ files, allAnalyzed, over
             <button
               type="button"
               disabled={full}
-              onClick={() => setSheet('source')}
+              onClick={() => choose()}
               className="mt-4 h-12 px-5 rounded-xl border border-mc-primary bg-white text-[15px] font-semibold text-mc-primary flex items-center gap-2 active:bg-mc-primary-tint cursor-pointer disabled:border-mc-line-strong disabled:bg-mc-line disabled:text-[#98A2B3] disabled:cursor-not-allowed"
             >
               <Plus className="w-5 h-5" aria-hidden="true" />
@@ -90,62 +136,61 @@ export const UploadStep: React.FC<UploadStepProps> = ({ files, allAnalyzed, over
               {LIMIT_TEXT}
             </p>
           )}
-          {files.length > 0 && (
-            <>
-              <p className="mt-5 text-[13px] leading-5 font-semibold text-mc-ink-2" aria-live="polite">
-                {added} of {MAX_FILES} certificates added
-              </p>
+
+          {/* Problems first, each with what to do about it */}
+          {errors.length > 0 && (
+            <section role="alert" aria-label="Needs attention" className="mt-5">
+              <h3 className="flex items-center gap-1.5 text-[13px] leading-5 font-semibold text-[#B42318]">
+                <CircleAlert className="w-4 h-4" aria-hidden="true" />
+                Needs attention ({errors.length})
+              </h3>
               <ul className="mt-2 space-y-2">
-                {files.map((f) => (
-                  <li key={f.id} className={`rounded-xl border bg-white ${f.status === 'error' ? 'border-mc-error' : 'border-mc-line-strong'}`}>
-                    <div className="pl-3 pr-1 py-2 flex items-center gap-3">
-                      <FileBadge file={f} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm leading-5 font-medium text-mc-ink-2 [overflow-wrap:anywhere] line-clamp-3">{f.name}</p>
-                        <p className="mt-0.5 flex items-center gap-1.5 text-xs leading-4 text-mc-muted">
-                          {formatSize(f.size)}
-                          {f.status === 'uploading' && (
-                            <>
-                              <span aria-hidden="true">·</span>
-                              <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                              Uploading
-                            </>
-                          )}
-                          {f.status === 'uploaded' && (
-                            <span className="flex items-center gap-1 font-medium text-[#067647]">
-                              <span aria-hidden="true" className="text-mc-muted">
-                                ·
-                              </span>
-                              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                              Uploaded
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      {f.status === 'uploaded' && (
-                        <button type="button" onClick={() => onPreview(f.id)} className="w-11 h-12 flex items-center justify-center text-mc-text cursor-pointer" aria-label={`Preview ${f.name}`}>
-                          <Eye className="w-5 h-5 stroke-[1.7]" />
+                {errors.map((f) => (
+                  <li key={f.id} className="rounded-xl border border-[#FDA29B] bg-[#FFFBFA] overflow-clip">
+                    <FileRow file={f} onPreview={f.error === 'content' ? onPreview : undefined} onRemove={onRemoveFile} />
+                    <div className="pl-3 pr-1.5 py-1 min-h-11 flex items-center gap-2 bg-[#FEF3F2] border-t border-[#FECDCA]">
+                      <p className="flex-1 py-1 text-[13px] leading-[18px] font-medium text-[#B42318]">{UPLOAD_ERROR_TEXT[f.error ?? 'upload']}</p>
+                      {/* No room for another once the limit is reached */}
+                      {!full && (
+                        <button
+                          type="button"
+                          onClick={() => (f.error === 'upload' ? onRetryUpload(f.id) : choose(f.id))}
+                          className="shrink-0 h-11 px-2.5 text-sm font-semibold text-mc-primary cursor-pointer"
+                          aria-label={`${f.error === 'upload' ? 'Retry' : 'Replace'} ${f.name}`}
+                        >
+                          {f.error === 'upload' ? 'Retry' : 'Replace'}
                         </button>
                       )}
-                      <button type="button" onClick={() => onRemoveFile(f.id)} className="w-11 h-12 flex items-center justify-center text-mc-error cursor-pointer" aria-label={`Remove ${f.name}`}>
-                        <Trash2 className="w-5 h-5 stroke-[1.7]" />
-                      </button>
                     </div>
-                    {f.error && (
-                      <p role="alert" className="px-3 pb-2.5 flex items-start gap-1 text-xs leading-4 font-medium text-mc-error">
-                        <CircleAlert className="w-3.5 h-3.5 mt-px shrink-0" aria-hidden="true" />
-                        {f.error}
-                      </p>
-                    )}
                   </li>
                 ))}
               </ul>
-            </>
+            </section>
+          )}
+
+          {good.length > 0 && (
+            <section aria-label="Certificates added" className="mt-5">
+              <p className="text-[13px] leading-5 font-semibold text-mc-ink-2" aria-live="polite">
+                {added} of {MAX_FILES} certificates added
+              </p>
+              <ul className="mt-2 space-y-2">
+                {good.map((f) => (
+                  <li key={f.id} className="rounded-xl border border-mc-line-strong bg-white">
+                    <FileRow file={f} onPreview={f.status === 'uploaded' ? onPreview : undefined} onRemove={onRemoveFile} />
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
         </section>
       </div>
 
       <footer className="shrink-0 px-4 pt-3 bg-white border-t border-mc-line" style={{ paddingBottom: 'calc(var(--safe-bottom) + 16px)' }}>
+        {ready && errors.length > 0 && (
+          <p className="mb-2 text-center text-[13px] leading-[18px] text-mc-text">
+            {errors.length === 1 ? "1 file with an error won't be analyzed." : `${errors.length} files with errors won't be analyzed.`}
+          </p>
+        )}
         <McButton disabled={!ready} onClick={onAnalyze}>
           {allAnalyzed ? (
             'Continue to Review'

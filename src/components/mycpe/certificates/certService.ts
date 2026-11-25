@@ -1,16 +1,17 @@
 /**
  * MOCK SERVICE. No AI extraction or submission API exists in this app yet, so nothing here reads a file or sends anything.
- * The screens only use `analyzeCertificate` and `submitCertificates`; replace those two with real calls.
+ * The screens only use `uploadCertificate`, `analyzeCertificate` and `submitCertificates`; replace those three with real calls.
  *
  * Demo results: the 1st, 2nd and 3rd certificates get the three sample certificates from the specification; a 4th and 5th come
  * back with nothing identified. To see other outcomes, put one of these words in a file's name, or add &demo=word to the URL
  * (it then applies to the 2nd file):
  *   fail             analysis fails the first time, works on Retry
- *   not-certificate  the document isn't a certificate
+ *   not-certificate  uploaded, but the file has no certificate details (also any name with "invoice", "receipt" or "sample report")
+ *   upload-fail      the upload itself fails the first time, works on Retry
  *   mismatch         the holder's name doesn't match the learner
  *   submit-fail      the first submission fails
  */
-import { Allocation, blankCertificate, Certificate, CertFile, CertificatePayload, FailReason, newAllocation, newRow, newSession } from './certModel';
+import { Allocation, blankCertificate, Certificate, CertFile, CertificatePayload, FailReason, newAllocation, newRow, newSession, UploadError } from './certModel';
 
 export const ANALYSIS_STAGES = [
   'Reading certificates',
@@ -93,6 +94,18 @@ const unidentified = (id: string) =>
 const urlDemo = () => (typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('demo') ?? '');
 const asksFor = (word: string, file: CertFile, index: number) => file.name.toLowerCase().includes(word) || (urlDemo() === word && index === 1);
 
+const uploadTried = new Set<string>();
+
+/** Uploads a file and checks that it's a certificate. Null when it's fine. The mock only looks at the file's name. */
+export const uploadCertificate = async (file: CertFile, index: number): Promise<UploadError | null> => {
+  await wait(700 + index * 250);
+  const retry = uploadTried.has(file.id);
+  uploadTried.add(file.id);
+  if (!retry && asksFor('upload-fail', file, index)) return 'upload';
+  if (asksFor('not-certificate', file, index) || /invoice|receipt|sample[ _-]?report/.test(file.name.toLowerCase())) return 'content';
+  return null;
+};
+
 const tried = new Set<string>();
 
 export const analyzeCertificate = async (file: CertFile, { index, onStage, signal }: AnalyzeOptions): Promise<AnalysisResult> => {
@@ -101,8 +114,7 @@ export const analyzeCertificate = async (file: CertFile, { index, onStage, signa
   for (let stage = 0; stage < ANALYSIS_STAGES.length; stage++) {
     onStage(stage);
     await wait(800, signal);
-    if (stage === 0 && asksFor('not-certificate', file, index)) return { ok: false, reason: 'not_certificate' };
-    if (stage === 1 && !retry && file.name.toLowerCase().includes('submit-fail') === false && asksFor('fail', file, index)) return { ok: false, reason: 'failed' };
+    if (stage === 1 && !retry && !/(submit|upload)-fail/.test(file.name.toLowerCase()) && asksFor('fail', file, index)) return { ok: false, reason: 'failed' };
   }
   const sample = SAMPLES[file.sample ?? index];
   const certificate = sample ? sample(file.id) : unidentified(file.id);

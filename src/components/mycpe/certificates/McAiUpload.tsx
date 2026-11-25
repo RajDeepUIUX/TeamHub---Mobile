@@ -4,8 +4,8 @@ import { useQuickFill } from '../../../hooks/useQuickFill';
 import { McPageHeader } from '../common/McPage';
 import { McButton } from '../common/McUi';
 import { Analysis, AnalyzeStep } from './AnalyzeStep';
-import { blankCertificate, Certificate, certificateHasData, CertFile, MAX_BYTES, MAX_FILES, toPayload, uid } from './certModel';
-import { analyzeCertificate, SAMPLE_FILES, submitCertificates } from './certService';
+import { blankCertificate, Certificate, certificateHasData, CertFile, MAX_BYTES, MAX_FILES, toPayload, uid, UploadError } from './certModel';
+import { analyzeCertificate, SAMPLE_FILES, submitCertificates, uploadCertificate } from './certService';
 import { CertificateViewer } from './CertificateViewer';
 import { McConfirm, McConfirmSheet } from './McFormControls';
 import { ReviewStep } from './ReviewStep';
@@ -55,12 +55,15 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
   const submitLock = useRef(false);
   const run = useRef<AbortController | null>(null);
   const urls = useRef<string[]>([]);
-  const timers = useRef<number[]>([]);
+  const gone = useRef(false);
   useEffect(
-    () => () => {
-      run.current?.abort();
-      timers.current.forEach((t) => window.clearTimeout(t));
-      urls.current.forEach((u) => URL.revokeObjectURL(u));
+    () => {
+      gone.current = false;
+      return () => {
+        gone.current = true;
+        run.current?.abort();
+        urls.current.forEach((u) => URL.revokeObjectURL(u));
+      };
     },
     []
   );
@@ -71,15 +74,22 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
 
   /* ---------------------------------- Files ----------------------------------- */
 
-  const addFiles = (incoming: (File | Omit<CertFile, 'id' | 'status'>)[]) => {
+  const upload = (f: CertFile, index: number) =>
+    void uploadCertificate(f, index).then((error) => {
+      if (gone.current) return;
+      setFiles((prev) => prev.map((x) => (x.id === f.id ? { ...x, status: error ? 'error' : 'uploaded', error: error ?? undefined } : x)));
+    });
+
+  /** `replaceId`: the file with an error that these take the place of */
+  const addFiles = (incoming: (File | Omit<CertFile, 'id' | 'status'>)[], replaceId?: string) => {
+    if (!incoming.length) return;
     const room = MAX_FILES - files.filter((f) => f.status !== 'error').length;
     const added: CertFile[] = [];
     let taken = 0;
     let over = false;
     incoming.forEach((f) => {
       const base = f instanceof File ? { id: uid('file'), name: f.name, size: f.size, kind: kindOf(f) } : { ...f, id: uid('file') };
-      const error =
-        base.kind === 'FILE' ? 'Unsupported file format. Please upload a PDF, JPG, or PNG file.' : base.size > MAX_BYTES ? 'This file exceeds the 20 MB limit.' : undefined;
+      const error: UploadError | null = base.kind === 'FILE' ? 'format' : base.size > MAX_BYTES ? 'size' : null;
       if (error) return void added.push({ ...base, status: 'error', error });
       if (taken >= room) {
         over = true;
@@ -91,12 +101,14 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
       added.push({ ...base, url, status: 'uploading' });
     });
     setOverLimit(over);
-    setFiles((prev) => [...prev, ...added]);
-    added
-      .filter((f) => f.status === 'uploading')
-      .forEach((f, i) => {
-        timers.current.push(window.setTimeout(() => setFiles((prev) => prev.map((x) => (x.id === f.id ? { ...x, status: 'uploaded' } : x))), 500 + i * 250));
-      });
+    setFiles((prev) => [...prev.filter((f) => f.id !== replaceId), ...added]);
+    added.filter((f) => f.status === 'uploading').forEach(upload);
+  };
+  const retryUpload = (id: string) => {
+    const f = files.find((x) => x.id === id);
+    if (!f) return;
+    setFiles((prev) => prev.map((x) => (x.id === id ? { ...x, status: 'uploading', error: undefined } : x)));
+    upload(f, 0);
   };
 
   const drop = <T,>(rec: Record<string, T>, id: string) => {
@@ -258,6 +270,7 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
           overLimit={overLimit}
           onAddFiles={addFiles}
           onRemoveFile={removeFile}
+          onRetryUpload={retryUpload}
           onPreview={setViewing}
           onAnalyze={start}
         />

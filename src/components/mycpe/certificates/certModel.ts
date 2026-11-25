@@ -76,8 +76,16 @@ export interface CertFile {
   /** Demo sample (Quick Fill): which sample result it stands for */
   sample?: number;
   status: 'uploading' | 'uploaded' | 'error';
-  error?: string;
+  error?: UploadError;
 }
+
+export type UploadError = 'format' | 'size' | 'content' | 'upload';
+export const UPLOAD_ERROR_TEXT: Record<UploadError, string> = {
+  format: 'Unsupported file format. Please upload a PDF, JPG, or PNG file.',
+  size: 'This file exceeds the 20 MB limit.',
+  content: 'Uploaded file does not contain certificate details.',
+  upload: 'This file could not be uploaded. Please try again.',
+};
 
 export interface FieldRow {
   id: string;
