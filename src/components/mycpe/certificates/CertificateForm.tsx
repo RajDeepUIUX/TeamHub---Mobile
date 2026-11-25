@@ -193,17 +193,6 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
             onOpen={() => setSheet('learning')}
           />
         )}
-        {asksSessions(c) && (
-          <McYesNo
-            label="Does this certificate include multiple sessions?"
-            required
-            ai={ai('multiple')}
-            value={c.multiple}
-            error={errors.multiple}
-            errorKey="multiple"
-            onChange={(v) => restructure(setMultiple(c, v), 'multiple')}
-          />
-        )}
         <McPickField
           label="Continuing Education Provider"
           required
@@ -214,6 +203,17 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
           errorKey="provider"
           onOpen={() => setSheet('provider')}
         />
+        {/* Right above what it decides: course sessions or license selection */}
+        {asksSessions(c) && (
+          <McYesNo
+            label="Does this certificate include multiple sessions?"
+            required
+            value={c.multiple}
+            error={errors.multiple}
+            errorKey="multiple"
+            onChange={(v) => restructure(setMultiple(c, v), 'multiple')}
+          />
+        )}
         {!sessions && (
           <McPickField
             label="License Selection"

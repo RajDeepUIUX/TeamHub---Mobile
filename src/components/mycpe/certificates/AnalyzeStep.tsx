@@ -4,6 +4,7 @@ import { McButton } from '../common/McUi';
 import { CertFile, FailReason, formatSize, plural } from './certModel';
 import { ANALYSIS_STAGES } from './certService';
 import { FileBadge } from './CertificateViewer';
+import { AiTag } from './McFormControls';
 
 export interface Analysis {
   state: 'analyzing' | 'done' | 'failed' | 'manual';
@@ -168,6 +169,16 @@ export const AnalyzeStep: React.FC<AnalyzeStepProps> = ({ files, analysis, onRet
               );
             })}
           </ul>
+        )}
+
+        {!running && files.some((f) => of(f).state === 'done') && (
+          <p className="mt-4 px-3.5 py-3 rounded-xl bg-mc-primary-tint text-[13px] leading-5 text-mc-text">
+            <span className="font-semibold text-mc-ink-2">Note:</span> Fields where AI has successfully fetched the data show an{' '}
+            <span className="px-0.5 rounded-full bg-white inline-flex align-middle">
+              <AiTag />
+            </span>{' '}
+            tag.
+          </p>
         )}
       </div>
 

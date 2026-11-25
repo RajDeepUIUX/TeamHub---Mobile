@@ -178,7 +178,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({
   if (ui === 'UI-2')
     return (
       <>
-        <BottomSheet isOpen={!leaving} onClose={() => setLeaving(true)} maxHeight="h-[92%]" className="font-mc text-mc-ink">
+        <BottomSheet isOpen={!leaving} onClose={() => setLeaving(true)} maxHeight="max-h-[92%]" className="font-mc text-mc-ink">
           <McSheetHandle />
           <McSheetHeader
             title={heading}

@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { CalendarDays, ChevronDown, CircleAlert, Search, Sparkles, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, CircleAlert, CircleCheck, Layers, PencilLine, Search, Sparkles, X } from 'lucide-react';
 import { BottomSheet } from '../../common/BottomSheet';
 import { todayIso, WheelColumn } from '../../common/DateWheelSheet';
 import { McButton } from '../common/McUi';
@@ -30,12 +30,44 @@ export const McErrorText: React.FC<{ id?: string; message?: string }> = ({ id, m
     </p>
   ) : null;
 
-const AiTag = () => (
-  <span className="h-[18px] px-1.5 rounded-full bg-mc-primary-tint text-[10.5px] font-semibold text-mc-indigo inline-flex items-center gap-1 shrink-0">
-    <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
-    AI-filled
-  </span>
-);
+const AI_FACTS = [
+  [Sparkles, 'AI read this detail from your uploaded certificate and filled it in for you.'],
+  [CircleCheck, 'Check that it matches your certificate before you confirm.'],
+  [PencilLine, 'You can change it. The tag goes away once you edit the field.'],
+] as const;
+
+/** Tap to see what it means */
+export const AiTag: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-label="AI-filled, what this means"
+        onClick={() => setOpen(true)}
+        className="relative pointer-events-auto h-[18px] px-1.5 rounded-full bg-mc-primary-tint text-[10.5px] font-semibold text-mc-indigo inline-flex items-center gap-1 shrink-0 align-middle active:bg-mc-primary-soft cursor-pointer before:absolute before:-inset-x-2 before:-inset-y-2.5"
+      >
+        <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
+        AI-filled
+      </button>
+      <BottomSheet isOpen={open} onClose={() => setOpen(false)} maxHeight="max-h-[82%]" className="font-mc text-mc-ink">
+        <McSheetHandle />
+        <McSheetHeader title="AI-filled" onClose={() => setOpen(false)} />
+        <ul className="px-4 pt-2 pb-10 space-y-5">
+          {AI_FACTS.map(([Icon, text]) => (
+            <li key={text} className="flex items-center gap-3.5">
+              <span className="w-10 h-10 rounded-full bg-mc-primary-tint text-mc-primary flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 stroke-[1.8]" aria-hidden="true" />
+              </span>
+              <p className="flex-1 text-[15px] leading-[22px] text-mc-ink-2">{text}</p>
+            </li>
+          ))}
+        </ul>
+      </BottomSheet>
+    </>
+  );
+};
 
 export const useFloating = () => useMcFieldStyle() === 'floating';
 
@@ -84,8 +116,8 @@ export const McLabeled: React.FC<FieldProps> = ({ label, required, ai, error, er
     );
   return (
     <div data-error-key={errorKey} className="min-w-0">
-      <div id={`${id}-label`} className="mb-1 min-h-5 flex items-center flex-wrap gap-x-1.5 text-[13px] leading-5 font-medium text-mc-ink-2">
-        <span>
+      <div className="mb-1 min-h-5 flex items-center flex-wrap gap-x-1.5 text-[13px] leading-5 font-medium text-mc-ink-2">
+        <span id={`${id}-label`}>
           {label}
           {required && (
             <span className="text-mc-error" aria-label="required">
@@ -221,18 +253,30 @@ export const PickButton: React.FC<{
   );
 };
 
-export const McYesNo: React.FC<BaseProps & { value: boolean | null; onChange: (v: boolean) => void }> = ({ value, onChange, ...field }) => {
+/** Decides how the rest of the form looks, so it stands out from the fields: the question, then a small switch */
+export const McYesNo: React.FC<Omit<BaseProps, 'ai'> & { value: boolean | null; onChange: (v: boolean) => void }> = ({ label, required, error, errorKey, value, onChange }) => {
   const floating = useFloating();
+  const id = useId();
   return (
-    <McLabeled {...field}>
-      {({ labelId, errorId }) => (
+    <div data-error-key={errorKey} className="min-w-0">
+      <div className={`p-3 flex items-center gap-2.5 bg-mc-primary-tint border ${floating ? 'rounded-[4px]' : 'rounded-xl'} ${error ? 'border-mc-error' : 'border-[#B8B0F5]'}`}>
+        <span className="w-8 h-8 rounded-full bg-white text-mc-primary flex items-center justify-center shrink-0" aria-hidden="true">
+          <Layers className="w-[18px] h-[18px] stroke-[1.8]" />
+        </span>
+        <p id={`${id}-label`} className="flex-1 min-w-0 text-sm leading-5 font-semibold text-mc-ink">
+          {label}
+          {required && (
+            // Never alone on a line
+            <span className="text-mc-error" aria-label="required">
+              {' *'}
+            </span>
+          )}
+        </p>
         <div
           role="radiogroup"
-          aria-labelledby={labelId}
-          aria-describedby={errorId}
-          className={`h-[54px] grid grid-cols-2 border ${floating ? 'rounded-[4px] bg-white overflow-hidden divide-x divide-mc-line' : 'p-1 gap-1 rounded-xl bg-mc-line'} ${
-            field.error ? 'border-mc-error' : floating ? 'border-mc-line' : 'border-transparent'
-          }`}
+          aria-labelledby={`${id}-label`}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`shrink-0 p-[3px] flex bg-white border ${floating ? 'rounded-[4px]' : 'rounded-[10px]'} border-[#B8B0F5]`}
         >
           {[true, false].map((v) => (
             <button
@@ -241,16 +285,17 @@ export const McYesNo: React.FC<BaseProps & { value: boolean | null; onChange: (v
               role="radio"
               aria-checked={value === v}
               onClick={() => value !== v && onChange(v)}
-              className={`font-semibold transition-colors cursor-pointer ${floating ? 'text-sm' : 'text-[15px] rounded-lg'} ${
-                value !== v ? 'text-mc-text' : floating ? 'bg-mc-primary-tint text-mc-indigo' : 'bg-white text-mc-indigo shadow-[0_1px_3px_rgba(16,24,40,0.14)]'
+              className={`relative w-11 h-8 text-[13px] font-semibold transition-colors cursor-pointer before:absolute before:inset-x-0 before:-inset-y-2 ${floating ? 'rounded-[2px]' : 'rounded-[7px]'} ${
+                value === v ? 'bg-mc-primary text-white' : 'text-mc-text'
               }`}
             >
               {v ? 'Yes' : 'No'}
             </button>
           ))}
         </div>
-      )}
-    </McLabeled>
+      </div>
+      <McErrorText id={`${id}-error`} message={error} />
+    </div>
   );
 };
 
@@ -286,8 +331,14 @@ const useSearch = (isOpen: boolean, options: string[]) => {
   useEffect(() => {
     if (isOpen) setQuery('');
   }, [isOpen]);
+  // As tall as its options need; while searching it keeps that height, so it doesn't jump
+  const listRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    if (isOpen) setHeight(listRef.current?.clientHeight ?? 0);
+  }, [isOpen]);
   const q = query.trim().toLowerCase();
-  return { query, setQuery, list: options.filter((o) => o.toLowerCase().includes(q)) };
+  return { query, setQuery, listRef, listStyle: { minHeight: q ? height : undefined }, list: options.filter((o) => o.toLowerCase().includes(q)) };
 };
 
 const SearchBox: React.FC<{ value: string; onChange: (v: string) => void; label: string }> = ({ value, onChange, label }) => {
@@ -321,14 +372,14 @@ export const McSingleSheet: React.FC<OptionSheetProps & { value: string | null; 
   onSelect,
   onClose,
 }) => {
-  const { query, setQuery, list } = useSearch(isOpen, options);
+  const { query, setQuery, listRef, listStyle, list } = useSearch(isOpen, options);
   const long = options.length > 5;
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight={long ? 'h-[82%]' : 'max-h-[82%]'} className="font-mc text-mc-ink">
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[82%]" className="font-mc text-mc-ink">
       <McSheetHandle />
       <McSheetHeader title={title} onClose={onClose} />
       {long && <SearchBox value={query} onChange={setQuery} label={`Search ${title}`} />}
-      <div role="radiogroup" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-8 divide-y divide-mc-line">
+      <div ref={listRef} style={listStyle} role="radiogroup" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-8 divide-y divide-mc-line">
         {list.map((o) => {
           const off = disabled?.options.includes(o) ?? false;
           const on = o === value;
@@ -350,14 +401,14 @@ export const McSingleSheet: React.FC<OptionSheetProps & { value: string | null; 
 
 /** Choices apply on Done; searching keeps them */
 export const McMultiSheet: React.FC<OptionSheetProps & { selected: string[]; onDone: (v: string[]) => void }> = ({ isOpen, title, options, selected, onDone, onClose }) => {
-  const { query, setQuery, list } = useSearch(isOpen, options);
+  const { query, setQuery, listRef, listStyle, list } = useSearch(isOpen, options);
   const [picked, setPicked] = useState(selected);
   useEffect(() => {
     if (isOpen) setPicked(selected);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="h-[82%]" className="font-mc text-mc-ink">
+    <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[82%]" className="font-mc text-mc-ink">
       <McSheetHandle />
       <McSheetHeader
         title={title}
@@ -371,7 +422,7 @@ export const McMultiSheet: React.FC<OptionSheetProps & { selected: string[]; onD
         }
       />
       <SearchBox value={query} onChange={setQuery} label={`Search ${title}`} />
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 divide-y divide-mc-line">
+      <div ref={listRef} style={listStyle} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 divide-y divide-mc-line">
         {list.map((o) => {
           const on = picked.includes(o);
           return (

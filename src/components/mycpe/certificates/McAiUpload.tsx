@@ -181,17 +181,6 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     setOne(id, { state: 'manual', stage: 0 });
   };
 
-  // All analyzed with nothing to decide: show that it's ready, then go to review
-  const states = valid.map((f) => analysis[f.id]?.state);
-  const settled = step === 'analyze' && states.length > 0 && states.every((s) => s === 'done' || s === 'manual');
-  const goReview = useRef(toReview);
-  goReview.current = toReview;
-  useEffect(() => {
-    if (!settled) return;
-    const t = window.setTimeout(() => goReview.current(), 2200);
-    return () => window.clearTimeout(t);
-  }, [settled]);
-
   /* ---------------------------------- Submit ---------------------------------- */
 
   const submit = async () => {
