@@ -1,5 +1,6 @@
-import React, { useId, useState } from 'react';
-import { Check, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { useMcFieldStyle } from './McFieldStyle';
 
 /* ---------------------------------- Buttons ---------------------------------- */
 
@@ -23,19 +24,38 @@ export const McButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & 
 
 /* ----------------------------------- Fields ----------------------------------- */
 
-const FieldError: React.FC<{ message?: string }> = ({ message }) =>
-  message ? <p className="mt-1 px-1 text-xs text-mc-error">{message}</p> : null;
+// Two looks for the same fields, switched live from the studio toolbar (demo): see McFieldStyle
+const FieldError: React.FC<{ message?: string }> = ({ message }) => {
+  const floating = useMcFieldStyle() === 'floating';
+  if (!message) return null;
+  return <p className={floating ? 'mt-1 px-1 text-xs text-mc-error' : 'mt-1.5 px-1 text-[11px] font-medium text-rose-500'}>{message}</p>;
+};
 
-const boxCls = (error?: string) =>
+/** 'floating': square box from the MyCPE designs; the label moves onto the top border once focused or filled */
+const floatingBoxCls = (error?: string) =>
   `relative h-13 rounded-[4px] bg-white border transition-colors focus-within:border-mc-primary ${error ? 'border-mc-error' : 'border-mc-line'}`;
-
-/** Label: sits inside the empty field, moves onto the top border once it's focused or filled */
-const floatCls = (floated: boolean) =>
+const floatingLabelCls = (floated: boolean) =>
   `absolute pointer-events-none transition-all duration-150 text-mc-muted ${
     floated ? 'left-[11px] -top-2.5 px-1 h-5 leading-[18px] rounded-t-[4px] bg-white text-xs' : 'left-[15px] top-1/2 -translate-y-1/2 text-sm'
   }`;
 
+/** 'icon': same as the HRMS sign-in fields (tall, rounded, leading icon), in MyCPE's purple */
+const iconBoxCls = (error?: string) =>
+  `group w-full h-14 px-4 flex items-center gap-3 bg-white rounded-2xl border shadow-[0_4px_14px_-6px_rgba(79,70,229,0.12)] transition-all focus-within:ring-4 ${
+    error ? 'border-rose-300 focus-within:ring-rose-50' : 'border-slate-200/80 focus-within:border-mc-primary focus-within:ring-mc-primary-soft/60'
+  }`;
+
+const FieldIcon: React.FC<{ error?: string; children: React.ReactNode }> = ({ error, children }) => (
+  <span className={`shrink-0 ${error ? 'text-rose-400' : 'text-slate-400 group-focus-within:text-mc-primary'}`}>{children}</span>
+);
+
+/** Gap between fields, and between two side by side */
+export const useFieldSpacing = () =>
+  useMcFieldStyle() === 'floating' ? { stack: 'space-y-4', pair: 'grid grid-cols-2 gap-4' } : { stack: 'space-y-3.5', pair: 'grid grid-cols-2 gap-3' };
+
 interface McFieldProps {
+  icon: React.ReactNode;
+  /** Floating label, or the text inside the empty field */
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -44,36 +64,41 @@ interface McFieldProps {
   error?: string;
 }
 
-export const McField: React.FC<McFieldProps> = ({ label, value, onChange, type = 'text', autoComplete, error }) => {
-  const id = useId();
+export const McField: React.FC<McFieldProps> = ({ icon, label, value, onChange, type = 'text', autoComplete, error }) => {
+  const floating = useMcFieldStyle() === 'floating';
   const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(false);
   const isPassword = type === 'password';
+  const Eyes = visible ? Eye : EyeOff;
+
   return (
     <div className="min-w-0">
-      <div className={boxCls(error)}>
-        <label htmlFor={id} className={floatCls(focused || value !== '')}>
-          {label}
-        </label>
+      <div className={floating ? floatingBoxCls(error) : iconBoxCls(error)}>
+        {floating ? <span className={floatingLabelCls(focused || value !== '')}>{label}</span> : <FieldIcon error={error}>{icon}</FieldIcon>}
         <input
-          id={id}
           type={isPassword && visible ? 'text' : type}
           value={value}
+          placeholder={floating ? undefined : label}
+          aria-label={label}
           autoComplete={autoComplete}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           aria-invalid={Boolean(error)}
-          className={`w-full h-full pl-[15px] bg-transparent text-sm text-mc-ink focus:outline-hidden select-text ${isPassword ? 'pr-12' : 'pr-[15px]'}`}
+          className={`h-full bg-transparent text-sm text-mc-ink focus:outline-hidden select-text ${
+            floating ? `w-full pl-[15px] ${isPassword ? 'pr-12' : 'pr-[15px]'}` : 'flex-1 min-w-0 font-medium placeholder:text-slate-400'
+          }`}
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            className="absolute right-0 top-0 w-13 h-full flex items-center justify-center text-mc-muted cursor-pointer"
+            className={`flex items-center justify-center cursor-pointer ${
+              floating ? 'absolute right-0 top-0 w-13 h-full text-mc-muted' : 'shrink-0 w-8 h-8 -mr-1 rounded-full text-slate-400 active:bg-slate-50'
+            }`}
             aria-label={visible ? 'Hide password' : 'Show password'}
           >
-            {visible ? <Eye className="w-5 h-5 stroke-[1.5]" /> : <EyeOff className="w-5 h-5 stroke-[1.5]" />}
+            <Eyes className={`w-5 h-5 ${floating ? 'stroke-[1.5]' : ''}`} />
           </button>
         )}
       </div>
@@ -82,19 +107,36 @@ export const McField: React.FC<McFieldProps> = ({ label, value, onChange, type =
   );
 };
 
-/** Field that opens a sheet (solid ▼ as in the design) */
-export const McSelectField: React.FC<{ label: string; value: string; onOpen: () => void; error?: string }> = ({ label, value, onOpen, error }) => (
-  <div>
-    <button type="button" onClick={onOpen} className={`${boxCls(error)} w-full block text-left cursor-pointer`}>
-      <span className={floatCls(value !== '')}>{label}</span>
-      <span className="block pl-[15px] pr-12 text-sm text-mc-ink truncate">{value || ' '}</span>
-      <svg viewBox="0 0 14 9" className="absolute right-[18px] top-1/2 -translate-y-1/2 w-3.5 h-[9px] text-mc-muted" aria-hidden="true">
-        <path d="M0 0h14L7 9z" fill="currentColor" />
-      </svg>
-    </button>
-    <FieldError message={error} />
-  </div>
-);
+/** Field that opens a sheet */
+export const McSelectField: React.FC<{ icon: React.ReactNode; label: string; value: string; onOpen: () => void; error?: string }> = ({
+  icon,
+  label,
+  value,
+  onOpen,
+  error,
+}) => {
+  const floating = useMcFieldStyle() === 'floating';
+  return (
+    <div>
+      {floating ? (
+        <button type="button" onClick={onOpen} aria-label={label} className={`${floatingBoxCls(error)} w-full block text-left cursor-pointer`}>
+          <span className={floatingLabelCls(value !== '')}>{label}</span>
+          <span className="block pl-[15px] pr-12 text-sm text-mc-ink truncate">{value || '\u00A0'}</span>
+          <svg viewBox="0 0 14 9" className="absolute right-[18px] top-1/2 -translate-y-1/2 w-3.5 h-[9px] text-mc-muted" aria-hidden="true">
+            <path d="M0 0h14L7 9z" fill="currentColor" />
+          </svg>
+        </button>
+      ) : (
+        <button type="button" onClick={onOpen} aria-label={label} className={`${iconBoxCls(error)} text-left cursor-pointer`}>
+          <FieldIcon error={error}>{icon}</FieldIcon>
+          <span className={`flex-1 min-w-0 text-sm font-medium truncate ${value ? 'text-mc-ink' : 'text-slate-400'}`}>{value || label}</span>
+          <ChevronDown className="w-5 h-5 shrink-0 text-slate-400" />
+        </button>
+      )}
+      <FieldError message={error} />
+    </div>
+  );
+};
 
 /* ---------------------------------- Checkbox ---------------------------------- */
 

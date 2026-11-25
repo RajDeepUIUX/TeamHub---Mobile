@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { McAuthPage, McButton, McField } from '../common/McUi';
+import { Lock, Mail } from 'lucide-react';
+import { McAuthPage, McButton, McField, useFieldSpacing } from '../common/McUi';
 import { useQuickFill } from '../../../hooks/useQuickFill';
 import { demoEmail, demoPassword } from '../data/mycpeDemo';
 
@@ -9,6 +10,7 @@ export const McSignIn: React.FC<{ onSignIn: () => void; onForgot: () => void; on
   // Filled as in the design
   const [email, setEmail] = useState('Johndoe@my-cpe.com');
   const [password, setPassword] = useState('');
+  const spacing = useFieldSpacing();
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   // Only blank fields are filled
@@ -30,8 +32,9 @@ export const McSignIn: React.FC<{ onSignIn: () => void; onForgot: () => void; on
   return (
     <McAuthPage title="Welcome back!" subtitle="Continuing Education at Your Fingertips!">
       <form onSubmit={submit} noValidate>
-        <div className="space-y-4">
+        <div className={spacing.stack}>
           <McField
+            icon={<Mail className="w-5 h-5" />}
             label="Email*"
             type="email"
             autoComplete="email"
@@ -43,6 +46,7 @@ export const McSignIn: React.FC<{ onSignIn: () => void; onForgot: () => void; on
             }}
           />
           <McField
+            icon={<Lock className="w-5 h-5" />}
             label="Password*"
             type="password"
             autoComplete="current-password"

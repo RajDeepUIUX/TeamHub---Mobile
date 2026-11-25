@@ -47,6 +47,7 @@ import { MYCPE_USER_TYPES, MyCpeUserType } from './types/mycpe';
 import { ProductProvider } from './context/ProductContext';
 import { ProductChooser } from './components/product/ProductChooser';
 import { MyCpeApp } from './components/mycpe/MyCpeApp';
+import { McFieldStyle, McFieldStyleProvider, MC_FIELD_STYLES } from './components/mycpe/common/McFieldStyle';
 import { runQuickFill } from './hooks/useQuickFill';
 import { ClientApp } from './components/client/ClientApp';
 import { HomeDashboard } from './components/home/HomeDashboard';
@@ -197,6 +198,8 @@ export default function App() {
     urlParams.get('user')?.toLowerCase() === 'subscriber' ? 'Subscriber' : 'Non Subscriber'
   );
   const [mycpeRun, setMycpeRun] = useState(0);
+  // Demo: which text box design MyCPE forms use
+  const [mycpeFields, setMycpeFields] = useState<McFieldStyle>('icon');
   // Quick Fill (studio toolbar, both products): says so briefly when the screen has no form
   const [nothingToFill, setNothingToFill] = useState(false);
 
@@ -1351,6 +1354,24 @@ export default function App() {
             ))}
           </div>
 
+          {/* MyCPE demo: compare text box designs */}
+          {product === 'MyCPE' && (
+            <label className="h-7.5 pl-2.5 rounded-lg bg-slate-800 border border-slate-700 flex items-center gap-1.5 text-xs text-slate-400">
+              Text box
+              <select
+                value={mycpeFields}
+                onChange={(e) => setMycpeFields(e.target.value as McFieldStyle)}
+                className="h-full pr-1.5 rounded-r-lg bg-slate-800 text-xs font-medium text-white cursor-pointer focus:outline-hidden"
+              >
+                {MC_FIELD_STYLES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           {/* MyCPE user: Subscriber / Non Subscriber */}
           {product === 'MyCPE' && (
             <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
@@ -1507,7 +1528,9 @@ export default function App() {
               {product === null ? (
                 <ProductChooser />
               ) : product === 'MyCPE' ? (
+                <McFieldStyleProvider value={mycpeFields}>
                 <MyCpeApp key={mycpeRun} userType={mycpeUser} onUserTypeChange={setMycpeUser} isPhone={isPhone} />
+                </McFieldStyleProvider>
               ) : userRole === 'Client' && clientSignedOut ? (
                 <AuthFlow onAuthenticated={() => setClientSignedOut(false)} />
               ) : userRole === 'Client' ? (

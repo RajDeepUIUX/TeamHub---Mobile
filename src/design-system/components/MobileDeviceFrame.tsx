@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Wifi, Battery } from 'lucide-react';
+import { useTextSelection } from '../../hooks/useTextSelection';
 
 export type DeviceModel = 'iphone16' | 'pixel8' | 'iphonese';
 
@@ -26,6 +27,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   immersive = false,
 }) => {
   const [currentTime] = useState('9:41');
+  useTextSelection(!bare);
 
   if (bare) {
     return (
@@ -79,7 +81,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
     <div className="flex flex-col items-center">
       {/* Device Hardware Bezel */}
       <div
-        data-app-frame
+        data-app-frame="studio"
         className={`relative ${current.width} ${current.height} bg-slate-950 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_0_12px_#1e293b,0_0_0_14px_#334155] ${current.radius} flex flex-col overflow-hidden transition-all duration-300 border border-slate-800`}
       >
         {/* iOS Status Bar */}

@@ -21,23 +21,30 @@ export const McCreditCertificates: React.FC<{ onBack: () => void; onOpen: (title
         <br />
         that will be available for download here. Keep learning and achieve your goals!
       </p>
-      <div className="mt-8 space-y-4">
+      <div className="mt-9 space-y-3">
         {OPTIONS.map(({ title, text, icon: Icon, recommended }) => (
           <button
             key={title}
             type="button"
             onClick={() => onOpen(title)}
-            className="w-full pl-[7px] pr-3 py-2 rounded-md bg-white border border-mc-line flex items-center gap-3 text-left active:bg-mc-page cursor-pointer"
+            className={`relative w-full min-h-[84px] p-3.5 rounded-2xl border bg-white flex items-center gap-3.5 text-left shadow-[0_2px_8px_-2px_rgba(16,24,40,0.06)] transition-transform active:scale-[0.985] cursor-pointer ${
+              recommended ? 'border-[#B8B0F5] bg-linear-to-r from-mc-primary-tint to-white' : 'border-mc-line'
+            }`}
           >
-            <span className="w-[42px] h-[42px] rounded-lg bg-mc-primary-tint text-mc-primary flex items-center justify-center shrink-0">
-              <Icon className="w-[22px] h-[22px] stroke-[1.5]" />
+            {/* Sits on the card's edge so all three cards keep the same layout */}
+            {recommended && (
+              <span className="absolute -top-2.5 left-4 h-5 px-2 rounded-full bg-[#FEF0C7] border border-[#FEDF89] flex items-center text-[10px] font-semibold tracking-[0.04em] text-[#93370D]">
+                RECOMMENDED
+              </span>
+            )}
+            <span className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${recommended ? 'bg-mc-primary text-white' : 'bg-mc-primary-tint text-mc-primary'}`}>
+              <Icon className="w-[22px] h-[22px] stroke-[1.6]" />
             </span>
             <span className="flex-1 min-w-0">
-              {recommended && <span className="inline-block px-1 h-[18px] leading-[18px] rounded-[3px] bg-[#FEF0C7] text-[10px] text-[#93370D]">RECOMMENDED</span>}
-              <span className="block text-base leading-6 font-semibold text-mc-ink-2">{title}</span>
-              <span className="block text-sm leading-5 text-[#98A2B3]">{text}</span>
+              <span className="block text-[15px] leading-[22px] font-semibold text-mc-ink-2">{title}</span>
+              <span className="mt-0.5 block text-[13px] leading-[18px] text-mc-muted">{text}</span>
             </span>
-            <ChevronRight className="w-6 h-6 stroke-[1.4] text-[#98A2B3] shrink-0" />
+            <ChevronRight className="w-5 h-5 stroke-[1.8] text-[#98A2B3] shrink-0" />
           </button>
         ))}
       </div>

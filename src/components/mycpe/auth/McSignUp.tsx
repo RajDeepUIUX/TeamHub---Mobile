@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { McAuthPage, McButton, McCheckBox, McField, McSelectField } from '../common/McUi';
+import { GraduationCap, Lock, Mail, User } from 'lucide-react';
+import { McAuthPage, McButton, McCheckBox, McField, McSelectField, useFieldSpacing } from '../common/McUi';
 import { McQualificationSheet } from './McQualificationSheet';
 import { McTermsSheet } from './McTermsSheet';
 import { EMAIL_RE } from './McSignIn';
@@ -13,6 +14,7 @@ export const McSignUp: React.FC<{ onCreated: (account: McAccount) => void; onSig
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [qualifications, setQualifications] = useState<string[]>([]);
   const [accepted, setAccepted] = useState(false);
+  const spacing = useFieldSpacing();
   const [errors, setErrors] = useState<Partial<Record<Key, string>>>({});
   const [sheet, setSheet] = useState<'qualification' | 'terms' | null>(null);
 
@@ -55,14 +57,14 @@ export const McSignUp: React.FC<{ onCreated: (account: McAccount) => void; onSig
     <>
       <McAuthPage title="Create your free account" subtitle="Add basic Details">
         <form onSubmit={submit} noValidate>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <McField label="First Name*" autoComplete="given-name" value={form.firstName} error={errors.firstName} onChange={set('firstName')} />
-              <McField label="Last Name*" autoComplete="family-name" value={form.lastName} error={errors.lastName} onChange={set('lastName')} />
+          <div className={spacing.stack}>
+            <div className={spacing.pair}>
+              <McField icon={<User className="w-5 h-5" />} label="First Name*" autoComplete="given-name" value={form.firstName} error={errors.firstName} onChange={set('firstName')} />
+              <McField icon={<User className="w-5 h-5" />} label="Last Name*" autoComplete="family-name" value={form.lastName} error={errors.lastName} onChange={set('lastName')} />
             </div>
-            <McField label="Email*" type="email" autoComplete="email" value={form.email} error={errors.email} onChange={set('email')} />
-            <McField label="Password*" type="password" autoComplete="new-password" value={form.password} error={errors.password} onChange={set('password')} />
-            <McSelectField label="Qualification*" value={qualifications.join(', ')} error={errors.qualification} onOpen={() => setSheet('qualification')} />
+            <McField icon={<Mail className="w-5 h-5" />} label="Email*" type="email" autoComplete="email" value={form.email} error={errors.email} onChange={set('email')} />
+            <McField icon={<Lock className="w-5 h-5" />} label="Password*" type="password" autoComplete="new-password" value={form.password} error={errors.password} onChange={set('password')} />
+            <McSelectField icon={<GraduationCap className="w-5 h-5" />} label="Qualification*" value={qualifications.join(', ')} error={errors.qualification} onOpen={() => setSheet('qualification')} />
           </div>
 
           <div className="mt-8 flex items-start gap-2 text-sm leading-5 text-mc-text">

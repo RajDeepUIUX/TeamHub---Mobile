@@ -23,7 +23,7 @@ export const McPending: React.FC<{ title: string; note?: string }> = ({ title, n
   </div>
 );
 
-/** Horizontal row that scrolls by touch / trackpad and, on desktop, by dragging with the mouse */
+/** Horizontal row that scrolls by touch / trackpad and, on desktop, by dragging a card's image (dragging text selects it) */
 export const McRow: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
@@ -35,7 +35,8 @@ export const McRow: React.FC<{ className?: string; children: React.ReactNode }> 
       className={`flex overflow-x-auto overscroll-x-contain no-scrollbar ${className}`}
       onPointerDown={(e) => {
         suppressClick.current = false;
-        if (e.pointerType === 'mouse' && ref.current) drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false };
+        const onImage = e.target instanceof HTMLImageElement || e.target === e.currentTarget;
+        if (e.pointerType === 'mouse' && onImage && ref.current) drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false };
       }}
       onPointerMove={(e) => {
         const d = drag.current;
@@ -46,6 +47,7 @@ export const McRow: React.FC<{ className?: string; children: React.ReactNode }> 
           return;
         }
         if (Math.abs(e.clientX - d.x) > 4) d.moved = true;
+        if (d.moved) window.getSelection()?.removeAllRanges();
         if (d.moved) ref.current.scrollLeft = d.left - (e.clientX - d.x);
       }}
       onPointerUp={() => {
