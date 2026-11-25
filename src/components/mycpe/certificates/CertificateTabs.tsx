@@ -56,7 +56,7 @@ export const CertificateTabs: React.FC<{ tabs: CertificateTab[]; activeId: strin
       onWheel={(e) => {
         if (row.current && e.deltaY) row.current.scrollLeft += e.deltaY;
       }}
-      className="relative shrink-0 px-4 pt-1 pb-3 flex gap-2 overflow-x-auto overscroll-x-contain no-scrollbar"
+      className="relative shrink-0 px-3 pt-2 flex bg-[#E9EBF0] shadow-[inset_0_-1px_0_var(--color-mc-line-strong)] overflow-x-auto overscroll-x-contain no-scrollbar"
     >
       {tabs.map((t, i) => {
         const on = t.id === activeId;
@@ -71,12 +71,17 @@ export const CertificateTabs: React.FC<{ tabs: CertificateTab[]; activeId: strin
             aria-controls={panelId}
             tabIndex={on ? 0 : -1}
             onClick={() => onSelect(t.id)}
-            className={`flex-1 min-w-37 px-3 py-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
-              on ? 'border-mc-primary bg-mc-primary-tint ring-1 ring-inset ring-mc-primary' : 'border-mc-line-strong bg-white active:bg-mc-page'
+            className={`relative flex-1 min-w-36 px-3 pt-3 pb-2.5 text-left cursor-pointer transition-colors ${
+              on
+                ? 'z-10 rounded-t-xl bg-white border-x border-t border-mc-line-strong overflow-hidden'
+                : 'border-x border-t border-transparent rounded-t-xl active:bg-mc-line'
             }`}
           >
-            <span className={`block text-xs leading-4 font-medium ${on ? 'text-mc-indigo' : 'text-mc-muted'}`}>Certificate {i + 1}</span>
-            <span className="mt-0.5 mb-1.5 block text-sm leading-5 font-semibold text-mc-ink truncate">{t.title}</span>
+            {on && <span className="absolute inset-x-0 top-0 h-[3px] bg-mc-primary" aria-hidden="true" />}
+            {/* Divider between two tabs that aren't selected */}
+            {!on && i > 0 && tabs[i - 1].id !== activeId && <span className="absolute -left-px inset-y-4 w-px bg-mc-line-strong" aria-hidden="true" />}
+            <span className={`block text-[13px] leading-[18px] font-semibold ${on ? 'text-mc-primary' : 'text-mc-text'}`}>Certificate {i + 1}</span>
+            <span className={`mb-1 block text-xs leading-4 truncate ${on ? 'text-mc-ink-2' : 'text-mc-muted'}`}>{t.title}</span>
             <StatusText status={t.status} />
           </button>
         );
@@ -86,8 +91,14 @@ export const CertificateTabs: React.FC<{ tabs: CertificateTab[]; activeId: strin
 };
 
 /** Which course is being edited; stays in place while the form scrolls */
-export const CourseHeader: React.FC<{ title: string; meta?: string; onView: () => void }> = ({ title, meta, onView }) => (
-  <div className="shrink-0 pl-4 pr-2 py-2 flex items-center gap-1 bg-mc-page border-y border-mc-line">
+export const CourseHeader: React.FC<{
+  title: string;
+  meta?: string;
+  /** Continues the selected tab above it */
+  joined?: boolean;
+  onView: () => void;
+}> = ({ title, meta, joined, onView }) => (
+  <div className={`shrink-0 pl-4 pr-2 py-2 flex items-center gap-1 border-mc-line ${joined ? 'bg-white border-b' : 'bg-mc-page border-y'}`}>
     <div className="flex-1 min-w-0">
       <h2 className="text-[15px] leading-5 font-semibold text-mc-ink line-clamp-2 [overflow-wrap:anywhere]">{title}</h2>
       {meta && <p className="text-[13px] leading-[18px] text-mc-text">{meta}</p>}

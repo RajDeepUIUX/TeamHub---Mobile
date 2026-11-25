@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Check, CircleCheck, CircleDashed, CircleX, Loader2, PencilLine, RotateCcw, Sparkles } from 'lucide-react';
 import { McButton } from '../common/McUi';
-import { CertFile, FailReason } from './certModel';
-import { ANALYSIS_STAGES, IS_MOCK_SERVICE } from './certService';
+import { CertFile, FailReason, formatSize, plural } from './certModel';
+import { ANALYSIS_STAGES } from './certService';
+import { FileBadge } from './CertificateViewer';
 
 export interface Analysis {
-  state: 'waiting' | 'analyzing' | 'done' | 'failed' | 'manual';
+  state: 'analyzing' | 'done' | 'failed' | 'manual';
   stage: number;
   reason?: FailReason;
 }
@@ -14,14 +15,6 @@ export const FAIL_TEXT: Record<FailReason, string> = {
   failed: "AI couldn't analyze this certificate.",
   not_certificate: "This document couldn't be identified as a certificate.",
 };
-
-export const DemoNote: React.FC = () =>
-  IS_MOCK_SERVICE ? (
-    <p className="text-xs leading-4 text-mc-muted">
-      <span className="mr-1.5 px-1.5 py-px rounded bg-[#FEF0C7] font-semibold text-[#93370D]">Demo</span>
-      Sample results. Your files aren't read by AI.
-    </p>
-  ) : null;
 
 /** Document being scanned: a line passes over it while its text lines fill in */
 const ScanArt: React.FC<{ active: boolean }> = ({ active }) => (
@@ -51,12 +44,18 @@ interface AnalyzeStepProps {
 }
 
 export const AnalyzeStep: React.FC<AnalyzeStepProps> = ({ files, analysis, onRetry, onManual, onReview }) => {
-  const of = (f: CertFile): Analysis => analysis[f.id] ?? { state: 'waiting', stage: 0 };
-  const running = files.some((f) => ['waiting', 'analyzing'].includes(of(f).state));
+  const of = (f: CertFile): Analysis => analysis[f.id] ?? { state: 'analyzing', stage: 0 };
+  const analyzing = files.filter((f) => of(f).state === 'analyzing');
+  const running = analyzing.length > 0;
   const failed = files.filter((f) => of(f).state === 'failed').length;
   const usable = files.length - failed;
-  const current = files.find((f) => of(f).state === 'analyzing');
-  const stage = current ? of(current).stage : -1;
+  // Everything in this run, until all of it has finished (a retry is just that one)
+  const run = useRef<string[]>([]);
+  if (!running) run.current = [];
+  analyzing.forEach((f) => run.current.includes(f.id) || run.current.push(f.id));
+  const batch = files.filter((f) => run.current.includes(f.id));
+  // One status for all of them: a stage is done once every certificate has passed it
+  const stage = Math.min(...analyzing.map((f) => of(f).stage));
 
   const title = running ? 'Analyzing your certificates' : usable ? 'Your certificates are ready for review' : "Your certificates couldn't be analyzed";
   const text = running
@@ -88,8 +87,7 @@ export const AnalyzeStep: React.FC<AnalyzeStepProps> = ({ files, analysis, onRet
           </div>
         )}
 
-        {/* Stages reported for the certificate being analyzed */}
-        {current && (
+        {running && (
           <ol className="mt-6 px-4 py-3 rounded-xl border border-mc-line bg-[#F6F7F9] space-y-2.5">
             {ANALYSIS_STAGES.map((s, i) => (
               <li
@@ -110,54 +108,67 @@ export const AnalyzeStep: React.FC<AnalyzeStepProps> = ({ files, analysis, onRet
           </ol>
         )}
 
-        <ul className="mt-4 rounded-xl border border-mc-line bg-white divide-y divide-mc-line">
-          {files.map((f, i) => {
-            const a = of(f);
-            const row = {
-              waiting: { icon: <CircleDashed className="w-5 h-5 text-[#98A2B3]" />, label: 'Waiting to be analyzed', tone: 'text-mc-muted' },
-              analyzing: { icon: <Loader2 className="w-5 h-5 text-mc-primary animate-spin motion-reduce:animate-none" />, label: 'Analyzing', tone: 'text-mc-indigo font-medium' },
-              done: { icon: <CircleCheck className="w-5 h-5 text-[#067647]" />, label: 'Analysis complete', tone: 'text-[#067647] font-medium' },
-              failed: { icon: <CircleX className="w-5 h-5 text-mc-error" />, label: FAIL_TEXT[a.reason ?? 'failed'], tone: 'text-mc-error font-medium' },
-              manual: { icon: <PencilLine className="w-5 h-5 text-mc-text" />, label: 'Details to be entered manually', tone: 'text-mc-text' },
-            }[a.state];
-            return (
-              <li key={f.id} className="px-3.5 py-3">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 shrink-0" aria-hidden="true">
-                    {row.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm leading-5 font-medium text-mc-ink-2">Certificate {i + 1}</p>
-                    <p className="text-xs leading-4 text-mc-muted [overflow-wrap:anywhere]">{f.name}</p>
-                    <p className={`mt-0.5 text-xs leading-4 ${row.tone}`}>{row.label}</p>
+        {running ? (
+          <section aria-label={plural(batch.length, 'certificate')} className="mt-5">
+            <h3 className="text-[13px] leading-5 font-semibold text-mc-ink-2">{plural(batch.length, 'certificate')}</h3>
+            <ul className="mt-2 rounded-xl border border-mc-line bg-white divide-y divide-mc-line">
+              {batch.map((f) => (
+                <li key={f.id} className="px-3 py-2.5 flex items-center gap-3">
+                  <FileBadge file={f} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-5 font-medium text-mc-ink-2 truncate">{f.name}</p>
+                    <p className="text-xs leading-4 text-mc-muted">{formatSize(f.size)}</p>
                   </div>
-                </div>
-                {a.state === 'failed' && (
-                  <div className="mt-2.5 pl-8 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onRetry(f.id)}
-                      className="h-11 px-4 rounded-lg border border-mc-line-strong bg-white text-sm font-semibold text-mc-ink-2 flex items-center gap-1.5 active:bg-mc-page cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" aria-hidden="true" />
-                      Retry
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onManual(f.id)}
-                      className="h-11 px-3 rounded-lg text-sm font-semibold text-mc-primary active:bg-mc-primary-tint cursor-pointer"
-                    >
-                      Enter Details Manually
-                    </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <ul className="mt-5 rounded-xl border border-mc-line bg-white divide-y divide-mc-line">
+            {files.map((f, i) => {
+              const a = of(f);
+              const row = {
+                analyzing: { icon: <Loader2 className="w-5 h-5 text-mc-primary animate-spin motion-reduce:animate-none" />, label: 'Analyzing', tone: 'text-mc-indigo font-medium' },
+                done: { icon: <CircleCheck className="w-5 h-5 text-[#067647]" />, label: 'Analysis complete', tone: 'text-[#067647] font-medium' },
+                failed: { icon: <CircleX className="w-5 h-5 text-mc-error" />, label: FAIL_TEXT[a.reason ?? 'failed'], tone: 'text-mc-error font-medium' },
+                manual: { icon: <PencilLine className="w-5 h-5 text-mc-text" />, label: 'Details to be entered manually', tone: 'text-mc-text' },
+              }[a.state];
+              return (
+                <li key={f.id} className="px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 shrink-0" aria-hidden="true">
+                      {row.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm leading-5 font-medium text-mc-ink-2">Certificate {i + 1}</p>
+                      <p className="text-xs leading-4 text-mc-muted [overflow-wrap:anywhere]">{f.name}</p>
+                      <p className={`mt-0.5 text-xs leading-4 ${row.tone}`}>{row.label}</p>
+                    </div>
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-4">
-          <DemoNote />
-        </div>
+                  {a.state === 'failed' && (
+                    <div className="mt-2.5 pl-8 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onRetry(f.id)}
+                        className="h-11 px-4 rounded-lg border border-mc-line-strong bg-white text-sm font-semibold text-mc-ink-2 flex items-center gap-1.5 active:bg-mc-page cursor-pointer"
+                      >
+                        <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                        Retry
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onManual(f.id)}
+                        className="h-11 px-3 rounded-lg text-sm font-semibold text-mc-primary active:bg-mc-primary-tint cursor-pointer"
+                      >
+                        Enter Details Manually
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {!running && usable > 0 && (

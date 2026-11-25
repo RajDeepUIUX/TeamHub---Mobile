@@ -6,12 +6,11 @@ import { McButton } from '../common/McUi';
 import { AiField, Certificate, CertFile, certificateHasData, learningMethodsFor, newSession, reviewStatus, Session, sessionHasData, validateCertificate } from './certModel';
 import { CertificateForm, FailedCertificate } from './CertificateForm';
 import { CertificateTabs, CourseHeader } from './CertificateTabs';
-import { DemoNote } from './AnalyzeStep';
 import { fillBlanks } from './certQuickFill';
 import { FinalCheck } from './FinalCheck';
 import { scrollToError, useKeyboardRoom } from './formScroll';
 import { McConfirm } from './McFormControls';
-import { SessionPage } from './SessionPage';
+import { SessionPage, SessionUi } from './SessionPage';
 
 interface ReviewStepProps {
   certificates: Certificate[];
@@ -22,6 +21,8 @@ interface ReviewStepProps {
   submitFailed: boolean;
   /** The certificate is being viewed over this screen */
   viewing: boolean;
+  sessionUi: SessionUi;
+  onSessionUi: (ui: SessionUi) => void;
   onBack: () => void;
   onOpen: (id: string | null) => void;
   onChange: (c: Certificate) => void;
@@ -170,7 +171,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = (p) => {
                 onSelect={open}
               />
             )}
-            <CourseHeader title={titleOf(c)} meta={meta} onView={() => p.onView(c.id)} />
+            <CourseHeader title={titleOf(c)} meta={meta} joined={total > 1} onView={() => p.onView(c.id)} />
           </>
         )}
 
@@ -183,12 +184,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = (p) => {
           onScroll={(e) => {
             if (!final) scrolls.current[c.id] = e.currentTarget.scrollTop;
           }}
-          className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-3 pb-6"
+          className={`flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-6 ${final ? 'pt-4 bg-mc-page' : 'pt-3'}`}
         >
-          {!final && <p className="mb-2 text-sm leading-5 text-mc-text">Review and confirm the details of your uploaded certificates.</p>}
-          <div className="mb-4">
-            <DemoNote />
-          </div>
+          {!final && <p className="mb-4 text-sm leading-5 text-mc-text">Review and confirm the details of your uploaded certificates.</p>}
           {final ? (
             <FinalCheck certificates={certificates} onEdit={open} />
           ) : failed ? (
@@ -200,6 +198,8 @@ export const ReviewStep: React.FC<ReviewStepProps> = (p) => {
               file={file}
               errors={errors}
               errorSessions={errorSessions}
+              sessionUi={p.sessionUi}
+              onSessionUi={p.onSessionUi}
               onChange={change}
               onOpenSession={(id) => setOpenSession({ id })}
               onAddSession={() => {
@@ -251,6 +251,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = (p) => {
       {session && (
         <SessionPage
           key={session.id}
+          ui={p.sessionUi}
           session={session}
           number={c.sessions.indexOf(session) + 1}
           total={c.sessions.length}

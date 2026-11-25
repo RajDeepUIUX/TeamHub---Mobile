@@ -12,8 +12,6 @@
  */
 import { Allocation, blankCertificate, Certificate, CertFile, CertificatePayload, FailReason, newAllocation, newRow, newSession } from './certModel';
 
-export const IS_MOCK_SERVICE = true;
-
 export const ANALYSIS_STAGES = [
   'Reading certificates',
   'Extracting course information',
@@ -27,8 +25,6 @@ export type AnalysisResult = { ok: true; certificate: Certificate } | { ok: fals
 interface AnalyzeOptions {
   /** Position in the upload list */
   index: number;
-  /** Qualifications chosen on the upload screen: context for the analysis */
-  qualifications: string[];
   onStage: (stage: number) => void;
   signal: AbortSignal;
 }
@@ -88,10 +84,9 @@ const SAMPLES: ((id: string) => Certificate)[] = [
     }),
 ];
 
-/** Nothing identified: the fields stay empty; only the learner's own qualification choice is carried over */
-const unidentified = (id: string, qualifications: string[]) =>
+/** Nothing identified: the fields stay empty */
+const unidentified = (id: string) =>
   blankCertificate(id, {
-    allocations: qualifications.map((q) => newAllocation(q)),
     unidentified: ['Course Title', 'Date of Completion', 'Method of Delivery', 'Continuing Education Provider', 'Credits'],
   });
 
@@ -100,17 +95,17 @@ const asksFor = (word: string, file: CertFile, index: number) => file.name.toLow
 
 const tried = new Set<string>();
 
-export const analyzeCertificate = async (file: CertFile, { index, qualifications, onStage, signal }: AnalyzeOptions): Promise<AnalysisResult> => {
+export const analyzeCertificate = async (file: CertFile, { index, onStage, signal }: AnalyzeOptions): Promise<AnalysisResult> => {
   const retry = tried.has(file.id);
   tried.add(file.id);
   for (let stage = 0; stage < ANALYSIS_STAGES.length; stage++) {
     onStage(stage);
-    await wait(520, signal);
+    await wait(800, signal);
     if (stage === 0 && asksFor('not-certificate', file, index)) return { ok: false, reason: 'not_certificate' };
     if (stage === 1 && !retry && file.name.toLowerCase().includes('submit-fail') === false && asksFor('fail', file, index)) return { ok: false, reason: 'failed' };
   }
   const sample = SAMPLES[file.sample ?? index];
-  const certificate = sample ? sample(file.id) : unidentified(file.id, qualifications);
+  const certificate = sample ? sample(file.id) : unidentified(file.id);
   return { ok: true, certificate: asksFor('mismatch', file, index) ? { ...certificate, nameMismatch: true } : certificate };
 };
 
@@ -129,7 +124,6 @@ export const SAMPLE_FILES: Omit<CertFile, 'id' | 'status'>[] = [
   { name: 'Advanced-Financial-Management.pdf', size: 1_153_434, kind: 'PDF', sample: 1 },
   { name: 'Emerging-Trends-in-Professional-Ethics.jpg', size: 3_355_443, kind: 'JPG', sample: 2 },
 ];
-export const SAMPLE_QUALIFICATIONS = ['Alaska - CPA (US)', 'CA - Ireland', 'CMA'];
 /** What the sample viewer prints, so a sample never looks like a real document */
 export const sampleSummary = (sample: number) => {
   const c = SAMPLES[sample]?.('preview');

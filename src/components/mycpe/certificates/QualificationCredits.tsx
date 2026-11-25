@@ -12,7 +12,7 @@ interface QualificationCreditsProps {
   onRemove: (allocation: Allocation) => void;
 }
 
-/** One card per selected qualification, stacked */
+/** One tinted card per selected qualification, so its white fields stand out from the page */
 export const QualificationCredits: React.FC<QualificationCreditsProps> = ({ allocations, multipleFields, errors, onChange, onRemove }) => {
   const floating = useFloating();
   const stack = useStack();
@@ -34,14 +34,16 @@ export const QualificationCredits: React.FC<QualificationCreditsProps> = ({ allo
       {allocations.map((a) => {
         const rows = multipleFields ? a.rows : a.rows.slice(0, 1);
         return (
-          <section key={a.id} aria-label={a.qualification} className="@container rounded-xl border border-mc-line-strong bg-white">
-            <header className="pl-3 min-h-12 flex items-center gap-2 border-b border-mc-line">
+          <section key={a.id} aria-label={a.qualification} className="@container rounded-xl border border-[#DAD5F9] bg-[#F8F7FE] overflow-clip">
+            <header className="pl-3 min-h-12 flex items-center gap-2 bg-mc-primary-soft/70 border-b border-[#D3CDF8]">
               <h4 className="flex-1 min-w-0 py-2 text-[15px] leading-5 font-semibold text-mc-ink-2">
                 {a.qualification}
-                <span className="block text-[13px] font-normal text-mc-muted" aria-live="polite">
-                  {multipleFields && `${a.rows.length === 1 ? '1 Field' : `${a.rows.length} Fields`} of Study · `}
-                  {formatCredits(totalCredits(a))}
-                </span>
+                {/* A total says something new only when there's more than one field of study */}
+                {rows.length > 1 && (
+                  <span className="block text-[13px] font-normal text-mc-text" aria-live="polite">
+                    {rows.length} Fields of Study · {formatCredits(totalCredits(a))}
+                  </span>
+                )}
               </h4>
               <button type="button" onClick={() => onRemove(a)} className="w-12 h-12 flex items-center justify-center text-mc-error cursor-pointer" aria-label={`Remove ${a.qualification}`}>
                 <Trash2 className="w-[18px] h-[18px] stroke-[1.8]" />
@@ -54,8 +56,7 @@ export const QualificationCredits: React.FC<QualificationCreditsProps> = ({ allo
                   allocation={a}
                   row={r}
                   first={i === 0}
-                  removable={multipleFields}
-                  canRemove={a.rows.length > 1}
+                  removable={rows.length > 1}
                   errors={errors}
                   onPick={() => setPicking({ allocId: a.id, rowId: r.id })}
                   onChange={onChange}
@@ -66,7 +67,7 @@ export const QualificationCredits: React.FC<QualificationCreditsProps> = ({ allo
                   type="button"
                   disabled={a.rows.length >= FIELDS_OF_STUDY.length}
                   onClick={() => onChange(addRow(a))}
-                  className="w-full min-h-12 rounded-xl border border-dashed border-[#B8B0F5] text-sm font-semibold text-mc-primary flex items-center justify-center gap-1.5 active:bg-mc-primary-tint disabled:opacity-40 cursor-pointer"
+                  className="w-full min-h-12 rounded-xl border border-dashed border-[#A99FF2] bg-white text-sm font-semibold text-mc-primary flex items-center justify-center gap-1.5 active:bg-mc-primary-tint disabled:opacity-40 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
                   Add Field of Study
@@ -98,11 +99,10 @@ const FieldCredits: React.FC<{
   row: FieldRow;
   first: boolean;
   removable: boolean;
-  canRemove: boolean;
   errors: Record<string, string>;
   onPick: () => void;
   onChange: (a: Allocation) => void;
-}> = ({ allocation: a, row, first, removable, canRemove, errors, onPick, onChange }) => {
+}> = ({ allocation: a, row, first, removable, errors, onPick, onChange }) => {
   const box = useBox();
   const floating = useFloating();
   const [focused, setFocused] = useState(false);
@@ -163,9 +163,8 @@ const FieldCredits: React.FC<{
       {removable && (
         <button
           type="button"
-          disabled={!canRemove}
           onClick={() => onChange(removeRow(a, row.id))}
-          className={`w-full flex items-center justify-center text-mc-error disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+          className={`w-full flex items-center justify-center text-mc-error cursor-pointer ${
             floating ? 'h-13' : `h-12 mt-6 ${first ? '' : '@min-[19.5rem]:mt-0'}`
           }`}
           aria-label={`Remove ${row.field ?? 'field of study'} from ${a.qualification}`}

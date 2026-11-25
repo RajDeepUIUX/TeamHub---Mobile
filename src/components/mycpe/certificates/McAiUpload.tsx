@@ -4,11 +4,12 @@ import { useQuickFill } from '../../../hooks/useQuickFill';
 import { McPageHeader } from '../common/McPage';
 import { McButton } from '../common/McUi';
 import { Analysis, AnalyzeStep } from './AnalyzeStep';
-import { blankCertificate, Certificate, certificateHasData, CertFile, MAX_BYTES, MAX_FILES, newAllocation, toPayload, uid } from './certModel';
-import { analyzeCertificate, SAMPLE_FILES, SAMPLE_QUALIFICATIONS, submitCertificates } from './certService';
+import { blankCertificate, Certificate, certificateHasData, CertFile, MAX_BYTES, MAX_FILES, toPayload, uid } from './certModel';
+import { analyzeCertificate, SAMPLE_FILES, submitCertificates } from './certService';
 import { CertificateViewer } from './CertificateViewer';
 import { McConfirm, McConfirmSheet } from './McFormControls';
 import { ReviewStep } from './ReviewStep';
+import { SessionUi } from './SessionPage';
 import { UploadStep } from './UploadStep';
 
 type Step = 'upload' | 'analyze' | 'review' | 'success';
@@ -40,11 +41,11 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
   const [step, setStep] = useState<Step>('upload');
   const [files, setFiles] = useState<CertFile[]>([]);
   const [overLimit, setOverLimit] = useState(false);
-  const [qualifications, setQualifications] = useState<string[]>([]);
   // Keyed by file, so each certificate stands on its own
   const [certificates, setCertificates] = useState<Record<string, Certificate>>({});
   const [analysis, setAnalysis] = useState<Record<string, Analysis>>({});
   const [openId, setOpenId] = useState<string | null>(null);
+  const [sessionUi, setSessionUi] = useState<SessionUi>('UI-2');
   const [viewing, setViewing] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<McConfirm | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -128,13 +129,12 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
   const setOne = (id: string, a: Analysis) => setAnalysis((prev) => ({ ...prev, [id]: a }));
   const put = (c: Certificate) => setCertificates((prev) => ({ ...prev, [c.id]: c }));
 
-  /** One at a time; a failure never affects the others */
-  const analyze = async (targets: CertFile[], signal: AbortSignal) => {
-    for (const f of targets) {
+  /** All at the same time; a failure never affects the others */
+  const analyze = (targets: CertFile[], signal: AbortSignal) =>
+    targets.forEach(async (f) => {
       try {
         const result = await analyzeCertificate(f, {
           index: valid.findIndex((x) => x.id === f.id),
-          qualifications,
           onStage: (stage) => setOne(f.id, { state: 'analyzing', stage }),
           signal,
         });
@@ -151,8 +151,7 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
         put(blankCertificate(f.id, { source: 'failed', failReason: 'failed' }));
         setOne(f.id, { state: 'failed', stage: 0, reason: 'failed' });
       }
-    }
-  };
+    });
 
   const toReview = () => {
     setStep('review');
@@ -164,9 +163,9 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     if (!targets.length) return toReview();
     run.current?.abort();
     run.current = new AbortController();
-    setAnalysis((prev) => ({ ...prev, ...Object.fromEntries(targets.map((f) => [f.id, { state: 'waiting', stage: 0 } as Analysis])) }));
+    setAnalysis((prev) => ({ ...prev, ...Object.fromEntries(targets.map((f) => [f.id, { state: 'analyzing', stage: 0 } as Analysis])) }));
     setStep('analyze');
-    void analyze(targets, run.current.signal);
+    analyze(targets, run.current.signal);
   };
 
   const retry = (id: string) => {
@@ -174,11 +173,11 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     if (!f) return;
     if (!run.current || run.current.signal.aborted) run.current = new AbortController();
     setOne(id, { state: 'analyzing', stage: 0 });
-    void analyze([f], run.current.signal);
+    analyze([f], run.current.signal);
   };
 
   const enterManually = (id: string) => {
-    put(blankCertificate(id, { source: 'manual', allocations: qualifications.map((q) => newAllocation(q)) }));
+    put(blankCertificate(id, { source: 'manual' }));
     setOne(id, { state: 'manual', stage: 0 });
   };
 
@@ -219,7 +218,6 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     urls.current.forEach((u) => URL.revokeObjectURL(u));
     urls.current = [];
     setFiles([]);
-    setQualifications([]);
     setCertificates({});
     setAnalysis({});
     setOpenId(null);
@@ -236,10 +234,10 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     if (step === 'review') return setStep('upload');
     if (step === 'analyze') {
       run.current?.abort();
-      setAnalysis((prev) => Object.fromEntries(Object.entries(prev).filter(([, a]) => a.state !== 'waiting' && a.state !== 'analyzing')));
+      setAnalysis((prev) => Object.fromEntries(Object.entries(prev).filter(([, a]) => a.state !== 'analyzing')));
       return setStep('upload');
     }
-    if (step === 'success' || (!files.length && !qualifications.length)) return onClose();
+    if (step === 'success' || !files.length) return onClose();
     setConfirm({
       title: 'Discard your changes?',
       text: "Your certificates and the details you've entered haven't been submitted.",
@@ -249,11 +247,10 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
     });
   };
 
-  // Studio Quick Fill: three sample certificates and some qualifications, where there are none yet
+  // Studio Quick Fill: three sample certificates, where there are none yet
   useQuickFill(
     step === 'upload'
       ? () => {
-          if (!qualifications.length) setQualifications(SAMPLE_QUALIFICATIONS);
           if (!files.length) addFiles(SAMPLE_FILES);
         }
       : undefined
@@ -268,13 +265,11 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
       {step === 'upload' && (
         <UploadStep
           files={files}
-          qualifications={qualifications}
           allAnalyzed={allAnalyzed}
           overLimit={overLimit}
           onAddFiles={addFiles}
           onRemoveFile={removeFile}
           onPreview={setViewing}
-          onQualifications={setQualifications}
           onAnalyze={start}
         />
       )}
@@ -288,6 +283,8 @@ export const McAiUpload: React.FC<McAiUploadProps> = ({ onClose, onSubmitted }) 
           submitting={submitting}
           submitFailed={submitFailed}
           viewing={viewing !== null}
+          sessionUi={sessionUi}
+          onSessionUi={setSessionUi}
           onBack={back}
           onOpen={setOpenId}
           onChange={(c) => {

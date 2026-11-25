@@ -27,6 +27,7 @@ import { FileBadge } from './CertificateViewer';
 import { CourseSessions } from './CourseSessions';
 import { McConfirm, McDateSheet, McErrorText, McMultiSheet, McPickField, McSingleSheet, McTextField, McYesNo, removeQualifications, useFloating, useStack } from './McFormControls';
 import { QualificationCredits } from './QualificationCredits';
+import { SessionUi } from './SessionPage';
 
 const RemoveCertificate: React.FC<{ onRemove: () => void }> = ({ onRemove }) => (
   <button type="button" onClick={onRemove} className="w-full min-h-12 text-sm font-semibold text-mc-error flex items-center justify-center gap-1.5 cursor-pointer">
@@ -66,6 +67,8 @@ interface CertificateFormProps {
   errors: Record<string, string>;
   /** Sessions with something missing at that tap */
   errorSessions: string[];
+  sessionUi: SessionUi;
+  onSessionUi: (ui: SessionUi) => void;
   /** The new certificate and which AI-filled fields the learner has now edited */
   onChange: (next: Certificate, edited?: AiField) => void;
   onOpenSession: (id: string) => void;
@@ -80,6 +83,8 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
   file,
   errors,
   errorSessions,
+  sessionUi,
+  onSessionUi,
   onChange,
   onOpenSession,
   onAddSession,
@@ -224,7 +229,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
       </div>
 
       {sessions ? (
-        <CourseSessions sessions={c.sessions} errorIds={errorSessions} onOpen={onOpenSession} onAdd={onAddSession} />
+        <CourseSessions sessions={c.sessions} errorIds={errorSessions} ui={sessionUi} onUi={onSessionUi} onOpen={onOpenSession} onAdd={onAddSession} />
       ) : (
         <section aria-label="Qualification & Credits">
           <h3 className="mb-2 text-[15px] leading-5 font-semibold text-mc-ink">Qualification &amp; Credits</h3>
@@ -248,7 +253,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
           type="button"
           onClick={onView}
           aria-label={`View Certificate: ${file.name}`}
-          className="w-full p-3 rounded-xl border border-mc-line-strong bg-white flex items-center gap-3 text-left active:bg-mc-page cursor-pointer"
+          className="w-full p-3 rounded-xl border border-[#DAD5F9] bg-[#F8F7FE] flex items-center gap-3 text-left active:bg-mc-primary-soft cursor-pointer"
         >
           <FileBadge file={file} />
           <span className="flex-1 min-w-0">
@@ -257,7 +262,7 @@ export const CertificateForm: React.FC<CertificateFormProps> = ({
               {file.kind} · {formatSize(file.size)}
             </span>
           </span>
-          <Eye className="w-5 h-5 mx-1 shrink-0 stroke-[1.7] text-mc-text" aria-hidden="true" />
+          <Eye className="w-5 h-5 mx-1 shrink-0 stroke-[1.7] text-mc-primary" aria-hidden="true" />
         </button>
         <McErrorText message={errors.file} />
       </section>

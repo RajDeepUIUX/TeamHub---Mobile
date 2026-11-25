@@ -256,13 +256,13 @@ export const McYesNo: React.FC<BaseProps & { value: boolean | null; onChange: (v
 
 /* ------------------------------------- Sheets ------------------------------------ */
 
-const Handle = () => (
+export const McSheetHandle = () => (
   <div className="pt-2.5 flex justify-center shrink-0">
     <span className="w-14 h-1 rounded-full bg-mc-line-strong" />
   </div>
 );
 
-const SheetHeader: React.FC<{ title: string; onClose: () => void; action?: React.ReactNode }> = ({ title, onClose, action }) => (
+export const McSheetHeader: React.FC<{ title: string; onClose: () => void; action?: React.ReactNode }> = ({ title, onClose, action }) => (
   <div className="pl-4 pr-1.5 pt-1 pb-1 flex items-center gap-2 shrink-0">
     <h2 className="flex-1 text-lg leading-7 font-semibold text-mc-ink">{title}</h2>
     {action}
@@ -325,8 +325,8 @@ export const McSingleSheet: React.FC<OptionSheetProps & { value: string | null; 
   const long = options.length > 5;
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight={long ? 'h-[82%]' : 'max-h-[82%]'} className="font-mc text-mc-ink">
-      <Handle />
-      <SheetHeader title={title} onClose={onClose} />
+      <McSheetHandle />
+      <McSheetHeader title={title} onClose={onClose} />
       {long && <SearchBox value={query} onChange={setQuery} label={`Search ${title}`} />}
       <div role="radiogroup" aria-label={title} className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-8 divide-y divide-mc-line">
         {list.map((o) => {
@@ -358,8 +358,8 @@ export const McMultiSheet: React.FC<OptionSheetProps & { selected: string[]; onD
   }, [isOpen]);
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="h-[82%]" className="font-mc text-mc-ink">
-      <Handle />
-      <SheetHeader
+      <McSheetHandle />
+      <McSheetHeader
         title={title}
         onClose={onClose}
         action={
@@ -434,8 +434,8 @@ export const McDateSheet: React.FC<{ isOpen: boolean; value: string; onClose: ()
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} maxHeight="max-h-[82%]" className="font-mc text-mc-ink">
-      <Handle />
-      <SheetHeader title="Date of Completion" onClose={onClose} />
+      <McSheetHandle />
+      <McSheetHeader title="Date of Completion" onClose={onClose} />
       <p className="px-4 text-sm text-mc-muted" aria-live="polite">
         {formatDate(iso)}
       </p>
@@ -475,7 +475,7 @@ export const removeQualifications = (dropped: Allocation[], onConfirm: () => voi
 /** Asked before anything the learner entered is removed */
 export const McConfirmSheet: React.FC<{ confirm: McConfirm | null; onClose: () => void }> = ({ confirm, onClose }) => (
   <BottomSheet isOpen={confirm !== null} onClose={onClose} maxHeight="max-h-[70%]" className="font-mc text-mc-ink">
-    <Handle />
+    <McSheetHandle />
     {confirm && (
       <>
         <div className="px-4 pt-4 pb-5">
