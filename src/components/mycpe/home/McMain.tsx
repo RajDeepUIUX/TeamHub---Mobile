@@ -4,12 +4,13 @@ import { McHome } from './McHome';
 import { McPageHeader, McPending } from '../common/McPage';
 import { McProfile } from '../profile/McProfile';
 import { McCreditCertificates } from '../profile/McCreditCertificates';
+import { McAiUpload, SubmittedCertificate } from '../certificates/McAiUpload';
 import { McSubscribe } from '../subscription/McSubscribe';
 import { McAccount, McHomeState } from '../data/mycpeHomeData';
 import { MyCpePlanId } from '../data/mycpeAuthData';
 
 /** Screens opened over the tabs; the last one is showing */
-type McPageId = { kind: 'profile' } | { kind: 'certificates' } | { kind: 'plans'; plan?: MyCpePlanId } | { kind: 'pending'; title: string };
+type McPageId = { kind: 'profile' } | { kind: 'certificates' } | { kind: 'ai-upload' } | { kind: 'plans'; plan?: MyCpePlanId } | { kind: 'pending'; title: string };
 
 interface McMainProps {
   account: McAccount;
@@ -17,8 +18,8 @@ interface McMainProps {
   onHomeChange: (patch: Partial<McHomeState>) => void;
   onSubscribed: (plan: MyCpePlanId) => void;
   onLogout: () => void;
-  /** ?screen=profile / certificates opens there */
-  initialPage?: 'profile' | 'certificates';
+  /** ?screen=profile / certificates / ai-upload opens there */
+  initialPage?: 'profile' | 'certificates' | 'ai-upload';
   /** Real phone: prototype switches */
   switches?: React.ReactNode;
 }
@@ -27,14 +28,23 @@ interface McMainProps {
 export const McMain: React.FC<McMainProps> = ({ account, home, onHomeChange, onSubscribed, onLogout, initialPage, switches }) => {
   const [tab, setTab] = useState<McTab>('Home');
   const [pages, setPages] = useState<McPageId[]>(
-    initialPage === 'certificates' ? [{ kind: 'profile' }, { kind: 'certificates' }] : initialPage ? [{ kind: initialPage }] : []
+    initialPage === 'ai-upload'
+      ? [{ kind: 'profile' }, { kind: 'certificates' }, { kind: 'ai-upload' }]
+      : initialPage === 'certificates'
+        ? [{ kind: 'profile' }, { kind: 'certificates' }]
+        : initialPage
+          ? [{ kind: initialPage }]
+          : []
   );
   const [bookmarks, setBookmarks] = useState<string[]>([]);
+  // Submitted through Upload & Autofill with AI in this session
+  const [submitted, setSubmitted] = useState<SubmittedCertificate[]>([]);
 
   const push = (p: McPageId) => setPages((prev) => [...prev, p]);
   const back = () => setPages((prev) => prev.slice(0, -1));
   const open = (title: string) => {
     if (title === 'Credit Certificates') push({ kind: 'certificates' });
+    else if (title === 'Upload & Auto-Fill with AI') push({ kind: 'ai-upload' });
     else if (title === 'Subscription Plan') push({ kind: 'plans' });
     else push({ kind: 'pending', title });
   };
@@ -44,7 +54,9 @@ export const McMain: React.FC<McMainProps> = ({ account, home, onHomeChange, onS
       case 'profile':
         return <McProfile account={account} showLicenses={home.complianceAdded} onClose={back} onOpen={open} onLogout={onLogout} footer={switches} />;
       case 'certificates':
-        return <McCreditCertificates onBack={back} onOpen={open} />;
+        return <McCreditCertificates submitted={submitted} onBack={back} onOpen={open} />;
+      case 'ai-upload':
+        return <McAiUpload onClose={back} onSubmitted={(list) => setSubmitted((prev) => [...list, ...prev])} />;
       case 'plans':
         return <McSubscribe initialPlan={p.plan} onClose={back} onSubscribe={onSubscribed} />;
       default:

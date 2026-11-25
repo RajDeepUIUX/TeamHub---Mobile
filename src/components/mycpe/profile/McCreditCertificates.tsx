@@ -1,7 +1,8 @@
 import React from 'react';
-import { ChevronRight, Mail, Pencil } from 'lucide-react';
+import { ChevronRight, FileCheck2, Mail, Pencil } from 'lucide-react';
 import { CertificateIcon, NoCertificatesArt } from '../common/McIcons';
 import { McPageHeader } from '../common/McPage';
+import type { SubmittedCertificate } from '../certificates/McAiUpload';
 
 const OPTIONS = [
   { title: 'Upload & Auto-Fill with AI', text: "Snap or upload your certificate. We'll read the title, hours, and date for you.", icon: CertificateIcon, recommended: true },
@@ -9,11 +10,28 @@ const OPTIONS = [
   { title: 'Forward by email', text: "Forward your certificate to your private MY-CPE inbox and we'll add it automatically.", icon: Mail },
 ];
 
-/** Empty state: no certificates earned or added yet */
-export const McCreditCertificates: React.FC<{ onBack: () => void; onOpen: (title: string) => void }> = ({ onBack, onOpen }) => (
+/** Empty state until something is submitted; the ways to add a certificate are always below */
+export const McCreditCertificates: React.FC<{ submitted: SubmittedCertificate[]; onBack: () => void; onOpen: (title: string) => void }> = ({ submitted, onBack, onOpen }) => (
   <div className="flex-1 min-h-0 flex flex-col bg-[#FAFBFC]">
     <McPageHeader title="Credit Certificates" onBack={onBack} />
     <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-[30px]" style={{ paddingBottom: 'calc(var(--safe-bottom) + 24px)' }}>
+      {submitted.length > 0 ? (
+        <ul className="rounded-xl border border-mc-line-strong bg-white divide-y divide-mc-line">
+          {submitted.map((c) => (
+            <li key={c.id} className="p-3.5 flex items-start gap-3">
+              <FileCheck2 className="w-5 h-5 mt-0.5 shrink-0 text-mc-primary stroke-[1.7]" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-[15px] leading-5 font-semibold text-mc-ink-2">{c.title}</p>
+                <p className="mt-0.5 text-[13px] leading-[18px] text-mc-muted">
+                  {c.delivery} · {c.provider}
+                </p>
+                <p className="mt-0.5 text-xs leading-4 font-medium text-mc-text">Submitted</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+      <>
       <NoCertificatesArt className="w-[136px] h-[124px] mx-auto" />
       <h2 className="mt-7 text-center text-2xl leading-8 font-semibold text-[#2A3343]">You don’t have any certificates available yet.</h2>
       <p className="mt-4 text-center text-sm leading-5 font-medium text-[#98A2B3]">
@@ -21,6 +39,8 @@ export const McCreditCertificates: React.FC<{ onBack: () => void; onOpen: (title
         <br />
         that will be available for download here. Keep learning and achieve your goals!
       </p>
+      </>
+      )}
       <div className="mt-9 space-y-3">
         {OPTIONS.map(({ title, text, icon: Icon, recommended }) => (
           <button

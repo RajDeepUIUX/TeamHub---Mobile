@@ -22,3 +22,40 @@
   --color-mc-line-strong: #d0d5dd;
   --color-mc-error: #d92d20;
 }
+
+/* Upload & Autofill with AI: scanning illustration (still when reduced motion is on) */
+@keyframes mc-scan {
+  0% { transform: translateY(-36px); }
+  50% { transform: translateY(84px); }
+  100% { transform: translateY(-36px); }
+}
+@keyframes mc-extract {
+  0%, 15% { transform: scaleX(0); }
+  55%, 85% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+@keyframes mc-twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@keyframes mc-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.mc-scanning .mc-scan-line { animation: mc-scan 2.4s ease-in-out infinite; }
+.mc-extract { transform-origin: left; transform: scaleX(0); }
+.mc-scanning .mc-extract { animation: mc-extract 2.4s ease-in-out infinite; }
+.mc-scanning .mc-twinkle { animation: mc-twinkle 1.6s ease-in-out infinite; }
+.mc-indeterminate { animation: mc-indeterminate 1.3s ease-in-out infinite; }
+/* A page opening over another, and closing */
+@keyframes mc-page-in { from { transform: translateX(100%); } }
+@keyframes mc-page-out { to { transform: translateX(100%); } }
+.mc-page-in { animation: mc-page-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.mc-page-out { animation: mc-page-out 200ms cubic-bezier(0.4, 0, 0.8, 0.4) forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .mc-page-in, .mc-page-out { animation-duration: 1ms; }
+  .mc-scanning .mc-scan-line, .mc-scanning .mc-extract, .mc-scanning .mc-twinkle { animation: none; }
+  .mc-scanning .mc-scan-line { display: none; }
+  .mc-extract { transform: none; }
+  .mc-indeterminate { animation-duration: 3s; }
+}

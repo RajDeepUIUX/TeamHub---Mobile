@@ -20,7 +20,7 @@ const STAGES: McStage[] = ['splash', 'onboarding', 'signin', 'signup', 'plans', 
 const params = () => new URLSearchParams(window.location.search);
 const initialPage = () => {
   const s = params().get('screen');
-  return s === 'profile' || s === 'certificates' ? s : undefined;
+  return s === 'profile' || s === 'certificates' || s === 'ai-upload' ? s : undefined;
 };
 const initialStage = (): McStage => (initialPage() ? 'home' : STAGES.find((x) => x === params().get('screen')) ?? 'splash');
 

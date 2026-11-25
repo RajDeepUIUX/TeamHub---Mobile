@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 export const McPageHeader: React.FC<{ title: string; onBack: () => void }> = ({ title, onBack }) => (
   <header className="shrink-0 bg-white" style={{ paddingTop: 'var(--safe-top)' }}>
     <div className="relative h-[54px] flex items-center px-4">
-      <button type="button" onClick={onBack} className="-ml-2 w-10 h-10 flex items-center justify-center text-mc-text cursor-pointer" aria-label="Back">
+      <button type="button" onClick={onBack} className="-ml-3 w-12 h-12 flex items-center justify-center text-mc-text cursor-pointer" aria-label="Back">
         <ChevronLeft className="w-6 h-6 stroke-[1.4]" />
       </button>
       <h1 className="absolute inset-x-14 text-center text-base font-medium text-mc-ink-2 truncate pointer-events-none">{title}</h1>
