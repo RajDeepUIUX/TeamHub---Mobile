@@ -1,0 +1,24 @@
+/* MyCPE theme (from the MyCPE mobile designs). Prefixed "mc" so HRMS screens are never affected. */
+@theme {
+  --font-mc: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --color-mc-primary: #7162ea;
+  --color-mc-primary-pressed: #5849d0;
+  --color-mc-primary-soft: #e3e0fb;
+  --color-mc-primary-tint: #f3f1fd;
+  --color-mc-indigo: #5849d0;
+  --color-mc-deep: #3e2fb7;
+  --color-mc-outline: #6b34c5;
+  --color-mc-link: #3a58ef;
+
+  --color-mc-ink: #101828;
+  --color-mc-ink-2: #1d2939;
+  --color-mc-text: #475467;
+  --color-mc-muted: #5d667b;
+  --color-mc-night: #00001e;
+
+  --color-mc-page: #f2f4f7;
+  --color-mc-line: #eaecf0;
+  --color-mc-line-strong: #d0d5dd;
+  --color-mc-error: #d92d20;
+}

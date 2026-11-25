@@ -1,6 +1,7 @@
 import React from 'react';
 import { Briefcase, Building2, User } from 'lucide-react';
 import { USER_ROLES, UserRole } from '../../types/user';
+import { ProductSwitcher } from '../product/ProductSwitcher';
 
 const ROLE_ICON: Record<UserRole, React.ReactNode> = {
   Staff: <User className="w-3.5 h-3.5" />,
@@ -10,11 +11,14 @@ const ROLE_ICON: Record<UserRole, React.ReactNode> = {
 
 /**
  * Prototype-only: lets reviewers on a phone switch between the Staff, Manager and Client
- * experiences from the side menu (the desktop studio has the same switch in its toolbar).
+ * experiences, or move to MyCPE, from the side menu (the desktop studio has the same switch in its toolbar).
  */
 export const RoleSwitcher: React.FC<{ role: UserRole; onChange: (role: UserRole) => void }> = ({ role, onChange }) => (
   <div className="px-4 pt-3 pb-1">
     <p className="px-0.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Viewing as</p>
+    <div className="mb-2">
+      <ProductSwitcher />
+    </div>
     <div role="radiogroup" aria-label="Viewing as" className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-100">
       {USER_ROLES.map((r) => {
         const on = r === role;

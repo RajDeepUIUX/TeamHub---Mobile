@@ -41,6 +41,11 @@ import { TeamLeavesView } from './components/leaves/TeamLeavesView';
 import type { LeaveDecision } from './components/leaves/LeaveReviewSheet';
 import { LeaveRequest, LeaveBalance, LeaveDurationType } from './types/leaves';
 import { UserRole, USER_ROLES } from './types/user';
+import { APP_PRODUCTS, AppProduct } from './types/product';
+import { MYCPE_USER_TYPES, MyCpeUserType } from './types/mycpe';
+import { ProductProvider } from './context/ProductContext';
+import { ProductChooser } from './components/product/ProductChooser';
+import { MyCpeApp } from './components/mycpe/MyCpeApp';
 import { ClientApp } from './components/client/ClientApp';
 import { HomeDashboard } from './components/home/HomeDashboard';
 import { CelebrationsView, CelebrationTab } from './components/home/CelebrationsView';
@@ -136,12 +141,19 @@ import {
   ATTENDANCE_STAFF_CODE,
 } from './data/teamAttendanceData';
 
-/** URL options for opening on a real phone: ?role=manager, ?frame=1 (force the mockup) / ?frame=0 (force full screen) */
+/** URL options for opening on a real phone: ?product=hrms / ?product=mycpe, ?role=manager (HRMS), ?frame=1 (force the mockup) / ?frame=0 (force full screen) */
 const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
 
 const initialRole = (): UserRole => {
   const r = urlParams.get('role')?.toLowerCase();
   return USER_ROLES.find((role) => role.toLowerCase() === r) ?? 'Staff';
+};
+
+/** ?product= picks the product; a ?role= link is an HRMS link. Otherwise the app asks first. */
+const initialProduct = (): AppProduct | null => {
+  const p = urlParams.get('product')?.toLowerCase();
+  const picked = APP_PRODUCTS.find((x) => x.toLowerCase() === p);
+  return picked ?? (urlParams.has('role') ? 'HRMS' : null);
 };
 
 /** A real phone (touch screen, phone/tablet width): show the app full screen instead of the studio mockup */
@@ -171,6 +183,18 @@ export default function App() {
     body.style.overscrollBehavior = isPhone ? 'none' : '';
     documentElement.style.overscrollBehavior = isPhone ? 'none' : '';
   }, [isPhone]);
+
+  // HRMS or MyCPE (null = ask with the "View this app as" screen). Everything else in this file is HRMS.
+  const [product, setProduct] = useState<AppProduct | null>(initialProduct);
+  useEffect(() => {
+    document.title = product === 'MyCPE' ? 'MyCPE' : 'MYCPE ONE HRMS 24*7 - Product Design & UX';
+  }, [product]);
+
+  // MyCPE: Subscriber / Non Subscriber (?user=subscriber). Restarting replays its splash + sign-in flow.
+  const [mycpeUser, setMycpeUser] = useState<MyCpeUserType>(() =>
+    urlParams.get('user')?.toLowerCase() === 'subscriber' ? 'Subscriber' : 'Non Subscriber'
+  );
+  const [mycpeRun, setMycpeRun] = useState(0);
 
   // Logged-in user role (Staff by default, or ?role= in the URL); Manager review screens come later
   const [userRole, setUserRole] = useState<UserRole>(initialRole);
@@ -781,6 +805,16 @@ export default function App() {
     // Support modules open in the profile flow over the current screen
     openMoreModule(m);
   };
+  /** HRMS / MyCPE switch (studio toolbar, phone side menu); null reopens "View this app as". HRMS state is kept. */
+  const switchProduct = (next: AppProduct | null) => {
+    if (next === product) return;
+    if (profileDirtyRef.current) return askToLeave(() => switchProduct(next));
+    setIsMenuOpen(false);
+    setIsNotificationsOpen(false);
+    setToastMessage(null);
+    setProduct(next);
+  };
+
   /** Prototype role switch from the side menu (phones don't show the studio toolbar) */
   const switchRole = (role: UserRole) => {
     setIsMenuOpen(false);
@@ -1266,21 +1300,56 @@ export default function App() {
       <header className={`h-13 border-b border-slate-800 bg-slate-950/80 px-5 flex items-center justify-between z-30 select-none ${isPhone ? 'hidden' : ''}`}>
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-[#2F68FE] flex items-center justify-center text-white font-bold text-xs shadow-xs">
-            HR
+            {product === 'HRMS' ? 'HR' : 'MC'}
           </div>
           <div>
             <span className="font-semibold text-xs tracking-tight text-white">
-              MYCPE ONE HRMS 24*7
+              {product === 'HRMS' ? 'MYCPE ONE HRMS 24*7' : product === 'MyCPE' ? 'MyCPE' : 'MYCPE ONE'}
             </span>
-            <span className="text-[11px] text-slate-400 ml-2">
-              Attendance &amp; Leaves
-            </span>
+            {product === 'HRMS' && (
+              <span className="text-[11px] text-slate-400 ml-2">
+                Attendance &amp; Leaves
+              </span>
+            )}
           </div>
         </div>
 
         {/* Device Controls */}
         <div className="flex items-center gap-2">
-          {/* User Role Selector */}
+          {/* Product Selector: HRMS or MyCPE */}
+          <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+            {APP_PRODUCTS.map((p) => (
+              <button
+                key={p}
+                onClick={() => switchProduct(p)}
+                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                  product === p ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-400 active:text-white'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          {/* MyCPE user: Subscriber / Non Subscriber */}
+          {product === 'MyCPE' && (
+            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+              {MYCPE_USER_TYPES.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setMycpeUser(t)}
+                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                    mycpeUser === t ? 'bg-mc-primary text-white shadow-xs' : 'text-slate-400 active:text-white'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* User Role Selector (HRMS only) */}
+          {product === 'HRMS' && (
           <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
             {USER_ROLES.map((role) => (
               <button
@@ -1300,6 +1369,7 @@ export default function App() {
               </button>
             ))}
           </div>
+          )}
 
           {/* Device Model Selector */}
           <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
@@ -1326,7 +1396,7 @@ export default function App() {
           </div>
 
           {/* Log out: replays splash + login flow */}
-          {isLoggedIn && (
+          {product === 'HRMS' && isLoggedIn && (
             <button
               onClick={() => {
                 setIsProfileOpen(false);
@@ -1340,7 +1410,19 @@ export default function App() {
             </button>
           )}
 
-          {/* Reset Demo Data Button */}
+          {/* MyCPE: start again from the splash screen */}
+          {product === 'MyCPE' && (
+            <button
+              onClick={() => setMycpeRun((n) => n + 1)}
+              className="w-7 h-7 rounded-lg bg-slate-800 active:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors"
+              title="Restart MyCPE"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Reset Demo Data Button (HRMS) */}
+          {product === 'HRMS' && (
           <button
             onClick={() => {
               setRecords(ALL_ATTENDANCE_RECORDS);
@@ -1353,6 +1435,7 @@ export default function App() {
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
+          )}
 
           {/* Zoom / Scale */}
           <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
@@ -1378,7 +1461,7 @@ export default function App() {
       {/* Main Workspace Canvas */}
       <main className={`flex-1 flex relative ${isPhone ? 'min-h-0' : 'p-4 overflow-auto bg-slate-900'}`}>
         {/* Toast Notification */}
-        {toastMessage && (
+        {toastMessage && product === 'HRMS' && (
           <div className="absolute inset-x-0 top-6 z-50 flex justify-center pointer-events-none">
           <div className="animate-in fade-in slide-in-from-top-3 duration-300">
             <div className="bg-[#1E293B] text-white px-4 py-2.5 rounded-xl border border-slate-700 shadow-xl flex items-center gap-2 text-xs">
@@ -1391,15 +1474,21 @@ export default function App() {
 
         {/* zoom (not transform) so the enlarged device takes real space and the canvas can scroll to all of it */}
         <div className={isPhone ? 'w-full' : 'm-auto shrink-0'} style={isPhone ? undefined : { zoom: scale / 100 }}>
+          <ProductProvider value={{ product, onSwitchProduct: switchProduct }}>
           <BottomSheetProvider>
             <MobileDeviceFrame
               bare={isPhone}
+              immersive={product === 'MyCPE'}
               activeDevice={device}
               showThumbZoneOverlay={showThumbZones}
               showTouchHitboxOverlay={showHitboxes}
             >
-              {/* Client (HRMS) is its own app — no link to the Staff / Manager flows */}
-              {userRole === 'Client' && clientSignedOut ? (
+              {/* MyCPE is its own app — nothing shared with HRMS. Client (HRMS) is its own app too, with no link to the Staff / Manager flows */}
+              {product === null ? (
+                <ProductChooser />
+              ) : product === 'MyCPE' ? (
+                <MyCpeApp key={mycpeRun} userType={mycpeUser} onUserTypeChange={setMycpeUser} isPhone={isPhone} />
+              ) : userRole === 'Client' && clientSignedOut ? (
                 <AuthFlow onAuthenticated={() => setClientSignedOut(false)} />
               ) : userRole === 'Client' ? (
                 <ClientApp onLogout={() => setClientSignedOut(true)} onSwitchRole={isPhone ? switchRole : undefined} />
@@ -2568,6 +2657,9 @@ export default function App() {
                 </div>
               )}
 
+            {/* HRMS sheets */}
+            {product === 'HRMS' && (
+            <>
             <AdvanceGuidelineSheet isOpen={advanceGuideOpen} onClose={() => setAdvanceGuideOpen(false)} />
 
             {/* Bottom Sheet: Punch Logs (Screenshot 4) */}
@@ -2674,8 +2766,11 @@ export default function App() {
                 </button>
               </div>
             </BottomSheet>
+            </>
+            )}
           </MobileDeviceFrame>
         </BottomSheetProvider>
+        </ProductProvider>
       </div>
       </main>
     </div>

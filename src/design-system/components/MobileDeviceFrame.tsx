@@ -13,6 +13,8 @@ interface MobileDeviceFrameProps {
   onToggleTouchHitbox?: () => void;
   /** Real phone: fill the screen with no bezel or fake status bar (the phone shows its own) */
   bare?: boolean;
+  /** The app paints behind the status bar (MyCPE); screens keep clear of it with --safe-top / --safe-bottom */
+  immersive?: boolean;
 }
 
 export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
@@ -21,6 +23,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   showThumbZoneOverlay = false,
   showTouchHitboxOverlay = false,
   bare = false,
+  immersive = false,
 }) => {
   const [currentTime] = useState('9:41');
 
@@ -28,7 +31,11 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
     return (
       <div
         className="relative w-full h-dvh bg-[#F8FAFC] text-[#1E293B] flex flex-col overflow-hidden"
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={
+          immersive
+            ? ({ '--safe-top': 'env(safe-area-inset-top)', '--safe-bottom': 'env(safe-area-inset-bottom)' } as React.CSSProperties)
+            : { paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }
+        }
       >
         <div className="relative flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
         {/* Portal target for all bottom sheets */}
@@ -75,7 +82,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
       >
         {/* iOS Status Bar */}
         <div
-          className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-7 pt-3.5 pb-2 text-xs font-semibold select-none pointer-events-none bg-white text-[#1E293B]"
+          className={`absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-7 pt-3.5 pb-2 text-xs font-semibold select-none pointer-events-none text-[#1E293B] ${immersive ? 'bg-transparent' : 'bg-white'}`}
         >
           <span className="tracking-tight text-[13px] font-bold">{currentTime}</span>
 
@@ -103,7 +110,10 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
         </div>
 
         {/* Screen Canvas Viewport */}
-        <div className="relative flex-1 bg-[#F8FAFC] overflow-hidden flex flex-col pt-10">
+        <div
+          className={`relative flex-1 bg-[#F8FAFC] overflow-hidden flex flex-col ${immersive ? '' : 'pt-10'}`}
+          style={immersive ? ({ '--safe-top': '40px', '--safe-bottom': '0px' } as React.CSSProperties) : undefined}
+        >
           {children}
 
           {/* Ergonomic Thumb Zone Overlay (Inspection Tool) */}

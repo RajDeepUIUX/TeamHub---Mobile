@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Mail, Lock, ArrowLeft, Check } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { useProduct } from '../../context/ProductContext';
 import {
   AuthScreen,
   AuthBackground,
@@ -74,6 +75,7 @@ const LoginScreen: React.FC<{
   onSignIn: (email: string) => void;
   onForgot: (email: string) => void;
 }> = ({ initialEmail, onSignIn, onForgot }) => {
+  const { onSwitchProduct } = useProduct();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -100,7 +102,19 @@ const LoginScreen: React.FC<{
 
   return (
     <AuthScreen className="flex flex-col">
-      <AuthTopBar onQuickFill={quickFill} />
+      <AuthTopBar
+        left={
+          <button
+            type="button"
+            onClick={() => onSwitchProduct(null)}
+            className="-ml-2 w-10 h-10 rounded-full flex items-center justify-center text-[#1E1B4B] active:bg-white/70 cursor-pointer"
+            aria-label="Back to HRMS / MyCPE selection"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        }
+        onQuickFill={quickFill}
+      />
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center pb-8" noValidate>
         <BrandLogo size="sm" />
         <div className="mt-8">
